@@ -8,11 +8,11 @@ export const InventoryView: React.FC = () => {
   const nonGoldItems = character.Inventory.filter((item) => item.name !== 'Gold');
 
   return (
-    <div className="card">
+    <section className="card inventory-card" aria-labelledby="inventory-heading">
       <div className="card-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Package size={18} />
-          <span>Inventory & Loot</span>
+          <h2 id="inventory-heading">Inventory & Loot</h2>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: 'var(--accent-warning)', fontWeight: 'bold' }}>
           <Coins size={16} />
@@ -20,7 +20,7 @@ export const InventoryView: React.FC = () => {
         </div>
       </div>
 
-      <div className="equip-list" style={{ maxHeight: '240px', overflowY: 'auto' }}>
+      <div className="equip-list inventory-list" role="region" tabIndex={0} aria-label="Inventory items">
         {nonGoldItems.length === 0 ? (
           <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontStyle: 'italic', padding: '0.5rem 0' }}>
             Inventory is empty. Head into battle to collect loot!
@@ -34,6 +34,6 @@ export const InventoryView: React.FC = () => {
           ))
         )}
       </div>
-    </div>
+    </section>
   );
 };

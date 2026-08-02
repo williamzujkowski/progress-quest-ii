@@ -1,0 +1,52 @@
+{
+  "input": {
+    "sheet": {
+      "Traits": { "Name": "Oracle", "Race": "Half Orc", "Class": "Ur-Paladin", "Level": 1 },
+      "Stats": { "STR": 10, "CON": 10, "DEX": 10, "INT": 10, "WIS": 10, "CHA": 10, "HP Max": 10, "MP Max": 10 },
+      "Equips": { "Weapon": "Sharp Rock", "Shield": "", "Helm": "", "Hauberk": "-3 Burlap", "Brassairts": "", "Vambraces": "", "Gauntlets": "", "Gambeson": "", "Cuisses": "", "Greaves": "", "Sollerets": "" },
+      "Inventory": [["Gold", 0]],
+      "Spells": [],
+      "act": 1,
+      "Plots": ["Act I"],
+      "Quests": ["Test quest"],
+      "queue": [],
+      "task": "kill|Rat|0|tail",
+      "tasks": 0,
+      "elapsed": 0,
+      "kill": "Executing a Rat...",
+      "bestplot": "Act I",
+      "bestquest": "Test quest",
+      "bestequip": "Sharp Rock",
+      "bestspell": "",
+      "beststat": "STR 10",
+      "questmonster": "",
+      "ExpBar": { "position": 1269, "max": 1269 },
+      "EncumBar": { "position": 0, "max": 20 },
+      "PlotBar": { "position": 0, "max": 1000 },
+      "QuestBar": { "position": 0, "max": 100 },
+      "TaskBar": { "position": 6000, "max": 6000 },
+      "seed": [0.34067121776752174, 0.28646080009639263, 0.8245062702335417, 1],
+      "log": {}
+    }
+  },
+  "expected": {
+    "completed": { "tag": "kill|Rat|0|tail", "caption": "Executing a Rat...", "durationMs": 6000 },
+    "counters": { "tasks": 1, "elapsedSeconds": 6 },
+    "character": {
+      "traits": { "Name": "Oracle", "Race": "Half Orc", "Class": "Ur-Paladin", "Level": 2 },
+      "stats": [["STR", 10], ["CON", 10], ["DEX", 10], ["INT", 11], ["WIS", 10], ["CHA", 10], ["HP Max", 17], ["MP Max", 15]]
+    },
+    "task": { "tag": "kill|Rot Grub|1|eggsac", "caption": "Executing a Rot Grub...", "positionMs": 0, "maxMs": 3000, "queue": [] },
+    "xp": { "positionSeconds": 0, "maxSeconds": 1279 },
+    "encumbrance": { "positionCubits": 1, "maxCubits": 20 },
+    "quest": { "caption": "Test quest", "positionSeconds": 6, "maxSeconds": 100, "history": ["Test quest"], "monster": "", "monsterIndex": null },
+    "plot": { "act": 1, "caption": "Act I", "positionSeconds": 6, "maxSeconds": 1000 },
+    "inventory": [["Gold", 0], ["rat tail", 1]],
+    "equipment": [["Weapon", "Sharp Rock"], ["Shield", ""], ["Helm", ""], ["Hauberk", "-3 Burlap"], ["Brassairts", ""], ["Vambraces", ""], ["Gauntlets", ""], ["Gambeson", ""], ["Cuisses", ""], ["Greaves", ""], ["Sollerets", ""]],
+    "spells": [["Slime Finger", "I", 1]],
+    "best": { "stat": "INT 11", "spell": "Slime Finger I", "equipment": "Sharp Rock" },
+    "log": ["Gained a Level", "Gained 6 HP Maxes", "Gained 5 MP Maxes", "Gained an INT", "Gained a HP Max", "Saving game: Oracle", "Gained a rat tail", "Executing a Rot Grub..."],
+    "savedRng": [0.9330190639011562, 0.6226149452850223, 0.21023443923331797, 852663],
+    "rng": [0.3527631377801299, 0.9299049850087613, 0.13719435315579176, 1487883]
+  }
+}

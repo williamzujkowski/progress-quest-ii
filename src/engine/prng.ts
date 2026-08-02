@@ -1,7 +1,9 @@
+export type PRNGSeed = string | number;
+
 export function Mash() {
   let n = 0xefc8249d;
 
-  const mash = (data: string | number | object) => {
+  const mash = (data: PRNGSeed) => {
     const str = data.toString();
     for (let i = 0; i < str.length; i++) {
       n += str.charCodeAt(i);
@@ -23,11 +25,11 @@ export interface PRNG {
   (): number;
   uint32: () => number;
   fract53: () => number;
-  args: any[];
+  args: PRNGSeed[];
   state: (newState?: [number, number, number, number]) => [number, number, number, number];
 }
 
-export function Alea(...initialArgs: any[]): PRNG {
+export function Alea(...initialArgs: PRNGSeed[]): PRNG {
   let s0 = 0;
   let s1 = 0;
   let s2 = 0;
@@ -75,7 +77,7 @@ export function Alea(...initialArgs: any[]): PRNG {
 export class RandomGenerator {
   private prng: PRNG;
 
-  constructor(seed?: any) {
+  constructor(seed?: PRNGSeed) {
     this.prng = Alea(seed ?? Date.now());
   }
 

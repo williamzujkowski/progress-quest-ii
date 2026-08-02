@@ -214,7 +214,7 @@ export const BORING_ITEMS: string[] = [
   'bucket', 'ladder', 'chicken', 'twig', 'dirtclod', 'counterpane',
   'vest', 'teratoma', 'bunny', 'rock', 'pole', 'carrot', 'canoe',
   'inkwell', 'hoe', 'bandage', 'trowel', 'towel', 'planter box', 'anvil',
-  'axle', 'tuppence', 'casket', 'nosegay', 'trinket', 'credenza',
+  'axle', 'tuppence', 'casket', 'nosegay', 'trinket', 'credenza', 'writ',
 ];
 
 export interface MonsterDef {
@@ -416,7 +416,7 @@ export const MONSTERS: MonsterDef[] = [
   { name: 'Spectre', level: 7, item: 'vestige' },
   { name: 'Sphinx', level: 10, item: 'paw' },
   { name: 'Spider', level: 0, item: 'web' },
-  { name: 'Sprite', level: 1, item: 'dust' },
+  { name: 'Sprite', level: 1, item: 'can' },
   { name: 'Stirge', level: 1, item: 'proboscis' },
   { name: 'Stun Bear', level: 5, item: 'tooth' },
   { name: 'Stun Worm', level: 2, item: 'trode' },
@@ -439,6 +439,8 @@ export const MONSTERS: MonsterDef[] = [
   { name: 'Yeti', level: 4, item: 'fur' },
   { name: 'Zombie', level: 2, item: 'forehead' },
   { name: 'Wasp', level: 0, item: 'stinger' },
+  { name: 'Rat', level: 1, item: 'tail' },
+  { name: 'Bunny', level: 0, item: 'ear' },
   { name: 'Moth', level: 0, item: 'dust' },
   { name: 'Beagle', level: 0, item: 'collar' },
   { name: 'Midge', level: 0, item: 'corpse' },
@@ -456,20 +458,33 @@ export const MONSTERS: MonsterDef[] = [
   { name: 'Wolog', level: 4, item: 'lemma' },
 ];
 
-export const OFFENSE_BAD: string[] = [
-  '-5 clumsy',
-  '-4 dull',
-  '-3 unwieldy',
-  '-2 rusty',
-  '-1 blunt',
+export const OFFENSE_BAD: [string, number][] = [
+  ['Dull', -2],
+  ['Tarnished', -1],
+  ['Rusty', -3],
+  ['Padded', -5],
+  ['Bent', -4],
+  ['Mini', -4],
+  ['Rubber', -6],
+  ['Nerf', -7],
+  ['Unbalanced', -2],
 ];
 
-export const DEFENSE_BAD: string[] = [
-  '-5 holey',
-  '-4 patched',
-  '-3 threadbare',
-  '-2 tattered',
-  '-1 moth-eaten',
+export const DEFENSE_BAD: [string, number][] = [
+  ['Holey', -1],
+  ['Patched', -1],
+  ['Threadbare', -2],
+  ['Faded', -1],
+  ['Rusty', -3],
+  ['Motheaten', -3],
+  ['Mildewed', -2],
+  ['Torn', -3],
+  ['Dented', -3],
+  ['Cursed', -5],
+  ['Plastic', -4],
+  ['Cracked', -4],
+  ['Warped', -3],
+  ['Corroded', -3],
 ];
 
 export const MON_MODS: string[] = [

@@ -1,34 +1,32 @@
-name: Deploy to GitHub Pages
+name: CI
 
 on:
+  pull_request:
   push:
     branches: ['main']
-  workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: 'pages'
-  cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  quality:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Verify legacy baseline
+        run: |
+          test -f pq-web-src/main.js
+          test "$(git submodule status --recursive | cut -c1)" = " "
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
@@ -42,10 +40,10 @@ jobs:
       - name: Typecheck
         run: npx tsc -b
 
-      - name: Run unit and contract tests
+      - name: Unit and contract tests
         run: npm test
 
-      - name: Build static site
+      - name: Build
         run: npm run build
 
       - name: Dependency audit
@@ -54,17 +52,5 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
-      - name: Run end-to-end tests
+      - name: End-to-end tests
         run: npm run test:e2e
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './dist'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4

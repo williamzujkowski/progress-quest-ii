@@ -1,22 +1,37 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
+import './App.css';
 import { CharacterCreatorModal } from './components/CharacterCreatorModal';
 import { CharacterSheetView } from './components/CharacterSheet';
+import { HeroBanner } from './components/HeroBanner';
 import { InventoryView } from './components/InventoryView';
 import { LogFeed } from './components/LogFeed';
 import { Navbar } from './components/Navbar';
 import { QuestLog } from './components/QuestLog';
 import { SaveModal } from './components/SaveModal';
 import { useGameStore } from './state/gameStore';
+import { applyTheme, resolveInitialTheme, THEME_STORAGE_KEY, type ThemeId } from './theme';
 
 export const App: React.FC = () => {
-  const [theme, setTheme] = useState<'dark' | 'progros'>('dark');
+  const [theme, setTheme] = useState<ThemeId>(() => {
+    let storedTheme: string | null = null;
+    try {
+      storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    } catch {
+      // ponytail: storage is optional; a browser privacy mode must not block the game.
+    }
+    return resolveInitialTheme(storedTheme, window.matchMedia('(prefers-color-scheme: dark)').matches);
+  });
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isCharacterCreatorOpen, setIsCharacterCreatorOpen] = useState(false);
   const tick = useGameStore((state) => state.tick);
 
-  // Set theme data attribute on body
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+  useLayoutEffect(() => {
+    applyTheme(document.documentElement, theme);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // ponytail: keep the in-memory choice when persistence is unavailable.
+    }
   }, [theme]);
 
   // Main 50ms tick game loop timer
@@ -27,22 +42,21 @@ export const App: React.FC = () => {
     return () => clearInterval(timer);
   }, [tick]);
 
-  const handleToggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'progros' : 'dark'));
-  };
-
   return (
     <div className="app-container">
+      <a className="skip-link" href="#game-dashboard">Skip to game dashboard</a>
       <Navbar
         theme={theme}
-        onToggleTheme={handleToggleTheme}
+        onThemeChange={setTheme}
         onOpenSaveModal={() => setIsSaveModalOpen(true)}
         onOpenCharacterCreator={() => setIsCharacterCreatorOpen(true)}
       />
 
-      <main className="main-grid">
+      <HeroBanner />
+
+      <main className="main-grid" id="game-dashboard">
         <CharacterSheetView />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div className="quest-column">
           <QuestLog />
           <LogFeed />
         </div>

@@ -13,7 +13,7 @@ interface CharacterCreatorModalProps {
 }
 
 export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ isOpen, onClose }) => {
-  const { resetGame } = useGameStore();
+  const { startSession } = useGameStore();
 
   const [name, setName] = useState(generateRandomName());
   const [race, setRace] = useState(RACES[0].name);
@@ -28,12 +28,11 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
 
   const totalStats = PRIME_STATS.reduce((sum, stat) => sum + (stats[stat] || 0), 0);
 
-  const getTotalColor = (total: number) => {
-    if (total >= 81) return '#ef4444'; // Red
-    if (total > 72) return '#eab308'; // Yellow
-    if (total <= 45) return '#6b7280'; // Grey
-    if (total < 54) return '#9ca3af'; // Silver
-    return 'var(--panel-bg)';
+  const getTotalTone = (total: number) => {
+    if (total >= 81) return 'badge-danger';
+    if (total > 72) return 'badge-warning';
+    if (total < 54) return 'badge-muted';
+    return '';
   };
 
   const handleRoll = () => {
@@ -58,43 +57,36 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    resetGame(name.trim(), race, klass);
+    startSession({ source: 'creation', name: name.trim(), race, klass, seed: currentSeed, stats });
     onClose();
   };
 
   return (
     <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="creator-title">
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '650px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 id="creator-title" style={{ fontSize: '1.25rem', fontWeight: 700 }}>
+      <div className="modal-content modal-wide" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 id="creator-title">
             Progress Quest - New Character
           </h2>
-          <button className="btn" onClick={onClose} aria-label="Close character creator modal" style={{ padding: '0.25rem 0.5rem' }}>
+          <button className="btn btn-compact" onClick={onClose} aria-label="Close character creator modal">
             <X size={16} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form className="modal-form" onSubmit={handleSubmit}>
           {/* Name & Random Name Generator */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.375rem' }}>
+            <label className="field-label" htmlFor="character-name">
               Character Name
             </label>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div className="field-row">
               <input
+                id="character-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                style={{
-                  flex: 1,
-                  padding: '0.5rem',
-                  borderRadius: '0.375rem',
-                  border: '1px solid var(--panel-border)',
-                  background: 'var(--progress-bg)',
-                  color: 'var(--text-main)',
-                  fontSize: '0.875rem',
-                }}
+                className="form-control"
               />
               <button type="button" className="btn" onClick={handleRandomName} title="Generate Random Name">
                 <Sparkles size={16} /> Random
@@ -103,26 +95,18 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
           </div>
 
           {/* Stat Roller with Total Sum Display */}
-          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '0.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <div className="surface-panel">
+            <div className="surface-header">
               <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Prime Stats (3d6 Rolls)</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Total:</span>
-                <span
-                  className="badge"
-                  style={{
-                    backgroundColor: getTotalColor(totalStats),
-                    color: totalStats > 72 ? '#000000' : '#ffffff',
-                    fontSize: '0.875rem',
-                    padding: '0.25rem 0.625rem',
-                  }}
-                >
+                <span className={`badge total-badge ${getTotalTone(totalStats)}`}>
                   {totalStats}
                 </span>
               </div>
             </div>
 
-            <div className="stat-grid" style={{ marginBottom: '0.75rem' }}>
+            <div className="stat-grid" data-testid="creator-prime-stats" style={{ marginBottom: '0.75rem' }}>
               {PRIME_STATS.map((stat) => (
                 <div className="stat-item" key={stat}>
                   <span>{stat}</span>
@@ -131,7 +115,7 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
               ))}
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div className="button-row">
               <button type="button" className="btn btn-primary" onClick={handleRoll} style={{ flex: 1, justifyContent: 'center' }}>
                 <Dices size={16} /> Roll 'Em
               </button>
@@ -142,20 +126,23 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
           </div>
 
           {/* Race & Class Pickers */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="picker-grid">
             <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.375rem' }}>
+              <div className="field-label">
                 Select Race
-              </label>
-              <div style={{ maxHeight: '140px', overflowY: 'auto', border: '1px solid var(--panel-border)', borderRadius: '0.375rem', padding: '0.375rem', background: 'var(--progress-bg)' }}>
+              </div>
+              <div className="picker-list surface-panel">
                 {RACES.map((r) => (
-                  <label key={r.name} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.2rem 0', fontSize: '0.875rem', cursor: 'pointer' }}>
+                  <label className="picker-option" key={r.name}>
                     <input
                       type="radio"
                       name="racePicker"
                       value={r.name}
                       checked={race === r.name}
-                      onChange={() => setRace(r.name)}
+                      onChange={() => {
+                        setRace(r.name);
+                        setStats(generateInitialStats(new RandomGenerator(currentSeed), r.name, klass));
+                      }}
                     />
                     <span>{r.name}</span>
                   </label>
@@ -164,18 +151,21 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.375rem' }}>
+              <div className="field-label">
                 Select Class
-              </label>
-              <div style={{ maxHeight: '140px', overflowY: 'auto', border: '1px solid var(--panel-border)', borderRadius: '0.375rem', padding: '0.375rem', background: 'var(--progress-bg)' }}>
+              </div>
+              <div className="picker-list surface-panel">
                 {KLASSES.map((k) => (
-                  <label key={k.name} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', padding: '0.2rem 0', fontSize: '0.875rem', cursor: 'pointer' }}>
+                  <label className="picker-option" key={k.name}>
                     <input
                       type="radio"
                       name="klassPicker"
                       value={k.name}
                       checked={klass === k.name}
-                      onChange={() => setKlass(k.name)}
+                      onChange={() => {
+                        setKlass(k.name);
+                        setStats(generateInitialStats(new RandomGenerator(currentSeed), race, k.name));
+                      }}
                     />
                     <span>{k.name}</span>
                   </label>
@@ -184,7 +174,7 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ marginTop: '0.5rem', justifyContent: 'center' }}>
+          <button type="submit" className="btn btn-primary">
             <UserPlus size={16} /> Sold! Start Questing
           </button>
         </form>

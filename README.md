@@ -1,32 +1,40 @@
-# React + TypeScript + Vite
+# Progress Quest
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A modern, fully typed web edition of Eric Fredricksen's classic zero-player RPG. The React UI presents the original game's deterministic progression as a responsive operations dashboard while `pq-web-src/` remains the functional reference baseline.
 
-Currently, two official plugins are available:
+## Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Requires Node.js 22 or newer.
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Quality gates:
+
+```sh
+npm test
+npm run lint
+npm run build
+npm run test:e2e
+```
+
+## Theme system
+
+The primary Remarque Dark and Remarque Light palettes come directly from [`@williamzujkowski/oklch-terminal-themes`](https://github.com/williamzujkowski/oklch-terminal-themes). `src/theme.ts` validates the stored theme identifier, applies the selected palette, and persists the choice; `src/index.css` maps the package's `--terminal-*` slots to application-level semantic tokens. The legacy ProgrOS palette remains available from the theme selector.
+
+The interface borrows the upstream showcase's dense dashboard composition: restrained surfaces, compact status readouts, terminal typography, semantic ANSI colors, and overflow-safe responsive grids.
+
+## Repository map
+
+- `src/engine/` — pure game simulation and math
+- `src/data/` — authoritative game data
+- `src/state/` — session and save boundaries
+- `src/components/` — React game surfaces
+- `src/__tests__/` — Vitest unit and integration tests
+- `e2e/` — Playwright browser tests
+- `pq-web-src/` — read-only legacy reference implementation
+- `.agents/skills/` — repository workflow and review skills
+
+See [`AGENTS.md`](./AGENTS.md) for coding standards, TDD rules, security invariants, and the issue/PR workflow.

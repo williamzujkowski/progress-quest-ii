@@ -1,6 +1,6 @@
 import { ARMORS, DEFENSE_ATTRIB, DEFENSE_BAD, EQUIP_SLOTS, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, SPELLS, WEAPONS } from '../data/traits';
 import { calculateEncumbranceMax, generateInitialStats } from './math';
-import { RandomGenerator } from './prng';
+import { RandomGenerator, type PRNGSeed } from './prng';
 import type { CharacterSheet, EquipSlot, InventoryItem, ProgressTask, SpellItem } from './types';
 
 const NAME_PARTS_1 = ['Brog', 'Grim', 'Kael', 'Thor', 'Zar', 'Vex', 'Gor', 'Drak', 'Thul', 'Borg', 'Loth', 'Morg', 'Fizz', 'Wiz', 'Snag'];
@@ -15,8 +15,8 @@ export function equipPrice(level: number): number {
   return 5 * level * level + 10 * level + 20;
 }
 
-export function createNewCharacter(name: string, race: string, klass: string, seed?: any): CharacterSheet {
-  const rng = new RandomGenerator(seed ?? (name + Date.now()));
+export function createNewCharacter(name: string, race: string, klass: string, seed?: PRNGSeed | RandomGenerator): CharacterSheet {
+  const rng = seed instanceof RandomGenerator ? seed : new RandomGenerator(seed ?? (name + Date.now()));
   const stats = generateInitialStats(rng, race, klass);
 
   const initialEquip: Record<EquipSlot, string> = {
@@ -96,7 +96,7 @@ export function generateEquipUpgrade(rng: RandomGenerator, level: number): { slo
   const slot = rng.pick(EQUIP_SLOTS);
   let stuff: [string, number][];
   let better: [string, number][];
-  let worse: string[];
+  let worse: [string, number][];
 
   if (slot === 'Weapon') {
     stuff = WEAPONS;
@@ -120,7 +120,7 @@ export function generateEquipUpgrade(rng: RandomGenerator, level: number): { slo
     name = `${mod} ${name}`;
     plus -= 1;
   } else if (plus < 0) {
-    const mod = rng.pick(worse);
+    const mod = rng.pick(worse)[0];
     name = `${mod} ${name}`;
   }
 

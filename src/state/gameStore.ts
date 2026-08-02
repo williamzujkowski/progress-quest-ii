@@ -1,8 +1,12 @@
 import { create } from 'zustand';
-import { soundFX } from '../engine/audio';
-import { RandomGenerator } from '../engine/prng';
+import { soundFX } from './audio';
+import { RandomGenerator, type PRNGSeed } from '../engine/prng';
 import { createNewCharacter, equipPrice, generateEquipUpgrade, generateLootItem, generateSpellUpgrade, generateTaskDescription } from '../engine/sim';
-import type { CharacterSheet, ProgressTask } from '../engine/types';
+import type { CharacterSheet, ProgressTask, StatsMap } from '../engine/types';
+
+type StartSessionRequest =
+  | { source: 'creation'; name: string; race: string; klass: string; seed: PRNGSeed; stats?: StatsMap }
+  | { source: 'import' | 'roster'; character: CharacterSheet };
 
 export interface GameStore {
   character: CharacterSheet;
@@ -13,7 +17,7 @@ export interface GameStore {
   // Actions
   tick: (elapsedMs: number) => void;
   togglePause: () => void;
-  resetGame: (name: string, race: string, klass: string) => void;
+  startSession: (request: StartSessionRequest) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
@@ -28,13 +32,26 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
 
-    resetGame: (name: string, race: string, klass: string) => {
-      const rng = new RandomGenerator(name + Date.now());
-      const character = createNewCharacter(name, race, klass, rng);
+    startSession: (request: StartSessionRequest) => {
+      let character: CharacterSheet;
+      let rng: RandomGenerator;
+      let message: string;
+
+      if (request.source === 'creation') {
+        rng = new RandomGenerator(request.seed);
+        const generated = createNewCharacter(request.name, request.race, request.klass, rng);
+        character = request.stats ? { ...generated, Stats: { ...request.stats } } : generated;
+        message = `Character ${request.name} created!`;
+      } else {
+        character = structuredClone(request.character);
+        rng = new RandomGenerator(JSON.stringify(character));
+        message = `Loaded character ${character.Traits.Name} from ${request.source === 'import' ? 'save data' : 'roster'}.`;
+      }
+
       set({
         character,
         rng,
-        log: [`Character ${name} created!`],
+        log: [message],
         isPaused: false,
       });
     },
@@ -58,7 +75,7 @@ export const useGameStore = create<GameStore>((set, get) => {
 
       // Task complete! Process outcome
       let newLog = [...log];
-      let newInventory = [...character.Inventory];
+      let newInventory = character.Inventory;
       let newGold = character.Gold;
       let newQuest = { ...character.Quest };
       let newPlot = { ...character.Plot };
@@ -69,11 +86,11 @@ export const useGameStore = create<GameStore>((set, get) => {
 
       if (task.type === 'kill') {
         const itemLoot = generateLootItem(rng);
-        const existing = newInventory.find((i) => i.name === itemLoot);
-        if (existing) {
-          existing.qty += 1;
+        const existingIndex = newInventory.findIndex((item) => item.name === itemLoot);
+        if (existingIndex >= 0) {
+          newInventory = newInventory.map((item, index) => (index === existingIndex ? { ...item, qty: item.qty + 1 } : item));
         } else {
-          newInventory.push({ name: itemLoot, qty: 1 });
+          newInventory = [...newInventory, { name: itemLoot, qty: 1 }];
         }
         newLog.unshift(`Defeated monster and looted ${itemLoot}.`);
 
@@ -125,12 +142,19 @@ export const useGameStore = create<GameStore>((set, get) => {
       }
 
       // Generate next task
-      const nextTaskInfo = generateTaskDescription(rng, {
+      const transitionedCharacter: CharacterSheet = {
         ...character,
-        Inventory: newInventory,
-        Stats: newStats,
         Traits: newTraits,
-      });
+        Stats: newStats,
+        Equip: newEquip,
+        Spells: newSpells,
+        Inventory: newInventory,
+        Gold: newGold,
+        Quest: newQuest,
+        Plot: newPlot,
+        Task: task,
+      };
+      const nextTaskInfo = generateTaskDescription(rng, transitionedCharacter);
 
       const nextTask: ProgressTask = {
         description: nextTaskInfo.description,
@@ -141,15 +165,7 @@ export const useGameStore = create<GameStore>((set, get) => {
 
       set({
         character: {
-          ...character,
-          Traits: newTraits,
-          Stats: newStats,
-          Equip: newEquip,
-          Spells: newSpells,
-          Inventory: newInventory,
-          Gold: newGold,
-          Quest: newQuest,
-          Plot: newPlot,
+          ...transitionedCharacter,
           Task: nextTask,
         },
         log: newLog.slice(0, 50),

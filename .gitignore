@@ -12,6 +12,16 @@ dist
 dist-ssr
 *.local
 
+# Test artifacts
+coverage/
+playwright-report/
+test-results/
+
+# Local environment (keep the documented template trackable)
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +32,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Agent runtime state
+.nexus-agents/
+.playwright-mcp/
