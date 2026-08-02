@@ -1,6 +1,7 @@
-import { Copy, Trash2, Upload, X } from 'lucide-react';
+import { Copy, Save as SaveIcon, Trash2, Upload, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import type { CharacterSheet } from '../engine/types';
+import { diagnostics } from '../state/diagnostics';
 import { useGameStore } from '../state/gameStore';
 import { decodePQWSave, encodePQWSave, loadRoster, removeFromRoster, saveToRoster } from '../state/saveManager';
 
@@ -9,44 +10,79 @@ interface SaveModalProps {
   onClose: () => void;
 }
 
-export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
-  const { character, startSession } = useGameStore();
-  const [roster, setRoster] = useState<Record<string, CharacterSheet>>({});
-  const [importInput, setImportInput] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+function recordRosterFailure(code: 'roster_read_failed' | 'roster_write_failed' | 'roster_delete_failed', operation: 'read' | 'write' | 'delete'): void {
+  diagnostics.record({ code, severity: 'warning', subsystem: 'storage', operation, outcome: 'failed', source: 'save-modal' });
+}
 
-  const refreshRoster = () => {
-    setRoster(loadRoster());
+export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
+  const startSession = useGameStore((state) => state.startSession);
+  const [roster, setRoster] = useState<Record<string, CharacterSheet> | null>({});
+  const [importInput, setImportInput] = useState('');
+  const [currentName, setCurrentName] = useState('');
+  const [currentPQW, setCurrentPQW] = useState('');
+  const [feedback, setFeedback] = useState<{ kind: 'status' | 'alert'; message: string } | null>(null);
+
+  const refreshRoster = (): boolean => {
+    const result = loadRoster();
+    if (!result.ok) {
+      recordRosterFailure('roster_read_failed', 'read');
+      setRoster(null);
+      setFeedback({ kind: 'alert', message: result.error.message });
+      return false;
+    }
+    setRoster(result.value);
+    return true;
   };
 
   useEffect(() => {
     if (isOpen) {
-      const result = saveToRoster(character);
-      if (!result.ok) setErrorMsg(result.error.message);
+      const character = useGameStore.getState().character;
+      setCurrentName(character.Traits.Name);
+      setCurrentPQW(encodePQWSave(character));
+      setFeedback(null);
       refreshRoster();
     }
-  }, [isOpen, character]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const currentPQW = encodePQWSave(character);
+  const handleSaveCurrent = () => {
+    const character = useGameStore.getState().character;
+    const result = saveToRoster(character);
+    if (!result.ok) {
+      recordRosterFailure('roster_write_failed', 'write');
+      setFeedback({ kind: 'alert', message: result.error.message });
+      return;
+    }
+    setCurrentName(character.Traits.Name);
+    setCurrentPQW(encodePQWSave(character));
+    refreshRoster();
+    setFeedback({ kind: 'status', message: 'Character saved to this browser.' });
+  };
 
-  const handleCopyPQW = () => {
-    navigator.clipboard.writeText(currentPQW);
-    alert('Save data (.pqw) copied to clipboard!');
+  const handleCopyPQW = async () => {
+    try {
+      if (!navigator.clipboard?.writeText) throw new DOMException('Clipboard unavailable', 'NotAllowedError');
+      await navigator.clipboard.writeText(currentPQW);
+      setFeedback({ kind: 'status', message: 'Save text copied to the clipboard.' });
+    } catch (error) {
+      diagnostics.record({ code: 'clipboard_write_failed', severity: 'warning', subsystem: 'clipboard', operation: 'copy', outcome: 'failed', source: 'save-modal', error });
+      setFeedback({ kind: 'alert', message: 'Clipboard access was denied. Select the save text and copy it manually.' });
+    }
   };
 
   const handleImport = () => {
-    setErrorMsg('');
+    setFeedback(null);
     const result = decodePQWSave(importInput);
     if (!result.ok) {
-      setErrorMsg(result.error.message);
+      setFeedback({ kind: 'alert', message: result.error.message });
       return;
     }
 
     const saved = saveToRoster(result.value);
     if (!saved.ok) {
-      setErrorMsg(saved.error.message);
+      recordRosterFailure('roster_write_failed', 'write');
+      setFeedback({ kind: 'alert', message: saved.error.message });
       return;
     }
 
@@ -60,10 +96,12 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
     if (confirm(`Are you sure you want to delete ${name}?`)) {
       const result = removeFromRoster(name);
       if (!result.ok) {
-        setErrorMsg(result.error.message);
+        recordRosterFailure('roster_delete_failed', 'delete');
+        setFeedback({ kind: 'alert', message: result.error.message });
         return;
       }
       refreshRoster();
+      setFeedback({ kind: 'status', message: 'Character removed from this browser.' });
     }
   };
 
@@ -77,27 +115,43 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
+        {feedback && (
+          <div
+            aria-atomic="true"
+            aria-live={feedback.kind === 'status' ? 'polite' : 'assertive'}
+            className={feedback.kind === 'alert' ? 'error-message' : 'status-message'}
+            role={feedback.kind}
+          >
+            {feedback.message}
+          </div>
+        )}
+
         {/* Current Character Save Export */}
         <div className="surface-panel">
           <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-            Export Current Save ({character.Traits.Name}.pqw)
+            Export Current Save ({currentName}.pqw)
           </div>
-          <button className="btn btn-primary btn-block" onClick={handleCopyPQW}>
+          <button className="btn btn-block" onClick={handleSaveCurrent}>
+            <SaveIcon size={16} /> Save current character
+          </button>
+          <label htmlFor="current-save-text" style={{ display: 'block', fontSize: '0.75rem', marginTop: '0.5rem' }}>Current save text</label>
+          <textarea id="current-save-text" className="form-control" value={currentPQW} readOnly rows={3} />
+          <button className="btn btn-block" onClick={handleCopyPQW}>
             <Copy size={16} /> Copy Base64 .pqw Save String
           </button>
         </div>
 
         {/* Import Save String */}
         <div className="surface-panel">
-          <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Import Save String (.pqw)</div>
+          <label htmlFor="import-save-text" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Import Save String (.pqw)</label>
           <textarea
+            id="import-save-text"
             value={importInput}
             onChange={(e) => setImportInput(e.target.value)}
             placeholder="Paste base64 .pqw save string here..."
             rows={3}
             className="form-control"
           />
-          {errorMsg && <div style={{ color: 'var(--accent-danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{errorMsg}</div>}
           <button className="btn btn-block" onClick={handleImport} style={{ marginTop: '0.5rem' }}>
             <Upload size={16} /> Load Character
           </button>
@@ -107,7 +161,9 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
         <div>
           <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Saved Character Roster</div>
           <div className="roster-list">
-            {Object.values(roster).length === 0 ? (
+            {roster === null ? (
+              <div style={{ fontSize: '0.875rem', color: 'var(--accent-danger)' }}>Saved characters are unavailable. Nothing was changed.</div>
+            ) : Object.values(roster).length === 0 ? (
               <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>No saved characters found.</div>
             ) : (
               Object.values(roster).map((char) => (

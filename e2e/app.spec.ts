@@ -94,6 +94,45 @@ test.describe('Progress Quest terminal dashboard', () => {
     expect(report).not.toMatch(/Krg|secret|william|save\.pqw|auth=/i);
   });
 
+  test('saves explicitly and recovers from clipboard denial without a write storm', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    const pageErrors: string[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.goto('/');
+    await page.evaluate(() => {
+      const original = Storage.prototype.setItem;
+      const trackedWindow = window as Window & { __rosterWrites?: number };
+      trackedWindow.__rosterWrites = 0;
+      Storage.prototype.setItem = function(key, value) {
+        if (key === 'progquest_roster_v1') trackedWindow.__rosterWrites = (trackedWindow.__rosterWrites ?? 0) + 1;
+        return original.call(this, key, value);
+      };
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: () => Promise.reject(new DOMException('Denied', 'NotAllowedError')) },
+      });
+    });
+
+    await page.getByRole('button', { name: /Roster & Saves/i }).click();
+    await page.waitForTimeout(350);
+    expect(await page.evaluate(() => (window as Window & { __rosterWrites?: number }).__rosterWrites)).toBe(0);
+    const fallback = page.getByRole('textbox', { name: 'Current save text' });
+    await expect(fallback).toHaveAttribute('readonly', '');
+
+    await page.getByRole('button', { name: 'Save current character' }).click();
+    await expect(page.getByRole('status')).toContainText('Character saved');
+    expect(await page.evaluate(() => (window as Window & { __rosterWrites?: number }).__rosterWrites)).toBe(1);
+
+    await page.getByRole('button', { name: 'Copy Base64 .pqw Save String' }).click();
+    await expect(page.getByRole('alert')).toContainText('copy it manually');
+    expect(pageErrors).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+
   test('renders full game interface with Hero Banner, loadout, quest log, and spell book', async ({ page }) => {
     await page.goto('/');
 
@@ -326,6 +365,7 @@ test.describe('Progress Quest terminal dashboard', () => {
     await page.getByRole('button', { name: 'Pause' }).click();
     await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible();
     await page.getByRole('button', { name: /Roster & Saves/i }).click();
+    await page.getByRole('button', { name: 'Save current character' }).click();
     await page.getByRole('button', { name: 'Play' }).click();
 
     await expect(page.getByRole('dialog', { name: /Character Roster/i })).not.toBeVisible();
@@ -338,6 +378,7 @@ test.describe('Progress Quest terminal dashboard', () => {
   test('imports a save through the session seam', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: /Roster & Saves/i }).click();
+    await page.getByRole('button', { name: 'Save current character' }).click();
 
     const pqw = await page.evaluate(() => {
       const rawRoster = localStorage.getItem('progquest_roster_v1');

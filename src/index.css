@@ -493,6 +493,7 @@ input[type='radio'] {
 
 textarea.form-control { resize: vertical; }
 .error-message { margin-top: 0.3rem; color: var(--accent-danger); font-size: 0.78rem; }
+.status-message { margin-top: 0.3rem; color: var(--accent-success); font-size: 0.78rem; }
 
 .recovery-shell {
   min-height: 100dvh;
@@ -516,6 +517,7 @@ textarea.form-control { resize: vertical; }
 .recovery-panel p { line-height: 1.6; }
 .recovery-code { overflow-wrap: anywhere; color: var(--accent-danger); font-family: var(--font-mono); font-weight: 700; }
 .recovery-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.5rem; }
+.recovery-actions .btn { background: var(--panel-raised); }
 .recovery-status { min-height: 1.6em; margin-bottom: 0; color: var(--text-muted); }
 .picker-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
 .picker-list { max-height: 140px; overflow-y: auto; padding: var(--space-1); }

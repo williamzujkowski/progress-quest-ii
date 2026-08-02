@@ -4,15 +4,20 @@ export type DiagnosticCode =
   | 'react_recoverable'
   | 'window_error'
   | 'unhandled_rejection'
+  | 'clipboard_write_failed'
+  | 'roster_read_failed'
+  | 'roster_write_failed'
+  | 'roster_delete_failed'
   | 'diagnostic_export_failed'
   | 'save_export_failed';
 
-export type DiagnosticSubsystem = 'react' | 'browser' | 'diagnostics' | 'save';
-export type DiagnosticOperation = 'render' | 'recover' | 'event-handler' | 'promise' | 'export';
+export type DiagnosticSubsystem = 'react' | 'browser' | 'clipboard' | 'diagnostics' | 'save' | 'storage';
+export type DiagnosticOperation = 'render' | 'recover' | 'event-handler' | 'promise' | 'read' | 'write' | 'delete' | 'copy' | 'export';
 export type DiagnosticSource =
   | 'react-root'
   | 'window-error'
   | 'unhandled-rejection'
+  | 'save-modal'
   | 'recovery-ui';
 
 export interface DiagnosticEvent {

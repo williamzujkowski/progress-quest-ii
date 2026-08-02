@@ -10,6 +10,8 @@ export type SaveErrorCode =
   | 'invalid_json'
   | 'invalid_schema'
   | 'storage_unavailable'
+  | 'storage_corrupt'
+  | 'storage_full'
   | 'storage_failed';
 
 export type SaveResult<T> =
@@ -60,59 +62,88 @@ function emptyRoster(): Record<string, CharacterSheet> {
   return Object.create(null) as Record<string, CharacterSheet>;
 }
 
-export function loadRoster(): Record<string, CharacterSheet> {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return emptyRoster();
+function getStorage(): SaveResult<Storage> {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return saveFailure('storage_unavailable', 'Browser storage is unavailable. Nothing was changed.');
+    }
+    return { ok: true, value: window.localStorage };
+  } catch {
+    return saveFailure('storage_unavailable', 'Browser storage is unavailable. Nothing was changed.');
   }
+}
+
+function readRoster(storage: Storage): SaveResult<Record<string, CharacterSheet>> {
+  let raw: string | null;
+  try {
+    raw = storage.getItem(ROSTER_STORAGE_KEY);
+  } catch {
+    return saveFailure('storage_unavailable', 'Browser storage could not be read. Nothing was changed.');
+  }
+  if (!raw) return { ok: true, value: emptyRoster() };
 
   try {
-    const raw = window.localStorage.getItem(ROSTER_STORAGE_KEY);
-    if (!raw) return emptyRoster();
-
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      return emptyRoster();
+      return saveFailure('storage_corrupt', 'The saved roster is unreadable. Nothing was changed.');
     }
 
     const validRoster = emptyRoster();
     for (const [key, value] of Object.entries(parsed)) {
       const check = characterSheetSchema.safeParse(value);
-      if (check.success) {
-        validRoster[key] = check.data;
-      }
+      if (!check.success) return saveFailure('storage_corrupt', 'The saved roster is unreadable. Nothing was changed.');
+      validRoster[key] = check.data;
     }
-    return validRoster;
+    return { ok: true, value: validRoster };
   } catch {
-    return emptyRoster();
+    return saveFailure('storage_corrupt', 'The saved roster is unreadable. Nothing was changed.');
   }
 }
 
-export function saveToRoster(sheet: CharacterSheet): SaveResult<void> {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return saveFailure('storage_unavailable', 'Browser storage is unavailable; the character was not saved.');
+function writeFailure(error: unknown, action: string): SaveResult<never> {
+  try {
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      return saveFailure('storage_full', `Browser storage is full, so it could not ${action}. Nothing was changed.`);
+    }
+  } catch {
+    // ponytail: hostile platform errors fall through to the generic safe result.
   }
+  return saveFailure('storage_failed', `Browser storage could not ${action}. Nothing was changed.`);
+}
+
+export function loadRoster(): SaveResult<Record<string, CharacterSheet>> {
+  const storage = getStorage();
+  return storage.ok ? readRoster(storage.value) : storage;
+}
+
+export function saveToRoster(sheet: CharacterSheet): SaveResult<void> {
+  const storage = getStorage();
+  if (!storage.ok) return storage;
+  const loaded = readRoster(storage.value);
+  if (!loaded.ok) return loaded;
 
   try {
-    const roster = loadRoster();
+    const roster = loaded.value;
     roster[sheet.Traits.Name] = sheet;
-    window.localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(roster));
+    storage.value.setItem(ROSTER_STORAGE_KEY, JSON.stringify(roster));
     return { ok: true, value: undefined };
-  } catch {
-    return saveFailure('storage_failed', 'Browser storage could not save this character.');
+  } catch (error) {
+    return writeFailure(error, 'save this character');
   }
 }
 
 export function removeFromRoster(characterName: string): SaveResult<void> {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return saveFailure('storage_unavailable', 'Browser storage is unavailable; the character was not removed.');
-  }
+  const storage = getStorage();
+  if (!storage.ok) return storage;
+  const loaded = readRoster(storage.value);
+  if (!loaded.ok) return loaded;
 
   try {
-    const roster = loadRoster();
+    const roster = loaded.value;
     delete roster[characterName];
-    window.localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(roster));
+    storage.value.setItem(ROSTER_STORAGE_KEY, JSON.stringify(roster));
     return { ok: true, value: undefined };
-  } catch {
-    return saveFailure('storage_failed', 'Browser storage could not remove this character.');
+  } catch (error) {
+    return writeFailure(error, 'remove this character');
   }
 }

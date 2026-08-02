@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createNewCharacter } from '../../engine/sim';
 import {
   MAX_PQW_INPUT_LENGTH,
@@ -10,6 +10,10 @@ import {
   saveToRoster,
 } from '../../state/saveManager';
 import { characterSheetSchema } from '../../state/schemas';
+
+afterEach(() => {
+  localStorage.clear();
+});
 
 describe('Save Manager & Serialization', () => {
   it('encodes and decodes a character sheet to base64 .pqw format cleanly', () => {
@@ -75,13 +79,17 @@ describe('Save Manager & Serialization', () => {
     saveToRoster(char2);
 
     const loaded = loadRoster();
-    expect(loaded['RosterHero1']).toBeDefined();
-    expect(loaded['RosterHero2']).toBeDefined();
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(loaded.value['RosterHero1']).toBeDefined();
+    expect(loaded.value['RosterHero2']).toBeDefined();
 
     removeFromRoster('RosterHero1');
     const updated = loadRoster();
-    expect(updated['RosterHero1']).toBeUndefined();
-    expect(updated['RosterHero2']).toBeDefined();
+    expect(updated.ok).toBe(true);
+    if (!updated.ok) return;
+    expect(updated.value['RosterHero1']).toBeUndefined();
+    expect(updated.value['RosterHero2']).toBeDefined();
   });
 
   it('returns a typed failure when browser storage rejects a write', () => {
@@ -93,11 +101,56 @@ describe('Save Manager & Serialization', () => {
     try {
       expect(saveToRoster(character)).toMatchObject({
         ok: false,
-        error: { code: 'storage_failed' },
+        error: { code: 'storage_full' },
       });
     } finally {
       setItem.mockRestore();
     }
+  });
+
+  it('returns a typed failure when the browser storage capability is denied', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(window, 'localStorage');
+    if (!descriptor) throw new Error('Expected a configurable localStorage property in jsdom.');
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get: () => { throw new DOMException('Denied', 'SecurityError'); },
+    });
+
+    try {
+      expect(loadRoster()).toMatchObject({
+        ok: false,
+        error: { code: 'storage_unavailable' },
+      });
+    } finally {
+      Object.defineProperty(window, 'localStorage', descriptor);
+    }
+  });
+
+  it('distinguishes a denied roster read from corrupt roster data', () => {
+    const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementationOnce(() => {
+      throw new DOMException('Denied', 'SecurityError');
+    });
+
+    try {
+      expect(loadRoster()).toMatchObject({
+        ok: false,
+        error: { code: 'storage_unavailable' },
+      });
+    } finally {
+      getItem.mockRestore();
+    }
+  });
+
+  it('preserves corrupt roster bytes instead of overwriting them', () => {
+    const character = createNewCharacter('Preserver', 'Half Orc', 'Robot Monk', 606);
+    const corruptRoster = '{not-json';
+    localStorage.setItem('progquest_roster_v1', corruptRoster);
+
+    expect(saveToRoster(character)).toMatchObject({
+      ok: false,
+      error: { code: 'storage_corrupt' },
+    });
+    expect(localStorage.getItem('progquest_roster_v1')).toBe(corruptRoster);
   });
 
   it('stores prototype-like character names as ordinary roster keys', () => {
@@ -106,7 +159,9 @@ describe('Save Manager & Serialization', () => {
     saveToRoster(character);
 
     const loaded = loadRoster();
-    expect(Object.hasOwn(loaded, '__proto__')).toBe(true);
-    expect(loaded['__proto__'].Traits.Name).toBe('__proto__');
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(Object.hasOwn(loaded.value, '__proto__')).toBe(true);
+    expect(loaded.value['__proto__'].Traits.Name).toBe('__proto__');
   });
 });
