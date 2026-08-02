@@ -1,0 +1,3 @@
+[submodule "pq-web-src"]
+	path = pq-web-src
+	url = https://bitbucket.org/grumdrig/pq-web.git
