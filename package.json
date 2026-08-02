@@ -8,8 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run",
-    "test:fidelity": "vitest run src/__tests__/fidelity",
+    "test": "vitest run && node --test scripts/test-legacy-oracle.mjs",
+    "test:fidelity": "vitest run src/__tests__/fidelity && node --test scripts/test-legacy-oracle.mjs",
     "test:e2e": "playwright test",
     "agents:verify": "nexus-agents verify",
     "agents:review": "nexus-agents review"
