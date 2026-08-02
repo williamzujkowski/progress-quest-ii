@@ -64,6 +64,19 @@ describe('runtime diagnostics', () => {
     expect(recorder.snapshot()[0]?.details).toEqual({ errorType: 'UnknownError' });
   });
 
+  it('reads an allowlisted Error name only once', () => {
+    const recorder = new DiagnosticRecorder({ buildId: 'test', interactionId: 'changing-getter' });
+    const error = new Error('private details');
+    let reads = 0;
+    Object.defineProperty(error, 'name', { get: () => reads++ === 0 ? 'Error' : 'KrgTokenSecret' });
+
+    recorder.record(diagnostic(error));
+
+    expect(reads).toBe(1);
+    expect(recorder.snapshot()[0]?.details).toEqual({ errorType: 'Error' });
+    expect(recorder.exportReport()).not.toContain('KrgTokenSecret');
+  });
+
   it('records a later rethrow after suppressing same-turn duplicates', async () => {
     const recorder = new DiagnosticRecorder({ buildId: 'test', interactionId: 'later-rethrow' });
     const error = new Error('private details');

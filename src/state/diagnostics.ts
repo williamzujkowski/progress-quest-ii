@@ -64,7 +64,8 @@ function randomInteractionId(): string {
 
 function safeErrorType(error: unknown): string {
   try {
-    return error instanceof Error && SAFE_ERROR_TYPES.has(error.name) ? error.name : 'UnknownError';
+    const name: unknown = error instanceof Error ? error.name : undefined;
+    return typeof name === 'string' && SAFE_ERROR_TYPES.has(name) ? name : 'UnknownError';
   } catch {
     return 'UnknownError';
   }
