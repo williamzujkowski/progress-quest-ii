@@ -20,7 +20,7 @@ Build and maintain a modern, fully-typed, responsive, and tested web application
 
 ---
 
-## Prime Directive
+## Prime Directive & Development Disciplines
 
 ```
 correctness > simplicity > performance > cleverness
@@ -31,16 +31,35 @@ correctness > simplicity > performance > cleverness
 - **Performance**: Does the game loop run smoothly off the main thread without memory leaks or UI jank?
 - **Cleverness**: Never. Obfuscated trickery creates technical debt.
 
-Produce software with explicit error handling, observable state changes, and no silent failures.
-
----
-
-## Development Disciplines
-
+### Core Disciplines
 - **Red/Green TDD** — Write a failing test first, then the minimum code to pass, then refactor. Never write production engine code without a corresponding test.
 - **YAGNI (You Aren't Gonna Need It)** — Implement only what is required by a named feature or backlog issue. Avoid speculative abstractions, unused parameters, or "just in case" utility helpers.
 - **DRY (Don't Repeat Yourself)** — Every piece of game data or logic (stat tables, item generation formulas, level curves) must have a single, unambiguous, authoritative representation in `src/data/` or `src/engine/`.
 - **Zero `any` policy** — Strict TypeScript typing enforced. Use `unknown` + type guards or Zod schemas at external storage and string boundaries.
+
+---
+
+## Ponytail: Lazy Senior Dev Method (Radical Simplicity)
+
+This codebase incorporates **Ponytail** (`https://github.com/dietrichgebert/ponytail`). Write only what the task needs: lazy means efficient, not careless. The best code is the code never written.
+
+### The 7-Rung Decision Ladder
+Before writing any code, stop at the first rung that holds:
+
+1. **Does this need to exist at all?** (YAGNI) If speculative, skip it and state why in one line.
+2. **Already in this codebase?** Reuse existing helpers, components, types, or utils. Don't rewrite what already lives here.
+3. **Stdlib does it?** Use native TypeScript / ES standard library functionality.
+4. **Native platform feature covers it?** Use native HTML5/CSS3 features (e.g. `<input type="date">`, CSS Grid/Flexbox, `localStorage`/`IndexedDB`).
+5. **Already-installed dependency solves it?** Use `zustand`, `zod`, `lucide-react`. Never add a new dependency if a few lines of clean code can do it.
+6. **Can it be one line?** Make it one line.
+7. **Only then:** Write the minimum explicit, safe code that works.
+
+### Root-Cause Bug Fixing & Ponytail Rules
+- **Bug fix = root cause, not symptom:** Grep every caller of a function before editing. One guard in a shared function is smaller and safer than patching individual call paths.
+- **No unrequested abstractions:** No single-implementation interfaces, no factories for one product, no unnecessary boilerplate.
+- **Shortest working diff wins:** Deletion over addition. Boring over clever. Fewest files possible.
+- **Ponytail comments:** Mark deliberate simplifications or trade-offs with a `ponytail:` comment describing the rationale and upgrade trigger (e.g. `// ponytail: simple O(n) scan, indexed map if item count > 1000`).
+- **Never lazy about:** Understanding the problem (read the full context before editing), input validation at boundaries, error handling that prevents data loss, security, accessibility, or unit tests for non-trivial logic.
 
 ---
 
@@ -50,24 +69,14 @@ For any non-trivial task (new features, architectural refactoring, UI redesign):
 
 1. **Research** — Inspect `pq-web-src/` baseline files and existing codebase to ground implementation details in empirical evidence.
 2. **Plan** — Outline the step-by-step implementation plan, listing files created/modified and target test cases.
-3. **Implement** — Execute changes incrementally using TDD.
-4. **Verify** — Run lint, type-check, unit tests, and E2E build validation before concluding work.
-
-### Subagent Delegation & Fan-Out
-
-- Delegate wide exploration, multi-file audits, or parallel investigations to read-only subagents.
-- For architectural choices or trade-offs, evaluate alternatives explicitly before committing.
-- Keep main conversation context lean by summarizing subagent findings into concise action points.
+3. **Implement** — Execute changes incrementally using TDD and the Ponytail 7-rung decision ladder.
+4. **Verify** — Run lint, type-check, unit tests (`npm test`), and E2E build validation before concluding work.
 
 ---
 
-## Context Budget
+## Context Budget & Q Protocol
 
-Keep working context lean. Target token budgets: Minimal ~800 / Standard ~2,500 / Research ~1,500 / Full ~6,000. Reference files by absolute or relative path instead of inlining large text blocks. Summarize multi-step results into clear bullet points.
-
----
-
-## Error Handling & Q Protocol
+Keep working context lean. Target token budgets: Minimal ~800 / Standard ~2,500 / Research ~1,500 / Full ~6,000. Reference files by path instead of inlining large text blocks.
 
 Before any uncertain operation or major state mutation, follow the **Q Protocol**:
 
@@ -80,13 +89,11 @@ IF NO:   [fallback or fix]
 
 After the operation, close the loop: `RESULT … MATCHES yes/no … THEREFORE …`.
 
-**On failure:** (1) state the raw error, (2) state the suspected cause, (3) propose ONE concrete fix, (4) state expected outcome. Never guess past a failing build or test.
-
 ---
 
 ## Canonical Paths & Project Layout
 
-Do not create duplicate or parallel module structures. Always follow this layout:
+Always follow this layout — do not create duplicate or parallel module structures:
 
 | Layer | Canonical Location | Description |
 | :--- | :--- | :--- |
@@ -104,11 +111,11 @@ Do not create duplicate or parallel module structures. Always follow this layout
 
 Before completing ANY task:
 
-- [ ] **TDD/YAGNI/DRY verified** — tests written, zero speculative code, zero duplicated logic.
-- [ ] **Strict Typing** — Zero TypeScript errors, zero `any` usage, all storage inputs validated via Zod.
+- [ ] **Ponytail & TDD/YAGNI/DRY verified** — 7-rung ladder checked, tests written, zero speculative code, zero duplicated logic.
+- [ ] **Strict Typing** — Zero TypeScript errors (`npx tsc --noEmit`), zero `any` usage, all storage inputs validated via Zod.
 - [ ] **Engine Isolation** — Game logic in `src/engine/` remains 100% decoupled from DOM/React rendering.
 - [ ] **Wiring Complete** — New components, state actions, and type definitions properly exported and connected.
-- [ ] **Tests Pass** — `npm test` (or `pnpm test`) runs clean with full coverage on happy paths, edge cases, and failure modes.
+- [ ] **Tests Pass** — `npm test` runs clean with full coverage on happy paths, edge cases, and failure modes.
 
 ---
 
