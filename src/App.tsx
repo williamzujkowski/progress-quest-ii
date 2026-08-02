@@ -9,6 +9,7 @@ import { Navbar } from './components/Navbar';
 import { QuestLog } from './components/QuestLog';
 import { SaveModal } from './components/SaveModal';
 import { useGameStore } from './state/gameStore';
+import { startGameClock } from './state/gameClock';
 import { applyTheme, resolveInitialTheme, THEME_STORAGE_KEY, type ThemeId } from './theme';
 
 export const App: React.FC = () => {
@@ -36,10 +37,7 @@ export const App: React.FC = () => {
 
   // Main 50ms tick game loop timer
   useEffect(() => {
-    const timer = setInterval(() => {
-      tick(50);
-    }, 50);
-    return () => clearInterval(timer);
+    return startGameClock(tick);
   }, [tick]);
 
   return (

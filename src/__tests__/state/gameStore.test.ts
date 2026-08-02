@@ -50,6 +50,33 @@ describe('Game Store State Machine', () => {
     expect(useGameStore.getState().log.length).toBeGreaterThan(0);
   });
 
+  it('carries elapsed overshoot into the next task', () => {
+    const duration = useGameStore.getState().character.Task.durationMs;
+
+    useGameStore.getState().tick(duration + 100);
+
+    expect(useGameStore.getState().character.Task.elapsedMs).toBe(100);
+  });
+
+  it('consumes multiple completed tasks from one delayed tick', () => {
+    const duration = useGameStore.getState().character.Task.durationMs;
+    const initialLogLength = useGameStore.getState().log.length;
+
+    useGameStore.getState().tick(duration + 10_000);
+
+    const updated = useGameStore.getState();
+    expect(updated.character.Task.elapsedMs).toBeLessThan(updated.character.Task.durationMs);
+    expect(updated.log.length).toBeGreaterThan(initialLogLength);
+  });
+
+  it('bounds catch-up work for an extreme delayed tick', () => {
+    useGameStore.getState().tick(1_000_000_000);
+
+    const updated = useGameStore.getState();
+    expect(updated.character.Task.elapsedMs).toBe(0);
+    expect(updated.log.length).toBeLessThanOrEqual(50);
+  });
+
   it('chooses the next task from gold earned by the completed transition', () => {
     const character = structuredClone(useGameStore.getState().character);
     character.Gold = 0;
