@@ -1,5 +1,6 @@
-import { FolderOpen, Moon, Pause, Play, Sun } from 'lucide-react';
-import React from 'react';
+import { FolderOpen, Moon, Pause, Play, Sun, Volume2, VolumeX } from 'lucide-react';
+import React, { useState } from 'react';
+import { soundFX } from '../engine/audio';
 import { useGameStore } from '../state/gameStore';
 
 interface NavbarProps {
@@ -10,6 +11,12 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ theme, onToggleTheme, onOpenSaveModal }) => {
   const { character, isPaused, togglePause } = useGameStore();
+  const [isMuted, setIsMuted] = useState(soundFX.getMuted());
+
+  const handleToggleAudio = () => {
+    const muted = soundFX.toggleMute();
+    setIsMuted(muted);
+  };
 
   return (
     <header className="navbar">
@@ -24,6 +31,11 @@ export const Navbar: React.FC<NavbarProps> = ({ theme, onToggleTheme, onOpenSave
         <button className="btn" onClick={togglePause} title={isPaused ? 'Resume Game' : 'Pause Game'}>
           {isPaused ? <Play size={16} /> : <Pause size={16} />}
           <span>{isPaused ? 'Resume' : 'Pause'}</span>
+        </button>
+
+        <button className="btn" onClick={handleToggleAudio} title={isMuted ? 'Unmute Sound' : 'Mute Sound'}>
+          {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          <span>{isMuted ? 'Muted' : 'Audio'}</span>
         </button>
 
         <button className="btn" onClick={onOpenSaveModal} title="Roster & Save Manager">

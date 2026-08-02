@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { soundFX } from '../engine/audio';
 import { RandomGenerator } from '../engine/prng';
 import { createNewCharacter, generateTaskDescription } from '../engine/sim';
 import type { CharacterSheet, ProgressTask } from '../engine/types';
@@ -79,6 +80,7 @@ export const useGameStore = create<GameStore>((set, get) => {
           newQuest.currentProgress = 0;
           newQuest.maxProgress = Math.floor(newQuest.maxProgress * 1.2) + 1;
           newLog.unshift(`Quest Completed: ${newQuest.description}!`);
+          soundFX.playQuestComplete();
 
           newPlot.currentProgress += 1;
           if (newPlot.currentProgress >= newPlot.maxProgress) {
@@ -93,6 +95,7 @@ export const useGameStore = create<GameStore>((set, get) => {
           newStats.CON += 1;
           newStats['HP Max'] += 5;
           newLog.unshift(`LEVEL UP! Advanced to level ${newTraits.Level}!`);
+          soundFX.playLevelUp();
         }
       } else if (task.type === 'selling') {
         let earned = 0;
@@ -105,6 +108,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         });
         newGold += earned;
         newLog.unshift(`Sold loot at market for ${earned} gold!`);
+        soundFX.playSellLoot();
       }
 
       // Generate next task
