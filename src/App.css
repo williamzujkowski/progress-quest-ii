@@ -241,6 +241,44 @@
 
 .loadout-list { max-height: none; }
 
+.tooltip-trigger {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  cursor: help;
+  border-bottom: 1px dotted var(--text-muted);
+}
+
+.item-tooltip {
+  position: absolute;
+  z-index: 20;
+  bottom: calc(100% + 0.5rem);
+  left: 0;
+  display: grid;
+  width: min(20rem, calc(100vw - 2rem));
+  gap: 0.35rem;
+  padding: var(--space-2);
+  border: 1px solid var(--accent-primary);
+  border-radius: 0.35rem;
+  background: var(--panel-raised);
+  color: var(--text-main);
+  box-shadow: 0 10px 28px var(--shadow-color);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(0.25rem);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.tooltip-trigger:hover .item-tooltip,
+.tooltip-trigger:focus-visible .item-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tooltip-effect { color: var(--text-muted); }
+
 .meter-group,
 .stat-pill {
   min-width: 0;
@@ -307,6 +345,7 @@
   .hero-stats-quick { gap: 0.5rem; }
   .stat-pill { flex: 1 1 8rem; justify-content: center; }
   .hero-stat { padding-inline: var(--space-1); }
+  .item-tooltip { left: auto; right: 0; }
   .main-grid { gap: 0.75rem; }
   .main-grid > :last-child { grid-column: auto; }
   .quest-column { gap: 0.75rem; }
