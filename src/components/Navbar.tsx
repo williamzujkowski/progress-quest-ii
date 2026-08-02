@@ -1,16 +1,17 @@
-import { FolderOpen, Moon, Pause, Play, Sun, UserPlus, Volume2, VolumeX } from 'lucide-react';
+import { FolderOpen, Palette, Pause, Play, UserPlus, Volume2, VolumeX } from 'lucide-react';
 import React, { useState } from 'react';
 import { soundFX } from '../state/audio';
 import { useGameStore } from '../state/gameStore';
+import { THEME_OPTIONS, type ThemeId } from '../theme';
 
 interface NavbarProps {
-  theme: 'dark' | 'progros';
-  onToggleTheme: () => void;
+  theme: ThemeId;
+  onThemeChange: (theme: ThemeId) => void;
   onOpenSaveModal: () => void;
   onOpenCharacterCreator: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ theme, onToggleTheme, onOpenSaveModal, onOpenCharacterCreator }) => {
+export const Navbar: React.FC<NavbarProps> = ({ theme, onThemeChange, onOpenSaveModal, onOpenCharacterCreator }) => {
   const { character, isPaused, togglePause } = useGameStore();
   const [isMuted, setIsMuted] = useState(soundFX.getMuted());
 
@@ -65,14 +66,19 @@ export const Navbar: React.FC<NavbarProps> = ({ theme, onToggleTheme, onOpenSave
           <span>Roster & Saves</span>
         </button>
 
-        <button
-          className="btn"
-          onClick={onToggleTheme}
-          title="Toggle Visual Theme"
-        >
-          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-          <span>{theme === 'dark' ? 'Retro ProgrOS' : 'Dark Mode'}</span>
-        </button>
+        <label className="theme-control">
+          <Palette size={16} aria-hidden="true" />
+          <span>Theme</span>
+          <select
+            aria-label="Visual theme"
+            value={theme}
+            onChange={(event) => onThemeChange(event.target.value as ThemeId)}
+          >
+            {THEME_OPTIONS.map((option) => (
+              <option key={option.id} value={option.id}>{option.label}</option>
+            ))}
+          </select>
+        </label>
       </div>
     </header>
   );

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
-test.describe('Progress Quest Web Application Anthropic UI & Grid Layout', () => {
+test.describe('Progress Quest terminal dashboard', () => {
   test('renders full game interface with Hero Banner, character sheet, quest log, and spell book', async ({ page }) => {
     await page.goto('/');
 
@@ -25,20 +26,54 @@ test.describe('Progress Quest Web Application Anthropic UI & Grid Layout', () =>
     await expect(page.getByText('Inventory & Loot')).toBeVisible();
   });
 
-  test('toggles theme between Dark Mode and Retro ProgrOS', async ({ page }) => {
+  test('selects and persists an OKLCH terminal theme', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
     await page.goto('/');
 
-    const themeBtn = page.getByRole('button', { name: /Retro ProgrOS|Dark Mode/i });
-    await expect(themeBtn).toBeVisible();
+    const themePicker = page.getByRole('combobox', { name: 'Visual theme' });
+    await expect(themePicker).toHaveValue('remarque-dark');
+    await expect(page.locator('html')).toHaveAttribute('data-terminal-theme', 'remarque-dark');
 
-    // Toggle theme
-    await themeBtn.click();
+    await themePicker.selectOption('remarque-light');
+    await expect(page.locator('html')).toHaveAttribute('data-terminal-theme', 'remarque-light');
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('progquest_theme_v1'))).toBe('remarque-light');
+
+    await page.reload();
+    await expect(themePicker).toHaveValue('remarque-light');
+    await themePicker.selectOption('progros');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'progros');
-
-    // Toggle back
-    await themeBtn.click();
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('html')).not.toHaveAttribute('data-terminal-theme', /.+/);
   });
+
+  test('keeps the theme picker keyboard reachable with a visible focus ring', async ({ page }) => {
+    await page.goto('/');
+
+    const themePicker = page.getByRole('combobox', { name: 'Visual theme' });
+    let reachedThemePicker = false;
+    for (let tabIndex = 0; tabIndex < 10; tabIndex += 1) {
+      await page.keyboard.press('Tab');
+      if (await themePicker.evaluate((element) => element === document.activeElement)) {
+        reachedThemePicker = true;
+        break;
+      }
+    }
+
+    expect(reachedThemePicker).toBe(true);
+    await expect(themePicker).toHaveCSS('outline-style', 'solid');
+  });
+
+  for (const theme of ['remarque-dark', 'remarque-light', 'progros']) {
+    test(`${theme} has no detectable WCAG A or AA violations`, async ({ page }) => {
+      await page.goto('/');
+      await page.getByRole('combobox', { name: 'Visual theme' }).selectOption(theme);
+
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .analyze();
+
+      expect(results.violations).toEqual([]);
+    });
+  }
 
   test('opens and rolls stats in Character Creator modal', async ({ page }) => {
     await page.goto('/');
@@ -136,7 +171,7 @@ test.describe('Progress Quest Web Application Anthropic UI & Grid Layout', () =>
 
       expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
       await expect(page.getByRole('button', { name: /Roster & Saves/i })).toBeInViewport();
-      await expect(page.getByRole('button', { name: /Retro ProgrOS/i })).toBeInViewport();
+      await expect(page.getByRole('combobox', { name: 'Visual theme' })).toBeInViewport();
 
       if (width === 320) {
         await page.getByRole('button', { name: /New Character/i }).click();

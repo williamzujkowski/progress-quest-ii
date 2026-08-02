@@ -25,7 +25,7 @@ export const HeroBanner: React.FC = () => {
       <div className="hero-meters">
         <div className="meter-group">
           <div className="meter-header">
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#ef4444' }}>
+            <span className="inline-icon meter-health">
               <Heart size={12} /> HP Max
             </span>
             <strong>{character.Stats['HP Max']}</strong>
@@ -34,7 +34,7 @@ export const HeroBanner: React.FC = () => {
 
         <div className="meter-group">
           <div className="meter-header">
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#3b82f6' }}>
+            <span className="inline-icon meter-magic">
               <Sparkles size={12} /> MP Max
             </span>
             <strong>{character.Stats['MP Max']}</strong>

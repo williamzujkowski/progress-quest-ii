@@ -70,35 +70,35 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
   return (
     <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 id="modal-title" style={{ fontSize: '1.25rem', fontWeight: 700 }}>Character Roster & Save Manager</h2>
-          <button className="btn" onClick={onClose} aria-label="Close modal" style={{ padding: '0.25rem 0.5rem' }}>
+        <div className="modal-header">
+          <h2 id="modal-title">Character Roster & Save Manager</h2>
+          <button className="btn btn-compact" onClick={onClose} aria-label="Close modal">
             <X size={16} />
           </button>
         </div>
 
         {/* Current Character Save Export */}
-        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '0.5rem' }}>
+        <div className="surface-panel">
           <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
             Export Current Save ({character.Traits.Name}.pqw)
           </div>
-          <button className="btn btn-primary" onClick={handleCopyPQW} style={{ width: '100%', justifyContent: 'center' }}>
+          <button className="btn btn-primary btn-block" onClick={handleCopyPQW}>
             <Copy size={16} /> Copy Base64 .pqw Save String
           </button>
         </div>
 
         {/* Import Save String */}
-        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '0.5rem' }}>
+        <div className="surface-panel">
           <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Import Save String (.pqw)</div>
           <textarea
             value={importInput}
             onChange={(e) => setImportInput(e.target.value)}
             placeholder="Paste base64 .pqw save string here..."
             rows={3}
-            style={{ width: '100%', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid var(--panel-border)', background: 'var(--progress-bg)', color: 'var(--text-main)', fontSize: '0.875rem' }}
+            className="form-control"
           />
           {errorMsg && <div style={{ color: 'var(--accent-danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{errorMsg}</div>}
-          <button className="btn" onClick={handleImport} style={{ marginTop: '0.5rem', width: '100%', justifyContent: 'center' }}>
+          <button className="btn btn-block" onClick={handleImport} style={{ marginTop: '0.5rem' }}>
             <Upload size={16} /> Load Character
           </button>
         </div>
@@ -106,23 +106,23 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
         {/* Saved Roster List */}
         <div>
           <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Saved Character Roster</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', maxHeight: '150px', overflowY: 'auto' }}>
+          <div className="roster-list">
             {Object.values(roster).length === 0 ? (
               <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>No saved characters found.</div>
             ) : (
               Object.values(roster).map((char) => (
-                <div key={char.Traits.Name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.15)', padding: '0.5rem', borderRadius: '0.375rem' }}>
+                <div className="roster-item" key={char.Traits.Name}>
                   <div>
                     <strong style={{ fontSize: '0.875rem' }}>{char.Traits.Name}</strong>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <div className="roster-meta">
                       Lvl {char.Traits.Level} {char.Traits.Race} {char.Traits.Class}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.375rem' }}>
-                    <button className="btn" style={{ padding: '0.25rem 0.5rem' }} onClick={() => { startSession({ source: 'roster', character: char }); onClose(); }}>
+                  <div className="roster-actions">
+                    <button className="btn btn-compact" onClick={() => { startSession({ source: 'roster', character: char }); onClose(); }}>
                       Play
                     </button>
-                    <button className="btn" style={{ padding: '0.25rem 0.5rem', color: 'var(--accent-danger)' }} onClick={() => handleDeleteCharacter(char.Traits.Name)}>
+                    <button className="btn btn-compact btn-danger" aria-label={`Delete ${char.Traits.Name}`} onClick={() => handleDeleteCharacter(char.Traits.Name)}>
                       <Trash2 size={14} />
                     </button>
                   </div>
