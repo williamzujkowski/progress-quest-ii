@@ -1,7 +1,7 @@
-import { ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, IMPRESSIVE_TITLES, ITEM_ATTRIB, ITEM_OFS, KLASSES, MONSTERS, MON_MODS, OFFENSE_ATTRIB, RACES, SHIELDS, SPELLS, SPECIALS, TITLES, WEAPONS } from '../data/traits';
-import { calculateEncumbranceMax, generateInitialStats, levelUpTime } from './math';
+import { MONSTERS } from '../data/traits';
+import { calculateEncumbranceMax, generateInitialStats } from './math';
 import { RandomGenerator } from './prng';
-import { CharacterSheet, EquipSlot, InventoryItem, ProgressTask, StatsMap } from './types';
+import type { CharacterSheet, EquipSlot, InventoryItem, ProgressTask } from './types';
 
 export function createNewCharacter(name: string, race: string, klass: string, seed?: any): CharacterSheet {
   const rng = new RandomGenerator(seed ?? (name + Date.now()));

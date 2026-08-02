@@ -1,0 +1,39 @@
+import { Coins, Package } from 'lucide-react';
+import React from 'react';
+import { useGameStore } from '../state/gameStore';
+
+export const InventoryView: React.FC = () => {
+  const { character } = useGameStore();
+
+  const nonGoldItems = character.Inventory.filter((item) => item.name !== 'Gold');
+
+  return (
+    <div className="card">
+      <div className="card-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Package size={18} />
+          <span>Inventory & Loot</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: 'var(--accent-warning)', fontWeight: 'bold' }}>
+          <Coins size={16} />
+          <span>{character.Gold} GP</span>
+        </div>
+      </div>
+
+      <div className="equip-list" style={{ maxHeight: '240px', overflowY: 'auto' }}>
+        {nonGoldItems.length === 0 ? (
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontStyle: 'italic', padding: '0.5rem 0' }}>
+            Inventory is empty. Head into battle to collect loot!
+          </div>
+        ) : (
+          nonGoldItems.map((item, index) => (
+            <div className="equip-item" key={index}>
+              <span>{item.name}</span>
+              <span style={{ fontWeight: 600 }}>x{item.qty}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};

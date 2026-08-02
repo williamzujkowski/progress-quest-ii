@@ -1,4 +1,4 @@
-import { EquipSlot, PrimeStat, StatName } from '../engine/types';
+import type { EquipSlot, PrimeStat, StatName } from '../engine/types';
 
 export const PRIME_STATS: PrimeStat[] = ['STR', 'CON', 'DEX', 'INT', 'WIS', 'CHA'];
 
@@ -454,6 +454,25 @@ export const MONSTERS: MonsterDef[] = [
   { name: 'Fly', level: 0, item: '*' },
   { name: 'Hogbird', level: 3, item: 'curl' },
   { name: 'Wolog', level: 4, item: 'lemma' },
+];
+
+export const MON_MODS: string[] = [
+  '-4 fœtal *',
+  '-4 dying *',
+  '-3 crippled *',
+  '-3 baby *',
+  '-2 adolescent *',
+  '-2 very sick *',
+  '-1 lesser *',
+  '-1 undernourished *',
+  '+1 greater *',
+  '+1 * Elder',
+  '+2 war *',
+  '+2 Battle-*',
+  '+3 Were-*',
+  '+3 undead *',
+  '+4 giant *',
+  '+4 * Rex',
 ];
 
 export interface RaceDef {
