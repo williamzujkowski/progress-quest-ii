@@ -41,7 +41,8 @@ test.describe('Progress Quest terminal dashboard', () => {
     await expect(page.getByText(/Spell Book/i)).toBeVisible();
     await expect(page.locator('.tooltip-trigger')).toHaveCount(11);
     await page.locator('.tooltip-trigger').first().focus();
-    await expect(page.locator('.tooltip-trigger').first().getByRole('tooltip')).toBeVisible();
+    await expect(page.getByRole('tooltip')).toBeVisible();
+    expect(await page.getByRole('tooltip').evaluate((element) => element.parentElement === document.body)).toBe(true);
 
     // Check questing card
     await expect(page.getByText('Questing & Progression')).toBeVisible();
@@ -70,11 +71,18 @@ test.describe('Progress Quest terminal dashboard', () => {
 
     const weapon = page.locator('.tooltip-trigger', { hasText: 'Venomed Shortsword' });
     await weapon.focus();
-    await expect(weapon.getByRole('tooltip')).toContainText('Attack rating: 9');
-    await expect(page.locator('.tooltip-trigger', { hasText: 'Golden Orb of Fortune' }).getByRole('tooltip'))
-      .toContainText('Quantity carried: 3');
-    await expect(page.locator('.tooltip-trigger', { hasText: 'Rabbit Punch' }).getByRole('tooltip'))
-      .toContainText('Spell level: 2');
+    const tooltip = page.getByRole('tooltip');
+    await expect(tooltip).toContainText('Attack rating: 9');
+    expect(await tooltip.evaluate((element) => element.parentElement === document.body)).toBe(true);
+    const tooltipBox = await tooltip.boundingBox();
+    expect(tooltipBox).not.toBeNull();
+    expect(tooltipBox?.x).toBeGreaterThanOrEqual(0);
+    expect(tooltipBox?.y).toBeGreaterThanOrEqual(0);
+    expect(tooltipBox?.x + (tooltipBox?.width ?? 0)).toBeLessThanOrEqual(1280);
+    await page.locator('.tooltip-trigger', { hasText: 'Golden Orb of Fortune' }).focus();
+    await expect(page.getByRole('tooltip')).toContainText('Quantity carried: 3');
+    await page.locator('.tooltip-trigger', { hasText: 'Rabbit Punch' }).focus();
+    await expect(page.getByRole('tooltip')).toContainText('Spell level: 2');
   });
 
   test('selects and persists an OKLCH terminal theme', async ({ page }) => {

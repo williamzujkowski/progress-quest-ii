@@ -20,8 +20,17 @@ describe('item tooltip details', () => {
   it('describes loot quantity and encumbrance without claiming combat stats', () => {
     const details = describeInventoryItem('Golden Orb of Fortune', 3);
 
-    expect(details.description).toContain('ornate treasure');
+    expect(details.description).toMatch(/treasure|heirloom/);
     expect(details.effect).toContain('Quantity carried: 3');
     expect(details.effect).toContain('no direct combat effect');
+  });
+
+  it('varies flavor deterministically by item context', () => {
+    const first = describeInventoryItem('Golden Orb of Fortune', 3).description;
+    const repeat = describeInventoryItem('Golden Orb of Fortune', 3).description;
+    const other = describeInventoryItem('Golden Orb of Fortune', 4).description;
+
+    expect(repeat).toBe(first);
+    expect(other).not.toBe(first);
   });
 });
