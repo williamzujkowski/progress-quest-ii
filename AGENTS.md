@@ -141,6 +141,34 @@ When evaluating major design or architectural forks:
 
 ---
 
+## Skills Library
+
+Workflow playbooks live in `.agents/skills/<name>/SKILL.md` (conforming to the Anthropic Agent Skills specification). When a task matches a skill's intent, read its `SKILL.md` and follow its instructions:
+
+- **`ponytail`**: Lazy senior dev mode. Enforces the 7-rung decision ladder (YAGNI → reuse → stdlib → native platform → installed dep → 1 line → minimal safe code).
+- **`code-review`**: Standardized code review checklist and architectural review before merging PRs.
+- **`codebase-design`**: Designing modular components, interface boundaries, and data flow.
+- **`diagnosing-bugs`**: Root-cause bug investigation and failure trace analysis.
+- **`domain-modeling`**: Modeling RPG domain entities, stats, equipment, items, and state contracts.
+- **`grill-me` / `grilling`**: Interactive requirements grilling to resolve ambiguous user requirements.
+- **`grill-with-docs`**: Grilling requirements against official project documentation and ADRs.
+- **`handoff`**: Context packaging and handoff state summary between agent turns or subagents.
+- **`implement`**: Feature implementation workflow following red/green TDD.
+- **`improve-codebase-architecture`**: Refactoring legacy structures, decoupling dependencies, and reducing technical debt.
+- **`prototype`**: Rapid feature prototyping and spikes.
+- **`research`**: Evidence-based codebase research and synthesis.
+- **`resolving-merge-conflicts`**: Safe Git merge conflict resolution.
+- **`tdd`**: Test-driven development loop (`red → green → refactor`).
+- **`teach`**: Explaining technical decisions, architectures, and codebase mechanics.
+- **`to-spec`**: Converting raw feature requests into technical specifications.
+- **`to-tickets`**: Decomposing epics/specs into scoped GitHub issues.
+- **`triage`**: Issue classification and prioritization.
+- **`wayfinder`**: Codebase discovery, sitemap generation, and entrypoint navigation.
+- **`writing-great-skills`**: Creating or updating agent skills in `.agents/skills/`.
+
+---
+
 ## Track All Work
 
 Every piece of identified follow-up work — including scope cuts, deferred migrations, or unblocked dependencies — must be tracked explicitly via GitHub issues or dedicated task tracking. Never rely on temporary memory or code comments for long-term task tracking.
+
