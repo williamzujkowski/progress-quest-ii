@@ -1,6 +1,7 @@
 import { Coins, Package } from 'lucide-react';
 import React from 'react';
 import { useGameStore } from '../state/gameStore';
+import { ItemTooltip } from './ItemTooltip';
 
 export const InventoryView: React.FC = () => {
   const { character } = useGameStore();
@@ -28,7 +29,7 @@ export const InventoryView: React.FC = () => {
         ) : (
           nonGoldItems.map((item, index) => (
             <div className="equip-item" key={index}>
-              <span>{item.name}</span>
+              <ItemTooltip kind="inventory" name={item.name} quantity={item.qty} />
               <span style={{ fontWeight: 600 }}>x{item.qty}</span>
             </div>
           ))

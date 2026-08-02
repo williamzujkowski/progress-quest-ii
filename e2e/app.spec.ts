@@ -39,6 +39,9 @@ test.describe('Progress Quest terminal dashboard', () => {
     await expect(page.getByText('Character Loadout')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Character Loadout' })).not.toContainText('Prime Stats');
     await expect(page.getByText(/Spell Book/i)).toBeVisible();
+    await expect(page.locator('.tooltip-trigger')).toHaveCount(11);
+    await page.locator('.tooltip-trigger').first().focus();
+    await expect(page.locator('.tooltip-trigger').first().getByRole('tooltip')).toBeVisible();
 
     // Check questing card
     await expect(page.getByText('Questing & Progression')).toBeVisible();
@@ -48,6 +51,30 @@ test.describe('Progress Quest terminal dashboard', () => {
 
     // Check inventory card
     await expect(page.getByText('Inventory & Loot')).toBeVisible();
+  });
+
+  test('shows mechanics and flavor for equipment, loot, and spells', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(async () => {
+      const { useGameStore } = await import('/src/state/gameStore.ts');
+      const state = useGameStore.getState();
+      useGameStore.setState({
+        character: {
+          ...state.character,
+          Equip: { ...state.character.Equip, Weapon: 'Venomed Shortsword' },
+          Inventory: [{ name: 'Gold', qty: 0 }, { name: 'Golden Orb of Fortune', qty: 3 }],
+          Spells: [{ name: 'Rabbit Punch', level: 2 }],
+        },
+      });
+    });
+
+    const weapon = page.locator('.tooltip-trigger', { hasText: 'Venomed Shortsword' });
+    await weapon.focus();
+    await expect(weapon.getByRole('tooltip')).toContainText('Attack rating: 9');
+    await expect(page.locator('.tooltip-trigger', { hasText: 'Golden Orb of Fortune' }).getByRole('tooltip'))
+      .toContainText('Quantity carried: 3');
+    await expect(page.locator('.tooltip-trigger', { hasText: 'Rabbit Punch' }).getByRole('tooltip'))
+      .toContainText('Spell level: 2');
   });
 
   test('selects and persists an OKLCH terminal theme', async ({ page }) => {

@@ -3,6 +3,7 @@ import React from 'react';
 import { EQUIP_SLOTS } from '../data/traits';
 import type { EquipSlot } from '../engine/types';
 import { useGameStore } from '../state/gameStore';
+import { ItemTooltip } from './ItemTooltip';
 
 export const CharacterSheetView: React.FC = () => {
   const { character } = useGameStore();
@@ -28,7 +29,7 @@ export const CharacterSheetView: React.FC = () => {
                 {slot === 'Weapon' ? <Sword size={12} /> : <Shield size={12} />}
                 {slot}
               </span>
-              <span>{equipName}</span>
+              <ItemTooltip kind="equipment" name={equipName} slot={slot} />
             </div>
           );
         })}
@@ -45,7 +46,7 @@ export const CharacterSheetView: React.FC = () => {
         ) : (
           character.Spells.map((spell) => (
             <div className="equip-item" key={spell.name}>
-              <span>{spell.name}</span>
+              <ItemTooltip kind="spell" name={spell.name} level={spell.level} />
               <span className="badge" style={{ fontSize: '0.75rem' }}>Lvl {spell.level}</span>
             </div>
           ))
