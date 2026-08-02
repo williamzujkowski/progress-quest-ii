@@ -1,0 +1,164 @@
+export type DiagnosticCode =
+  | 'react_caught'
+  | 'react_uncaught'
+  | 'react_recoverable'
+  | 'window_error'
+  | 'unhandled_rejection'
+  | 'diagnostic_export_failed'
+  | 'save_export_failed';
+
+export type DiagnosticSubsystem = 'react' | 'browser' | 'diagnostics' | 'save';
+export type DiagnosticOperation = 'render' | 'recover' | 'event-handler' | 'promise' | 'export';
+export type DiagnosticSource =
+  | 'react-root'
+  | 'window-error'
+  | 'unhandled-rejection'
+  | 'recovery-ui';
+
+export interface DiagnosticEvent {
+  id: string;
+  timestamp: string;
+  severity: 'warning' | 'error';
+  code: DiagnosticCode;
+  subsystem: DiagnosticSubsystem;
+  operation: DiagnosticOperation;
+  outcome: 'failed' | 'recovered';
+  buildId: string;
+  interactionId: string;
+  source: DiagnosticSource;
+  details: { errorType: string };
+}
+
+export interface DiagnosticInput {
+  severity: DiagnosticEvent['severity'];
+  code: DiagnosticCode;
+  subsystem: DiagnosticSubsystem;
+  operation: DiagnosticOperation;
+  outcome: DiagnosticEvent['outcome'];
+  source: DiagnosticSource;
+  error?: unknown;
+}
+
+interface DiagnosticRecorderOptions {
+  buildId: string;
+  interactionId?: string;
+  now?: () => string;
+}
+
+const MAX_DIAGNOSTIC_EVENTS = 100;
+const SAFE_ERROR_TYPES = new Set([
+  'AggregateError',
+  'DOMException',
+  'Error',
+  'EvalError',
+  'RangeError',
+  'ReferenceError',
+  'SyntaxError',
+  'TypeError',
+  'URIError',
+]);
+
+function randomInteractionId(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `session-${Date.now().toString(36)}`;
+}
+
+function safeErrorType(error: unknown): string {
+  try {
+    const name: unknown = error instanceof Error ? error.name : undefined;
+    return typeof name === 'string' && SAFE_ERROR_TYPES.has(name) ? name : 'UnknownError';
+  } catch {
+    return 'UnknownError';
+  }
+}
+
+export class DiagnosticRecorder {
+  private readonly events: DiagnosticEvent[] = [];
+  private readonly seenErrors = new WeakSet<object>();
+  private readonly buildId: string;
+  private readonly interactionId: string;
+  private readonly now: () => string;
+  private sequence = 0;
+
+  public constructor({ buildId, interactionId = randomInteractionId(), now = () => new Date().toISOString() }: DiagnosticRecorderOptions) {
+    this.buildId = buildId;
+    this.interactionId = interactionId;
+    this.now = now;
+  }
+
+  public record(input: DiagnosticInput): DiagnosticEvent | null {
+    if (typeof input.error === 'object' && input.error !== null) {
+      if (this.seenErrors.has(input.error)) return null;
+      this.seenErrors.add(input.error);
+      queueMicrotask(() => this.seenErrors.delete(input.error as object));
+    }
+
+    this.sequence += 1;
+    const event = Object.freeze({
+      id: `${this.interactionId}:${this.sequence}`,
+      timestamp: this.now(),
+      severity: input.severity,
+      code: input.code,
+      subsystem: input.subsystem,
+      operation: input.operation,
+      outcome: input.outcome,
+      buildId: this.buildId,
+      interactionId: this.interactionId,
+      source: input.source,
+      details: Object.freeze({ errorType: safeErrorType(input.error) }),
+    });
+    this.events.push(event);
+    if (this.events.length > MAX_DIAGNOSTIC_EVENTS) this.events.shift();
+    return event;
+  }
+
+  public snapshot(): readonly DiagnosticEvent[] {
+    return [...this.events];
+  }
+
+  public exportReport(): string {
+    return JSON.stringify({
+      schemaVersion: 1,
+      generatedAt: this.now(),
+      buildId: this.buildId,
+      interactionId: this.interactionId,
+      events: this.events,
+    }, null, 2);
+  }
+}
+
+export const diagnostics = new DiagnosticRecorder({ buildId: __BUILD_ID__ });
+
+export function installBrowserDiagnosticHandlers(
+  target: Window = window,
+  recorder: DiagnosticRecorder = diagnostics,
+): () => void {
+  const handleError = (event: ErrorEvent) => {
+    recorder.record({
+      code: 'window_error',
+      severity: 'error',
+      subsystem: 'browser',
+      operation: 'event-handler',
+      outcome: 'failed',
+      source: 'window-error',
+      error: event.error,
+    });
+  };
+  const handleRejection = (event: PromiseRejectionEvent) => {
+    recorder.record({
+      code: 'unhandled_rejection',
+      severity: 'error',
+      subsystem: 'browser',
+      operation: 'promise',
+      outcome: 'failed',
+      source: 'unhandled-rejection',
+      error: event.reason,
+    });
+  };
+
+  target.addEventListener('error', handleError);
+  target.addEventListener('unhandledrejection', handleRejection);
+  return () => {
+    target.removeEventListener('error', handleError);
+    target.removeEventListener('unhandledrejection', handleRejection);
+  };
+}
