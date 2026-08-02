@@ -1,8 +1,12 @@
 import { create } from 'zustand';
-import { soundFX } from '../engine/audio';
-import { RandomGenerator } from '../engine/prng';
+import { soundFX } from './audio';
+import { RandomGenerator, type PRNGSeed } from '../engine/prng';
 import { createNewCharacter, equipPrice, generateEquipUpgrade, generateLootItem, generateSpellUpgrade, generateTaskDescription } from '../engine/sim';
 import type { CharacterSheet, ProgressTask, StatsMap } from '../engine/types';
+
+type StartSessionRequest =
+  | { source: 'creation'; name: string; race: string; klass: string; seed: PRNGSeed; stats?: StatsMap }
+  | { source: 'import' | 'roster'; character: CharacterSheet };
 
 export interface GameStore {
   character: CharacterSheet;
@@ -13,8 +17,7 @@ export interface GameStore {
   // Actions
   tick: (elapsedMs: number) => void;
   togglePause: () => void;
-  resetGame: (name: string, race: string, klass: string, stats?: StatsMap) => void;
-  loadCharacter: (character: CharacterSheet, source: 'import' | 'roster') => void;
+  startSession: (request: StartSessionRequest) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
@@ -29,24 +32,26 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
 
-    resetGame: (name: string, race: string, klass: string, stats?: StatsMap) => {
-      const rng = new RandomGenerator(name + Date.now());
-      const generated = createNewCharacter(name, race, klass, rng);
-      const character = stats ? { ...generated, Stats: { ...stats } } : generated;
+    startSession: (request: StartSessionRequest) => {
+      let character: CharacterSheet;
+      let rng: RandomGenerator;
+      let message: string;
+
+      if (request.source === 'creation') {
+        rng = new RandomGenerator(request.seed);
+        const generated = createNewCharacter(request.name, request.race, request.klass, rng);
+        character = request.stats ? { ...generated, Stats: { ...request.stats } } : generated;
+        message = `Character ${request.name} created!`;
+      } else {
+        character = structuredClone(request.character);
+        rng = new RandomGenerator(JSON.stringify(character));
+        message = `Loaded character ${character.Traits.Name} from ${request.source === 'import' ? 'save data' : 'roster'}.`;
+      }
+
       set({
         character,
         rng,
-        log: [`Character ${name} created!`],
-        isPaused: false,
-      });
-    },
-
-    loadCharacter: (character: CharacterSheet, source: 'import' | 'roster') => {
-      const loadedCharacter = structuredClone(character);
-      set({
-        character: loadedCharacter,
-        rng: new RandomGenerator(JSON.stringify(loadedCharacter)),
-        log: [`Loaded character ${loadedCharacter.Traits.Name} from ${source === 'import' ? 'save data' : 'roster'}.`],
+        log: [message],
         isPaused: false,
       });
     },

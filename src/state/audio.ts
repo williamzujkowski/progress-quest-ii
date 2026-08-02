@@ -1,5 +1,7 @@
 // Web Audio API Synthesizer (Ponytail: native browser API, zero audio file dependencies)
 
+type AudioWindow = Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext };
+
 class SoundFX {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
@@ -7,7 +9,7 @@ class SoundFX {
   private getContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
     if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as AudioWindow).webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
       }

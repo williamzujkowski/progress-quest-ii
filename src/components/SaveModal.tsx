@@ -10,7 +10,7 @@ interface SaveModalProps {
 }
 
 export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
-  const { character, loadCharacter } = useGameStore();
+  const { character, startSession } = useGameStore();
   const [roster, setRoster] = useState<Record<string, CharacterSheet>>({});
   const [importInput, setImportInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -21,7 +21,8 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (isOpen) {
-      saveToRoster(character);
+      const result = saveToRoster(character);
+      if (!result.ok) setErrorMsg(result.error.message);
       refreshRoster();
     }
   }, [isOpen, character]);
@@ -37,21 +38,31 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
 
   const handleImport = () => {
     setErrorMsg('');
-    try {
-      const sheet = decodePQWSave(importInput);
-      saveToRoster(sheet);
-      loadCharacter(sheet, 'import');
-      refreshRoster();
-      setImportInput('');
-      onClose();
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Failed to import save string.');
+    const result = decodePQWSave(importInput);
+    if (!result.ok) {
+      setErrorMsg(result.error.message);
+      return;
     }
+
+    const saved = saveToRoster(result.value);
+    if (!saved.ok) {
+      setErrorMsg(saved.error.message);
+      return;
+    }
+
+    startSession({ source: 'import', character: result.value });
+    refreshRoster();
+    setImportInput('');
+    onClose();
   };
 
   const handleDeleteCharacter = (name: string) => {
     if (confirm(`Are you sure you want to delete ${name}?`)) {
-      removeFromRoster(name);
+      const result = removeFromRoster(name);
+      if (!result.ok) {
+        setErrorMsg(result.error.message);
+        return;
+      }
       refreshRoster();
     }
   };
@@ -108,7 +119,7 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '0.375rem' }}>
-                    <button className="btn" style={{ padding: '0.25rem 0.5rem' }} onClick={() => { loadCharacter(char, 'roster'); onClose(); }}>
+                    <button className="btn" style={{ padding: '0.25rem 0.5rem' }} onClick={() => { startSession({ source: 'roster', character: char }); onClose(); }}>
                       Play
                     </button>
                     <button className="btn" style={{ padding: '0.25rem 0.5rem', color: 'var(--accent-danger)' }} onClick={() => handleDeleteCharacter(char.Traits.Name)}>

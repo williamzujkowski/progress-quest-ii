@@ -1,6 +1,6 @@
 import { FolderOpen, Moon, Pause, Play, Sun, UserPlus, Volume2, VolumeX } from 'lucide-react';
 import React, { useState } from 'react';
-import { soundFX } from '../engine/audio';
+import { soundFX } from '../state/audio';
 import { useGameStore } from '../state/gameStore';
 
 interface NavbarProps {

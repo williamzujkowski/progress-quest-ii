@@ -13,7 +13,7 @@ interface CharacterCreatorModalProps {
 }
 
 export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ isOpen, onClose }) => {
-  const { resetGame } = useGameStore();
+  const { startSession } = useGameStore();
 
   const [name, setName] = useState(generateRandomName());
   const [race, setRace] = useState(RACES[0].name);
@@ -58,7 +58,7 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    resetGame(name.trim(), race, klass, stats);
+    startSession({ source: 'creation', name: name.trim(), race, klass, seed: currentSeed, stats });
     onClose();
   };
 

@@ -92,6 +92,38 @@ test.describe('Progress Quest Web Application Anthropic UI & Grid Layout', () =>
     );
   });
 
+  test('imports a save through the session seam', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /Roster & Saves/i }).click();
+
+    const pqw = await page.evaluate(() => {
+      const rawRoster = localStorage.getItem('progquest_roster_v1');
+      if (!rawRoster) throw new Error('Expected the open save manager to persist the current character.');
+      const [savedCharacter] = Object.values(JSON.parse(rawRoster) as Record<string, unknown>);
+      return btoa(unescape(encodeURIComponent(JSON.stringify(savedCharacter))));
+    });
+
+    await page.getByPlaceholder('Paste base64 .pqw save string here...').fill(pqw);
+    await page.getByRole('button', { name: 'Load Character' }).click();
+
+    await expect(page.getByRole('dialog', { name: /Character Roster/i })).not.toBeVisible();
+    await expect(page.getByRole('region', { name: 'Activity Event Log' })).toContainText(
+      'Loaded character Krg from save data.',
+    );
+  });
+
+  test('preserves the active session when save import validation fails', async ({ page }) => {
+    await page.goto('/');
+    const activeName = await page.locator('.hero-name > span:not(.badge)').innerText();
+    await page.getByRole('button', { name: /Roster & Saves/i }).click();
+    await page.getByPlaceholder('Paste base64 .pqw save string here...').fill('%%%INVALID_BASE64%%%');
+    await page.getByRole('button', { name: 'Load Character' }).click();
+
+    await expect(page.getByRole('dialog', { name: /Character Roster/i })).toBeVisible();
+    await expect(page.getByText('Malformed base64 save string.')).toBeVisible();
+    await expect(page.locator('.hero-name > span:not(.badge)')).toHaveText(activeName);
+  });
+
   for (const width of [320, 375, 768]) {
     test(`keeps the full interface inside a ${width}px viewport`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });

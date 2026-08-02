@@ -6,7 +6,7 @@ import { useGameStore } from '../../state/gameStore';
 
 describe('Game Store State Machine', () => {
   beforeEach(() => {
-    useGameStore.getState().resetGame('TestHero', 'Double Hobbit', 'Ur-Paladin');
+    useGameStore.getState().startSession({ source: 'creation', name: 'TestHero', race: 'Double Hobbit', klass: 'Ur-Paladin', seed: 'test-session' });
   });
 
   it('initializes character with level 1 and valid stats', () => {
@@ -53,10 +53,22 @@ describe('Game Store State Machine', () => {
   it('uses and defensively copies an accepted complete stat roll', () => {
     const acceptedStats: StatsMap = { STR: 18, CON: 17, DEX: 16, INT: 15, WIS: 14, CHA: 13, 'HP Max': 35, 'MP Max': 27 };
 
-    useGameStore.getState().resetGame('RolledHero', 'Double Hobbit', 'Ur-Paladin', acceptedStats);
+    useGameStore.getState().startSession({ source: 'creation', name: 'RolledHero', race: 'Double Hobbit', klass: 'Ur-Paladin', seed: 'accepted-roll', stats: acceptedStats });
     acceptedStats.STR = 1;
 
     expect(useGameStore.getState().character.Stats).toEqual({ STR: 18, CON: 17, DEX: 16, INT: 15, WIS: 14, CHA: 13, 'HP Max': 35, 'MP Max': 27 });
+  });
+
+  it('replays creation deterministically from the explicit session seed', () => {
+    const request = { source: 'creation', name: 'ReplayHero', race: 'Dung Elf', klass: 'Vermineer', seed: 'replay-seed' } as const;
+    useGameStore.getState().startSession(request);
+    const firstCharacter = structuredClone(useGameStore.getState().character);
+    const firstRngState = useGameStore.getState().rng.getState();
+
+    useGameStore.getState().startSession(request);
+
+    expect(useGameStore.getState().character).toEqual(firstCharacter);
+    expect(useGameStore.getState().rng.getState()).toEqual(firstRngState);
   });
 
   it('loads a character through a complete fresh game session', () => {
@@ -64,7 +76,7 @@ describe('Game Store State Machine', () => {
     const previousRng = useGameStore.getState().rng;
     useGameStore.getState().togglePause();
 
-    useGameStore.getState().loadCharacter(loaded, 'import');
+    useGameStore.getState().startSession({ source: 'import', character: loaded });
 
     const session = useGameStore.getState();
     expect(session.character).toEqual(loaded);

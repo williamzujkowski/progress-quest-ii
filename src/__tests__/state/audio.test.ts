@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { soundFX } from '../../engine/audio';
+import { soundFX } from '../../state/audio';
 
 describe('Web Audio Synthesizer', () => {
   it('toggles mute state correctly', () => {
