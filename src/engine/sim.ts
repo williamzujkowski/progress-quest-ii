@@ -96,7 +96,7 @@ export function generateEquipUpgrade(rng: RandomGenerator, level: number): { slo
   const slot = rng.pick(EQUIP_SLOTS);
   let stuff: [string, number][];
   let better: [string, number][];
-  let worse: string[];
+  let worse: [string, number][];
 
   if (slot === 'Weapon') {
     stuff = WEAPONS;
@@ -120,7 +120,7 @@ export function generateEquipUpgrade(rng: RandomGenerator, level: number): { slo
     name = `${mod} ${name}`;
     plus -= 1;
   } else if (plus < 0) {
-    const mod = rng.pick(worse);
+    const mod = rng.pick(worse)[0];
     name = `${mod} ${name}`;
   }
 

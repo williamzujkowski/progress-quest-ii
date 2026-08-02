@@ -48,4 +48,6 @@ Owner: `src/engine/prng.ts`
 
 CI and deployment gates: dependency install, full Nexus installation verification, lint, typecheck, unit/contract tests, production build, Playwright E2E, and high-severity dependency audit. The Nexus verifier treats missing hosted-runner CLI authentication as a warning while still failing hard installation/configuration errors.
 
+Run the deterministic legacy fidelity contract separately with `npm run test:fidelity`.
+
 PR handoff gates: `npm run agents:review` and `git diff --check`.
