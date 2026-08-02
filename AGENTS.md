@@ -168,7 +168,29 @@ Workflow playbooks live in `.agents/skills/<name>/SKILL.md` (conforming to the A
 
 ---
 
-## Track All Work
+## Periodic QA, Security & Architecture Reviews
 
-Every piece of identified follow-up work — including scope cuts, deferred migrations, or unblocked dependencies — must be tracked explicitly via GitHub issues or dedicated task tracking. Never rely on temporary memory or code comments for long-term task tracking.
+Agents working in this codebase MUST perform periodic checks to maintain high code quality and accuracy:
+- **Code & Security Reviews (`code-review` / `diagnosing-bugs`)**: Before submitting a PR or merging major features, run a code and security audit verifying type safety, error boundaries, and input validation.
+- **Architecture & Vestigial Code Audits (`improve-codebase-architecture`)**: Periodically inspect module boundaries and remove deprecated, unused, or vestigial code.
+- **Accuracy Verification (`to-spec` / `domain-modeling`)**: Verify game formulas and data structures against the canonical `pq-web-src/` baseline.
+
+---
+
+## Issue Creation & Tracking Policy
+
+Every piece of identified follow-up work — including feature ideas, discovered bugs, scope cuts, or deferred refactors — MUST be tracked explicitly by creating a **GitHub Issue** (`gh issue create`).
+
+- **Ideas & Enhancements**: Immediately file an issue when discovering opportunities for UI polish, game features, or performance gains.
+- **Discovered Bugs**: File an issue detailing root-cause hypothesis and reproduction steps.
+- **No Untracked Work**: Memory notes, PR bullets, or code TODOs are NOT official tracking. If a task isn't in a GitHub issue, it gets dropped.
+
+---
+
+## Branch & Pull Request Workflow
+
+1. **Feature Branches**: All non-trivial work MUST be done on a dedicated branch (e.g. `feat/game-state-machine`, `feat/save-system`, `fix/encumbrance-calc`).
+2. **Pull Requests**: Submit PRs via `gh pr create` with clear titles, descriptions, and linked issue numbers.
+3. **Verification**: Run `npm test` and `npx tsc --noEmit` before opening or merging any PR.
+
 
