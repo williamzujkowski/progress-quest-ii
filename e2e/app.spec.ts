@@ -68,6 +68,30 @@ test.describe('Progress Quest Web Application Anthropic UI & Grid Layout', () =>
     await expect(page.locator('[data-testid="character-prime-stats"] strong')).toHaveText(acceptedStats);
   });
 
+  test('keeps character creation in the dedicated creator', async ({ page }) => {
+    await page.goto('/');
+
+    await page.getByRole('button', { name: /Roster & Saves/i }).click();
+
+    await expect(page.getByRole('dialog', { name: /Character Roster/i })).toBeVisible();
+    await expect(page.getByText('Roll New Guy')).toHaveCount(0);
+  });
+
+  test('loads a roster character through a fresh game session', async ({ page }) => {
+    await page.goto('/');
+
+    await page.getByRole('button', { name: 'Pause' }).click();
+    await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible();
+    await page.getByRole('button', { name: /Roster & Saves/i }).click();
+    await page.getByRole('button', { name: 'Play' }).click();
+
+    await expect(page.getByRole('dialog', { name: /Character Roster/i })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Activity Event Log' })).toContainText(
+      'Loaded character Krg from roster.',
+    );
+  });
+
   for (const width of [320, 375, 768]) {
     test(`keeps the full interface inside a ${width}px viewport`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });

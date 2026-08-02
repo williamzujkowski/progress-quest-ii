@@ -14,6 +14,7 @@ export interface GameStore {
   tick: (elapsedMs: number) => void;
   togglePause: () => void;
   resetGame: (name: string, race: string, klass: string, stats?: StatsMap) => void;
+  loadCharacter: (character: CharacterSheet, source: 'import' | 'roster') => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
@@ -36,6 +37,16 @@ export const useGameStore = create<GameStore>((set, get) => {
         character,
         rng,
         log: [`Character ${name} created!`],
+        isPaused: false,
+      });
+    },
+
+    loadCharacter: (character: CharacterSheet, source: 'import' | 'roster') => {
+      const loadedCharacter = structuredClone(character);
+      set({
+        character: loadedCharacter,
+        rng: new RandomGenerator(JSON.stringify(loadedCharacter)),
+        log: [`Loaded character ${loadedCharacter.Traits.Name} from ${source === 'import' ? 'save data' : 'roster'}.`],
         isPaused: false,
       });
     },

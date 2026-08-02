@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { RandomGenerator } from '../../engine/prng';
+import { createNewCharacter } from '../../engine/sim';
 import type { StatsMap } from '../../engine/types';
 import { useGameStore } from '../../state/gameStore';
 
@@ -55,5 +57,23 @@ describe('Game Store State Machine', () => {
     acceptedStats.STR = 1;
 
     expect(useGameStore.getState().character.Stats).toEqual({ STR: 18, CON: 17, DEX: 16, INT: 15, WIS: 14, CHA: 13, 'HP Max': 35, 'MP Max': 27 });
+  });
+
+  it('loads a character through a complete fresh game session', () => {
+    const loaded = createNewCharacter('ImportedHero', 'Half Halfling', 'Ur-Paladin', new RandomGenerator('saved-character'));
+    const previousRng = useGameStore.getState().rng;
+    useGameStore.getState().togglePause();
+
+    useGameStore.getState().loadCharacter(loaded, 'import');
+
+    const session = useGameStore.getState();
+    expect(session.character).toEqual(loaded);
+    expect(session.character).not.toBe(loaded);
+    expect(session.rng).not.toBe(previousRng);
+    expect(session.isPaused).toBe(false);
+    expect(session.log).toEqual(['Loaded character ImportedHero from save data.']);
+
+    loaded.Gold = 999;
+    expect(session.character.Gold).not.toBe(999);
   });
 });

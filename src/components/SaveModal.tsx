@@ -1,6 +1,5 @@
-import { Copy, Trash2, Upload, UserPlus, X } from 'lucide-react';
+import { Copy, Trash2, Upload, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { KLASSES, RACES } from '../data/traits';
 import type { CharacterSheet } from '../engine/types';
 import { useGameStore } from '../state/gameStore';
 import { decodePQWSave, encodePQWSave, loadRoster, removeFromRoster, saveToRoster } from '../state/saveManager';
@@ -11,15 +10,10 @@ interface SaveModalProps {
 }
 
 export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
-  const { character, resetGame } = useGameStore();
+  const { character, loadCharacter } = useGameStore();
   const [roster, setRoster] = useState<Record<string, CharacterSheet>>({});
   const [importInput, setImportInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-
-  // New Guy Form state
-  const [newName, setNewName] = useState('');
-  const [newRace, setNewRace] = useState(RACES[0].name);
-  const [newKlass, setNewKlass] = useState(KLASSES[0].name);
 
   const refreshRoster = () => {
     setRoster(loadRoster());
@@ -46,21 +40,13 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
     try {
       const sheet = decodePQWSave(importInput);
       saveToRoster(sheet);
-      useGameStore.setState({ character: sheet, log: [`Loaded character ${sheet.Traits.Name} from save data.`] });
+      loadCharacter(sheet, 'import');
       refreshRoster();
       setImportInput('');
       onClose();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to import save string.');
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to import save string.');
     }
-  };
-
-  const handleCreateCharacter = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newName.trim()) return;
-    resetGame(newName.trim(), newRace, newKlass);
-    setNewName('');
-    onClose();
   };
 
   const handleDeleteCharacter = (name: string) => {
@@ -106,34 +92,6 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Roll New Guy */}
-        <form onSubmit={handleCreateCharacter} style={{ background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>Roll New Guy</div>
-          <input
-            type="text"
-            placeholder="Character Name"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            required
-            style={{ padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid var(--panel-border)', background: 'var(--progress-bg)', color: 'var(--text-main)', fontSize: '0.875rem' }}
-          />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-            <select value={newRace} onChange={(e) => setNewRace(e.target.value)} style={{ padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid var(--panel-border)', background: 'var(--progress-bg)', color: 'var(--text-main)' }}>
-              {RACES.map((r) => (
-                <option key={r.name} value={r.name}>{r.name}</option>
-              ))}
-            </select>
-            <select value={newKlass} onChange={(e) => setNewKlass(e.target.value)} style={{ padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid var(--panel-border)', background: 'var(--progress-bg)', color: 'var(--text-main)' }}>
-              {KLASSES.map((k) => (
-                <option key={k.name} value={k.name}>{k.name}</option>
-              ))}
-            </select>
-          </div>
-          <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center' }}>
-            <UserPlus size={16} /> Roll & Start Adventure
-          </button>
-        </form>
-
         {/* Saved Roster List */}
         <div>
           <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Saved Character Roster</div>
@@ -150,7 +108,7 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '0.375rem' }}>
-                    <button className="btn" style={{ padding: '0.25rem 0.5rem' }} onClick={() => { useGameStore.setState({ character: char }); onClose(); }}>
+                    <button className="btn" style={{ padding: '0.25rem 0.5rem' }} onClick={() => { loadCharacter(char, 'roster'); onClose(); }}>
                       Play
                     </button>
                     <button className="btn" style={{ padding: '0.25rem 0.5rem', color: 'var(--accent-danger)' }} onClick={() => handleDeleteCharacter(char.Traits.Name)}>
