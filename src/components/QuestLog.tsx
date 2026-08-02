@@ -9,7 +9,7 @@ export const QuestLog: React.FC = () => {
   const plotPct = Math.min(100, Math.floor((character.Plot.currentProgress / character.Plot.maxProgress) * 100));
 
   return (
-    <section className="card" aria-labelledby="quest-log-heading">
+    <section className="card quest-card" aria-labelledby="quest-log-heading">
       <div className="card-header">
         <h2 id="quest-log-heading">Questing & Progression</h2>
         <span className="badge badge-warning">Act {character.Plot.act}</span>

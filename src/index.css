@@ -408,8 +408,9 @@ input[type='radio'] {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  min-height: 260px;
-  height: 100%;
+  height: 280px;
+  min-height: 0;
+  max-height: 280px;
   overflow-y: auto;
   border: 1px solid var(--panel-border);
   border-radius: 0.35rem;
@@ -417,6 +418,11 @@ input[type='radio'] {
   padding: var(--space-2);
   font-family: var(--font-mono);
   font-size: 0.78rem;
+}
+
+.inventory-list {
+  max-height: 240px;
+  overflow-y: auto;
 }
 
 .log-entry {
@@ -496,6 +502,49 @@ textarea.form-control { resize: vertical; }
 
 @media (max-width: 1024px) {
   .main-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1025px) and (min-height: 760px) {
+  .app-container {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .main-grid {
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .main-grid > *,
+  .quest-column,
+  .activity-card {
+    min-height: 0;
+    max-height: 100%;
+  }
+
+  .character-card {
+    overflow-y: auto;
+  }
+
+  .quest-column {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .activity-card,
+  .inventory-card {
+    overflow: hidden;
+  }
+
+  .log-feed,
+  .inventory-list {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
 }
 
 @media (max-width: 640px) {

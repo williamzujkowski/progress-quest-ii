@@ -1,5 +1,25 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+
+const loadDenseDashboard = async (page: Page) => {
+  // ponytail: seed through Zustand's exported API; a production-only fixture route would add more test machinery.
+  await page.evaluate(async () => {
+    const { useGameStore } = await import('/src/state/gameStore.ts');
+    const state = useGameStore.getState();
+    useGameStore.setState({
+      character: {
+        ...state.character,
+        Inventory: [
+          { name: 'Gold', qty: 0 },
+          ...Array.from({ length: 80 }, (_, index) => ({ name: `Loot item ${index + 1}`, qty: index + 1 })),
+        ],
+      },
+      log: Array.from({ length: 50 }, (_, index) => `Event ${50 - index}`),
+    });
+  });
+  await expect(page.locator('.log-entry')).toHaveCount(50);
+  await expect(page.getByRole('region', { name: 'Inventory items' }).locator('.equip-item')).toHaveCount(80);
+};
 
 test.describe('Progress Quest terminal dashboard', () => {
   test('renders full game interface with Hero Banner, character sheet, quest log, and spell book', async ({ page }) => {
@@ -61,6 +81,51 @@ test.describe('Progress Quest terminal dashboard', () => {
     expect(reachedThemePicker).toBe(true);
     await expect(themePicker).toHaveCSS('outline-style', 'solid');
   });
+
+  test('keeps a dense desktop dashboard within one viewport and follows latest activity', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await loadDenseDashboard(page);
+
+    const log = page.getByRole('region', { name: 'Activity Event Log' });
+    const inventory = page.getByRole('region', { name: 'Inventory items' });
+    const character = page.getByRole('region', { name: 'Character Sheet' });
+    const metrics = {
+      page: await page.evaluate(() => ({ height: document.documentElement.scrollHeight, viewport: window.innerHeight })),
+      log: await log.evaluate((element) => ({ client: element.clientHeight, scroll: element.scrollHeight, top: element.scrollTop })),
+      inventory: await inventory.evaluate((element) => ({ client: element.clientHeight, scroll: element.scrollHeight })),
+    };
+
+    expect(metrics.page.height).toBeLessThanOrEqual(metrics.page.viewport);
+    expect(metrics.log.scroll).toBeGreaterThan(metrics.log.client);
+    expect(metrics.log.top + metrics.log.client).toBeGreaterThanOrEqual(metrics.log.scroll - 1);
+    expect(metrics.inventory.scroll).toBeGreaterThan(metrics.inventory.client);
+    await character.focus();
+    await expect(character).toBeFocused();
+    await expect(log.locator('.log-entry').last()).toContainText('Event 50');
+  });
+
+  for (const width of [320, 375, 768]) {
+    test(`bounds growing dashboard feeds at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/');
+      await loadDenseDashboard(page);
+
+      const log = page.getByRole('region', { name: 'Activity Event Log' });
+      const inventory = page.getByRole('region', { name: 'Inventory items' });
+      const metrics = {
+        page: await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth })),
+        log: await log.evaluate((element) => ({ client: element.clientHeight, scroll: element.scrollHeight, top: element.scrollTop })),
+        inventory: await inventory.evaluate((element) => ({ client: element.clientHeight, scroll: element.scrollHeight })),
+      };
+
+      expect(metrics.page.scroll).toBeLessThanOrEqual(metrics.page.client);
+      expect(metrics.log.scroll).toBeGreaterThan(metrics.log.client);
+      expect(metrics.log.top + metrics.log.client).toBeGreaterThanOrEqual(metrics.log.scroll - 1);
+      expect(metrics.inventory.scroll).toBeGreaterThan(metrics.inventory.client);
+      await expect(log.locator('.log-entry').last()).toContainText('Event 50');
+    });
+  }
 
   for (const theme of ['remarque-dark', 'remarque-light', 'progros']) {
     test(`${theme} has no detectable WCAG A or AA violations`, async ({ page }) => {

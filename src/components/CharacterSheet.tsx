@@ -8,7 +8,7 @@ export const CharacterSheetView: React.FC = () => {
   const { character } = useGameStore();
 
   return (
-    <section className="card" aria-labelledby="char-sheet-heading">
+    <section className="card character-card" aria-labelledby="char-sheet-heading" tabIndex={0}>
       <div className="card-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <User size={18} />

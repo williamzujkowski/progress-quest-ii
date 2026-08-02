@@ -1,9 +1,14 @@
 import { Scroll } from 'lucide-react';
-import React from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { useGameStore } from '../state/gameStore';
 
 export const LogFeed: React.FC = () => {
   const { log } = useGameStore();
+  const feedRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight;
+  }, [log]);
 
   const getLogTag = (entry: string) => {
     if (entry.includes('looted') || entry.includes('Item')) return <span className="log-tag tag-loot">Loot</span>;
@@ -15,7 +20,7 @@ export const LogFeed: React.FC = () => {
   };
 
   return (
-    <section className="card" aria-labelledby="log-heading" style={{ flex: 1 }}>
+    <section className="card activity-card" aria-labelledby="log-heading">
       <div className="card-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Scroll size={18} />
@@ -24,13 +29,14 @@ export const LogFeed: React.FC = () => {
       </div>
 
       <div
+        ref={feedRef}
         className="log-feed"
         role="region"
         tabIndex={0}
         aria-label="Activity Event Log"
-        style={{ height: '100%', minHeight: '260px' }}
+        aria-live="polite"
       >
-        {log.map((entry, idx) => (
+        {log.toReversed().map((entry, idx) => (
           <div className="log-entry log-entry-animated" key={idx}>
             {getLogTag(entry)}
             <span>{entry}</span>
