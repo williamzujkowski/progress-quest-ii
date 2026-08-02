@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { RandomGenerator } from '../../engine/prng';
-import { createNewCharacter } from '../../engine/sim';
+import { createNewCharacter, generateLootItem } from '../../engine/sim';
 import type { StatsMap } from '../../engine/types';
 import { useGameStore } from '../../state/gameStore';
 
@@ -48,6 +48,76 @@ describe('Game Store State Machine', () => {
     const updatedChar = useGameStore.getState().character;
     expect(updatedChar.Task.elapsedMs).toBeLessThan(updatedChar.Task.durationMs);
     expect(useGameStore.getState().log.length).toBeGreaterThan(0);
+  });
+
+  it('chooses the next task from gold earned by the completed transition', () => {
+    const character = structuredClone(useGameStore.getState().character);
+    character.Gold = 0;
+    character.Inventory = [
+      { name: 'Gold', qty: 0 },
+      { name: 'Ancient Widget', qty: 4 },
+    ];
+    character.Task = {
+      description: 'Selling loot...',
+      durationMs: 1,
+      elapsedMs: 0,
+      type: 'selling',
+    };
+    useGameStore.setState({ character, rng: new RandomGenerator('sale-transition') });
+
+    useGameStore.getState().tick(1);
+
+    const updated = useGameStore.getState().character;
+    expect(updated.Gold).toBeGreaterThanOrEqual(35);
+    expect(updated.Task.type).toBe('buying');
+  });
+
+  it('chooses the next task from gold spent by the completed transition', () => {
+    const character = structuredClone(useGameStore.getState().character);
+    character.Gold = 35;
+    character.Inventory = [{ name: 'Gold', qty: 0 }];
+    character.Task = {
+      description: 'Buying equipment...',
+      durationMs: 1,
+      elapsedMs: 0,
+      type: 'buying',
+    };
+    useGameStore.setState({ character, rng: new RandomGenerator('purchase-transition') });
+
+    useGameStore.getState().tick(1);
+
+    const updated = useGameStore.getState().character;
+    expect(updated.Gold).toBe(0);
+    expect(updated.Task.type).toBe('kill');
+  });
+
+  it('does not mutate a previous inventory snapshot when loot stacks', () => {
+    const lootSeed = 'stacked-loot';
+    const lootName = generateLootItem(new RandomGenerator(lootSeed));
+    const character = structuredClone(useGameStore.getState().character);
+    character.Inventory = [
+      { name: 'Gold', qty: 0 },
+      { name: lootName, qty: 1 },
+      { name: 'Unrelated Trinket', qty: 1 },
+    ];
+    character.Quest = { ...character.Quest, currentProgress: 0, maxProgress: 99 };
+    character.Task = {
+      description: 'Executing test monster...',
+      durationMs: 1,
+      elapsedMs: 0,
+      type: 'kill',
+    };
+    const previousItem = character.Inventory[1];
+    const unrelatedItem = character.Inventory[2];
+    useGameStore.setState({ character, rng: new RandomGenerator(lootSeed) });
+
+    useGameStore.getState().tick(1);
+
+    const updatedItem = useGameStore.getState().character.Inventory.find((item) => item.name === lootName);
+    expect(previousItem?.qty).toBe(1);
+    expect(updatedItem?.qty).toBe(2);
+    expect(updatedItem).not.toBe(previousItem);
+    expect(useGameStore.getState().character.Inventory[2]).toBe(unrelatedItem);
   });
 
   it('uses and defensively copies an accepted complete stat roll', () => {

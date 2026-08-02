@@ -75,7 +75,7 @@ export const useGameStore = create<GameStore>((set, get) => {
 
       // Task complete! Process outcome
       let newLog = [...log];
-      let newInventory = [...character.Inventory];
+      let newInventory = character.Inventory;
       let newGold = character.Gold;
       let newQuest = { ...character.Quest };
       let newPlot = { ...character.Plot };
@@ -86,11 +86,11 @@ export const useGameStore = create<GameStore>((set, get) => {
 
       if (task.type === 'kill') {
         const itemLoot = generateLootItem(rng);
-        const existing = newInventory.find((i) => i.name === itemLoot);
-        if (existing) {
-          existing.qty += 1;
+        const existingIndex = newInventory.findIndex((item) => item.name === itemLoot);
+        if (existingIndex >= 0) {
+          newInventory = newInventory.map((item, index) => (index === existingIndex ? { ...item, qty: item.qty + 1 } : item));
         } else {
-          newInventory.push({ name: itemLoot, qty: 1 });
+          newInventory = [...newInventory, { name: itemLoot, qty: 1 }];
         }
         newLog.unshift(`Defeated monster and looted ${itemLoot}.`);
 
@@ -142,12 +142,19 @@ export const useGameStore = create<GameStore>((set, get) => {
       }
 
       // Generate next task
-      const nextTaskInfo = generateTaskDescription(rng, {
+      const transitionedCharacter: CharacterSheet = {
         ...character,
-        Inventory: newInventory,
-        Stats: newStats,
         Traits: newTraits,
-      });
+        Stats: newStats,
+        Equip: newEquip,
+        Spells: newSpells,
+        Inventory: newInventory,
+        Gold: newGold,
+        Quest: newQuest,
+        Plot: newPlot,
+        Task: task,
+      };
+      const nextTaskInfo = generateTaskDescription(rng, transitionedCharacter);
 
       const nextTask: ProgressTask = {
         description: nextTaskInfo.description,
@@ -158,15 +165,7 @@ export const useGameStore = create<GameStore>((set, get) => {
 
       set({
         character: {
-          ...character,
-          Traits: newTraits,
-          Stats: newStats,
-          Equip: newEquip,
-          Spells: newSpells,
-          Inventory: newInventory,
-          Gold: newGold,
-          Quest: newQuest,
-          Plot: newPlot,
+          ...transitionedCharacter,
           Task: nextTask,
         },
         log: newLog.slice(0, 50),
