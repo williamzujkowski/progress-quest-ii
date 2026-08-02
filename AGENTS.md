@@ -163,6 +163,10 @@ Workflow playbooks live in `.agents/skills/<name>/SKILL.md` (conforming to the A
 - **`to-spec`**: Converting raw feature requests into technical specifications.
 - **`to-tickets`**: Decomposing epics/specs into scoped GitHub issues.
 - **`triage`**: Issue classification and prioritization.
+- **`ui-accessibility-audit`**: Enforcing WCAG 2.1 AA/AAA contrast ratios, keyboard accessibility, and ARIA attributes across UI components.
+- **`ui-design-tokens`**: Management of OKLCH color space design tokens, theme switching (Remarque & OKLCH Terminal Themes), and typographic standards.
+- **`ui-responsive-layout`**: Responsive layout strategies for multi-surface desktop and mobile viewports.
+- **`ui-visual-composition`**: Guidelines for high-hierarchy, density-optimized, and non-generic web UI layout and visual composition.
 - **`wayfinder`**: Codebase discovery, sitemap generation, and entrypoint navigation.
 - **`writing-great-skills`**: Creating or updating agent skills in `.agents/skills/`.
 
