@@ -19,8 +19,13 @@ function downloadText(filename: string, contents: string, type: string): void {
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
+  document.body.append(anchor);
+  try {
+    anchor.click();
+  } finally {
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
 }
 
 export class RuntimeErrorBoundary extends React.Component<RuntimeErrorBoundaryProps, RuntimeErrorBoundaryState> {
@@ -67,10 +72,11 @@ export class RuntimeErrorBoundary extends React.Component<RuntimeErrorBoundaryPr
         <section className="recovery-panel" aria-labelledby="recovery-title">
           <p className="eyebrow">PROGQUEST RUNTIME RECOVERY</p>
           <h1 id="recovery-title" ref={this.headingRef} tabIndex={-1}>The quest process encountered an enthusiasm.</h1>
+          <p className="recovery-code">*** STOP: PROGQUEST_INTERFACE_EXCEPTION ***</p>
           <p>The interface stopped, which is dramatic. Your locally saved characters were not deleted.</p>
           <p>No report has been transmitted. You may download a deliberately boring, redacted diagnostic file.</p>
           <div className="recovery-actions">
-            <button className="btn btn-primary" type="button" onClick={this.retry}><RotateCcw size={16} /> Retry interface</button>
+            <button className="btn" type="button" onClick={this.retry}><RotateCcw size={16} /> Retry interface</button>
             <button className="btn" type="button" onClick={() => window.location.reload()}><RefreshCw size={16} /> Reload page</button>
             <button className="btn" type="button" onClick={this.downloadSave}><Save size={16} /> Download current save</button>
             <button className="btn" type="button" onClick={this.downloadDiagnostics}><Download size={16} /> Download diagnostics</button>

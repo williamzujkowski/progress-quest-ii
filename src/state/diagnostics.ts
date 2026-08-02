@@ -10,7 +10,6 @@ export type DiagnosticCode =
 export type DiagnosticSubsystem = 'react' | 'browser' | 'diagnostics' | 'save';
 export type DiagnosticOperation = 'render' | 'recover' | 'event-handler' | 'promise' | 'export';
 export type DiagnosticSource =
-  | 'react-boundary'
   | 'react-root'
   | 'window-error'
   | 'unhandled-rejection'
@@ -47,14 +46,28 @@ interface DiagnosticRecorderOptions {
 }
 
 const MAX_DIAGNOSTIC_EVENTS = 100;
+const SAFE_ERROR_TYPES = new Set([
+  'AggregateError',
+  'DOMException',
+  'Error',
+  'EvalError',
+  'RangeError',
+  'ReferenceError',
+  'SyntaxError',
+  'TypeError',
+  'URIError',
+]);
 
 function randomInteractionId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `session-${Date.now().toString(36)}`;
 }
 
 function safeErrorType(error: unknown): string {
-  const name = error instanceof Error ? error.name : typeof error;
-  return name.replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 40) || 'UnknownError';
+  try {
+    return error instanceof Error && SAFE_ERROR_TYPES.has(error.name) ? error.name : 'UnknownError';
+  } catch {
+    return 'UnknownError';
+  }
 }
 
 export class DiagnosticRecorder {
@@ -75,6 +88,7 @@ export class DiagnosticRecorder {
     if (typeof input.error === 'object' && input.error !== null) {
       if (this.seenErrors.has(input.error)) return null;
       this.seenErrors.add(input.error);
+      queueMicrotask(() => this.seenErrors.delete(input.error as object));
     }
 
     this.sequence += 1;

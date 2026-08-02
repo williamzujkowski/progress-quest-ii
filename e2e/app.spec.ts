@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { readFile } from 'node:fs/promises';
 
 const loadDenseDashboard = async (page: Page) => {
   // ponytail: seed through Zustand's exported API; a production-only fixture route would add more test machinery.
@@ -39,14 +40,42 @@ test.describe('Progress Quest terminal dashboard', () => {
     expect(await page.evaluate(() => localStorage.getItem('progquest_roster_v1'))).toBe('{"Krg":{"still":"saved"}}');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Retry interface' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Reload page' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Download current save' })).toBeFocused();
     const saveDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Download current save' }).click();
-    expect((await saveDownload).suggestedFilename()).toBe('progquest-current.pqw');
+    await page.keyboard.press('Enter');
+    const savedFile = await saveDownload;
+    expect(savedFile.suggestedFilename()).toBe('progquest-current.pqw');
+    const savedPath = await savedFile.path();
+    expect(savedPath).not.toBeNull();
+    expect(Buffer.from(await readFile(savedPath!, 'utf8'), 'base64').toString('utf8')).toContain('"Traits"');
 
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Download diagnostics' })).toBeFocused();
     const diagnosticDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Download diagnostics' }).click();
-    expect((await diagnosticDownload).suggestedFilename()).toBe('progquest-diagnostics.json');
+    await page.keyboard.press('Enter');
+    const diagnosticFile = await diagnosticDownload;
+    expect(diagnosticFile.suggestedFilename()).toBe('progquest-diagnostics.json');
+    const diagnosticPath = await diagnosticFile.path();
+    expect(diagnosticPath).not.toBeNull();
+    const diagnosticReport = JSON.parse(await readFile(diagnosticPath!, 'utf8')) as { events: Array<{ code: string }> };
+    expect(diagnosticReport.events.some((event) => event.code === 'react_caught')).toBe(true);
     await expect(page.getByRole('status')).toHaveText(/nothing was uploaded/i);
+
+    for (const theme of ['remarque-dark', 'remarque-light', 'progros'] as const) {
+      await page.evaluate(async (themeId) => {
+        const { applyTheme } = await import('/src/theme.ts');
+        applyTheme(document.documentElement, themeId);
+      }, theme);
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .analyze();
+      expect(results.violations).toEqual([]);
+    }
   });
 
   test('captures an unhandled rejection without exporting its private message', async ({ page }) => {

@@ -44,6 +44,37 @@ describe('runtime diagnostics', () => {
     expect(recorder.snapshot()[0]?.details).toEqual({ errorType: 'TypeError' });
   });
 
+  it('does not trust a caller-controlled Error name', () => {
+    const recorder = new DiagnosticRecorder({ buildId: 'test', interactionId: 'hostile-error' });
+    const error = new Error('private details');
+    error.name = 'KrgTokenSecret';
+
+    recorder.record(diagnostic(error));
+
+    expect(recorder.snapshot()[0]?.details).toEqual({ errorType: 'UnknownError' });
+    expect(recorder.exportReport()).not.toContain('KrgTokenSecret');
+  });
+
+  it('cannot be broken by a throwing Error name getter', () => {
+    const recorder = new DiagnosticRecorder({ buildId: 'test', interactionId: 'hostile-getter' });
+    const error = new Error('private details');
+    Object.defineProperty(error, 'name', { get: () => { throw new Error('getter exploded'); } });
+
+    expect(() => recorder.record(diagnostic(error))).not.toThrow();
+    expect(recorder.snapshot()[0]?.details).toEqual({ errorType: 'UnknownError' });
+  });
+
+  it('records a later rethrow after suppressing same-turn duplicates', async () => {
+    const recorder = new DiagnosticRecorder({ buildId: 'test', interactionId: 'later-rethrow' });
+    const error = new Error('private details');
+
+    expect(recorder.record(diagnostic(error))).not.toBeNull();
+    expect(recorder.record(diagnostic(error))).toBeNull();
+    await Promise.resolve();
+    expect(recorder.record(diagnostic(error))).not.toBeNull();
+    expect(recorder.snapshot()).toHaveLength(2);
+  });
+
   it('captures browser errors and unhandled rejections without suppressing them', () => {
     const recorder = new DiagnosticRecorder({ buildId: 'test', interactionId: 'browser-events' });
     const removeHandlers = installBrowserDiagnosticHandlers(window, recorder);

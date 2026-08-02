@@ -499,23 +499,24 @@ textarea.form-control { resize: vertical; }
   display: grid;
   place-items: center;
   padding: clamp(1rem, 5vw, 4rem);
-  background: var(--bg-primary, #101417);
-  color: var(--text-primary, #f1f5f9);
+  background: var(--bg-color);
+  color: var(--text-main);
 }
 
 .recovery-panel {
   width: min(42rem, 100%);
   padding: clamp(1.25rem, 4vw, 2.5rem);
-  border: 1px solid var(--border-strong, #64748b);
-  border-left: 0.4rem solid var(--accent-danger, #ef4444);
-  background: var(--bg-surface, #182026);
-  box-shadow: var(--shadow-lg, 0 1rem 3rem rgb(0 0 0 / 35%));
+  border: 1px solid var(--panel-border);
+  border-left: 0.4rem solid var(--accent-danger);
+  background: var(--panel-bg);
+  box-shadow: 0 1rem 3rem var(--shadow-color);
 }
 
 .recovery-panel h1 { margin: 0.4rem 0 1rem; font-size: clamp(1.5rem, 5vw, 2.5rem); }
 .recovery-panel p { line-height: 1.6; }
+.recovery-code { overflow-wrap: anywhere; color: var(--accent-danger); font-family: var(--font-mono); font-weight: 700; }
 .recovery-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.5rem; }
-.recovery-status { min-height: 1.6em; margin-bottom: 0; color: var(--text-muted, #cbd5e1); }
+.recovery-status { min-height: 1.6em; margin-bottom: 0; color: var(--text-muted); }
 .picker-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
 .picker-list { max-height: 140px; overflow-y: auto; padding: var(--space-1); }
 .picker-option { display: flex; align-items: center; gap: var(--space-1); min-height: 44px; font-size: 0.82rem; }
