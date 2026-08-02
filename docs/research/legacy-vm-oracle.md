@@ -99,6 +99,8 @@ Those representations come directly from the new-character sheet ([`newguy.js:11
 
 Pass the fixture into the context as a JSON string and run `game = JSON.parse(fixtureJson)`. Do not interpolate values into source. Immediately call `randseed(game.seed)` or `randseed(fixtureRng)` before the transition. The legacy Alea state is exactly `[s0, s1, s2, c]`, and `randseed()` both restores and returns it ([`config.js:101-139`](../../pq-web-src/config.js#L101-L139)). The modern PRNG already exposes the same four-number get/set state seam ([`src/engine/prng.ts:24-29`](../../src/engine/prng.ts#L24-L29), [`src/engine/prng.ts:92-98`](../../src/engine/prng.ts#L92-L98)), so the post-transition tuple can later be compared without inventing a seed conversion.
 
+The four values must come from `randseed()`/`Alea.state()`, not arbitrary decimals. Alea-emitted `s0`, `s1`, and `s2` values are 2^-32-aligned; otherwise legacy `seed.uint32() % n` can return a fractional result. The harness rejects states that Alea could not have serialized.
+
 Construct the real data facades after assigning `game`:
 
 - `ProgressBar` for `ExpBar`, `EncumBar`, `PlotBar`, `QuestBar`, and `TaskBar`;
@@ -164,6 +166,7 @@ Use this stable shape:
     queue: [...game.queue]
   },
   xp: { positionSeconds: ExpBar.position, maxSeconds: ExpBar.max },
+  encumbrance: { positionCubits: EncumBar.position, maxCubits: EncumBar.max },
   quest: {
     caption: game.bestquest,
     positionSeconds: QuestBar.position,
@@ -181,14 +184,22 @@ Use this stable shape:
   inventory: game.Inventory.map(([name, qty]) => [name, Number(qty)]),
   equipment: K.Equips.map(slot => [slot, game.Equips[slot]]),
   spells: game.Spells.map(([name, roman]) => [name, roman, toArabic(roman)]),
+  best: {
+    stat: game.beststat,
+    spell: game.bestspell,
+    equipment: game.bestequip
+  },
   log: [...observedLog],
+  savedRng: game.seed,
   rng: randseed()
 }
 ```
 
 Preserve array order. Inventory index 0 is Gold and market logic sells index 1 ([`main.js:310-324`](../../pq-web-src/main.js#L310-L324)); quest history is appended and capped in order ([`main.js:719-723`](../../pq-web-src/main.js#L719-L723)); equipment slot order comes from `K.Equips` ([`config.js:325-335`](../../pq-web-src/config.js#L325-L335)); and spells are ordered list entries. Sorting any of them would discard observable behavior.
 
-Keep raw units: task is milliseconds, while XP, quest, plot, and total elapsed are seconds. Exclude derived `percent`, `remaining`, `time`, and `hint` fields; `ProgressBar.reposition()` recomputes them from position/max and presentation templates ([`main.js:406-425`](../../pq-web-src/main.js#L406-L425)). Also exclude save timestamps, cached `bestspell`/`beststat`, online fields, and the timestamp-keyed `game.log`. They are either wall-clock data, presentation caches, or outside the one-task fidelity contract.
+Keep raw units: task is milliseconds, XP/quest/plot/elapsed are seconds, and encumbrance is cubits. `savedRng` records the persisted `game.seed`: it remains the prior snapshot when no save occurs, or becomes the state captured by `SaveGame()` during a boundary transition. `rng` records the live state after `Dequeue()` finishes, so later random consumption remains observable. The `best` fields make persisted cache behavior observable: `SaveGame()` recalculates stat/spell metadata, while `WinEquip()` updates equipment metadata ([`main.js:618-620`](../../pq-web-src/main.js#L618-L620), [`main.js:1064-1095`](../../pq-web-src/main.js#L1064-L1095)).
+
+Exclude derived `percent`, `remaining`, `time`, and `hint` fields; `ProgressBar.reposition()` recomputes them from position/max and presentation templates ([`main.js:406-425`](../../pq-web-src/main.js#L406-L425)). Also exclude save timestamps, online fields, and the timestamp-keyed `game.log`. They are wall-clock data or outside the one-task fidelity contract.
 
 ## Minimality and acceptance check
 

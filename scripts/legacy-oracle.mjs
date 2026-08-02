@@ -15,7 +15,7 @@ function isSerializedAleaState(state) {
       && Number.isInteger(value * aleaScale))
     && Number.isInteger(state[3])
     && state[3] >= 0
-    && state[3] <= 2091639;
+    && state[3] < 2091639;
 }
 
 function createContext() {
@@ -117,6 +117,10 @@ export function runLegacyTransition({ sheet }) {
           positionSeconds: game.ExpBar.position,
           maxSeconds: game.ExpBar.max
         },
+        encumbrance: {
+          positionCubits: game.EncumBar.position,
+          maxCubits: game.EncumBar.max
+        },
         quest: {
           caption: game.bestquest,
           positionSeconds: game.QuestBar.position,
@@ -136,7 +140,13 @@ export function runLegacyTransition({ sheet }) {
         inventory: game.Inventory.map(function (row) { return [row[0], Number(row[1])]; }),
         equipment: K.Equips.map(function (slot) { return [slot, game.Equips[slot]]; }),
         spells: game.Spells.map(function (row) { return [row[0], row[1], toArabic(row[1])]; }),
+        best: {
+          stat: game.beststat,
+          spell: game.bestspell,
+          equipment: game.bestequip
+        },
         log: observedLog,
+        savedRng: game.seed,
         rng: randseed()
       };
       function assertFiniteNumbers(value, path) {

@@ -69,6 +69,7 @@
       "queue": []
     },
     "xp": { "positionSeconds": 6, "maxSeconds": 1269 },
+    "encumbrance": { "positionCubits": 1, "maxCubits": 20 },
     "quest": {
       "caption": "Test quest",
       "positionSeconds": 6,
@@ -98,7 +99,9 @@
       ["Sollerets", ""]
     ],
     "spells": [],
+    "best": { "stat": "STR 10", "spell": "", "equipment": "Sharp Rock" },
     "log": ["Gained a rat tail", "Executing a Grid Bug..."],
+    "savedRng": [0.0011501498520374298, 0.8276778745930642, 0.24009850597940385, 1],
     "rng": [0.04499438125640154, 0.8823704484384507, 0.9573474917560816, 1714361]
   }
 }
