@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { soundFX } from '../engine/audio';
 import { RandomGenerator } from '../engine/prng';
-import { createNewCharacter, generateTaskDescription } from '../engine/sim';
+import { createNewCharacter, equipPrice, generateEquipUpgrade, generateLootItem, generateSpellUpgrade, generateTaskDescription } from '../engine/sim';
 import type { CharacterSheet, ProgressTask } from '../engine/types';
 
 export interface GameStore {
@@ -64,9 +64,11 @@ export const useGameStore = create<GameStore>((set, get) => {
       let newPlot = { ...character.Plot };
       let newTraits = { ...character.Traits };
       let newStats = { ...character.Stats };
+      let newSpells = [...character.Spells];
+      let newEquip = { ...character.Equip };
 
       if (task.type === 'kill') {
-        const itemLoot = rng.pick(['gland', 'tail', 'claw', 'fang', 'pelt', 'bone']);
+        const itemLoot = generateLootItem(rng);
         const existing = newInventory.find((i) => i.name === itemLoot);
         if (existing) {
           existing.qty += 1;
@@ -81,6 +83,8 @@ export const useGameStore = create<GameStore>((set, get) => {
           newQuest.maxProgress = Math.floor(newQuest.maxProgress * 1.2) + 1;
           newLog.unshift(`Quest Completed: ${newQuest.description}!`);
           soundFX.playQuestComplete();
+
+          newSpells = generateSpellUpgrade(rng, newSpells);
 
           newPlot.currentProgress += 1;
           if (newPlot.currentProgress >= newPlot.maxProgress) {
@@ -109,6 +113,15 @@ export const useGameStore = create<GameStore>((set, get) => {
         newGold += earned;
         newLog.unshift(`Sold loot at market for ${earned} gold!`);
         soundFX.playSellLoot();
+      } else if (task.type === 'buying') {
+        const price = equipPrice(newTraits.Level);
+        if (newGold >= price) {
+          newGold -= price;
+          const upgrade = generateEquipUpgrade(rng, newTraits.Level);
+          newEquip = { ...newEquip, [upgrade.slot]: upgrade.name };
+          newLog.unshift(`Negotiated purchase: Equipped ${upgrade.name} in ${upgrade.slot} slot!`);
+          soundFX.playSellLoot();
+        }
       }
 
       // Generate next task
@@ -131,6 +144,8 @@ export const useGameStore = create<GameStore>((set, get) => {
           ...character,
           Traits: newTraits,
           Stats: newStats,
+          Equip: newEquip,
+          Spells: newSpells,
           Inventory: newInventory,
           Gold: newGold,
           Quest: newQuest,

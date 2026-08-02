@@ -1,4 +1,4 @@
-import { FolderOpen, Moon, Pause, Play, Sun, Volume2, VolumeX } from 'lucide-react';
+import { FolderOpen, Moon, Pause, Play, Sun, UserPlus, Volume2, VolumeX } from 'lucide-react';
 import React, { useState } from 'react';
 import { soundFX } from '../engine/audio';
 import { useGameStore } from '../state/gameStore';
@@ -7,9 +7,10 @@ interface NavbarProps {
   theme: 'dark' | 'progros';
   onToggleTheme: () => void;
   onOpenSaveModal: () => void;
+  onOpenCharacterCreator: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ theme, onToggleTheme, onOpenSaveModal }) => {
+export const Navbar: React.FC<NavbarProps> = ({ theme, onToggleTheme, onOpenSaveModal, onOpenCharacterCreator }) => {
   const { character, isPaused, togglePause } = useGameStore();
   const [isMuted, setIsMuted] = useState(soundFX.getMuted());
 
@@ -28,6 +29,15 @@ export const Navbar: React.FC<NavbarProps> = ({ theme, onToggleTheme, onOpenSave
       </div>
 
       <div className="nav-actions">
+        <button
+          className="btn btn-primary"
+          onClick={onOpenCharacterCreator}
+          title="Roll New Character"
+        >
+          <UserPlus size={16} />
+          <span>New Character</span>
+        </button>
+
         <button
           className="btn"
           onClick={togglePause}

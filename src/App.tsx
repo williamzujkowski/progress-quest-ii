@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { CharacterCreatorModal } from './components/CharacterCreatorModal';
 import { CharacterSheetView } from './components/CharacterSheet';
 import { InventoryView } from './components/InventoryView';
 import { LogFeed } from './components/LogFeed';
@@ -10,6 +11,7 @@ import { useGameStore } from './state/gameStore';
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<'dark' | 'progros'>('dark');
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isCharacterCreatorOpen, setIsCharacterCreatorOpen] = useState(false);
   const tick = useGameStore((state) => state.tick);
 
   // Set theme data attribute on body
@@ -35,6 +37,7 @@ export const App: React.FC = () => {
         theme={theme}
         onToggleTheme={handleToggleTheme}
         onOpenSaveModal={() => setIsSaveModalOpen(true)}
+        onOpenCharacterCreator={() => setIsCharacterCreatorOpen(true)}
       />
 
       <main className="main-grid">
@@ -49,6 +52,11 @@ export const App: React.FC = () => {
       <SaveModal
         isOpen={isSaveModalOpen}
         onClose={() => setIsSaveModalOpen(false)}
+      />
+
+      <CharacterCreatorModal
+        isOpen={isCharacterCreatorOpen}
+        onClose={() => setIsCharacterCreatorOpen(false)}
       />
     </div>
   );

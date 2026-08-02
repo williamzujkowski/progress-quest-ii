@@ -63,13 +63,31 @@ export const CharacterSheetView: React.FC = () => {
       <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)', marginTop: '0.5rem' }}>
         Equipment
       </div>
-      <div className="equip-list">
+      <div className="equip-list" style={{ maxHeight: '180px', overflowY: 'auto' }}>
         {EQUIP_SLOTS.map((slot: EquipSlot) => (
           <div className="equip-item" key={slot}>
             <span className="equip-slot">{slot}</span>
             <span>{character.Equip[slot] || '—'}</span>
           </div>
         ))}
+      </div>
+
+      <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+        Spell Book ({character.Spells.length})
+      </div>
+      <div className="equip-list" style={{ maxHeight: '140px', overflowY: 'auto' }}>
+        {character.Spells.length === 0 ? (
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+            No spells learned yet. Complete quests to learn spells!
+          </div>
+        ) : (
+          character.Spells.map((spell) => (
+            <div className="equip-item" key={spell.name}>
+              <span>{spell.name}</span>
+              <span className="badge" style={{ fontSize: '0.75rem' }}>Lvl {spell.level}</span>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
