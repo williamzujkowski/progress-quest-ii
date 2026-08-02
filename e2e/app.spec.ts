@@ -22,7 +22,7 @@ const loadDenseDashboard = async (page: Page) => {
 };
 
 test.describe('Progress Quest terminal dashboard', () => {
-  test('renders full game interface with Hero Banner, character sheet, quest log, and spell book', async ({ page }) => {
+  test('renders full game interface with Hero Banner, loadout, quest log, and spell book', async ({ page }) => {
     await page.goto('/');
 
     // Check navbar brand
@@ -32,8 +32,12 @@ test.describe('Progress Quest terminal dashboard', () => {
     // Check Hero Banner
     await expect(page.getByRole('region', { name: /Hero Overview Banner/i })).toBeVisible();
 
-    // Check character sheet card & spell book
-    await expect(page.getByText('Character Sheet')).toBeVisible();
+    // Prime stats belong to the compact hero banner; the left card is the loadout.
+    const hero = page.getByRole('region', { name: /Hero Overview Banner/i });
+    await expect(hero.getByTestId('hero-prime-stats')).toBeVisible();
+    await expect(hero.locator('[data-testid="hero-prime-stats"] strong')).toHaveCount(6);
+    await expect(page.getByText('Character Loadout')).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Character Loadout' })).not.toContainText('Prime Stats');
     await expect(page.getByText(/Spell Book/i)).toBeVisible();
 
     // Check questing card
@@ -121,7 +125,7 @@ test.describe('Progress Quest terminal dashboard', () => {
 
     const log = page.getByRole('region', { name: 'Activity Event Log' });
     const inventory = page.getByRole('region', { name: 'Inventory items' });
-    const character = page.getByRole('region', { name: 'Character Sheet' });
+    const character = page.getByRole('region', { name: 'Character Loadout' });
     const metrics = {
       page: await page.evaluate(() => ({ height: document.documentElement.scrollHeight, viewport: window.innerHeight })),
       log: await log.evaluate((element) => ({ client: element.clientHeight, scroll: element.scrollHeight, top: element.scrollTop })),
@@ -197,7 +201,7 @@ test.describe('Progress Quest terminal dashboard', () => {
     await submitBtn.click();
 
     await expect(page.getByText('Progress Quest - New Character')).not.toBeVisible();
-    await expect(page.locator('[data-testid="character-prime-stats"] strong')).toHaveText(acceptedStats);
+    await expect(page.locator('[data-testid="hero-prime-stats"] strong')).toHaveText(acceptedStats);
   });
 
   test('keeps character creation in the dedicated creator', async ({ page }) => {
