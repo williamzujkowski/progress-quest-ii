@@ -1,0 +1,14 @@
+# ponytail: rely on Nexus defaults; keep only repo security and MCP-safe logging here.
+security:
+  allowedPaths:
+    - ./
+  blockedPatterns:
+    - "**/.env*"
+    - "**/credentials*"
+    - "**/*.pem"
+    - "**/*.key"
+
+logging:
+  level: info
+  format: json
+  destination: stderr

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { soundFX } from '../engine/audio';
 import { RandomGenerator } from '../engine/prng';
 import { createNewCharacter, equipPrice, generateEquipUpgrade, generateLootItem, generateSpellUpgrade, generateTaskDescription } from '../engine/sim';
-import type { CharacterSheet, ProgressTask } from '../engine/types';
+import type { CharacterSheet, ProgressTask, StatsMap } from '../engine/types';
 
 export interface GameStore {
   character: CharacterSheet;
@@ -13,7 +13,7 @@ export interface GameStore {
   // Actions
   tick: (elapsedMs: number) => void;
   togglePause: () => void;
-  resetGame: (name: string, race: string, klass: string) => void;
+  resetGame: (name: string, race: string, klass: string, stats?: StatsMap) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
@@ -28,9 +28,10 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
 
-    resetGame: (name: string, race: string, klass: string) => {
+    resetGame: (name: string, race: string, klass: string, stats?: StatsMap) => {
       const rng = new RandomGenerator(name + Date.now());
-      const character = createNewCharacter(name, race, klass, rng);
+      const generated = createNewCharacter(name, race, klass, rng);
+      const character = stats ? { ...generated, Stats: { ...stats } } : generated;
       set({
         character,
         rng,

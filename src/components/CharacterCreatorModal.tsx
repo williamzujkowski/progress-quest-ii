@@ -58,7 +58,7 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    resetGame(name.trim(), race, klass);
+    resetGame(name.trim(), race, klass, stats);
     onClose();
   };
 
@@ -77,11 +77,12 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {/* Name & Random Name Generator */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.375rem' }}>
+            <label htmlFor="character-name" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.375rem' }}>
               Character Name
             </label>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <input
+                id="character-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -122,7 +123,7 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
               </div>
             </div>
 
-            <div className="stat-grid" style={{ marginBottom: '0.75rem' }}>
+            <div className="stat-grid" data-testid="creator-prime-stats" style={{ marginBottom: '0.75rem' }}>
               {PRIME_STATS.map((stat) => (
                 <div className="stat-item" key={stat}>
                   <span>{stat}</span>
@@ -155,7 +156,10 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
                       name="racePicker"
                       value={r.name}
                       checked={race === r.name}
-                      onChange={() => setRace(r.name)}
+                      onChange={() => {
+                        setRace(r.name);
+                        setStats(generateInitialStats(new RandomGenerator(currentSeed), r.name, klass));
+                      }}
                     />
                     <span>{r.name}</span>
                   </label>
@@ -175,7 +179,10 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
                       name="klassPicker"
                       value={k.name}
                       checked={klass === k.name}
-                      onChange={() => setKlass(k.name)}
+                      onChange={() => {
+                        setKlass(k.name);
+                        setStats(generateInitialStats(new RandomGenerator(currentSeed), race, k.name));
+                      }}
                     />
                     <span>{k.name}</span>
                   </label>

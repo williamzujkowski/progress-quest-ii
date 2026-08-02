@@ -1,15 +1,18 @@
 import { expect, test } from '@playwright/test';
 
-test.describe('Progress Quest Web Application UI & Baseline Mechanics', () => {
-  test('renders full game interface with character sheet, quest log, and spell book', async ({ page }) => {
+test.describe('Progress Quest Web Application Anthropic UI & Grid Layout', () => {
+  test('renders full game interface with Hero Banner, character sheet, quest log, and spell book', async ({ page }) => {
     await page.goto('/');
 
     // Check navbar brand
     await expect(page.locator('.brand')).toContainText('Progress Quest');
+    await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest' })).toBeVisible();
+
+    // Check Hero Banner
+    await expect(page.getByRole('region', { name: /Hero Overview Banner/i })).toBeVisible();
 
     // Check character sheet card & spell book
     await expect(page.getByText('Character Sheet')).toBeVisible();
-    await expect(page.getByText('Equipment')).toBeVisible();
     await expect(page.getByText(/Spell Book/i)).toBeVisible();
 
     // Check questing card
@@ -50,6 +53,9 @@ test.describe('Progress Quest Web Application UI & Baseline Mechanics', () => {
     const rollBtn = page.getByRole('button', { name: /Roll 'Em/i });
     await rollBtn.click();
 
+    const acceptedStats = await page.locator('[data-testid="creator-prime-stats"] strong').allTextContents();
+    expect(acceptedStats).toHaveLength(6);
+
     // Click Random Name
     const randomBtn = page.getByRole('button', { name: /Random/i });
     await randomBtn.click();
@@ -59,5 +65,33 @@ test.describe('Progress Quest Web Application UI & Baseline Mechanics', () => {
     await submitBtn.click();
 
     await expect(page.getByText('Progress Quest - New Character')).not.toBeVisible();
+    await expect(page.locator('[data-testid="character-prime-stats"] strong')).toHaveText(acceptedStats);
   });
+
+  for (const width of [320, 375, 768]) {
+    test(`keeps the full interface inside a ${width}px viewport`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/');
+
+      const dimensions = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+
+      expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+      await expect(page.getByRole('button', { name: /Roster & Saves/i })).toBeInViewport();
+      await expect(page.getByRole('button', { name: /Retro ProgrOS/i })).toBeInViewport();
+
+      if (width === 320) {
+        await page.getByRole('button', { name: /New Character/i }).click();
+        const dialog = page.getByRole('dialog', { name: /New Character/i });
+        await expect(dialog).toBeInViewport();
+        const dialogDimensions = await dialog.evaluate((element) => ({
+          clientWidth: element.clientWidth,
+          scrollWidth: element.scrollWidth,
+        }));
+        expect(dialogDimensions.scrollWidth).toBeLessThanOrEqual(dialogDimensions.clientWidth);
+      }
+    });
+  }
 });

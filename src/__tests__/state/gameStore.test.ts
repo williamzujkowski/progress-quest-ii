@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { StatsMap } from '../../engine/types';
 import { useGameStore } from '../../state/gameStore';
 
 describe('Game Store State Machine', () => {
@@ -45,5 +46,14 @@ describe('Game Store State Machine', () => {
     const updatedChar = useGameStore.getState().character;
     expect(updatedChar.Task.elapsedMs).toBeLessThan(updatedChar.Task.durationMs);
     expect(useGameStore.getState().log.length).toBeGreaterThan(0);
+  });
+
+  it('uses and defensively copies an accepted complete stat roll', () => {
+    const acceptedStats: StatsMap = { STR: 18, CON: 17, DEX: 16, INT: 15, WIS: 14, CHA: 13, 'HP Max': 35, 'MP Max': 27 };
+
+    useGameStore.getState().resetGame('RolledHero', 'Double Hobbit', 'Ur-Paladin', acceptedStats);
+    acceptedStats.STR = 1;
+
+    expect(useGameStore.getState().character.Stats).toEqual({ STR: 18, CON: 17, DEX: 16, INT: 15, WIS: 14, CHA: 13, 'HP Max': 35, 'MP Max': 27 });
   });
 });

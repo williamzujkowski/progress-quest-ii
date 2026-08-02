@@ -22,7 +22,7 @@ export const Navbar: React.FC<NavbarProps> = ({ theme, onToggleTheme, onOpenSave
   return (
     <header className="navbar" role="banner">
       <div className="brand">
-        <span>⚔️ Progress Quest</span>
+        <h1><span aria-hidden="true">⚔</span> Progress Quest</h1>
         <span className="badge" title="Character Level">
           Lvl {character.Traits.Level}
         </span>

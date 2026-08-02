@@ -130,7 +130,7 @@ When ingesting external data (base64 `.pqw` save strings, custom JSON character 
 
 ## Consensus Voting Thresholds
 
-When evaluating major design or architectural forks:
+When evaluating major design or architectural forks, use the Nexus Agents `consensus_vote` MCP tool with the matching threshold:
 
 | Trigger | Threshold |
 | :--- | :--- |
@@ -138,6 +138,20 @@ When evaluating major design or architectural forks:
 | Breaking Save File / Serialization Changes | Unanimous |
 | Security & Storage Input Handling | Supermajority |
 | UI Design & Feature Prioritization | Majority |
+
+---
+
+## Agent-Assisted Review Workflow
+
+The repository pins Nexus Agents as a development dependency and exposes it through `.mcp.json`. Frontend reviewers should use an available Playwright MCP server; install it at the agent-host level when browser access is absent.
+
+1. **Environment check:** Run `npm run agents:verify` after installing dependencies or changing agent configuration. Use `npx nexus-agents doctor` when diagnosing optional provider integrations.
+2. **Frontend review:** Start the app with `npm run dev`, inspect changed flows with the Playwright MCP server at desktop and mobile viewport sizes, then encode stable acceptance criteria in `npm run test:e2e`.
+3. **Skill review:** Apply the matching frontend, accessibility, responsive-layout, and code-review skills before handoff.
+4. **Consensus gate:** Use Nexus Agents voting for decisions listed in the threshold table above. Treat the vote as advisory unless the user explicitly delegates the decision.
+5. **PR gate:** After opening a PR, run `npm run agents:review -- <pr-url>` and resolve or explicitly disposition verified findings before merge.
+
+Nexus runtime data belongs in `.nexus-agents/` and MUST remain untracked. Never put provider keys in repository configuration; Nexus may use authenticated local CLIs instead.
 
 ---
 
@@ -150,6 +164,7 @@ Workflow playbooks live in `.agents/skills/<name>/SKILL.md` (conforming to the A
 - **`codebase-design`**: Designing modular components, interface boundaries, and data flow.
 - **`diagnosing-bugs`**: Root-cause bug investigation and failure trace analysis.
 - **`domain-modeling`**: Modeling RPG domain entities, stats, equipment, items, and state contracts.
+- **`frontend-design`**: Anthropic's official frontend design skill for distinctive, intentional UI visual direction, typography, and layout.
 - **`grill-me` / `grilling`**: Interactive requirements grilling to resolve ambiguous user requirements.
 - **`grill-with-docs`**: Grilling requirements against official project documentation and ADRs.
 - **`handoff`**: Context packaging and handoff state summary between agent turns or subagents.

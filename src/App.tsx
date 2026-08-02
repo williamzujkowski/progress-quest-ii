@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import './App.css';
 import { CharacterCreatorModal } from './components/CharacterCreatorModal';
 import { CharacterSheetView } from './components/CharacterSheet';
+import { HeroBanner } from './components/HeroBanner';
 import { InventoryView } from './components/InventoryView';
 import { LogFeed } from './components/LogFeed';
 import { Navbar } from './components/Navbar';
@@ -33,6 +35,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="app-container">
+      <a className="skip-link" href="#game-dashboard">Skip to game dashboard</a>
       <Navbar
         theme={theme}
         onToggleTheme={handleToggleTheme}
@@ -40,9 +43,11 @@ export const App: React.FC = () => {
         onOpenCharacterCreator={() => setIsCharacterCreatorOpen(true)}
       />
 
-      <main className="main-grid">
+      <HeroBanner />
+
+      <main className="main-grid" id="game-dashboard">
         <CharacterSheetView />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div className="quest-column">
           <QuestLog />
           <LogFeed />
         </div>

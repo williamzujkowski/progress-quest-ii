@@ -11,7 +11,7 @@ export const QuestLog: React.FC = () => {
   return (
     <section className="card" aria-labelledby="quest-log-heading">
       <div className="card-header">
-        <span id="quest-log-heading">Questing & Progression</span>
+        <h2 id="quest-log-heading">Questing & Progression</h2>
         <span className="badge badge-warning">Act {character.Plot.act}</span>
       </div>
 
