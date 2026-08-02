@@ -456,6 +456,22 @@ export const MONSTERS: MonsterDef[] = [
   { name: 'Wolog', level: 4, item: 'lemma' },
 ];
 
+export const OFFENSE_BAD: string[] = [
+  '-5 clumsy',
+  '-4 dull',
+  '-3 unwieldy',
+  '-2 rusty',
+  '-1 blunt',
+];
+
+export const DEFENSE_BAD: string[] = [
+  '-5 holey',
+  '-4 patched',
+  '-3 threadbare',
+  '-2 tattered',
+  '-1 moth-eaten',
+];
+
 export const MON_MODS: string[] = [
   '-4 fœtal *',
   '-4 dying *',

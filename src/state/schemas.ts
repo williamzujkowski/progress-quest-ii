@@ -58,7 +58,7 @@ export const progressTaskSchema = z.object({
   description: z.string(),
   durationMs: z.number(),
   elapsedMs: z.number(),
-  type: z.enum(['kill', 'buying', 'selling', 'quest', 'plot', 'heading_to_market']),
+  type: z.enum(['kill', 'buying', 'selling', 'quest', 'plot', 'heading_to_market', 'heading']),
 });
 
 export const characterSheetSchema = z.object({

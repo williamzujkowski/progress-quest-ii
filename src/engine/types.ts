@@ -40,7 +40,7 @@ export interface ProgressTask {
   description: string;
   durationMs: number;
   elapsedMs: number;
-  type: 'kill' | 'buying' | 'selling' | 'quest' | 'plot' | 'heading_to_market';
+  type: 'kill' | 'buying' | 'selling' | 'quest' | 'plot' | 'heading_to_market' | 'heading';
 }
 
 export interface QuestState {
