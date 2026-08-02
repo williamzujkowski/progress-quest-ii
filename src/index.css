@@ -58,6 +58,11 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
 .app-container {
   max-width: 1280px;
   margin: 0 auto;
@@ -76,6 +81,7 @@ body {
   padding: 1rem 1.5rem;
   border-radius: 0.75rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
 }
 
 .brand {
@@ -98,6 +104,7 @@ body {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
+  min-height: 44px;
   border-radius: 0.5rem;
   font-weight: 600;
   font-size: 0.875rem;
@@ -117,6 +124,26 @@ body {
   background: var(--accent-primary);
   color: #ffffff;
   border-color: transparent;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--accent-primary);
+  color: #ffffff;
+}
+
+.badge-success {
+  background: var(--accent-success);
+}
+
+.badge-warning {
+  background: var(--accent-warning);
+  color: #000000;
 }
 
 .main-grid {
@@ -217,6 +244,23 @@ body {
 .progress-bar-fill {
   height: 100%;
   transition: width 0.1s linear;
+  position: relative;
+}
+
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .progress-task .progress-bar-fill {
