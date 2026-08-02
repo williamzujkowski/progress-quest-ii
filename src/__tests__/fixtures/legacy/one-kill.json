@@ -37,7 +37,7 @@
       "PlotBar": { "position": 0, "max": 1000 },
       "QuestBar": { "position": 0, "max": 100 },
       "TaskBar": { "position": 6000, "max": 6000 },
-      "seed": [0.1, 0.2, 0.3, 1],
+      "seed": [0.0011501498520374298, 0.8276778745930642, 0.24009850597940385, 1],
       "log": {}
     }
   },
@@ -62,8 +62,8 @@
       ]
     },
     "task": {
-      "tag": "kill|Mrs. Brambrig the Skraeling|1|*",
-      "caption": "Executing Mrs. Brambrig the Skraeling...",
+      "tag": "kill|Grid Bug|1|carapace",
+      "caption": "Executing a Grid Bug...",
       "positionMs": 0,
       "maxMs": 6000,
       "queue": []
@@ -98,7 +98,7 @@
       ["Sollerets", ""]
     ],
     "spells": [],
-    "log": ["Gained a rat tail", "Executing Mrs. Brambrig the Skraeling..."],
-    "rng": [0.8111408953554928, 0.7811518528033048, 0.9740190447773784, 1822180]
+    "log": ["Gained a rat tail", "Executing a Grid Bug..."],
+    "rng": [0.04499438125640154, 0.8823704484384507, 0.9573474917560816, 1714361]
   }
 }

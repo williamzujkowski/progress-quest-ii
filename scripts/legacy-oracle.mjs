@@ -4,6 +4,19 @@ import vm from 'node:vm';
 const configSource = readFileSync(new URL('../pq-web-src/config.js', import.meta.url), 'utf8');
 const mainSource = readFileSync(new URL('../pq-web-src/main.js', import.meta.url), 'utf8');
 const executionOptions = { timeout: 250 };
+const aleaScale = 0x100000000;
+
+function isSerializedAleaState(state) {
+  return Array.isArray(state)
+    && state.length === 4
+    && state.slice(0, 3).every((value) => Number.isFinite(value)
+      && value >= 0
+      && value < 1
+      && Number.isInteger(value * aleaScale))
+    && Number.isInteger(state[3])
+    && state[3] >= 0
+    && state[3] <= 2091639;
+}
 
 function createContext() {
   const dollar = () => null;
@@ -37,6 +50,9 @@ function createContext() {
 }
 
 export function runLegacyTransition({ sheet }) {
+  if (!isSerializedAleaState(sheet.seed)) {
+    throw new TypeError('Legacy fixture seed must be a serialized Alea state');
+  }
   const context = createContext();
   vm.runInContext(configSource, context, { ...executionOptions, filename: 'pq-web-src/config.js' });
   vm.runInContext(mainSource, context, { ...executionOptions, filename: 'pq-web-src/main.js' });

@@ -14,3 +14,10 @@ test('legacy oracle emits a deterministic fixed one-kill transition vector', () 
   assert.deepEqual(first, fixture.expected);
   assert.equal(JSON.stringify(second), JSON.stringify(first));
 });
+
+test('legacy oracle rejects states Alea could not have serialized', () => {
+  assert.throws(
+    () => runLegacyTransition({ sheet: { ...fixture.input.sheet, seed: [0.1, 0.2, 0.3, 1] } }),
+    /serialized Alea state/,
+  );
+});
