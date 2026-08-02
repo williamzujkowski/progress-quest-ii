@@ -186,7 +186,7 @@
 
 .hero-banner {
   position: relative;
-  grid-template-columns: minmax(12rem, 1fr) minmax(18rem, 1.2fr) auto;
+  grid-template-columns: minmax(11rem, 1fr) minmax(12rem, 1fr) minmax(16rem, 1.4fr) auto;
   overflow: hidden;
   border-radius: 0.5rem;
   padding-top: 1.5rem;
@@ -215,6 +215,31 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
 }
+
+.hero-prime-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+
+.hero-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--panel-border);
+  border-radius: 0.35rem;
+  background: var(--progress-bg);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.hero-stat span { color: var(--text-muted); font-weight: 700; }
+.hero-stat strong { color: var(--text-main); font-size: 0.9rem; }
+
+.loadout-list { max-height: none; }
 
 .meter-group,
 .stat-pill {
@@ -256,6 +281,7 @@
 @media (max-width: 1024px) {
   .main-grid > :last-child { grid-column: 1 / -1; }
   .hero-banner { grid-template-columns: minmax(0, 1fr) minmax(17rem, 1fr); }
+  .hero-prime-stats,
   .hero-stats-quick { grid-column: 1 / -1; justify-content: flex-start; }
 }
 
@@ -263,6 +289,7 @@
   .navbar { align-items: flex-start; }
   .nav-actions { justify-content: flex-start; }
   .hero-banner { grid-template-columns: 1fr; gap: 1rem; }
+  .hero-prime-stats,
   .hero-stats-quick { grid-column: auto; }
 }
 
@@ -276,8 +303,10 @@
   .theme-control select { flex: 1; max-width: none; }
   .btn { min-width: 0; justify-content: center; padding-inline: 0.55rem; overflow-wrap: anywhere; }
   .hero-meters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero-prime-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .hero-stats-quick { gap: 0.5rem; }
   .stat-pill { flex: 1 1 8rem; justify-content: center; }
+  .hero-stat { padding-inline: var(--space-1); }
   .main-grid { gap: 0.75rem; }
   .main-grid > :last-child { grid-column: auto; }
   .quest-column { gap: 0.75rem; }

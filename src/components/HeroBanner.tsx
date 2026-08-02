@@ -4,6 +4,8 @@ import { calculateEncumbranceMax } from '../engine/math';
 import { calculateEncumbrance } from '../engine/sim';
 import { useGameStore } from '../state/gameStore';
 
+const PRIME_STATS = ['STR', 'CON', 'DEX', 'INT', 'WIS', 'CHA'] as const;
+
 export const HeroBanner: React.FC = () => {
   const { character } = useGameStore();
 
@@ -40,6 +42,15 @@ export const HeroBanner: React.FC = () => {
             <strong>{character.Stats['MP Max']}</strong>
           </div>
         </div>
+      </div>
+
+      <div className="hero-prime-stats" data-testid="hero-prime-stats" aria-label="Prime stats">
+        {PRIME_STATS.map((stat) => (
+          <div className="hero-stat" key={stat}>
+            <span>{stat}</span>
+            <strong>{character.Stats[stat]}</strong>
+          </div>
+        ))}
       </div>
 
       <div className="hero-stats-quick">
