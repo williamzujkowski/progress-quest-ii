@@ -9,10 +9,10 @@ export const QuestLog: React.FC = () => {
   const plotPct = Math.min(100, Math.floor((character.Plot.currentProgress / character.Plot.maxProgress) * 100));
 
   return (
-    <div className="card">
+    <section className="card" aria-labelledby="quest-log-heading">
       <div className="card-header">
-        <span>Questing & Progression</span>
-        <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Act {character.Plot.act}</span>
+        <span id="quest-log-heading">Questing & Progression</span>
+        <span className="badge badge-warning">Act {character.Plot.act}</span>
       </div>
 
       <div className="progress-container progress-task">
@@ -20,7 +20,14 @@ export const QuestLog: React.FC = () => {
           <span>Task: {character.Task.description}</span>
           <span>{taskPct}%</span>
         </div>
-        <div className="progress-bar-track">
+        <div
+          className="progress-bar-track"
+          role="progressbar"
+          aria-label="Current task progress"
+          aria-valuenow={taskPct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
           <div className="progress-bar-fill" style={{ width: `${taskPct}%` }} />
         </div>
       </div>
@@ -32,22 +39,36 @@ export const QuestLog: React.FC = () => {
             {character.Quest.currentProgress} / {character.Quest.maxProgress}
           </span>
         </div>
-        <div className="progress-bar-track">
+        <div
+          className="progress-bar-track"
+          role="progressbar"
+          aria-label="Current quest progress"
+          aria-valuenow={questPct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
           <div className="progress-bar-fill" style={{ width: `${questPct}%` }} />
         </div>
       </div>
 
       <div className="progress-container progress-plot" style={{ marginTop: '0.75rem' }}>
         <div className="progress-label">
-          <span>Plot: Act {character.Plot.act}</span>
+          <span>Plot Progress</span>
           <span>
             {character.Plot.currentProgress} / {character.Plot.maxProgress}
           </span>
         </div>
-        <div className="progress-bar-track">
+        <div
+          className="progress-bar-track"
+          role="progressbar"
+          aria-label="Plot act progress"
+          aria-valuenow={plotPct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
           <div className="progress-bar-fill" style={{ width: `${plotPct}%` }} />
         </div>
       </div>
-    </div>
+    </section>
   );
 };

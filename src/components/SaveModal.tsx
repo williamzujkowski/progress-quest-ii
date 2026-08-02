@@ -71,11 +71,11 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Character Roster & Save Manager</h2>
-          <button className="btn" onClick={onClose} style={{ padding: '0.25rem 0.5rem' }}>
+          <h2 id="modal-title" style={{ fontSize: '1.25rem', fontWeight: 700 }}>Character Roster & Save Manager</h2>
+          <button className="btn" onClick={onClose} aria-label="Close modal" style={{ padding: '0.25rem 0.5rem' }}>
             <X size={16} />
           </button>
         </div>

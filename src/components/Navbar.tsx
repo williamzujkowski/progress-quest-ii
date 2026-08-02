@@ -19,31 +19,47 @@ export const Navbar: React.FC<NavbarProps> = ({ theme, onToggleTheme, onOpenSave
   };
 
   return (
-    <header className="navbar">
+    <header className="navbar" role="banner">
       <div className="brand">
         <span>⚔️ Progress Quest</span>
-        <span style={{ fontSize: '0.875rem', fontWeight: 'normal', color: 'var(--text-muted)' }}>
-          {character.Traits.Name} (Lvl {character.Traits.Level})
+        <span className="badge" title="Character Level">
+          Lvl {character.Traits.Level}
         </span>
       </div>
 
       <div className="nav-actions">
-        <button className="btn" onClick={togglePause} title={isPaused ? 'Resume Game' : 'Pause Game'}>
+        <button
+          className="btn"
+          onClick={togglePause}
+          title={isPaused ? 'Resume Game' : 'Pause Game'}
+        >
           {isPaused ? <Play size={16} /> : <Pause size={16} />}
           <span>{isPaused ? 'Resume' : 'Pause'}</span>
         </button>
 
-        <button className="btn" onClick={handleToggleAudio} title={isMuted ? 'Unmute Sound' : 'Mute Sound'}>
+        <button
+          className="btn"
+          onClick={handleToggleAudio}
+          title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
+        >
           {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
           <span>{isMuted ? 'Muted' : 'Audio'}</span>
         </button>
 
-        <button className="btn" onClick={onOpenSaveModal} title="Roster & Save Manager">
+        <button
+          className="btn"
+          onClick={onOpenSaveModal}
+          title="Character Roster and Save Manager"
+        >
           <FolderOpen size={16} />
           <span>Roster & Saves</span>
         </button>
 
-        <button className="btn" onClick={onToggleTheme} title="Toggle Visual Theme">
+        <button
+          className="btn"
+          onClick={onToggleTheme}
+          title="Toggle Visual Theme"
+        >
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           <span>{theme === 'dark' ? 'Retro ProgrOS' : 'Dark Mode'}</span>
         </button>
