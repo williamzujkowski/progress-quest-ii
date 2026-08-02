@@ -82,6 +82,38 @@ test.describe('Progress Quest terminal dashboard', () => {
     await expect(themePicker).toHaveCSS('outline-style', 'solid');
   });
 
+  test('labels activity events without substring false positives', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(async () => {
+      const { useGameStore } = await import('/src/state/gameStore.ts');
+      useGameStore.setState({
+        log: [
+          'Activity 50',
+          'Resting at the inn.',
+          'Welcome to Progress Quest! Krg sets out on an adventure.',
+          'Act 2 Unlocked!',
+          'LEVEL UP! Advanced to level 2!',
+          'Quest Completed: Find the lost stapler!',
+          'Defeated monster and looted a bent fork.',
+          'Sold loot at market for 10 gold!',
+          'Executing a passing pigeon...',
+        ],
+      });
+    });
+
+    const log = page.getByRole('region', { name: 'Activity Event Log' });
+    const tagFor = (message: string) => log.locator('.log-entry', { hasText: message }).locator('.log-tag');
+    await expect(tagFor('Activity 50')).toHaveCount(0);
+    await expect(tagFor('Resting at the inn.')).toHaveCount(0);
+    await expect(tagFor('Welcome to Progress Quest! Krg sets out on an adventure.')).toHaveCount(0);
+    await expect(tagFor('Act 2 Unlocked!')).toHaveText('Level');
+    await expect(tagFor('LEVEL UP! Advanced to level 2!')).toHaveText('Level');
+    await expect(tagFor('Quest Completed: Find the lost stapler!')).toHaveText('Quest');
+    await expect(tagFor('Defeated monster and looted a bent fork.')).toHaveText('Loot');
+    await expect(tagFor('Sold loot at market for 10 gold!')).toHaveText('Market');
+    await expect(tagFor('Executing a passing pigeon...')).toHaveText('Combat');
+  });
+
   test('keeps a dense desktop dashboard within one viewport and follows latest activity', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');

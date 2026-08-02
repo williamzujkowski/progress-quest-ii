@@ -11,11 +11,11 @@ export const LogFeed: React.FC = () => {
   }, [log]);
 
   const getLogTag = (entry: string) => {
-    if (entry.includes('looted') || entry.includes('Item')) return <span className="log-tag tag-loot">Loot</span>;
-    if (entry.includes('Quest')) return <span className="log-tag tag-quest">Quest</span>;
-    if (entry.includes('LEVEL UP') || entry.includes('Act')) return <span className="log-tag tag-levelup">Level</span>;
-    if (entry.includes('market') || entry.includes('Sold') || entry.includes('purchase')) return <span className="log-tag tag-market">Market</span>;
-    if (entry.includes('Defeated') || entry.includes('Executing')) return <span className="log-tag tag-combat">Combat</span>;
+    if (entry.startsWith('Defeated monster and looted ') || entry.startsWith('Item ')) return <span className="log-tag tag-loot">Loot</span>;
+    if (entry.startsWith('Quest Completed:')) return <span className="log-tag tag-quest">Quest</span>;
+    if (entry.startsWith('LEVEL UP!') || entry.startsWith('Act ')) return <span className="log-tag tag-levelup">Level</span>;
+    if (entry.startsWith('Sold loot at market ') || entry.startsWith('Negotiated purchase:')) return <span className="log-tag tag-market">Market</span>;
+    if (entry.startsWith('Defeated ') || entry.startsWith('Executing ')) return <span className="log-tag tag-combat">Combat</span>;
     return null;
   };
 
