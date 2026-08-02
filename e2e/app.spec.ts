@@ -22,6 +22,49 @@ const loadDenseDashboard = async (page: Page) => {
 };
 
 test.describe('Progress Quest terminal dashboard', () => {
+  test('recovers accessibly from an unexpected root render failure', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.addInitScript(() => {
+      localStorage.setItem('progquest_roster_v1', '{"Krg":{"still":"saved"}}');
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        value: () => { throw new Error('deliberate render failure with private details'); },
+      });
+    });
+    await page.goto('/');
+
+    const heading = page.getByRole('heading', { name: /quest process encountered an enthusiasm/i });
+    await expect(heading).toBeFocused();
+    await expect(page.getByText(/saved characters were not deleted/i)).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem('progquest_roster_v1'))).toBe('{"Krg":{"still":"saved"}}');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+
+    const saveDownload = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Download current save' }).click();
+    expect((await saveDownload).suggestedFilename()).toBe('progquest-current.pqw');
+
+    const diagnosticDownload = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Download diagnostics' }).click();
+    expect((await diagnosticDownload).suggestedFilename()).toBe('progquest-diagnostics.json');
+    await expect(page.getByRole('status')).toHaveText(/nothing was uploaded/i);
+  });
+
+  test('captures an unhandled rejection without exporting its private message', async ({ page }) => {
+    await page.goto('/');
+    const report = await page.evaluate(async () => {
+      const { diagnostics } = await import('/src/state/diagnostics.ts');
+      const rejection = new PromiseRejectionEvent('unhandledrejection', {
+        promise: Promise.resolve(),
+        reason: new Error('Krg token=secret /home/william/save.pqw?auth=yes'),
+      });
+      window.dispatchEvent(rejection);
+      return diagnostics.exportReport();
+    });
+
+    expect(report).toContain('unhandled_rejection');
+    expect(report).not.toMatch(/Krg|secret|william|save\.pqw|auth=/i);
+  });
+
   test('renders full game interface with Hero Banner, loadout, quest log, and spell book', async ({ page }) => {
     await page.goto('/');
 

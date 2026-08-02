@@ -36,3 +36,4 @@ test-results/
 # Agent runtime state
 .nexus-agents/
 .playwright-mcp/
+docs/research/registry/

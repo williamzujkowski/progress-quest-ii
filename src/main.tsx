@@ -4,9 +4,19 @@ import '@fontsource-variable/inter/wght.css'
 import '@fontsource-variable/jetbrains-mono/wght.css'
 import './index.css'
 import App from './App.tsx'
+import { RuntimeErrorBoundary } from './components/RuntimeErrorBoundary.tsx'
+import { diagnostics, installBrowserDiagnosticHandlers } from './state/diagnostics.ts'
 
-createRoot(document.getElementById('root')!).render(
+installBrowserDiagnosticHandlers()
+
+createRoot(document.getElementById('root')!, {
+  onCaughtError: (error) => diagnostics.record({ code: 'react_caught', severity: 'error', subsystem: 'react', operation: 'render', outcome: 'failed', source: 'react-root', error }),
+  onUncaughtError: (error) => diagnostics.record({ code: 'react_uncaught', severity: 'error', subsystem: 'react', operation: 'render', outcome: 'failed', source: 'react-root', error }),
+  onRecoverableError: (error) => diagnostics.record({ code: 'react_recoverable', severity: 'warning', subsystem: 'react', operation: 'recover', outcome: 'recovered', source: 'react-root', error }),
+}).render(
   <StrictMode>
-    <App />
+    <RuntimeErrorBoundary>
+      <App />
+    </RuntimeErrorBoundary>
   </StrictMode>,
 )
