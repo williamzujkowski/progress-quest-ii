@@ -25,7 +25,7 @@ describe('Save Manager & Serialization', () => {
   it('rejects invalid JSON payloads with Zod schema validation error', () => {
     // Base64 encoding of invalid object missing required fields
     const invalidJson = JSON.stringify({ Traits: { Name: 'Broken' } });
-    const encoded = Buffer.from(invalidJson).toString('base64');
+    const encoded = btoa(unescape(encodeURIComponent(invalidJson)));
 
     expect(() => decodePQWSave(encoded)).toThrow(/Invalid Character Sheet Schema/);
   });

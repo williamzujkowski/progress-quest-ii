@@ -1,6 +1,6 @@
 import { KLASSES, RACES } from '../data/traits';
 import { RandomGenerator } from './prng';
-import { PrimeStat, StatsMap } from './types';
+import type { StatsMap } from './types';
 
 export function levelUpTime(level: number): number {
   // 20 minutes for level 1, exponential increase after that

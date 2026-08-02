@@ -1,4 +1,4 @@
-import { CharacterSheet } from '../engine/types';
+import type { CharacterSheet } from '../engine/types';
 import { characterSheetSchema } from './schemas';
 
 const ROSTER_STORAGE_KEY = 'progquest_roster_v1';
@@ -6,11 +6,7 @@ const ROSTER_STORAGE_KEY = 'progquest_roster_v1';
 export function encodePQWSave(sheet: CharacterSheet): string {
   const jsonString = JSON.stringify(sheet);
   const encoded = encodeURIComponent(jsonString);
-  // Base64 encoding compatible with browser btoa and legacy pqw
-  if (typeof btoa !== 'undefined') {
-    return btoa(unescape(encoded));
-  }
-  return Buffer.from(jsonString).toString('base64');
+  return btoa(unescape(encoded));
 }
 
 export function decodePQWSave(pqwString: string): CharacterSheet {
@@ -18,11 +14,7 @@ export function decodePQWSave(pqwString: string): CharacterSheet {
   let jsonText: string;
 
   try {
-    if (typeof atob !== 'undefined') {
-      jsonText = decodeURIComponent(escape(atob(cleanString)));
-    } else {
-      jsonText = Buffer.from(cleanString, 'base64').toString('utf-8');
-    }
+    jsonText = decodeURIComponent(escape(atob(cleanString)));
   } catch (err) {
     throw new Error('Malformed base64 save string.');
   }

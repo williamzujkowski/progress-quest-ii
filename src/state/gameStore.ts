@@ -1,8 +1,7 @@
 import { create } from 'zustand';
-import { calculateEncumbranceMax, levelUpTime } from '../engine/math';
 import { RandomGenerator } from '../engine/prng';
-import { calculateEncumbrance, createNewCharacter, generateTaskDescription } from '../engine/sim';
-import { CharacterSheet, InventoryItem, ProgressTask } from '../engine/types';
+import { createNewCharacter, generateTaskDescription } from '../engine/sim';
+import type { CharacterSheet, ProgressTask } from '../engine/types';
 
 export interface GameStore {
   character: CharacterSheet;
