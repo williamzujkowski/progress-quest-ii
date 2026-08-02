@@ -1,35 +1,46 @@
+/* Remarque & OKLCH Terminal Themes Color Design Tokens */
 :root {
-  --bg-color: #0f172a;
-  --panel-bg: #1e293b;
-  --panel-border: #334155;
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --accent-primary: #3b82f6;
-  --accent-success: #22c55e;
-  --accent-warning: #eab308;
-  --accent-danger: #ef4444;
-  --progress-bg: #0f172a;
-  --progress-fill: linear-gradient(90deg, #2563eb, #3b82f6);
-  --progress-quest: linear-gradient(90deg, #16a34a, #22c55e);
-  --progress-plot: linear-gradient(90deg, #d97706, #f59e0b);
+  /* OKLCH Perceptually Uniform Palette (Modern Dark Theme) */
+  --bg-color: oklch(0.18 0.03 250);
+  --panel-bg: oklch(0.24 0.04 250);
+  --panel-border: oklch(0.35 0.05 250);
+  --text-main: oklch(0.96 0.01 250);
+  --text-muted: oklch(0.70 0.03 250);
+  --accent-primary: oklch(0.65 0.22 250);
+  --accent-success: oklch(0.68 0.20 145);
+  --accent-warning: oklch(0.78 0.18 85);
+  --accent-danger: oklch(0.62 0.22 25);
+  
+  --progress-bg: oklch(0.14 0.02 250);
+  --progress-fill: linear-gradient(90deg, oklch(0.55 0.22 250), oklch(0.65 0.22 250));
+  --progress-quest: linear-gradient(90deg, oklch(0.58 0.20 145), oklch(0.68 0.20 145));
+  --progress-plot: linear-gradient(90deg, oklch(0.68 0.18 85), oklch(0.78 0.18 85));
+  
+  /* Remarque Typographic Scale & Font Stack */
   --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-base-size: 17px;
 }
 
 [data-theme='progros'] {
-  --bg-color: #008080;
-  --panel-bg: #c0c0c0;
-  --panel-border: #808080;
-  --text-main: #000000;
-  --text-muted: #404040;
-  --accent-primary: #000080;
-  --accent-success: #008000;
-  --accent-warning: #808000;
-  --accent-danger: #800000;
-  --progress-bg: #ffffff;
-  --progress-fill: linear-gradient(90deg, #000080, #1084d0);
-  --progress-quest: linear-gradient(90deg, #008000, #00c000);
-  --progress-plot: linear-gradient(90deg, #800080, #c000c0);
+  /* Retro ProgrOS OKLCH Terminal Theme */
+  --bg-color: oklch(0.55 0.12 185);
+  --panel-bg: oklch(0.82 0.01 185);
+  --panel-border: oklch(0.50 0.01 185);
+  --text-main: oklch(0.15 0.01 185);
+  --text-muted: oklch(0.35 0.02 185);
+  --accent-primary: oklch(0.35 0.16 260);
+  --accent-success: oklch(0.45 0.16 145);
+  --accent-warning: oklch(0.55 0.16 85);
+  --accent-danger: oklch(0.45 0.18 25);
+  
+  --progress-bg: oklch(0.98 0.00 0);
+  --progress-fill: linear-gradient(90deg, oklch(0.35 0.16 260), oklch(0.50 0.18 250));
+  --progress-quest: linear-gradient(90deg, oklch(0.40 0.16 145), oklch(0.55 0.18 145));
+  --progress-plot: linear-gradient(90deg, oklch(0.45 0.16 320), oklch(0.60 0.18 320));
+  
   --font-family: 'MS Sans Serif', Tahoma, sans-serif;
+  --font-base-size: 16px;
 }
 
 * {
@@ -42,6 +53,7 @@ body {
   background-color: var(--bg-color);
   color: var(--text-main);
   font-family: var(--font-family);
+  font-size: var(--font-base-size);
   min-height: 100vh;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -229,6 +241,7 @@ body {
   background: rgba(0, 0, 0, 0.2);
   padding: 0.75rem;
   border-radius: 0.5rem;
+  font-family: var(--font-mono);
 }
 
 .log-entry {
