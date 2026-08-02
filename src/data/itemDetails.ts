@@ -6,6 +6,14 @@ export interface ItemDetails {
   effect: string;
 }
 
+const stableIndex = (key: string, length: number): number => {
+  let hash = 7;
+  for (const character of key) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  return hash % length;
+};
+
+const choose = (options: readonly string[], key: string): string => options[stableIndex(key, options.length)];
+
 const valueOf = (name: string, table: readonly (readonly [string, number])[]): number =>
   table.find(([label]) => name.includes(label))?.[1] ?? 0;
 
@@ -25,9 +33,23 @@ export function describeEquipment(name: string, slot: EquipSlot): ItemDetails {
     : valueOf(name, DEFENSE_ATTRIB) + valueOf(name, DEFENSE_BAD);
   const rating = baseValue(name, slot) + explicit + modifiers;
   const verb = slot === 'Weapon' ? 'attack' : 'defense';
-  const description = slot === 'Weapon'
-    ? 'A legally questionable way to turn a monster into a footnote.'
-    : 'Protective apparel for adventurers who prefer their organs inside.';
+  const lead = slot === 'Weapon'
+    ? [
+      'A legally questionable way to turn a monster into a footnote',
+      'A heroic solution to the ancient problem of having a monster nearby',
+      'The sort of weapon a procurement department calls “within tolerance”',
+    ]
+    : [
+      'Protective apparel for adventurers who prefer their organs inside',
+      'A wearable argument against the sharp parts of other people',
+      'Defensive tailoring for a profession with terrible occupational health',
+    ];
+  const closer = [
+    'It has survived at least one meeting with a monster.',
+    'The warranty was eaten by a small but ambitious animal.',
+    'It looks expensive enough to discourage immediate questions.',
+  ];
+  const description = `${choose(lead, `${name}:${slot}`)}. ${choose(closer, `${slot}:${name}`)}`;
 
   return {
     description,
@@ -44,19 +66,44 @@ const SPELL_FLAVOR: Record<string, string> = {
   'Infinite Confusion': 'The spellbook calls it strategy. Everyone else calls it Tuesday.',
 };
 
+const SPELL_CLOSERS = [
+  'The licensing board has declined to comment.',
+  'Results may vary, especially near furniture.',
+  'Approved by three wizards and one extremely nervous accountant.',
+  'Side effects include confidence, paperwork, and avoidable eye contact.',
+];
+
 export function describeSpell(name: string, level: number): ItemDetails {
   return {
-    description: SPELL_FLAVOR[name] ?? 'A spell of dubious provenance and excellent paperwork.',
+    description: `${SPELL_FLAVOR[name] ?? 'A spell of dubious provenance and excellent paperwork.'} ${choose(SPELL_CLOSERS, `${name}:${level}`)}`,
     effect: `Spell level: ${level}. Higher levels improve its priority in the abstract combat simulation; exact damage is intentionally not surfaced by the engine.`,
   };
 }
 
 export function describeInventoryItem(name: string, quantity: number): ItemDetails {
-  const description = name.includes(' item')
-    ? 'A trophy from something that objected to being converted into loot.'
+  const lead = name.includes(' item')
+    ? [
+      'A trophy from something that objected to being converted into loot',
+      'Evidence that the monster had possessions and poor legal representation',
+      'A souvenir from a workplace incident involving teeth',
+    ]
     : name.includes(' of ')
-      ? 'A suspiciously ornate treasure with more adjectives than practical uses.'
-      : 'A portable reminder that the killing fields have a procurement department.';
+      ? [
+        'A suspiciously ornate treasure with more adjectives than practical uses',
+        'An heirloom of uncertain ancestry and aggressively certain marketing',
+        'A treasure whose primary enchantment is making inventory management worse',
+      ]
+      : [
+        'A portable reminder that the killing fields have a procurement department',
+        'A humble object promoted beyond its station by random chance',
+        'A thing the market daemon will accept if nobody asks follow-up questions',
+      ];
+  const closer = [
+    'It is not edible, unless the situation has become unusually philosophical.',
+    'It will become someone else’s problem at the next market visit.',
+    'It occupies space with the quiet confidence of a tax audit.',
+  ];
+  const description = `${choose(lead, name)}. ${choose(closer, `${name}:${quantity}`)}`;
 
   return {
     description,

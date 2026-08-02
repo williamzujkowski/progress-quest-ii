@@ -250,10 +250,8 @@
 }
 
 .item-tooltip {
-  position: absolute;
-  z-index: 20;
-  bottom: calc(100% + 0.5rem);
-  left: 0;
+  position: fixed;
+  z-index: 1000;
   display: grid;
   width: min(20rem, calc(100vw - 2rem));
   gap: 0.35rem;
@@ -271,8 +269,7 @@
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-.tooltip-trigger:hover .item-tooltip,
-.tooltip-trigger:focus-visible .item-tooltip {
+.item-tooltip-visible {
   opacity: 1;
   transform: translateY(0);
 }
@@ -345,7 +342,6 @@
   .hero-stats-quick { gap: 0.5rem; }
   .stat-pill { flex: 1 1 8rem; justify-content: center; }
   .hero-stat { padding-inline: var(--space-1); }
-  .item-tooltip { left: auto; right: 0; }
   .main-grid { gap: 0.75rem; }
   .main-grid > :last-child { grid-column: auto; }
   .quest-column { gap: 0.75rem; }
