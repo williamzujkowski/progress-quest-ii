@@ -166,7 +166,8 @@ Workflow playbooks live in `.agents/skills/<name>/SKILL.md` (conforming to the A
 - **`codebase-design`**: Designing modular components, interface boundaries, and data flow.
 - **`diagnosing-bugs`**: Root-cause bug investigation and failure trace analysis.
 - **`domain-modeling`**: Modeling RPG domain entities, stats, equipment, items, and state contracts.
-- **`frontend-design`**: Anthropic's official frontend design skill for distinctive, intentional UI visual direction, typography, and layout.
+- **`frontend-design`**: Progress Quest II's local adaptation of Anthropic's frontend design guidance for distinctive visual direction, typography, and layout; upstream provenance refresh is tracked in #128.
+- **`vercel-react-best-practices`**: Vercel's React performance playbook; apply only the Vite/client rules supported by measurements or a concrete regression.
 - **`grill-me` / `grilling`**: Interactive requirements grilling to resolve ambiguous user requirements.
 - **`grill-with-docs`**: Grilling requirements against official project documentation and ADRs.
 - **`handoff`**: Context packaging and handoff state summary between agent turns or subagents.
@@ -184,6 +185,7 @@ Workflow playbooks live in `.agents/skills/<name>/SKILL.md` (conforming to the A
 - **`ui-design-tokens`**: Management of OKLCH color space design tokens, theme switching (Remarque & OKLCH Terminal Themes), and typographic standards.
 - **`ui-responsive-layout`**: Responsive layout strategies for multi-surface desktop and mobile viewports.
 - **`ui-visual-composition`**: Guidelines for high-hierarchy, density-optimized, and non-generic web UI layout and visual composition.
+- **`web-design-guidelines`**: Pinned, locally reviewed Vercel source checklist for accessibility, forms, motion, overflow, touch, theming, and interaction audits.
 - **`wayfinder`**: Codebase discovery, sitemap generation, and entrypoint navigation.
 - **`writing-great-skills`**: Creating or updating agent skills in `.agents/skills/`.
 

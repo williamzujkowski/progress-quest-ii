@@ -426,6 +426,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
 
     await themePicker.selectOption('remarque-light');
     await expect(page.locator('html')).toHaveAttribute('data-terminal-theme', 'remarque-light');
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#f8f6f3');
     await expect.poll(() => page.evaluate(() => localStorage.getItem('progquest_theme_v1'))).toBe('remarque-light');
 
     await page.reload();
@@ -433,6 +434,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await themePicker.selectOption('progros');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'progros');
     await expect(page.locator('html')).not.toHaveAttribute('data-terminal-theme', /.+/);
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', 'oklch(0.55 0.12 185)');
   });
 
   test('keeps the selected theme usable when preference storage rejects the write', async ({ page }) => {
@@ -550,6 +552,17 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(tagFor('Executing a passing pigeon...')).toHaveText('Combat');
   });
 
+  test('fills the desktop middle column with a sparse activity log', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+
+    const middleColumn = await page.locator('.quest-column').boundingBox();
+    const activityCard = await page.locator('.activity-card').boundingBox();
+    expect(middleColumn).not.toBeNull();
+    expect(activityCard).not.toBeNull();
+    expect(activityCard!.y + activityCard!.height).toBeGreaterThanOrEqual(middleColumn!.y + middleColumn!.height - 1);
+  });
+
   test('keeps a dense desktop dashboard within one viewport and follows latest activity', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
@@ -565,6 +578,11 @@ test.describe('Progress Quest II terminal dashboard', () => {
     };
 
     expect(metrics.page.height).toBeLessThanOrEqual(metrics.page.viewport);
+    const middleColumn = await page.locator('.quest-column').boundingBox();
+    const activityCard = await page.locator('.activity-card').boundingBox();
+    expect(middleColumn).not.toBeNull();
+    expect(activityCard).not.toBeNull();
+    expect(activityCard!.y + activityCard!.height).toBeGreaterThanOrEqual(middleColumn!.y + middleColumn!.height - 1);
     expect(metrics.log.scroll).toBeGreaterThan(metrics.log.client);
     expect(metrics.log.top + metrics.log.client).toBeGreaterThanOrEqual(metrics.log.scroll - 1);
     expect(metrics.inventory.scroll).toBeGreaterThan(metrics.inventory.client);
@@ -595,7 +613,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     });
   }
 
-  for (const theme of ['remarque-dark', 'remarque-light', 'progros']) {
+  for (const theme of ['remarque-dark', 'remarque-light', 'green-phosphor-crt', 'keys-ocean-sunset-hc', 'progros']) {
     test(`${theme} has no detectable WCAG A or AA violations`, async ({ page }) => {
       await page.goto('/');
       await page.getByRole('combobox', { name: 'Visual theme' }).selectOption(theme);
@@ -610,6 +628,20 @@ test.describe('Progress Quest II terminal dashboard', () => {
     });
   }
 
+  test('honors reduced motion and remains usable in forced colors', async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.goto('/');
+
+    await expect(page.getByRole('combobox', { name: 'Visual theme' })).toBeVisible();
+    expect(await page.locator('.progress-bar-fill').first().evaluate((element) => parseFloat(getComputedStyle(element).animationDuration))).toBeLessThan(0.001);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+
   test('opens and rolls stats in Character Creator modal', async ({ page }) => {
     await page.goto('/');
 
@@ -619,6 +651,8 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(page.getByText('Progress Quest II — New Character')).toBeVisible();
     await expect(page.getByText(/Prime Stats \(3d6 Rolls\)/i)).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Character Name' })).toHaveAttribute('maxlength', '120');
+    await expect(page.getByRole('group', { name: 'Select Race' })).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Select Class' })).toBeVisible();
 
     // Click Roll 'Em
     const rollBtn = page.getByRole('button', { name: /Roll 'Em/i });
@@ -637,6 +671,47 @@ test.describe('Progress Quest II terminal dashboard', () => {
 
     await expect(page.getByText('Progress Quest II — New Character')).not.toBeVisible();
     await expect(page.locator('[data-testid="hero-prime-stats"] strong')).toHaveText(acceptedStats);
+  });
+
+  test('contains modal focus, closes with Escape, and restores the trigger', async ({ page }) => {
+    await page.goto('/');
+
+    const trigger = page.getByRole('button', { name: /New Character/i });
+    await trigger.click();
+    const dialog = page.getByRole('dialog', { name: /New Character/i });
+    const close = dialog.getByRole('button', { name: /Close character creator/i });
+
+    await expect(close).toBeFocused();
+    expect((await close.boundingBox())?.width).toBeGreaterThanOrEqual(44);
+    expect(await dialog.evaluate((element) => element.matches(':modal'))).toBe(true);
+    await page.keyboard.press('Shift+Tab');
+    await expect(trigger).not.toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Escape');
+
+    await expect(dialog).not.toBeVisible();
+    await expect(trigger).toBeFocused();
+  });
+
+  test('contains Save Manager focus and restores its trigger', async ({ page }) => {
+    await page.goto('/');
+
+    const trigger = page.getByRole('button', { name: /Roster & Saves/i });
+    await trigger.click();
+    const dialog = page.getByRole('dialog', { name: /Character Roster/i });
+    const close = dialog.getByRole('button', { name: 'Close modal' });
+
+    await expect(close).toBeFocused();
+    expect(await dialog.evaluate((element) => element.matches(':modal'))).toBe(true);
+    await page.keyboard.press('Shift+Tab');
+    await expect(trigger).not.toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Escape');
+
+    await expect(dialog).not.toBeVisible();
+    await expect(trigger).toBeFocused();
   });
 
   test('keeps character creation in the dedicated creator', async ({ page }) => {
@@ -676,7 +751,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
       return btoa(unescape(encodeURIComponent(JSON.stringify(savedCharacter))));
     });
 
-    await page.getByPlaceholder('Paste base64 .pqw save string here...').fill(pqw);
+    await page.getByRole('textbox', { name: 'Import Save String (.pqw)' }).fill(pqw);
     await page.getByRole('button', { name: 'Load Character' }).click();
 
     await expect(page.getByRole('dialog', { name: /Character Roster/i })).not.toBeVisible();
@@ -689,7 +764,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await page.goto('/');
     const activeName = await page.locator('.hero-name > span:not(.badge)').innerText();
     await page.getByRole('button', { name: /Roster & Saves/i }).click();
-    await page.getByPlaceholder('Paste base64 .pqw save string here...').fill('%%%INVALID_BASE64%%%');
+    await page.getByRole('textbox', { name: 'Import Save String (.pqw)' }).fill('%%%INVALID_BASE64%%%');
     await page.getByRole('button', { name: 'Load Character' }).click();
 
     await expect(page.getByRole('dialog', { name: /Character Roster/i })).toBeVisible();
@@ -711,7 +786,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     });
 
     await page.getByRole('button', { name: /Roster & Saves/i }).click();
-    await page.getByPlaceholder('Paste base64 .pqw save string here...').fill(invalidPqw);
+    await page.getByRole('textbox', { name: 'Import Save String (.pqw)' }).fill(invalidPqw);
     await page.getByRole('button', { name: 'Load Character' }).click();
 
     await expect(page.getByRole('dialog', { name: /Character Roster/i })).toBeVisible();

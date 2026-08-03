@@ -1,4 +1,6 @@
 import { COLOR_KEYS, type TerminalColorTheme } from '@williamzujkowski/oklch-terminal-themes';
+import greenPhosphorCrt from '@williamzujkowski/oklch-terminal-themes/themes/green-phosphor-crt.json';
+import keysOceanSunsetHc from '@williamzujkowski/oklch-terminal-themes/themes/keys-ocean-sunset-hc.json';
 import remarqueDark from '@williamzujkowski/oklch-terminal-themes/themes/remarque-dark.json';
 import remarqueLight from '@williamzujkowski/oklch-terminal-themes/themes/remarque-light.json';
 
@@ -7,6 +9,8 @@ export const THEME_STORAGE_KEY = 'progquest_theme_v1';
 export const THEME_OPTIONS = [
   { id: 'remarque-dark', label: 'Remarque Dark' },
   { id: 'remarque-light', label: 'Remarque Light' },
+  { id: 'green-phosphor-crt', label: 'Green Phosphor CRT' },
+  { id: 'keys-ocean-sunset-hc', label: 'Ocean Sunset HC' },
   { id: 'progros', label: 'Retro ProgrOS' },
 ] as const;
 
@@ -31,6 +35,8 @@ export function writeThemePreference(theme: ThemeId, storage?: Pick<Storage, 'se
 }
 
 const terminalThemes: Record<Exclude<ThemeId, 'progros'>, TerminalColorTheme> = {
+  'green-phosphor-crt': greenPhosphorCrt as TerminalColorTheme,
+  'keys-ocean-sunset-hc': keysOceanSunsetHc as TerminalColorTheme,
   'remarque-dark': remarqueDark as TerminalColorTheme,
   'remarque-light': remarqueLight as TerminalColorTheme,
 };
@@ -47,18 +53,26 @@ const toCssSlot = (key: (typeof COLOR_KEYS)[number]) =>
 export const getTerminalThemeVariables = (theme: ThemeId): Record<string, string> => {
   if (theme === 'progros') return {};
 
-  return Object.fromEntries(
+  const variables = Object.fromEntries(
     COLOR_KEYS.map((key) => [toCssSlot(key), terminalThemes[theme].colors[key].oklchCss]),
   );
+  const accent = terminalThemes[theme].accent?.oklchCss;
+  return accent ? { ...variables, '--terminal-accent': accent } : variables;
 };
+
+export const getThemeColor = (theme: Exclude<ThemeId, 'progros'>): string =>
+  terminalThemes[theme].colors.background.hex;
 
 export const applyTheme = (root: HTMLElement, theme: ThemeId) => {
   root.dataset.theme = theme;
 
   for (const key of COLOR_KEYS) root.style.removeProperty(toCssSlot(key));
+  root.style.removeProperty('--terminal-accent');
 
   if (theme === 'progros') {
     delete root.dataset.terminalTheme;
+    const themeColor = getComputedStyle(root).getPropertyValue('--terminal-background').trim();
+    root.ownerDocument.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', themeColor);
     return;
   }
 
@@ -66,4 +80,5 @@ export const applyTheme = (root: HTMLElement, theme: ThemeId) => {
   for (const [property, value] of Object.entries(getTerminalThemeVariables(theme))) {
     root.style.setProperty(property, value);
   }
+  root.ownerDocument.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', getThemeColor(theme));
 };

@@ -7,6 +7,7 @@ import { generateRandomName } from '../engine/sim';
 import type { StatsMap } from '../engine/types';
 import { useGameStore } from '../state/gameStore';
 import { MAX_CHARACTER_NAME_LENGTH } from '../state/schemas';
+import { useModalDialog } from './useModalDialog';
 
 interface CharacterCreatorModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ interface CharacterCreatorModalProps {
 
 export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ isOpen, onClose }) => {
   const { startSession } = useGameStore();
+  const dialogRef = useModalDialog(isOpen, onClose);
 
   const [name, setName] = useState(generateRandomName());
   const [race, setRace] = useState(RACES[0].name);
@@ -63,7 +65,7 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="creator-title">
+    <dialog ref={dialogRef} className="modal-overlay" onClick={onClose} aria-labelledby="creator-title">
       <div className="modal-content modal-wide" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2 id="creator-title">
@@ -83,7 +85,9 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
             <div className="field-row">
               <input
                 id="character-name"
+                name="characterName"
                 type="text"
+                autoComplete="off"
                 value={name}
                 maxLength={MAX_CHARACTER_NAME_LENGTH}
                 onChange={(e) => setName(e.target.value)}
@@ -129,10 +133,10 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
 
           {/* Race & Class Pickers */}
           <div className="picker-grid">
-            <div>
-              <div className="field-label">
+            <fieldset className="picker-fieldset">
+              <legend className="field-label">
                 Select Race
-              </div>
+              </legend>
               <div className="picker-list surface-panel">
                 {RACES.map((r) => (
                   <label className="picker-option" key={r.name}>
@@ -150,12 +154,12 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
                   </label>
                 ))}
               </div>
-            </div>
+            </fieldset>
 
-            <div>
-              <div className="field-label">
+            <fieldset className="picker-fieldset">
+              <legend className="field-label">
                 Select Class
-              </div>
+              </legend>
               <div className="picker-list surface-panel">
                 {KLASSES.map((k) => (
                   <label className="picker-option" key={k.name}>
@@ -173,7 +177,7 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
                   </label>
                 ))}
               </div>
-            </div>
+            </fieldset>
           </div>
 
           <button type="submit" className="btn btn-primary">
@@ -181,6 +185,6 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
           </button>
         </form>
       </div>
-    </div>
+    </dialog>
   );
 };

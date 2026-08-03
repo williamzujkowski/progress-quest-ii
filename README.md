@@ -32,7 +32,7 @@ If a cached shell ever becomes impressively confused, use the browser's site set
 - Deterministic, zero-player progression based on the legacy game behavior.
 - Character creation, deterministic session resume, roster/save import and export, quests, combat progression, equipment, spells, loot, and activity history.
 - Responsive desktop and mobile layouts with bounded scrolling panels.
-- Remarque Dark, Remarque Light, and legacy ProgrOS themes powered by [`@williamzujkowski/oklch-terminal-themes`](https://github.com/williamzujkowski/oklch-terminal-themes).
+- Remarque Dark/Light, Green Phosphor CRT, color-vision-safe Ocean Sunset HC, and legacy ProgrOS themes powered by [`@williamzujkowski/oklch-terminal-themes`](https://github.com/williamzujkowski/oklch-terminal-themes).
 - Accessible keyboard paths, tooltip descriptions, local validation, and fail-closed save imports.
 - Playwright browser suites covering dense dashboards, mobile widths, themes, accessibility, saves, creator flows, installation, offline restart, explicit updates, rollback, and cache privacy.
 
