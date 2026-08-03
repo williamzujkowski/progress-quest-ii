@@ -40,12 +40,17 @@ export function registerPwa(onNotice: (notice: PwaNotice) => void): () => void {
     });
   };
   const handleStateChange = () => {
-    if (installing?.state === 'installed' && navigator.serviceWorker.controller) announceWaitingUpdate();
+    if (!navigator.serviceWorker.controller) return;
+    if (installing?.state === 'installed') announceWaitingUpdate();
+    if (installing?.state === 'redundant') {
+      fail('pwa_update_failed', 'update', UPDATE_FAILURE, new Error('Service worker update install failed.'));
+    }
   };
   const handleUpdateFound = () => {
     installing?.removeEventListener('statechange', handleStateChange);
     installing = registration?.installing ?? null;
     installing?.addEventListener('statechange', handleStateChange);
+    handleStateChange();
   };
   const handleControllerChange = () => {
     if (applying) window.location.reload();
@@ -57,6 +62,7 @@ export function registerPwa(onNotice: (notice: PwaNotice) => void): () => void {
       if (disposed) return;
       registration = registered;
       registration.addEventListener('updatefound', handleUpdateFound);
+      handleUpdateFound();
       announceWaitingUpdate();
     })
     .catch((error: unknown) => fail('pwa_registration_failed', 'initialize', REGISTRATION_FAILURE, error));

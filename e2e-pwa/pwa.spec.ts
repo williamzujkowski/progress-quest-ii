@@ -4,6 +4,7 @@ import AxeBuilder from '@axe-core/playwright';
 test('publishes the Progress Quest II install contract at its Pages scope', async ({ page }) => {
   await page.goto('./');
 
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', './favicon.svg');
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', './manifest.webmanifest');
   const manifest = await page.evaluate(async () => {
     const response = await fetch('./manifest.webmanifest');
@@ -21,6 +22,16 @@ test('publishes the Progress Quest II install contract at its Pages scope', asyn
       expect.objectContaining({ src: './icon-192.png', sizes: '192x192', type: 'image/png' }),
       expect.objectContaining({ src: './icon-512.png', sizes: '512x512', type: 'image/png' }),
   ]));
+  const iconDimensions = await page.evaluate(async () => Promise.all(['./icon-192.png', './icon-512.png'].map((src) => new Promise<string>((resolve, reject) => {
+    const icon = new Image();
+    icon.onload = () => resolve(`${icon.naturalWidth}x${icon.naturalHeight}`);
+    icon.onerror = reject;
+    icon.src = src;
+  }))));
+  expect(iconDimensions).toEqual(['192x192', '512x512']);
+
+  const workerSource = await page.evaluate(async () => (await fetch('./sw.js')).text());
+  expect(workerSource).not.toMatch(/CACHE_PREFIX\}development/);
 });
 
 test('loads the Pages-scoped app offline after one successful visit', async ({ page, context }) => {
@@ -59,7 +70,7 @@ test('applies an update only after the user approves it and removes the stale ca
   await page.reload();
   const initialCaches = await page.evaluate(() => caches.keys());
   expect(initialCaches).toHaveLength(1);
-  expect(initialCaches[0]).toMatch(/^progquest-shell-/);
+  expect(initialCaches[0]).toMatch(/^progress-quest-ii-shell-/);
 
   await request.post('./__test__/worker-mode/update');
   try {
@@ -68,12 +79,17 @@ test('applies an update only after the user approves it and removes the stale ca
     await expect(updateButton).toBeVisible();
     expect(await page.evaluate(() => caches.keys())).toEqual([
       ...initialCaches,
-      'progquest-shell-pwa-test-update',
+      'progress-quest-ii-shell-pwa-test-update',
     ]);
 
-    await Promise.all([page.waitForEvent('load'), updateButton.click()]);
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+    await updateButton.focus();
+    await Promise.all([page.waitForEvent('load'), page.keyboard.press('Enter')]);
     await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest II' })).toBeVisible();
-    await expect.poll(() => page.evaluate(() => caches.keys())).toEqual(['progquest-shell-pwa-test-update']);
+    await expect.poll(() => page.evaluate(() => caches.keys())).toEqual(['progress-quest-ii-shell-pwa-test-update']);
   } finally {
     await request.post('./__test__/worker-mode/normal');
   }
@@ -98,6 +114,7 @@ test('keeps the previous offline shell when an update fails atomically', async (
     });
 
     await expect(page.getByRole('button', { name: 'Update now' })).toHaveCount(0);
+    await expect(page.getByRole('status')).toHaveText('The update declined its promotion. The current edition remains in office.');
     expect(await page.evaluate(() => caches.keys())).toEqual(initialCaches);
     await context.setOffline(true);
     await page.reload({ waitUntil: 'domcontentloaded' });

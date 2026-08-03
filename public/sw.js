@@ -1,4 +1,4 @@
-const CACHE_PREFIX = 'progquest-shell-';
+const CACHE_PREFIX = 'progress-quest-ii-shell-';
 const CACHE_NAME = `${CACHE_PREFIX}__BUILD_ID__`;
 const PRECACHE_URLS = __PRECACHE_URLS__;
 const SCOPE_URL = new URL('./', self.registration.scope);
@@ -36,8 +36,11 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('message', (event) => {
   const data = event.data;
+  const sourceUrl = event.source?.type === 'window' ? new URL(event.source.url) : null;
   if (
-    typeof data === 'object'
+    sourceUrl?.origin === SCOPE_URL.origin
+    && sourceUrl.pathname.startsWith(SCOPE_URL.pathname)
+    && typeof data === 'object'
     && data !== null
     && Object.keys(data).length === 1
     && data.type === 'pwa_apply_update'
@@ -52,10 +55,13 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== SCOPE_URL.origin || !url.pathname.startsWith(SCOPE_URL.pathname)) return;
 
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(async () => (await caches.match(INDEX_URL)) ?? Response.error()));
+    event.respondWith(fetch(request).catch(async () => {
+      const cache = await caches.open(CACHE_NAME);
+      return (await cache.match(INDEX_URL)) ?? Response.error();
+    }));
     return;
   }
 
   if (url.search || !PRECACHE_PATHS.has(url.pathname)) return;
-  event.respondWith(caches.match(request).then((cached) => cached ?? fetch(request)));
+  event.respondWith(caches.open(CACHE_NAME).then(async (cache) => (await cache.match(request)) ?? fetch(request)));
 });

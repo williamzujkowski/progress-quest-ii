@@ -23,7 +23,7 @@ The dashboard is responsive at phone widths and keeps growing activity, inventor
 
 ### PWA status, without the marketing fog
 
-The live site is an installable PWA deployed over HTTPS to GitHub Pages. After one successful online visit, the current app shell starts offline while validated characters remain in browser storage. New builds wait politely—an alarming development—until you approve **Update now**; a failed update leaves the previous offline shell in office.
+The live site is an installable PWA deployed over HTTPS to GitHub Pages. After one successful online visit, the current app shell starts offline while validated characters remain in browser storage. When an open session discovers a new build, it offers an explicit **Update now** action; browsers may also activate a waiting worker naturally after every controlled tab closes. A failed install leaves the previous offline shell in office.
 
 If a cached shell ever becomes impressively confused, use the browser's site settings to clear data or unregister the service worker, then revisit the site online. This removes browser-local characters too, so export any valued `.pqw` files first. Nothing is uploaded during this administrative ceremony.
 

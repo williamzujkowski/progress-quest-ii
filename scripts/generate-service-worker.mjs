@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { relative, sep } from 'node:path';
 
@@ -13,12 +14,22 @@ async function listFiles(directory) {
   return nested.flat();
 }
 
-const files = (await listFiles(distDirectory))
-  .filter((url) => url.pathname !== workerUrl.pathname && !url.pathname.endsWith('.map'))
+const artifactUrls = (await listFiles(distDirectory))
+  .filter((url) => url.pathname !== workerUrl.pathname && !url.pathname.endsWith('.map'));
+const files = artifactUrls
   .map((url) => `./${relative(distDirectory.pathname, url.pathname).split(sep).join('/')}`)
   .sort();
 
-const buildId = process.env.GITHUB_SHA ?? 'development';
+async function contentBuildId() {
+  const hash = createHash('sha256');
+  for (const url of artifactUrls.sort((left, right) => left.pathname.localeCompare(right.pathname))) {
+    hash.update(relative(distDirectory.pathname, url.pathname));
+    hash.update(await readFile(url));
+  }
+  return hash.digest('hex').slice(0, 16);
+}
+
+const buildId = process.env.GITHUB_SHA ?? await contentBuildId();
 const template = await readFile(workerUrl, 'utf8');
 const worker = template
   .replace('__BUILD_ID__', buildId)
