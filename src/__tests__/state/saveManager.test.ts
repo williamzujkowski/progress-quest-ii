@@ -118,6 +118,40 @@ describe('Save Manager & Serialization', () => {
     }).success).toBe(false);
   });
 
+  it('accepts optional typed quest metadata while preserving legacy quest saves', () => {
+    const character = createNewCharacter('QuestMetadataHero', 'Half Orc', 'Robot Monk', 406);
+    const withMetadata = {
+      ...character,
+      Quest: {
+        ...character.Quest,
+        kind: 'exterminate' as const,
+        target: 'Swamp Elf|1|lilypad',
+        targetIndex: 84,
+        history: ['Old quest', character.Quest.description],
+      },
+    };
+
+    expect(characterSheetSchema.safeParse(withMetadata).success).toBe(true);
+    expect(characterSheetSchema.safeParse(character).success).toBe(true);
+  });
+
+  it('rejects quest metadata outside the bounded contract', () => {
+    const character = createNewCharacter('InvalidQuestMetadata', 'Half Orc', 'Robot Monk', 407);
+
+    expect(characterSheetSchema.safeParse({
+      ...character,
+      Quest: { ...character.Quest, kind: 'unknown' },
+    }).success).toBe(false);
+    expect(characterSheetSchema.safeParse({
+      ...character,
+      Quest: { ...character.Quest, targetIndex: -1 },
+    }).success).toBe(false);
+    expect(characterSheetSchema.safeParse({
+      ...character,
+      Quest: { ...character.Quest, target: '' },
+    }).success).toBe(false);
+  });
+
   it('saves, loads, and removes character sheets from local storage roster', () => {
     const char1 = createNewCharacter('RosterHero1', 'Half Orc', 'Robot Monk', 101);
     const char2 = createNewCharacter('RosterHero2', 'Dung Elf', 'Vermineer', 202);
