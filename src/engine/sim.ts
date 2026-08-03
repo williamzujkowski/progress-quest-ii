@@ -170,7 +170,7 @@ export function generateStatReward(rng: RandomGenerator, stats: StatsMap): keyof
 export function generateItemReward(rng: RandomGenerator, inventoryNames: readonly string[]): string {
   if (Math.max(250, rng.random(999)) < inventoryNames.length) {
     const existing = inventoryNames[rng.random(inventoryNames.length)];
-    if (existing) return existing;
+    if (existing !== undefined) return existing;
   }
   return `${rng.pick(ITEM_ATTRIB)} ${rng.pick(SPECIALS)} of ${rng.pick(ITEM_OFS)}`;
 }

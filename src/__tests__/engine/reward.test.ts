@@ -81,4 +81,12 @@ describe('legacy item reward', () => {
     expect(generateItemReward(rng, inventoryNames)).toBe('Gold');
     expect(rng.getState()).toEqual([0.41563358227722347, 0.8341085575520992, 0.955911073833704, 1794342]);
   });
+
+  it('preserves an accepted empty inventory label without consuming fallback rolls', () => {
+    const inventoryNames = ['', ...Array.from({ length: 299 }, (_, index) => `Item ${index}`)];
+    const rng = new RandomGenerator('reuse-733');
+
+    expect(generateItemReward(rng, inventoryNames)).toBe('');
+    expect(rng.getState()).toEqual([0.41563358227722347, 0.8341085575520992, 0.955911073833704, 1794342]);
+  });
 });
