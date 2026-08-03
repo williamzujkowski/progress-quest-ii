@@ -63,12 +63,13 @@ npm run test:pwa
 npm audit --audit-level=high
 ```
 
-Agent workflow checks are also available:
+The deterministic Nexus installation check is also available:
 
 ```sh
 npm run agents:verify
-npm run agents:review
 ```
+
+Adapter-backed Nexus review, routing, and voting are temporarily bypassed because exhausted providers can produce zero-token heuristic results. Codex subagents and the repository review skills are the interim review path; see upstream [#4350](https://github.com/nexus-substrate/nexus-agents/issues/4350) and [#4351](https://github.com/nexus-substrate/nexus-agents/issues/4351).
 
 ## Architecture at a glance
 

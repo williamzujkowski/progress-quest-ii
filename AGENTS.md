@@ -130,7 +130,7 @@ When ingesting external data (base64 `.pqw` save strings, custom JSON character 
 
 ## Consensus Voting Thresholds
 
-When evaluating major design or architectural forks, use the Nexus Agents `consensus_vote` MCP tool with the matching threshold:
+When evaluating major design or architectural forks, use independent Codex subagents with the matching threshold:
 
 | Trigger | Threshold |
 | :--- | :--- |
@@ -145,11 +145,13 @@ When evaluating major design or architectural forks, use the Nexus Agents `conse
 
 The repository pins Nexus Agents as a development dependency and exposes it through `.mcp.json`. Frontend reviewers should use an available Playwright MCP server; install it at the agent-host level when browser access is absent.
 
+**Temporary Nexus bypass:** Do not invoke Nexus adapter-backed routing, research, brainstorming, voting, or PR review. Exhausted providers currently fall through to zero-token heuristic output that can look authoritative. Until upstream [#4350](https://github.com/nexus-substrate/nexus-agents/issues/4350) and [#4351](https://github.com/nexus-substrate/nexus-agents/issues/4351) are fixed and verified on this host, use Codex subagents and repository skills instead. Keep `npm run agents:verify`; it is deterministic and remains a CI installation/configuration gate.
+
 1. **Environment check:** Run `npm run agents:verify` after installing dependencies or changing agent configuration. Use `npx nexus-agents doctor` when diagnosing optional provider integrations.
 2. **Frontend review:** Start the app with `npm run dev`, inspect changed flows with the Playwright MCP server at desktop and mobile viewport sizes, then encode stable acceptance criteria in `npm run test:e2e`.
 3. **Skill review:** Apply the matching frontend, accessibility, responsive-layout, and code-review skills before handoff.
-4. **Consensus gate:** Use Nexus Agents voting for decisions listed in the threshold table above. Treat the vote as advisory unless the user explicitly delegates the decision.
-5. **PR gate:** After opening a PR, run `npm run agents:review -- <pr-url>` and resolve or explicitly disposition verified findings before merge.
+4. **Consensus gate:** Fan out independent Codex voters for decisions listed in the threshold table above. Treat the vote as advisory unless the user explicitly delegates the decision.
+5. **PR gate:** Apply `.agents/skills/code-review`, with separate Codex standards, spec, and security reviewers as appropriate; resolve verified findings before merge.
 
 Nexus runtime data belongs in `.nexus-agents/` and MUST remain untracked. Never put provider keys in repository configuration; Nexus may use authenticated local CLIs instead.
 
@@ -211,4 +213,3 @@ Every piece of identified follow-up work — including feature ideas, discovered
 1. **Feature Branches**: All non-trivial work MUST be done on a dedicated branch (e.g. `feat/game-state-machine`, `feat/save-system`, `fix/encumbrance-calc`).
 2. **Pull Requests**: Submit PRs via `gh pr create` with clear titles, descriptions, and linked issue numbers.
 3. **Verification**: Run `npm test` and `npx tsc --noEmit` before opening or merging any PR.
-

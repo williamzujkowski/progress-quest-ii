@@ -70,4 +70,4 @@ CI and deployment gates: dependency install, full Nexus installation verificatio
 
 Run the deterministic legacy data and isolated transition-oracle contracts separately with `npm run test:fidelity`.
 
-PR handoff gates: `npm run agents:review` and `git diff --check`.
+PR handoff gates: independent Codex standards/spec/security review through `.agents/skills/code-review` and `git diff --check`. Adapter-backed Nexus review and voting remain bypassed until upstream issues #4350 and #4351 are fixed and verified locally.
