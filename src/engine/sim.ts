@@ -1,7 +1,7 @@
 import { ARMORS, DEFENSE_ATTRIB, DEFENSE_BAD, EQUIP_SLOTS, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, SPELLS, WEAPONS } from '../data/traits';
 import { calculateEncumbranceMax, generateInitialStats } from './math';
 import { RandomGenerator, type PRNGSeed } from './prng';
-import { indefinite } from './text';
+import { definite, indefinite } from './text';
 import type { CharacterSheet, EquipSlot, InventoryItem, ProgressTask, SpellItem } from './types';
 
 const NAME_PARTS_1 = ['Brog', 'Grim', 'Kael', 'Thor', 'Zar', 'Vex', 'Gor', 'Drak', 'Thul', 'Borg', 'Loth', 'Morg', 'Fizz', 'Wiz', 'Snag'];
@@ -84,6 +84,31 @@ export function getRandomMonster(rng: RandomGenerator, level: number) {
     if (Math.abs(level - candidate.level) < Math.abs(level - result.level)) result = candidate;
   }
   return result;
+}
+
+export function generateExterminateQuest(rng: RandomGenerator, level: number): {
+  kind: 'exterminate';
+  description: string;
+  target: string;
+  targetIndex: number;
+} {
+  let targetIndex = rng.random(MONSTERS.length);
+  let target = MONSTERS[targetIndex];
+  if (!target) throw new RangeError('Monster table is empty');
+  for (let attempt = 1; attempt < 4; attempt += 1) {
+    const candidateIndex = rng.random(MONSTERS.length);
+    const candidate = MONSTERS[candidateIndex];
+    if (candidate && Math.abs(level - candidate.level) < Math.abs(level - target.level)) {
+      target = candidate;
+      targetIndex = candidateIndex;
+    }
+  }
+  return {
+    kind: 'exterminate',
+    description: `Exterminate ${definite(target.name, 2)}`,
+    target: `${target.name}|${target.level}|${target.item}`,
+    targetIndex,
+  };
 }
 
 export function generateLootItem(rng: RandomGenerator, monsterName?: string): string {

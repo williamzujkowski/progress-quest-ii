@@ -12,3 +12,7 @@ export function indefinite(value: string, quantity = 1): string {
   const article = 'AEIOUÜaeiouü'.includes(value.charAt(0)) ? 'an' : 'a';
   return `${article} ${value}`;
 }
+
+export function definite(value: string, quantity = 1): string {
+  return `the ${quantity === 1 ? value : plural(value)}`;
+}
