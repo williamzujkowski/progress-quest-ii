@@ -19,18 +19,23 @@ const artifactUrls = (await listFiles(distDirectory))
 const files = artifactUrls
   .map((url) => `./${relative(distDirectory.pathname, url.pathname).split(sep).join('/')}`)
   .sort();
+const template = await readFile(workerUrl, 'utf8');
 
 async function contentBuildId() {
   const hash = createHash('sha256');
+  hash.update('worker-template\0');
+  hash.update(template);
+  hash.update('\0');
   for (const url of artifactUrls.sort((left, right) => left.pathname.localeCompare(right.pathname))) {
     hash.update(relative(distDirectory.pathname, url.pathname));
+    hash.update('\0');
     hash.update(await readFile(url));
+    hash.update('\0');
   }
   return hash.digest('hex').slice(0, 16);
 }
 
 const buildId = process.env.GITHUB_SHA ?? await contentBuildId();
-const template = await readFile(workerUrl, 'utf8');
 const worker = template
   .replace('__BUILD_ID__', buildId)
   .replace('__PRECACHE_URLS__', JSON.stringify(files));

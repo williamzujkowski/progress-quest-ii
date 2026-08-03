@@ -64,6 +64,19 @@ test('keeps questing when service-worker registration fails', async ({ page, req
   }
 });
 
+test('reports a first-install precache failure without leaving a cache', async ({ page, request }) => {
+  await request.post('./__test__/worker-mode/broken');
+  try {
+    await page.goto('./');
+
+    await expect(page.getByRole('status')).toHaveText('Offline mode is unavailable. Questing may require civilization.');
+    await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest II' })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => caches.keys())).toEqual([]);
+  } finally {
+    await request.post('./__test__/worker-mode/normal');
+  }
+});
+
 test('applies an update only after the user approves it and removes the stale cache', async ({ page, request }) => {
   await page.goto('./');
   await page.evaluate(() => navigator.serviceWorker.ready);

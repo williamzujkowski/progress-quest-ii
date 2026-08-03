@@ -40,10 +40,15 @@ export function registerPwa(onNotice: (notice: PwaNotice) => void): () => void {
     });
   };
   const handleStateChange = () => {
-    if (!navigator.serviceWorker.controller) return;
     if (installing?.state === 'installed') announceWaitingUpdate();
     if (installing?.state === 'redundant') {
-      fail('pwa_update_failed', 'update', UPDATE_FAILURE, new Error('Service worker update install failed.'));
+      const isUpdate = Boolean(navigator.serviceWorker.controller);
+      fail(
+        isUpdate ? 'pwa_update_failed' : 'pwa_registration_failed',
+        isUpdate ? 'update' : 'initialize',
+        isUpdate ? UPDATE_FAILURE : REGISTRATION_FAILURE,
+        new Error('Service worker install failed.'),
+      );
     }
   };
   const handleUpdateFound = () => {
