@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { describeEquipment, describeInventoryItem, describeSpell } from '../data/itemDetails';
 import {
   ARMORS,
+  BORING_ITEMS,
   DEFENSE_ATTRIB,
   DEFENSE_BAD,
   EQUIP_SLOTS,
   ITEM_ATTRIB,
   ITEM_OFS,
+  MONSTERS,
   OFFENSE_ATTRIB,
   OFFENSE_BAD,
   SHIELDS,
@@ -14,6 +16,9 @@ import {
   SPELLS,
   WEAPONS,
 } from '../data/traits';
+
+const withoutIdentityToken = (description: string, ...tokens: string[]): string =>
+  tokens.reduce((result, token) => result.replaceAll(token, '<identity>'), description);
 
 describe('item tooltip details', () => {
   it('reports equipment slot power without inventing combat damage', () => {
@@ -55,17 +60,92 @@ describe('item tooltip details', () => {
     expect(describeEquipment(name, slot).description.length).toBeLessThanOrEqual(220);
   });
 
+  it.each([
+    ['unsafe integer', '9'.repeat(194)],
+    ['oversized zero', '0'.repeat(194)],
+    ['leading zeros', `${'0'.repeat(193)}1`],
+  ])('does not treat an imported %s prefix as an equipment rating', (_case, mark) => {
+    const details = describeEquipment(`${mark} Stick`, 'Weapon');
+
+    expect([...details.description].length).toBeLessThanOrEqual(220);
+    expect(details.effect).toContain('Attack rating: 0.');
+    expect(details.effect).not.toMatch(/Infinity|NaN|e\+/);
+  });
+
   it('keeps every generated equipment identity distinct and bounded', () => {
     const equipment = [
-      ...WEAPONS.flatMap(([base]) => [...OFFENSE_ATTRIB, ...OFFENSE_BAD].map(([modifier]) => [`${modifier} ${base}`, 'Weapon'] as const)),
-      ...SHIELDS.flatMap(([base]) => [...DEFENSE_ATTRIB, ...DEFENSE_BAD].map(([modifier]) => [`${modifier} ${base}`, 'Shield'] as const)),
+      ...WEAPONS.flatMap(([base]) => [...OFFENSE_ATTRIB, ...OFFENSE_BAD].map(([modifier]) => [`${modifier} ${base}`, 'Weapon', modifier, base] as const)),
+      ...SHIELDS.flatMap(([base]) => [...DEFENSE_ATTRIB, ...DEFENSE_BAD].map(([modifier]) => [`${modifier} ${base}`, 'Shield', modifier, base] as const)),
       ...EQUIP_SLOTS.filter((slot) => slot !== 'Weapon' && slot !== 'Shield').flatMap((slot) =>
-        ARMORS.flatMap(([base]) => [...DEFENSE_ATTRIB, ...DEFENSE_BAD].map(([modifier]) => [`${modifier} ${base}`, slot] as const))),
+        ARMORS.flatMap(([base]) => [...DEFENSE_ATTRIB, ...DEFENSE_BAD].map(([modifier]) => [`${modifier} ${base}`, slot, modifier, base] as const))),
     ];
     const descriptions = equipment.map(([name, slot]) => describeEquipment(name, slot).description);
+    const signatures = descriptions.map((description, index) => {
+      const item = equipment[index];
+      return item ? withoutIdentityToken(description, item[2], item[3]) : '';
+    });
 
     expect(new Set(descriptions).size).toBe(equipment.length);
     expect(descriptions.every((description) => description.length <= 220)).toBe(true);
+    // Identity words are stripped: this rejects the old three-template catalog while preserving deliberate motifs.
+    expect(new Set(signatures).size).toBeGreaterThanOrEqual(1_500);
+  });
+
+  it('gives neighboring equipment bases meaning beyond the interpolated noun', () => {
+    const stick = withoutIdentityToken(describeEquipment('Polished Stick', 'Weapon').description, 'Stick');
+    const shiv = withoutIdentityToken(describeEquipment('Polished Shiv', 'Weapon').description, 'Shiv');
+
+    expect(stick).not.toBe(shiv);
+  });
+
+  it('gives neighboring equipment modifiers meaning beyond the interpolated adjective', () => {
+    const venomed = withoutIdentityToken(describeEquipment('Venomed Shortsword', 'Weapon').description, 'Venomed');
+    const vicious = withoutIdentityToken(describeEquipment('Vicious Shortsword', 'Weapon').description, 'Vicious');
+
+    expect(venomed).not.toBe(vicious);
+  });
+
+  it('gives every canonical equipment base a distinct idea in the same context', () => {
+    const weaponStories = WEAPONS.map(([base]) =>
+      withoutIdentityToken(describeEquipment(`Polished ${base}`, 'Weapon').description, base));
+    const shieldStories = SHIELDS.map(([base]) =>
+      withoutIdentityToken(describeEquipment(`Studded ${base}`, 'Shield').description, base));
+    const armorStories = ARMORS.map(([base]) =>
+      withoutIdentityToken(describeEquipment(`Studded ${base}`, 'Hauberk').description, base));
+
+    expect(new Set(weaponStories).size).toBe(WEAPONS.length);
+    expect(new Set(shieldStories).size).toBe(SHIELDS.length);
+    expect(new Set(armorStories).size).toBe(ARMORS.length);
+  });
+
+  it('gives every canonical equipment modifier a distinct idea in the same context', () => {
+    const offense = [...OFFENSE_ATTRIB, ...OFFENSE_BAD].map(([modifier]) =>
+      withoutIdentityToken(describeEquipment(`${modifier} Stick`, 'Weapon').description, modifier));
+    const defense = [...DEFENSE_ATTRIB, ...DEFENSE_BAD].map(([modifier]) =>
+      withoutIdentityToken(describeEquipment(`${modifier} Burlap`, 'Hauberk').description, modifier));
+
+    expect(new Set(offense).size).toBe(offense.length);
+    expect(new Set(defense).size).toBe(defense.length);
+  });
+
+  it('keeps equipment stories to two sentences and bounds stacked imported modifiers', () => {
+    const modifiers = [...OFFENSE_ATTRIB, ...OFFENSE_BAD].map(([modifier]) => modifier).join(' ');
+    const stacked = describeEquipment(`+100 ${modifiers} Stick`, 'Weapon').description;
+    const ordinary = describeEquipment('Polished Stick', 'Weapon').description;
+    const sentenceCount = (description: string): number => description.match(/[.!?](?:\s|$)/g)?.length ?? 0;
+
+    expect([...stacked].length).toBeLessThanOrEqual(220);
+    expect(sentenceCount(ordinary)).toBeLessThanOrEqual(2);
+  });
+
+  it('bounds a retained safe mark combined with stacked modifiers and an unknown base', () => {
+    const prefix = '-9007199254700000 Polished Pronged Steely Nerf Venomed Dancing Vicious Invisible Tarnished Rubber Mini Padded Stabbity I8 ';
+    const name = `${prefix}${'Q'.repeat(200 - prefix.length)}`;
+    const details = describeEquipment(name, 'Weapon');
+
+    expect(name).toHaveLength(200);
+    expect([...details.description].length).toBeLessThanOrEqual(220);
+    expect(details.effect).not.toMatch(/Infinity|NaN|e\+/);
   });
 
   it('keeps spell flavor stable across levels without inventing a combat effect', () => {
@@ -121,6 +201,18 @@ describe('item tooltip details', () => {
     expect(description).toContain('jam');
   });
 
+  it('gives neighboring monster drops meaning beyond the interpolated remains', () => {
+    const rat = withoutIdentityToken(describeInventoryItem('rat tail', 1).description, 'Rat', 'tail');
+    const scout = withoutIdentityToken(
+      describeInventoryItem('Cub Scout neckerchief', 1).description,
+      'Cub Scout',
+      'neckerchief',
+    );
+
+    expect(rat).not.toBe(scout);
+    expect(scout).toContain('wardrobe');
+  });
+
   it('does not invent monster provenance for an accepted unknown item', () => {
     expect(describeInventoryItem('Uncatalogued item', 1).description).not.toContain('Recovered from');
   });
@@ -132,17 +224,86 @@ describe('item tooltip details', () => {
     expect(description).toContain('treasure');
   });
 
+  it('gives neighboring mundane loot meaning beyond the interpolated object', () => {
+    const nail = withoutIdentityToken(describeInventoryItem('nail', 1).description, 'nail');
+    const lunchpail = withoutIdentityToken(describeInventoryItem('lunchpail', 1).description, 'lunchpail');
+
+    expect(nail).not.toBe(lunchpail);
+  });
+
   it('keeps an accepted unknown item identifiable', () => {
     expect(describeInventoryItem('Uncatalogued Chair', 1).description).toContain('Uncatalogued Chair');
   });
 
   it('keeps every generated special-item identity distinct and bounded', () => {
-    const names = ITEM_ATTRIB.flatMap((attribute) =>
-      SPECIALS.flatMap((object) => ITEM_OFS.map((concept) => `${attribute} ${object} of ${concept}`)));
-    const descriptions = names.map((name) => describeInventoryItem(name, 1).description);
+    const items = ITEM_ATTRIB.flatMap((attribute) =>
+      SPECIALS.flatMap((object) => ITEM_OFS.map((concept) => ({ attribute, concept, name: `${attribute} ${object} of ${concept}`, object }))));
+    const descriptions = items.map(({ name }) => describeInventoryItem(name, 1).description);
+    const signatures = descriptions.map((description, index) => {
+      const item = items[index];
+      return item ? withoutIdentityToken(description, item.attribute, item.object, item.concept) : '';
+    });
 
-    expect(new Set(descriptions).size).toBe(names.length);
+    expect(new Set(descriptions).size).toBe(items.length);
     expect(descriptions.every((description) => description.length <= 220)).toBe(true);
+    expect(new Set(signatures).size).toBeGreaterThanOrEqual(750);
+  });
+
+  it('gives neighboring special-item concepts meaning beyond the interpolated noun', () => {
+    const craft = withoutIdentityToken(describeInventoryItem('Golden Diadem of Craft', 1).description, 'Craft');
+    const joy = withoutIdentityToken(describeInventoryItem('Golden Diadem of Joy', 1).description, 'Joy');
+
+    expect(craft).not.toBe(joy);
+  });
+
+  it('gives neighboring special-item attributes meaning beyond the interpolated adjective', () => {
+    const golden = withoutIdentityToken(describeInventoryItem('Golden Diadem of Craft', 1).description, 'Golden');
+    const garlanded = withoutIdentityToken(describeInventoryItem('Garlanded Diadem of Craft', 1).description, 'Garlanded');
+
+    expect(golden).not.toBe(garlanded);
+  });
+
+  it('gives neighboring special-item objects meaning beyond the interpolated noun', () => {
+    const diadem = withoutIdentityToken(describeInventoryItem('Golden Diadem of Craft', 1).description, 'Diadem');
+    const garnet = withoutIdentityToken(describeInventoryItem('Golden Garnet of Craft', 1).description, 'Garnet');
+
+    expect(diadem).not.toBe(garnet);
+  });
+
+  it('gives every special-item component a distinct idea in a fixed context', () => {
+    const attributes = ITEM_ATTRIB.map((attribute) =>
+      withoutIdentityToken(describeInventoryItem(`${attribute} Diadem of Craft`, 1).description, attribute));
+    const objects = SPECIALS.map((object) =>
+      withoutIdentityToken(describeInventoryItem(`Golden ${object} of Craft`, 1).description, object));
+    const concepts = ITEM_OFS.map((concept) =>
+      withoutIdentityToken(describeInventoryItem(`Golden Diadem of ${concept}`, 1).description, concept));
+
+    expect(new Set(attributes).size).toBe(attributes.length);
+    expect(new Set(objects).size).toBe(objects.length);
+    expect(new Set(concepts).size).toBe(concepts.length);
+  });
+
+  it('keeps materially varied stories across fixed monster and mundane loot catalogs', () => {
+    const fixedMonsterLoot = [...new Map(
+      MONSTERS.filter(({ item }) => item !== '*').map((monster) => [`${monster.name}\0${monster.item}`, monster]),
+    ).values()];
+    const monsterStories = fixedMonsterLoot.map(({ item, name }) => ({
+      description: describeInventoryItem(`${name} ${item}`, 1).description,
+      item,
+      name,
+    }));
+    const mundaneStories = [...new Set(BORING_ITEMS)].map((name) => ({
+      description: describeInventoryItem(name, 1).description,
+      name,
+    }));
+    const monsterSignatures = monsterStories.map(({ description, item, name }) =>
+      withoutIdentityToken(description, name, item));
+    const mundaneSignatures = mundaneStories.map(({ description, name }) =>
+      withoutIdentityToken(description, name));
+
+    expect(new Set(monsterSignatures).size).toBe(monsterStories.length);
+    expect(new Set(mundaneSignatures).size).toBe(mundaneStories.length);
+    expect([...monsterStories, ...mundaneStories].every(({ description }) => [...description].length <= 220)).toBe(true);
   });
 
   it.each(['', 'Żółć Chair 🪑', 'X'.repeat(200)])('bounds accepted item identity %j', (name) => {

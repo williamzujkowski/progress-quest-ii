@@ -14,9 +14,27 @@ const stableIndex = (key: string, length: number): number => {
 
 const choose = (options: readonly string[], key: string): string => options[stableIndex(key, options.length)];
 
-const boundedLabel = (name: string, fallback: string): string => {
+const boundedLabel = (name: string, fallback: string, limit = 60): string => {
   const characters = Array.from(name);
-  return characters.length > 60 ? `${characters.slice(0, 59).join('')}…` : name || fallback;
+  return characters.length > limit ? `${characters.slice(0, limit - 1).join('')}…` : name || fallback;
+};
+
+const DOSSIER_ACTIONS = [
+  'approved', 'condemned', 'misfiled', 'insured', 'quarantined',
+  'audited', 'reclassified', 'appealed', 'redacted', 'outsourced',
+  'backdated', 'witnessed', 'repossessed', 'sanctified', 'returned',
+] as const;
+
+const DOSSIER_CONDITIONS = [
+  'at intake', 'by candlelight', 'under protest', 'after lunch', 'without jurisdiction',
+  'for tax purposes', 'during the evacuation', 'by correspondence', 'pending weather', 'in triplicate',
+  'on clerical advice', 'after the witness vanished', 'with ceremonial urgency', 'before testing', 'by the night shift',
+] as const;
+
+const dossierBeat = (index: number, fallbackKey: string, salt = 0): string => {
+  const catalogIndex = index >= 0 ? index : stableIndex(fallbackKey, DOSSIER_ACTIONS.length * DOSSIER_CONDITIONS.length);
+  const position = (catalogIndex + salt) % (DOSSIER_ACTIONS.length * DOSSIER_CONDITIONS.length);
+  return `${DOSSIER_ACTIONS[position % DOSSIER_ACTIONS.length]} ${DOSSIER_CONDITIONS[Math.floor(position / DOSSIER_ACTIONS.length)]}`;
 };
 
 const valueOf = (name: string, table: readonly (readonly [string, number])[]): number =>
@@ -36,30 +54,162 @@ const baseValue = (name: string, slot: EquipSlot): number => {
   return valueOf(name, table);
 };
 
+// ponytail: lexical families cover the finite legacy catalog; add per-item exceptions only when the copy needs them.
+const equipmentOpening = (base: string, slot: EquipSlot): string => {
+  if (slot === 'Weapon') {
+    const family = /shiv|knife|sword|hatchet|tomahawk|adze|ax|baselard|poachard|whinyard/i.test(base)
+      ? 'blade'
+      : /spear|lance|halberd|spontoon|pole|oxgoad/i.test(base)
+        ? 'reach'
+        : /bow|blunderbuss|culverin/i.test(base)
+          ? 'ranged'
+          : 'blunt';
+    const openings = {
+      blade: [
+        `This ${base} left sharpening with more edge than supervision.`,
+        `The guild issued this ${base} after diplomacy clocked out.`,
+        `This ${base} divides blame more cleanly than armor.`,
+      ],
+      reach: [
+        `This ${base} keeps danger at the preferred contractual distance.`,
+        `This ${base} reaches beyond both training and liability.`,
+        `This ${base} points away from payroll by written policy.`,
+      ],
+      ranged: [
+        `This ${base} projects force and unresolved warranty questions.`,
+        `The guild approved this ${base} for threats visible on paper.`,
+        `This ${base} came with ammunition and borrowed confidence.`,
+      ],
+      blunt: [
+        `This ${base} solves delicate problems by not noticing them.`,
+        `Procurement calls this ${base} a weapon because “object” lacked urgency.`,
+        `This ${base} survived an estate sale whose estate did not.`,
+      ],
+    } as const;
+    const opening = choose(openings[family], `${base}:opening`);
+    const baseIndex = WEAPONS.findIndex(([label]) => label === base);
+    return `${opening.slice(0, -1)}; its intake file was ${dossierBeat(baseIndex, base)}.`;
+  }
+
+  if (slot === 'Shield') {
+    const openings = /Parasol|Plate|Lid|Plexiglass|Fender/i.test(base)
+      ? [
+        `This ${base} became a shield after an abrupt civilian career.`,
+        `The guild placed this ${base} between hero and evidence.`,
+        `This ${base} passed shield inspection by resembling a surface.`,
+      ]
+      : [
+        `This ${base} was certified by the people selling it.`,
+        `The guild carries this ${base} face-out to hide the doubts.`,
+        `This ${base} has blocked criticism more reliably than projectiles.`,
+      ];
+    const opening = choose(openings, `${base}:opening`);
+    const baseIndex = SHIELDS.findIndex(([label]) => label === base);
+    return `${opening.slice(0, -1)}; its intake file was ${dossierBeat(baseIndex, base, 41)}.`;
+  }
+
+  const armorFamily = /Lace|Macrame|Burlap|Canvas|Flannel|Chamois|Pleathers|Leathers|Bearskin/i.test(base)
+    ? 'soft'
+    : /mail/i.test(base)
+      ? 'mail'
+      : /ABS|Kevlar|Titanium|Plasma/i.test(base)
+        ? 'advanced'
+        : 'rigid';
+  const openings = {
+    soft: [
+      `This ${base} offers the ${slot.toLowerCase()} texture where certainty was requested.`,
+      `This ${base} protects the ${slot.toLowerCase()} by optimistic sewing pattern.`,
+      `The ${slot.toLowerCase()} budget produced this ${base} and a better-stitched waiver.`,
+    ],
+    mail: [
+      `This ${base} has more ${slot.toLowerCase()} links than its incident report.`,
+      `This ${base} guards the ${slot.toLowerCase()} one administrative loop at a time.`,
+      `The guild fitted this ${base} to the ${slot.toLowerCase()} after losing the knight.`,
+    ],
+    advanced: [
+      `This ${base} protects the ${slot.toLowerCase()} with unserviceable technology.`,
+      `The ${slot.toLowerCase()} requisition included this ${base} and a future manual.`,
+      `This ${base} entered ${slot.toLowerCase()} service before discouraging tests.`,
+    ],
+    rigid: [
+      `This ${base} passed ${slot.toLowerCase()} inspection during a fire drill.`,
+      `This ${base} guards the ${slot.toLowerCase()} and several departmental secrets.`,
+      `The guild shaped this ${base} for the ${slot.toLowerCase()} from a disputed diagram.`,
+    ],
+  } as const;
+  const opening = choose(openings[armorFamily], `${slot}:${base}:opening`);
+  const baseIndex = ARMORS.findIndex(([label]) => label === base);
+  return `${opening.slice(0, -1)}; its intake file was ${dossierBeat(baseIndex, base, 82)}.`;
+};
+
+const equipmentAssessment = (modifier: string, modifierValue: number, slot: EquipSlot, explicitLabel?: string): string => {
+  const label = boundedLabel(modifier, 'unnamed modifier');
+  const table = slot === 'Weapon' ? [...OFFENSE_ATTRIB, ...OFFENSE_BAD] : [...DEFENSE_ATTRIB, ...DEFENSE_BAD];
+  const modifierIndex = table.findIndex(([candidate]) => candidate === modifier);
+  const mark = explicitLabel ? `; its ${explicitLabel} assessor’s mark survived` : '';
+  const assessments = modifierValue >= 0
+    ? [
+      `${label} certification outlived its witnesses`,
+      `The guild approved ${label} by correspondence`,
+      `${label} remains valid where supervision is scarce`,
+      `${label} improved morale in other departments`,
+      `Procurement defines ${label} as plausibly better`,
+      `It is officially ${label} and unofficially evidence`,
+    ]
+    : [
+      `${label} is a repair estimate pretending to be an adjective`,
+      `Maintenance accepted ${label} and stopped returning calls`,
+      `${label} is less a feature than a signed confession`,
+      `The guild kept ${label} because condemned needed two signatures`,
+      `Procurement lists ${label} under cosmetic litigation`,
+      `${label} survived vigorous polishing of the report`,
+    ];
+  return `${choose(assessments, `${modifier}:assessment`)}; its warranty was ${dossierBeat(modifierIndex, modifier, 123)}${mark}.`;
+};
+
+const boundEquipmentStory = (
+  story: string,
+  base: string,
+  modifier: string,
+  slot: EquipSlot,
+  explicitLabel?: string,
+): string => {
+  if (Array.from(story).length <= 220) return story;
+  const baseTable = slot === 'Weapon' ? WEAPONS : slot === 'Shield' ? SHIELDS : ARMORS;
+  const modifierTable = slot === 'Weapon' ? [...OFFENSE_ATTRIB, ...OFFENSE_BAD] : [...DEFENSE_ATTRIB, ...DEFENSE_BAD];
+  const baseIndex = baseTable.findIndex(([candidate]) => candidate === base);
+  const modifierIndex = modifierTable.findIndex(([candidate]) => candidate === modifier);
+  const mark = explicitLabel ? `; ${explicitLabel} mark retained` : '';
+  return `This ${boundedLabel(base, 'equipment', 42)} ${slot.toLowerCase()} was ${dossierBeat(baseIndex, base)}. Its ${boundedLabel(modifier, 'unmodified', 20)} file was ${dossierBeat(modifierIndex, modifier, 123)}${mark}.`;
+};
+
 export function describeEquipment(name: string, slot: EquipSlot): ItemDetails {
   if (!name || name === '—') {
     return { description: 'An empty slot. The void remains undefeated.', effect: 'No combat effect.' };
   }
 
-  const explicitLabel = name.match(/^[+-]?\d+/)?.[0];
-  const explicit = Number(explicitLabel ?? 0);
+  const assessorMark = name.match(/^[+-]?\d+/)?.[0];
+  const parsedMark = Number(assessorMark ?? 0);
   const modifiers = slot === 'Weapon'
     ? valuesOf(name, [...OFFENSE_ATTRIB, ...OFFENSE_BAD])
     : valuesOf(name, [...DEFENSE_ATTRIB, ...DEFENSE_BAD]);
-  const rating = baseValue(name, slot) + explicit + modifiers;
+  const baseRating = baseValue(name, slot);
+  const acceptedAssessorMark = assessorMark !== undefined
+    && assessorMark.length <= 17
+    && Number.isSafeInteger(parsedMark)
+    && Number.isSafeInteger(baseRating + modifiers + parsedMark);
+  const explicit = acceptedAssessorMark ? parsedMark : 0;
+  const explicitLabel = acceptedAssessorMark ? `${assessorMark.startsWith('+') ? '+' : ''}${parsedMark}` : undefined;
+  const rating = baseRating + explicit + modifiers;
   const verb = slot === 'Weapon' ? 'attack' : 'defense';
   const base = labelOf(name, slot === 'Weapon' ? WEAPONS : slot === 'Shield' ? SHIELDS : ARMORS)
     ?? boundedLabel(name, 'unnamed equipment');
   const modifier = labelsOf(name, slot === 'Weapon' ? [...OFFENSE_ATTRIB, ...OFFENSE_BAD] : [...DEFENSE_ATTRIB, ...DEFENSE_BAD]).join(' and ');
-  const closer = [
-    'It has survived at least one meeting with a monster.',
-    'The warranty was eaten by a small but ambitious animal.',
-    'It looks expensive enough to discourage immediate questions.',
-  ];
-  const subject = slot === 'Weapon' ? `This ${base}` : `Issued as ${slot.toLowerCase()}, this ${base}`;
-  const description = modifier
-    ? `${subject} remains in service under its ${modifier} designation${explicitLabel ? `; the ${explicitLabel} assessor’s mark survived appeal` : ''}. ${choose(closer, `${slot}:${name}:closer`)}`
-    : `${subject} entered service with ${explicitLabel ? `a ${explicitLabel} assessor’s mark and no` : 'no'} named modifier, which procurement calls restraint. ${choose(closer, `${slot}:${name}:closer`)}`;
+  const opening = equipmentOpening(base, slot);
+  const story = modifier
+    ? `${opening} ${equipmentAssessment(modifier, modifiers, slot, explicitLabel)}`
+    : `${opening} It carries ${explicitLabel ? `a ${explicitLabel} assessor’s mark and no` : 'no'} named modifier, which procurement calls restraint.`;
+  const description = boundEquipmentStory(story, base, modifier, slot, explicitLabel);
 
   return {
     description,
@@ -153,6 +303,92 @@ function monsterLootParts(name: string): { monster: string; drop: string } | und
   return generated ? { monster: generated.name, drop: 'item' } : undefined;
 }
 
+const specialConceptStory = (concept: string): string => {
+  const conceptIndex = ITEM_OFS.indexOf(concept);
+  const family = /Happiness|Pleasure|Joy|Comfort|Patience|Loyalty|Awe|Dignard/i.test(concept)
+    ? `The promised ${concept}`
+    : /Craft|Practicality|Punctuality|Efficiency|Sisu|Perspicacity|Guile/i.test(concept)
+      ? `Its claim to ${concept}`
+      : /Internment|Incarceration|Solitude|Silence|Invisibility/i.test(concept)
+        ? `The ${concept} order`
+        : /Danger|Hurting|Suffering|Acrimony|Worry|Fear|Despair|Cruelty|Petulance|Frenzy/i.test(concept)
+          ? `The included ${concept}`
+          : `Its connection to ${concept}`;
+  return `${family} was ${dossierBeat(conceptIndex, concept, 74)}.`;
+};
+
+const specialObjectClause = (object: string): string => {
+  const objectIndex = SPECIALS.indexOf(object);
+  const subject = /Diadem|Tiara|Laurel|Hood/i.test(object)
+    ? `${object} fitting`
+    : /Gemstone|Garnet|Amethyst|Bijou|Brooch/i.test(object)
+      ? `${object} appraisal`
+      : /Phial|Lamp|Brazier|Candelabra|Orb|Sphere/i.test(object)
+        ? `${object} contents`
+        : /Hymnal|Tome/i.test(object)
+          ? `${object} index`
+          : /Fleece|Corset|Brocade|Galoon|Festoon|Bandolier/i.test(object)
+            ? `${object} tailoring`
+            : /Scabbard|Arrow|Gimlet/i.test(object)
+              ? `${object} custody`
+              : /Sceptre|Ankh|Talisman/i.test(object)
+                ? `${object} authority`
+                : `${object} purpose`;
+  return `the ${subject} was ${dossierBeat(objectIndex, object, 37)}`;
+};
+
+const specialAttributeStory = (attribute: string, object: string): string => {
+  const attributeIndex = ITEM_ATTRIB.indexOf(attribute);
+  const subject = /Golden|Gilded|Crystalline|Iron|Ormolu/i.test(attribute)
+    ? `${attribute} finish`
+    : /Garlanded|Filigreed|Gleaming|Grandiose|Ostentatious|Magnificent/i.test(attribute)
+      ? `${attribute} decoration`
+      : /Spectral|Astral|Arcane|Enchanted|Unearthly|Puissant/i.test(attribute)
+        ? `${attribute} aura`
+        : /Blessed|Reverential|Sacred|One True|Benevolent/i.test(attribute)
+          ? `${attribute} status`
+          : /Cruciate|Fearsome|Deadly/i.test(attribute)
+            ? `${attribute} warning`
+            : `${attribute} provenance`;
+  return `The ${subject} was ${dossierBeat(attributeIndex, attribute)}; ${specialObjectClause(object)}.`;
+};
+
+const monsterLootStory = ({ monster, drop }: { monster: string; drop: string }): string => {
+  const finding = drop === 'item'
+    ? `Whatever ${monster} dropped was logged as “item” after anatomy declined jurisdiction.`
+    : /^(?:shirt|robe|hat|boot|pants|bra|thong|pajamas|leathers|neckerchief|merit badge|collar|sash|jerkin|drawers)$/i.test(drop)
+      ? `The ${drop} from ${monster} went from evidence to wardrobe without laundering the custody chain.`
+      : /^(?:ass|ear|eye|eyelid|eyestalk|face|follicle|forearm|frenum|gills?|gyrum|head|hoof|horn|hump|jaw|larynx|leg|muscle|neck|patella|penis|rib|skin|tail|teeth|tentacle|testicle|thumb|tooth|tongue|tusk|wattle|wing)$/i.test(drop)
+        ? `The ${drop} recovered from ${monster} was filed as anatomy after the jar objected.`
+        : /^(?:condensation|curd|drops|fluid|foam|gel|gravy|lube|saliva|sample|slime|snow|spore|vomit)$/i.test(drop)
+          ? `The ${drop} left by ${monster} is stored as a liquid, a solid, and a labor grievance.`
+          : `The guild logged ${monster}’s ${drop} as field salvage and immediately lost the field.`;
+  const monsterIndex = MONSTERS.findIndex(({ name }) => name === monster);
+  const consequence = choose([
+    'The donor remains unavailable for a satisfaction survey.',
+    'Its chain of custody is mostly decorative.',
+    'The market has standards, but none relevant here.',
+    'A second sample was requested by nobody sober enough to sign.',
+    'The evidence bag has begun negotiating overtime.',
+  ], `${monster}:${drop}:aftermath`);
+  return `${finding.slice(0, -1)}; evidence was ${dossierBeat(monsterIndex, monster)}. ${consequence}`;
+};
+
+const mundaneLootStory = (name: string): string => {
+  const history = /I\.O\.U\.|writ|newspaper|letter/i.test(name)
+    ? `The ${name} began as paperwork and became treasure when everybody stopped reading it.`
+    : /cookie|pint|egg|chicken|carrot/i.test(name)
+      ? `The ${name} was promoted from provisions to treasure shortly after its safe date.`
+      : /sock|hat|vest|bandage|towel|counterpane/i.test(name)
+        ? `The ${name} left textile service and entered treasure before laundering could establish facts.`
+        : /nail|toothpick|needle|plank|twig|rock|pole|hoe|trowel|anvil|axle/i.test(name)
+          ? `The ${name} completed a modest career in hardware before promotion to treasure.`
+          : /lunchpail|bucket|canoe|inkwell|planter box|casket|credenza/i.test(name)
+            ? `The ${name} once held something useful; as treasure it contains only appraised potential.`
+            : `The ${name} was reassigned as treasure after its original department denied ownership.`;
+  return `${history} Its promotion was ${dossierBeat(BORING_ITEMS.indexOf(name), name, 100)}.`;
+};
+
 export function describeInventoryItem(name: string, quantity: number): ItemDetails {
   const special = specialItemParts(name);
   const monsterLoot = monsterLootParts(name);
@@ -165,29 +401,17 @@ export function describeInventoryItem(name: string, quantity: number): ItemDetai
   const description = name === 'Gold'
     ? 'Gold is weightless in the pack and ruinously heavy in the quarterly ledger. Every coin has been counted twice and trusted once.'
     : special
-    ? `The ${special.attribute} ${special.object} was declared authentic by ${choose([
-      'a guild that now denies owning stationery',
-      'an assessor compensated entirely in exposure',
-      'the Office of Improbable Assets',
-    ], `${name}:origin`)}. ${special.concept
-      ? choose([
-        `Its connection to ${special.concept} is contractual, untested, and regrettably transferable.`,
-        `${special.concept} appears in the provenance as patron, substance, or spelling error.`,
-        `The Office of ${special.concept} denies sponsoring it but appreciates the publicity.`,
-      ], `${name}:consequence`)
+    ? `${specialAttributeStory(special.attribute, special.object)} ${special.concept
+      ? specialConceptStory(special.concept)
       : choose([
         'It has failed every practical-use hearing with distinction.',
         'Its former ceremonial purpose remains sealed pending a less embarrassing century.',
         'The market accepts it under a policy nobody admits to writing.',
       ], `${name}:warning`)}`
     : monsterLoot
-      ? `Recovered from ${monsterLoot.monster}, whose comments were unavailable after the encounter. The guild logged the ${monsterLoot.drop} as “field salvage” to avoid a considerably longer form.`
+      ? monsterLootStory(monsterLoot)
     : BORING_ITEMS.includes(name)
-      ? `Once merely “${name},” this object was reassigned as treasure. ${choose([
-        'The promotion includes no raise, purpose, or right of appeal.',
-        'Procurement insists this is upward mobility.',
-        'Its former household duties remain available upon request.',
-      ], `${name}:demotion`)}`
+      ? mundaneLootStory(name)
     : `The label “${label}” is all that survived the encounter and subsequent filing error. ${choose(closer, `${name}:closer`)}`;
 
   return {
