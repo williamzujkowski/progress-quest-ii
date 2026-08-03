@@ -1,0 +1,21 @@
+import { describe, expect, it } from 'vitest';
+import type { GameTransitionEvent } from '../../engine/transition';
+import { describeGameEvent, soundCueForGameEvent } from '../../state/gameEventAdapter';
+
+describe('game event presentation adapter', () => {
+  it.each([
+    [{ type: 'level_gained', level: 2 }, 'Gained a Level', 'level_up'],
+    [{ type: 'stat_gained', stat: 'HP Max', amount: 6 }, 'Gained 6 HP Maxes', undefined],
+    [{ type: 'quest_completed', description: 'Acquire forms' }, 'Quest completed: Acquire forms', 'quest_complete'],
+    [{ type: 'quest_started', description: 'Misfile forms' }, 'Commencing quest: Misfile forms', undefined],
+    [{ type: 'save_requested', characterName: 'Oracle' }, 'Saving game: Oracle', undefined],
+    [{ type: 'item_gained', name: 'rat tail', quantity: 1 }, 'Gained a rat tail', undefined],
+    [{ type: 'gold_received', amount: 1 }, 'Got paid a gold piece', undefined],
+    [{ type: 'inventory_sold', gold: 47 }, 'Sold loot at market for 47 gold!', 'market'],
+    [{ type: 'equipment_purchased', slot: 'Helm', name: 'Tax Hat' }, 'Negotiated purchase: Equipped Tax Hat in Helm slot!', 'market'],
+    [{ type: 'task_started', task: { description: 'Waiting heroically...', durationMs: 1, elapsedMs: 0, type: 'heading' } }, 'Waiting heroically...', undefined],
+  ] as const)('presents %o as legacy activity with its sound cue', (event, message, cue) => {
+    expect(describeGameEvent(event as GameTransitionEvent)).toBe(message);
+    expect(soundCueForGameEvent(event as GameTransitionEvent)).toBe(cue);
+  });
+});

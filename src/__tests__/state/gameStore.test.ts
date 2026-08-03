@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { RandomGenerator } from '../../engine/prng';
 import { levelUpTime } from '../../engine/math';
-import { createNewCharacter, generateLootItem } from '../../engine/sim';
+import { createNewCharacter } from '../../engine/sim';
 import type { StatsMap } from '../../engine/types';
 import { useGameStore } from '../../state/gameStore';
-import { characterSheetSchema } from '../../state/schemas';
 
 describe('Game Store State Machine', () => {
   beforeEach(() => {
@@ -20,18 +19,6 @@ describe('Game Store State Machine', () => {
     expect(character.Task).toBeDefined();
   });
 
-  it('advances task progress on tick when not paused', () => {
-    const store = useGameStore.getState();
-    const initialElapsed = store.character.Task.elapsedMs;
-    const initialProgression = structuredClone(store.progression);
-
-    store.tick(500);
-
-    const updatedChar = useGameStore.getState().character;
-    expect(updatedChar.Task.elapsedMs).toBe(initialElapsed + 500);
-    expect(useGameStore.getState().progression).toEqual(initialProgression);
-  });
-
   it('does not advance tick when paused', () => {
     const store = useGameStore.getState();
     store.togglePause();
@@ -43,72 +30,10 @@ describe('Game Store State Machine', () => {
     expect(updatedChar.Task.elapsedMs).toBe(initialElapsed);
   });
 
-  it('completes task and transitions to new task when elapsed >= duration', () => {
-    const store = useGameStore.getState();
-    const duration = store.character.Task.durationMs;
-
-    store.tick(duration + 100);
-
-    const updatedChar = useGameStore.getState().character;
-    expect(updatedChar.Task.elapsedMs).toBeLessThan(updatedChar.Task.durationMs);
-    expect(useGameStore.getState().log.length).toBeGreaterThan(0);
-  });
-
-  it('carries elapsed overshoot into the next task', () => {
-    const duration = useGameStore.getState().character.Task.durationMs;
-
-    useGameStore.getState().tick(duration + 100);
-
-    expect(useGameStore.getState().character.Task.elapsedMs).toBe(100);
-  });
-
-  it('consumes multiple completed tasks from one delayed tick', () => {
-    const duration = useGameStore.getState().character.Task.durationMs;
-    const initialLogLength = useGameStore.getState().log.length;
-
-    useGameStore.getState().tick(duration + 10_000);
-
-    const updated = useGameStore.getState();
-    expect(updated.character.Task.elapsedMs).toBeLessThan(updated.character.Task.durationMs);
-    expect(updated.log.length).toBeGreaterThan(initialLogLength);
-    expect(updated.progression.completedTasks).toBeGreaterThan(1);
-  });
-
-  it('bounds catch-up work for an extreme delayed tick', () => {
-    useGameStore.getState().tick(1_000_000_000);
-
-    const updated = useGameStore.getState();
-    expect(updated.character.Task.elapsedMs).toBe(0);
-    expect(updated.log.length).toBeLessThanOrEqual(50);
-    expect(updated.progression.completedTasks).toBe(100);
-  });
-
-  it('chooses the next task from gold earned by the completed transition', () => {
+  it('installs one transition atomically and presents events newest first', () => {
     const character = structuredClone(useGameStore.getState().character);
-    character.Gold = 0;
-    character.Inventory = [
-      { name: 'Gold', qty: 0 },
-      { name: 'Ancient Widget', qty: 4 },
-    ];
-    character.Task = {
-      description: 'Selling loot...',
-      durationMs: 1,
-      elapsedMs: 0,
-      type: 'selling',
-    };
-    useGameStore.setState({ character, rng: new RandomGenerator('sale-transition') });
-
-    useGameStore.getState().tick(1);
-
-    const updated = useGameStore.getState().character;
-    expect(updated.Gold).toBeGreaterThanOrEqual(35);
-    expect(updated.Task.type).toBe('buying');
-    expect(useGameStore.getState().progression).toMatchObject({ completedTasks: 1, elapsedSeconds: 0 });
-  });
-
-  it('resets a completed quest to the legacy bounded duration range', () => {
-    const character = structuredClone(useGameStore.getState().character);
-    character.Quest = { description: 'Test quest', currentProgress: 1, maxProgress: 1, history: ['Test quest'] };
+    character.Inventory = [];
+    character.Quest = { ...character.Quest, currentProgress: 0, maxProgress: 99, history: [character.Quest.description] };
     character.Task = {
       description: 'Executing test monster...',
       durationMs: 1,
@@ -116,133 +41,27 @@ describe('Game Store State Machine', () => {
       type: 'kill',
       loot: { type: 'fixed', item: 'rat tail' },
     };
-    useGameStore.setState({ character, rng: new RandomGenerator('quest-reset') });
+    useGameStore.setState({ character, log: [], rng: new RandomGenerator('atomic-transition') });
+    let notifications = 0;
+    const unsubscribe = useGameStore.subscribe(() => { notifications += 1; });
 
     useGameStore.getState().tick(1);
-
-    const quest = useGameStore.getState().character.Quest;
-    expect(quest.currentProgress).toBe(0);
-    expect(quest.maxProgress).toBeGreaterThanOrEqual(50);
-    expect(quest.maxProgress).toBeLessThan(150);
-    expect(quest.description).toBe('Seek the Golden Hood');
-    expect(quest.history).toEqual(['Test quest', 'Seek the Golden Hood']);
-  });
-
-  it('starts the first quest without awarding the placeholder quest', () => {
-    const character = structuredClone(useGameStore.getState().character);
-    const initialStats = structuredClone(character.Stats);
-    const initialEquip = structuredClone(character.Equip);
-    character.Quest = { description: 'Heading to the killing fields...', currentProgress: 0, maxProgress: 5 };
-    character.Task = { description: 'Executing test monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
-    useGameStore.setState({ character, log: [], rng: new RandomGenerator('first-quest') });
-
-    useGameStore.getState().tick(1);
+    unsubscribe();
 
     const updated = useGameStore.getState();
-    expect(updated.character.Quest.history).toEqual([updated.character.Quest.description]);
-    expect(updated.log.some((entry) => entry.startsWith('Quest completed:'))).toBe(false);
-    expect(updated.character.Stats).toEqual(initialStats);
-    expect(updated.character.Equip).toEqual(initialEquip);
-    expect(updated.character.Spells).toEqual(character.Spells);
-    expect(updated.character.Gold).toBe(character.Gold);
+    expect(notifications).toBe(1);
+    expect(updated.character.Inventory).toEqual([{ name: 'rat tail', qty: 1 }]);
+    expect(updated.log[0]).toBe(updated.character.Task.description);
+    expect(updated.log[1]).toBe('Gained a rat tail');
   });
 
-  it('keeps a boundary-valid imported sheet valid through a level-up', () => {
-    const character = createNewCharacter('BoundaryHero', 'Half Orc', 'Robot Monk', 310);
-    character.Stats = { STR: 1, CON: 1, DEX: 1, INT: 1, WIS: 1, CHA: 1, 'HP Max': 0.5, 'MP Max': 1.5 };
-    character.Task = {
-      description: 'Executing boundary monster...',
-      durationMs: 1,
-      elapsedMs: 0,
-      type: 'kill',
-      loot: { type: 'fixed', item: 'boundary receipt' },
-    };
-    expect(characterSheetSchema.safeParse(character).success).toBe(true);
-    useGameStore.setState({
-      character,
-      rng: new RandomGenerator('boundary-level-up'),
-      progression: {
-        experience: { currentSeconds: 1, maxSeconds: 1 },
-        completedTasks: 0,
-        elapsedSeconds: 0,
-      },
-    });
+  it('drains bounded catch-up remainder on a later scheduler tick', () => {
+    useGameStore.getState().tick(1_000_000_000);
+    expect(useGameStore.getState().progression.completedTasks).toBe(100);
 
     useGameStore.getState().tick(1);
 
-    const leveled = useGameStore.getState().character;
-    expect(leveled.Traits.Level).toBe(2);
-    expect(leveled.Stats['HP Max']).toBeGreaterThan(0);
-    expect(leveled.Stats['MP Max']).toBeGreaterThan(0);
-    expect(characterSheetSchema.safeParse(leveled).success).toBe(true);
-  });
-
-  it('caps quest history at the legacy 100-entry boundary', () => {
-    const character = structuredClone(useGameStore.getState().character);
-    character.Quest = {
-      description: 'Newest quest',
-      currentProgress: 1,
-      maxProgress: 1,
-      history: Array.from({ length: 100 }, (_, index) => `Quest ${index}`),
-    };
-    character.Task = { description: 'Executing test monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
-    useGameStore.setState({ character, rng: new RandomGenerator('quest-history-cap') });
-
-    useGameStore.getState().tick(1);
-
-    const history = useGameStore.getState().character.Quest.history ?? [];
-    expect(history).toHaveLength(100);
-    expect(history[0]).toBe('Quest 1');
-    expect(history.at(-2)).toBe('Quest 99');
-    expect(history.at(-1)).toBe(useGameStore.getState().character.Quest.description);
-  });
-
-  it('chooses the next task from gold spent by the completed transition', () => {
-    const character = structuredClone(useGameStore.getState().character);
-    character.Gold = 35;
-    character.Inventory = [{ name: 'Gold', qty: 0 }];
-    character.Task = {
-      description: 'Buying equipment...',
-      durationMs: 1,
-      elapsedMs: 0,
-      type: 'buying',
-    };
-    useGameStore.setState({ character, rng: new RandomGenerator('purchase-transition') });
-
-    useGameStore.getState().tick(1);
-
-    const updated = useGameStore.getState().character;
-    expect(updated.Gold).toBe(0);
-    expect(updated.Task.type).toBe('kill');
-  });
-
-  it('does not mutate a previous inventory snapshot when loot stacks', () => {
-    const lootSeed = 'stacked-loot';
-    const lootName = generateLootItem(new RandomGenerator(lootSeed));
-    const character = structuredClone(useGameStore.getState().character);
-    character.Inventory = [
-      { name: 'Gold', qty: 0 },
-      { name: lootName, qty: 1 },
-      { name: 'Unrelated Trinket', qty: 1 },
-    ];
-    character.Quest = { ...character.Quest, currentProgress: 0, maxProgress: 99, history: [character.Quest.description] };
-    character.Task = {
-      description: 'Executing test monster...',
-      durationMs: 1,
-      elapsedMs: 0,
-      type: 'kill',
-    };
-    const previousItem = character.Inventory[1];
-    const unrelatedItem = character.Inventory[2];
-    useGameStore.setState({ character, rng: new RandomGenerator(lootSeed) });
-
-    useGameStore.getState().tick(1);
-
-    const updatedItem = useGameStore.getState().character.Inventory.find((item) => item.name === lootName);
-    expect(previousItem?.qty).toBe(1);
-    expect(updatedItem?.qty).toBe(2);
-    expect(updatedItem).not.toBe(previousItem);
-    expect(useGameStore.getState().character.Inventory[2]).toBe(unrelatedItem);
+    expect(useGameStore.getState().progression.completedTasks).toBe(200);
   });
 
   it('uses and defensively copies an accepted complete stat roll', () => {

@@ -2,9 +2,9 @@ import { EQUIP_SLOTS } from '../../data/traits';
 import { RandomGenerator } from '../../engine/prng';
 import { calculateEncumbrance } from '../../engine/sim';
 import { calculateEncumbranceMax } from '../../engine/math';
+import { advanceGame } from '../../engine/transition';
 import type { CharacterSheet, CharacterTraits, EquipSlot, ProgressionState, StatName } from '../../engine/types';
-import { soundFX } from '../../state/audio';
-import { useGameStore, type GameStore } from '../../state/gameStore';
+import { describeGameEvent } from '../../state/gameEventAdapter';
 
 type AleaState = [number, number, number, number];
 type Pair<T> = [string, T];
@@ -115,46 +115,10 @@ export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixtur
   };
 }
 
-export interface QuestCompletionObservation {
-  caption: string;
-  positionSeconds: number;
-  maxSeconds: number;
-  history: string[];
-  monster: string | null;
-  monsterIndex: number | null;
-  rewardSpells: [string, string, number][];
-  events: string[];
-  rng: AleaState;
-}
-
-export function observeLegacyQuestCompletion(fixture: LegacyTransitionFixture): QuestCompletionObservation {
-  assertCompletedKill(fixture.input.sheet);
-  const expected = fixture.expected;
-  return {
-    caption: expected.quest.caption,
-    positionSeconds: expected.quest.positionSeconds,
-    maxSeconds: expected.quest.maxSeconds,
-    history: [...expected.quest.history],
-    monster: expected.quest.monster,
-    monsterIndex: expected.quest.monsterIndex,
-    rewardSpells: expected.spells.map(([name, romanLevel, level]) => [name, romanLevel, level]),
-    events: [...expected.log],
-    rng: [...expected.rng],
-  };
-}
-
 export function observeModernEncounterTransition(fixture: LegacyTransitionFixture): EncounterTransitionObservation {
   const sheet = fixture.input.sheet;
   assertCompletedKill(sheet);
   const fixtureSnapshot = JSON.stringify(fixture);
-  const previousStore = useGameStore.getState();
-  const previousSnapshot = {
-    character: structuredClone(previousStore.character),
-    log: [...previousStore.log],
-    rng: previousStore.rng.getState(),
-    progression: structuredClone(previousStore.progression),
-  };
-  const wasMuted = soundFX.getMuted();
   const rng = new RandomGenerator('legacy-fixture');
   rng.setState([...sheet.seed]);
   const gold = sheet.Inventory.find(([name]) => name === 'Gold')?.[1];
@@ -182,63 +146,50 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
     },
   };
 
-  if (!wasMuted) soundFX.toggleMute();
-  try {
-    useGameStore.setState({
-      character,
-      log: [],
-      isPaused: false,
-      rng,
-      progression: {
-        experience: { currentSeconds: sheet.ExpBar.position, maxSeconds: sheet.ExpBar.max },
-        completedTasks: sheet.tasks,
-        elapsedSeconds: sheet.elapsed,
+  const input = {
+    character,
+    progression: {
+      experience: { currentSeconds: sheet.ExpBar.position, maxSeconds: sheet.ExpBar.max },
+      completedTasks: sheet.tasks,
+      elapsedSeconds: sheet.elapsed,
+    },
+  };
+  const inputSnapshot = structuredClone(input);
+  const result = advanceGame(input, sheet.TaskBar.max, rng);
+  const progression: ProgressionState = result.state.progression;
+  const transitioned = result.state.character;
+  if (result.remainingElapsedMs !== 0 || transitioned.Task.elapsedMs !== 0) throw new Error('Modern transition must complete exactly one task without overshoot');
+  if (JSON.stringify(fixture) !== fixtureSnapshot) throw new Error('Modern transition mutated its legacy fixture');
+  if (JSON.stringify(input) !== JSON.stringify(inputSnapshot)) throw new Error('Modern transition mutated its input state');
+  return {
+    traits: structuredClone(transitioned.Traits),
+    stats: Object.entries(transitioned.Stats) as Pair<number>[],
+    inventory: [['Gold', transitioned.Gold], ...transitioned.Inventory.map(({ name, qty }) => [name, qty] as Pair<number>)],
+    equipment: EQUIP_SLOTS.map((slot) => [slot, transitioned.Equip[slot]]),
+    spells: transitioned.Spells.map(({ name, level }) => [name, level]),
+    nextTask: { caption: transitioned.Task.description, durationMs: transitioned.Task.durationMs },
+    events: result.events.map(describeGameEvent),
+    rng: [...rng.getState()],
+    progression: {
+      counters: { completedTasks: progression.completedTasks, elapsedSeconds: progression.elapsedSeconds },
+      experience: structuredClone(progression.experience),
+      encumbrance: {
+        currentCubits: calculateEncumbrance(transitioned.Inventory),
+        maxCubits: calculateEncumbranceMax(transitioned.Stats.STR),
       },
-    } satisfies Partial<GameStore>);
-    useGameStore.getState().tick(sheet.TaskBar.max);
-    const result = useGameStore.getState();
-    const progression: ProgressionState = result.progression;
-    if (result.character.Task.elapsedMs !== 0) throw new Error('Modern transition must complete exactly one task without overshoot');
-    if (JSON.stringify(fixture) !== fixtureSnapshot) throw new Error('Modern transition mutated its legacy fixture');
-    if (JSON.stringify(previousStore.character) !== JSON.stringify(previousSnapshot.character)
-      || JSON.stringify(previousStore.log) !== JSON.stringify(previousSnapshot.log)
-      || JSON.stringify(previousStore.rng.getState()) !== JSON.stringify(previousSnapshot.rng)
-      || JSON.stringify(previousStore.progression) !== JSON.stringify(previousSnapshot.progression)) {
-      throw new Error('Modern transition mutated the previous Zustand state');
-    }
-    return {
-      traits: structuredClone(result.character.Traits),
-      stats: Object.entries(result.character.Stats) as Pair<number>[],
-      inventory: [['Gold', result.character.Gold], ...result.character.Inventory.map(({ name, qty }) => [name, qty] as Pair<number>)],
-      equipment: EQUIP_SLOTS.map((slot) => [slot, result.character.Equip[slot]]),
-      spells: result.character.Spells.map(({ name, level }) => [name, level]),
-      nextTask: { caption: result.character.Task.description, durationMs: result.character.Task.durationMs },
-      events: [...result.log].reverse(),
-      rng: [...result.rng.getState()],
-      progression: {
-        counters: { completedTasks: progression.completedTasks, elapsedSeconds: progression.elapsedSeconds },
-        experience: structuredClone(progression.experience),
-        encumbrance: {
-          currentCubits: calculateEncumbrance(result.character.Inventory),
-          maxCubits: calculateEncumbranceMax(result.character.Stats.STR),
-        },
-        quest: {
-          description: result.character.Quest.description,
-          currentSeconds: result.character.Quest.currentProgress,
-          maxSeconds: result.character.Quest.maxProgress,
-          history: [...(result.character.Quest.history ?? [])],
-          target: result.character.Quest.target ?? null,
-          targetIndex: result.character.Quest.targetIndex ?? null,
-        },
-        plot: {
-          act: result.character.Plot.act,
-          currentSeconds: result.character.Plot.currentProgress,
-          maxSeconds: result.character.Plot.maxProgress,
-        },
+      quest: {
+        description: transitioned.Quest.description,
+        currentSeconds: transitioned.Quest.currentProgress,
+        maxSeconds: transitioned.Quest.maxProgress,
+        history: [...(transitioned.Quest.history ?? [])],
+        target: transitioned.Quest.target ?? null,
+        targetIndex: transitioned.Quest.targetIndex ?? null,
       },
-    };
-  } finally {
-    useGameStore.setState(previousStore, true);
-    if (!wasMuted) soundFX.toggleMute();
-  }
+      plot: {
+        act: transitioned.Plot.act,
+        currentSeconds: transitioned.Plot.currentProgress,
+        maxSeconds: transitioned.Plot.maxProgress,
+      },
+    },
+  };
 }

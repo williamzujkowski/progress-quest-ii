@@ -42,14 +42,14 @@ describe('legacy quest reward dispatcher', () => {
       kind: 'item',
       state: [0.6739257371518761, 0.3510640109889209, 0.8553721038624644, 1],
       reset: 76,
-      expected: { inventory: [{ name: 'Unearthly Tiara of Craft', qty: 1 }], message: 'Gained an Unearthly Tiara of Craft' },
+      expected: { inventory: [{ name: 'Unearthly Tiara of Craft', qty: 1 }], effect: { type: 'item', name: 'Unearthly Tiara of Craft', quantity: 1 } },
       rng: [0.7132585479412228, 0.37233209586702287, 0.28208580473437905, 1364003],
     },
     {
       kind: 'stat',
       state: [0.7377883812878281, 0.3013112908229232, 0.7470456755254418, 1],
       reset: 36,
-      expected: { stat: ['CHA', 11], message: 'Gained a CHA' },
+      expected: { stat: ['CHA', 11], effect: { type: 'stat', stat: 'CHA', amount: 1 } },
       rng: [0.44738486921414733, 0.8698570972774178, 0.7554666411597282, 1991341],
     },
   ] as const)('applies the $kind branch without mutating its input', ({ state, reset, kind, expected, rng: expectedRng }) => {
@@ -70,7 +70,7 @@ describe('legacy quest reward dispatcher', () => {
     if (expected.equipment) expect(result.character.Equip[expected.equipment[0]]).toBe(expected.equipment[1]);
     if (expected.inventory) expect(result.character.Inventory).toEqual(expected.inventory);
     if (expected.stat) expect(result.character.Stats[expected.stat[0]]).toBe(expected.stat[1]);
-    expect(result.message).toBe('message' in expected ? expected.message : undefined);
+    expect(result.effect).toEqual('effect' in expected ? expected.effect : undefined);
     expect(rng.getState()).toEqual(expectedRng);
     expect(character).toEqual(before);
   });
@@ -84,7 +84,7 @@ describe('legacy quest reward dispatcher', () => {
     expect(rng.random(100)).toBe(67);
     const result = applyQuestReward(rng, character);
 
-    expect(result).toMatchObject({ kind: 'item', message: 'Got paid a gold piece' });
+    expect(result).toMatchObject({ kind: 'item', effect: { type: 'gold', amount: 1 } });
     expect(result.character.Gold).toBe(1);
     expect(result.character.Inventory).toEqual(character.Inventory);
     expect(rng.getState()).toEqual([0.8940803778823465, 0.8042314185295254, 0.5461535649374127, 267599]);
