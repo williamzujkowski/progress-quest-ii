@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { describeEquipment, describeInventoryItem, describeSpell } from '../data/itemDetails';
-import { EQUIP_SLOTS, SPELLS } from '../data/traits';
+import {
+  ARMORS,
+  DEFENSE_ATTRIB,
+  DEFENSE_BAD,
+  EQUIP_SLOTS,
+  ITEM_ATTRIB,
+  ITEM_OFS,
+  OFFENSE_ATTRIB,
+  OFFENSE_BAD,
+  SHIELDS,
+  SPECIALS,
+  SPELLS,
+  WEAPONS,
+} from '../data/traits';
 
 describe('item tooltip details', () => {
   it('reports equipment slot power without inventing combat damage', () => {
@@ -20,11 +33,39 @@ describe('item tooltip details', () => {
     expect(details.effect).toContain('Defense rating: 0');
   });
 
+  it('includes every canonical modifier in an accepted equipment name', () => {
+    const details = describeEquipment('Venomed Vicious Stick', 'Weapon');
+
+    expect(details.description).toContain('Venomed');
+    expect(details.description).toContain('Vicious');
+    expect(details.effect).toContain('Attack rating: 7');
+  });
+
   it('keeps the equipped slot meaningful for the same armor', () => {
     const armorSlots = EQUIP_SLOTS.filter((slot) => slot !== 'Weapon' && slot !== 'Shield');
     const descriptions = armorSlots.map((slot) => describeEquipment('Burlap', slot).description);
 
     expect(new Set(descriptions).size).toBe(armorSlots.length);
+  });
+
+  it.each([
+    ['accepted long equipment', 'X'.repeat(200), 'Helm' as const],
+    ['stacked canonical equipment', '+100 Threadbare Diamond Mail', 'Hauberk' as const],
+  ])('bounds %s flavor', (_case, name, slot) => {
+    expect(describeEquipment(name, slot).description.length).toBeLessThanOrEqual(220);
+  });
+
+  it('keeps every generated equipment identity distinct and bounded', () => {
+    const equipment = [
+      ...WEAPONS.flatMap(([base]) => [...OFFENSE_ATTRIB, ...OFFENSE_BAD].map(([modifier]) => [`${modifier} ${base}`, 'Weapon'] as const)),
+      ...SHIELDS.flatMap(([base]) => [...DEFENSE_ATTRIB, ...DEFENSE_BAD].map(([modifier]) => [`${modifier} ${base}`, 'Shield'] as const)),
+      ...EQUIP_SLOTS.filter((slot) => slot !== 'Weapon' && slot !== 'Shield').flatMap((slot) =>
+        ARMORS.flatMap(([base]) => [...DEFENSE_ATTRIB, ...DEFENSE_BAD].map(([modifier]) => [`${modifier} ${base}`, slot] as const))),
+    ];
+    const descriptions = equipment.map(([name, slot]) => describeEquipment(name, slot).description);
+
+    expect(new Set(descriptions).size).toBe(equipment.length);
+    expect(descriptions.every((description) => description.length <= 220)).toBe(true);
   });
 
   it('keeps spell flavor stable across levels without inventing a combat effect', () => {
@@ -93,6 +134,23 @@ describe('item tooltip details', () => {
 
   it('keeps an accepted unknown item identifiable', () => {
     expect(describeInventoryItem('Uncatalogued Chair', 1).description).toContain('Uncatalogued Chair');
+  });
+
+  it('keeps every generated special-item identity distinct and bounded', () => {
+    const names = ITEM_ATTRIB.flatMap((attribute) =>
+      SPECIALS.flatMap((object) => ITEM_OFS.map((concept) => `${attribute} ${object} of ${concept}`)));
+    const descriptions = names.map((name) => describeInventoryItem(name, 1).description);
+
+    expect(new Set(descriptions).size).toBe(names.length);
+    expect(descriptions.every((description) => description.length <= 220)).toBe(true);
+  });
+
+  it.each(['', 'Żółć Chair 🪑', 'X'.repeat(200)])('bounds accepted item identity %j', (name) => {
+    const details = describeInventoryItem(name, 1);
+
+    expect(details.description.length).toBeGreaterThan(0);
+    expect(details.description.length).toBeLessThanOrEqual(220);
+    expect(`${details.description} ${details.effect}`).not.toMatch(/undefined|NaN/);
   });
 
   it('keeps an inventory item story stable when its quantity changes', () => {

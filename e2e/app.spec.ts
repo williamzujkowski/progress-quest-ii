@@ -182,6 +182,7 @@ test.describe('Progress Quest terminal dashboard', () => {
           ...state.character,
           Equip: { ...state.character.Equip, Weapon: 'Venomed Shortsword' },
           Inventory: [{ name: 'Gold', qty: 0 }, { name: 'Golden Orb of Fortune', qty: 3 }],
+          Gold: 42,
           Spells: [{ name: 'Rabbit Punch', level: 2 }],
         },
       });
@@ -201,18 +202,28 @@ test.describe('Progress Quest terminal dashboard', () => {
     await expect(page.getByRole('tooltip')).toContainText('Quantity carried: 3');
     await page.locator('.tooltip-trigger', { hasText: 'Rabbit Punch' }).focus();
     await expect(page.getByRole('tooltip')).toContainText('Spell level: 2');
+    await page.locator('.inventory-card').getByRole('button', { name: '42 GP' }).focus();
+    await expect(page.getByRole('tooltip')).toContainText('Gold is weightless currency');
   });
 
   test('keeps a tooltip open under the pointer and dismisses it with Escape', async ({ page }) => {
     await page.goto('/');
 
-    await page.locator('.tooltip-trigger').first().hover();
+    const trigger = page.locator('.tooltip-trigger').first();
+    await trigger.hover();
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible();
     await tooltip.hover();
     await expect(tooltip).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(tooltip).toBeHidden();
+    await trigger.focus();
+    await expect(tooltip).toBeVisible();
+    await expect(trigger).toHaveAttribute('aria-describedby', await tooltip.getAttribute('id') ?? 'missing-tooltip-id');
+    await expect(trigger).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(tooltip).toBeHidden();
+    await expect(trigger).toBeFocused();
   });
 
   test('toggles a tooltip by touch inside a narrow viewport', async ({ browser }) => {
@@ -238,6 +249,31 @@ test.describe('Progress Quest terminal dashboard', () => {
     await trigger.tap();
     await expect(tooltip).toBeHidden();
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await page.evaluate(async () => {
+      const { useGameStore } = await import('/src/state/gameStore.ts');
+      const state = useGameStore.getState();
+      useGameStore.setState({
+        isPaused: true,
+        character: {
+          ...state.character,
+          Inventory: [
+            { name: 'Gold', qty: 0 },
+            ...Array.from({ length: 79 }, (_, index) => ({ name: `Loot item ${index + 1}`, qty: 1 })),
+            { name: 'X'.repeat(200), qty: 1 },
+          ],
+        },
+      });
+    });
+    const lastItem = page.locator('.inventory-list .tooltip-trigger').last();
+    await lastItem.scrollIntoViewIfNeeded();
+    await lastItem.tap();
+    const longTooltip = page.getByRole('tooltip');
+    const longBox = await longTooltip.boundingBox();
+    expect(longBox).not.toBeNull();
+    expect(longBox?.y).toBeGreaterThanOrEqual(0);
+    expect(longBox?.y + (longBox?.height ?? 0)).toBeLessThanOrEqual(844);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 
     await context.close();
   });
@@ -359,6 +395,8 @@ test.describe('Progress Quest terminal dashboard', () => {
     test(`${theme} has no detectable WCAG A or AA violations`, async ({ page }) => {
       await page.goto('/');
       await page.getByRole('combobox', { name: 'Visual theme' }).selectOption(theme);
+      await page.locator('.tooltip-trigger').first().focus();
+      await expect(page.getByRole('tooltip')).toBeVisible();
 
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])

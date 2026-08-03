@@ -4,10 +4,11 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { describeEquipment, describeInventoryItem, describeSpell } from '../data/itemDetails';
 import type { EquipSlot } from '../engine/types';
 
-type TooltipProps =
+type TooltipProps = (
   | { kind: 'equipment'; name: string; slot: EquipSlot }
   | { kind: 'inventory'; name: string; quantity: number }
-  | { kind: 'spell'; name: string; level: number };
+  | { kind: 'spell'; name: string; level: number }
+) & { children?: React.ReactNode };
 
 export const ItemTooltip: React.FC<TooltipProps> = (props) => {
   const tooltipId = useId();
@@ -109,7 +110,7 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
       onClick={toggleFromPointer}
       onKeyDown={toggleFromKeyboard}
     >
-      {props.name}
+      {props.children ?? props.name}
       </button>
       {tooltip}
     </>

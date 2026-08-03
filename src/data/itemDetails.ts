@@ -23,6 +23,12 @@ const valueOf = (name: string, table: readonly (readonly [string, number])[]): n
 const labelOf = (name: string, table: readonly (readonly [string, number])[]): string | undefined =>
   table.find(([label]) => name.includes(label))?.[0];
 
+const valuesOf = (name: string, table: readonly (readonly [string, number])[]): number =>
+  table.reduce((total, [label, value]) => total + (name.includes(label) ? value : 0), 0);
+
+const labelsOf = (name: string, table: readonly (readonly [string, number])[]): string[] =>
+  table.flatMap(([label]) => name.includes(label) ? [label] : []);
+
 const baseValue = (name: string, slot: EquipSlot): number => {
   const table = slot === 'Weapon' ? WEAPONS : slot === 'Shield' ? SHIELDS : ARMORS;
   return valueOf(name, table);
@@ -36,20 +42,22 @@ export function describeEquipment(name: string, slot: EquipSlot): ItemDetails {
   const explicitLabel = name.match(/^[+-]?\d+/)?.[0];
   const explicit = Number(explicitLabel ?? 0);
   const modifiers = slot === 'Weapon'
-    ? valueOf(name, OFFENSE_ATTRIB) + valueOf(name, OFFENSE_BAD)
-    : valueOf(name, DEFENSE_ATTRIB) + valueOf(name, DEFENSE_BAD);
+    ? valuesOf(name, [...OFFENSE_ATTRIB, ...OFFENSE_BAD])
+    : valuesOf(name, [...DEFENSE_ATTRIB, ...DEFENSE_BAD]);
   const rating = baseValue(name, slot) + explicit + modifiers;
   const verb = slot === 'Weapon' ? 'attack' : 'defense';
-  const base = labelOf(name, slot === 'Weapon' ? WEAPONS : slot === 'Shield' ? SHIELDS : ARMORS) ?? name;
-  const modifier = labelOf(name, slot === 'Weapon' ? [...OFFENSE_ATTRIB, ...OFFENSE_BAD] : [...DEFENSE_ATTRIB, ...DEFENSE_BAD]);
+  const base = labelOf(name, slot === 'Weapon' ? WEAPONS : slot === 'Shield' ? SHIELDS : ARMORS)
+    ?? boundedLabel(name, 'unnamed equipment');
+  const modifier = labelsOf(name, slot === 'Weapon' ? [...OFFENSE_ATTRIB, ...OFFENSE_BAD] : [...DEFENSE_ATTRIB, ...DEFENSE_BAD]).join(' and ');
   const closer = [
     'It has survived at least one meeting with a monster.',
     'The warranty was eaten by a small but ambitious animal.',
     'It looks expensive enough to discourage immediate questions.',
   ];
+  const subject = slot === 'Weapon' ? `This ${base}` : `Issued as ${slot.toLowerCase()}, this ${base}`;
   const description = modifier
-    ? `${slot === 'Weapon' ? `This ${base} entered service` : `Issued as ${slot.toLowerCase()}, this ${base} remains in service`} after its ${modifier} designation passed a review with no surviving minutes${explicitLabel ? `; its ${explicitLabel} assessor’s mark survived appeal` : ''}. ${choose(closer, `${slot}:${name}:closer`)}`
-    : `${slot === 'Weapon' ? `This ${base}` : `Issued as ${slot.toLowerCase()}, this ${base}`} entered service with ${explicitLabel ? `a ${explicitLabel} assessor’s mark and no` : 'no'} named modifier, which procurement calls restraint. ${choose(closer, `${slot}:${name}:closer`)}`;
+    ? `${subject} remains in service under its ${modifier} designation${explicitLabel ? `; the ${explicitLabel} assessor’s mark survived appeal` : ''}. ${choose(closer, `${slot}:${name}:closer`)}`
+    : `${subject} entered service with ${explicitLabel ? `a ${explicitLabel} assessor’s mark and no` : 'no'} named modifier, which procurement calls restraint. ${choose(closer, `${slot}:${name}:closer`)}`;
 
   return {
     description,
@@ -160,8 +168,16 @@ export function describeInventoryItem(name: string, quantity: number): ItemDetai
       'an assessor compensated entirely in exposure',
       'the Office of Improbable Assets',
     ], `${name}:origin`)}. ${special.concept
-      ? `Its connection to ${special.concept} is contractual, untested, and regrettably transferable.`
-      : 'It has failed every practical-use hearing with distinction.'}`
+      ? choose([
+        `Its connection to ${special.concept} is contractual, untested, and regrettably transferable.`,
+        `${special.concept} appears in the provenance as patron, substance, or spelling error.`,
+        `The Office of ${special.concept} denies sponsoring it but appreciates the publicity.`,
+      ], `${name}:consequence`)
+      : choose([
+        'It has failed every practical-use hearing with distinction.',
+        'Its former ceremonial purpose remains sealed pending a less embarrassing century.',
+        'The market accepts it under a policy nobody admits to writing.',
+      ], `${name}:warning`)}`
     : monsterLoot
       ? `Recovered from ${monsterLoot.monster}, whose comments were unavailable after the encounter. The guild logged the ${monsterLoot.drop} as “field salvage” to avoid a considerably longer form.`
     : BORING_ITEMS.includes(name)
