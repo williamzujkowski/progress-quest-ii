@@ -3,7 +3,7 @@ import { RandomGenerator } from '../../engine/prng';
 import { calculateEncumbrance } from '../../engine/sim';
 import { calculateEncumbranceMax } from '../../engine/math';
 import { advanceGame } from '../../engine/transition';
-import type { CharacterSheet, CharacterTraits, EquipSlot, ProgressionState, StatName } from '../../engine/types';
+import type { CharacterSheet, CharacterTraits, EquipSlot, ProgressionState, ProgressTask, StatName } from '../../engine/types';
 import { describeGameEvent } from '../../state/gameEventAdapter';
 
 type AleaState = [number, number, number, number];
@@ -34,7 +34,7 @@ interface LegacySheet {
 interface LegacyExpected {
   counters: { tasks: number; elapsedSeconds: number };
   character: { traits: CharacterTraits; stats: Pair<number>[] };
-  task: { caption: string; maxMs: number };
+  task: { tag: string; caption: string; maxMs: number };
   xp: { positionSeconds: number; maxSeconds: number };
   encumbrance: { positionCubits: number; maxCubits: number };
   quest: { caption: string; positionSeconds: number; maxSeconds: number; history: string[]; monster: string | null; monsterIndex: number | null };
@@ -57,7 +57,7 @@ export interface EncounterTransitionObservation {
   inventory: Pair<number>[];
   equipment: Pair<string>[];
   spells: Pair<number>[];
-  nextTask: { caption: string; durationMs: number };
+  nextTask: { caption: string; durationMs: number; loot: ProgressTask['loot'] };
   events: string[];
   rng: AleaState;
   progression: {
@@ -86,6 +86,14 @@ function romanToNumber(value: string): number {
   return total;
 }
 
+function lootFromLegacyKill(taskTag: string): NonNullable<ProgressTask['loot']> {
+  const [, monsterName, , monsterDrop] = taskTag.split('|');
+  if (!monsterName || !monsterDrop) throw new TypeError('Legacy fixture kill task must contain a monster and drop');
+  return monsterDrop === '*'
+    ? { type: 'random' }
+    : { type: 'fixed', item: `${monsterName} ${monsterDrop}`.toLowerCase() };
+}
+
 export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixture): EncounterTransitionObservation {
   assertCompletedKill(fixture.input.sheet);
   const { expected } = fixture;
@@ -95,7 +103,7 @@ export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixtur
     inventory: structuredClone(expected.inventory),
     equipment: structuredClone(expected.equipment),
     spells: expected.spells.map(([name, , level]) => [name, level]),
-    nextTask: { caption: expected.task.caption, durationMs: expected.task.maxMs },
+    nextTask: { caption: expected.task.caption, durationMs: expected.task.maxMs, loot: lootFromLegacyKill(expected.task.tag) },
     events: [...expected.log],
     rng: [...expected.rng],
     progression: {
@@ -123,8 +131,6 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
   rng.setState([...sheet.seed]);
   const gold = sheet.Inventory.find(([name]) => name === 'Gold')?.[1];
   if (gold === undefined) throw new TypeError('Legacy fixture Inventory must contain Gold');
-  const [, monsterName, , monsterDrop] = sheet.task.split('|');
-  if (!monsterName || !monsterDrop) throw new TypeError('Legacy fixture kill task must contain a monster and drop');
 
   const character: CharacterSheet = {
     Traits: structuredClone(sheet.Traits),
@@ -140,9 +146,7 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
       durationMs: sheet.TaskBar.max,
       elapsedMs: 0,
       type: 'kill',
-      loot: monsterDrop === '*'
-        ? { type: 'random' }
-        : { type: 'fixed', item: `${monsterName} ${monsterDrop}`.toLowerCase() },
+      loot: lootFromLegacyKill(sheet.task),
     },
   };
 
@@ -167,7 +171,7 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
     inventory: [['Gold', transitioned.Gold], ...transitioned.Inventory.map(({ name, qty }) => [name, qty] as Pair<number>)],
     equipment: EQUIP_SLOTS.map((slot) => [slot, transitioned.Equip[slot]]),
     spells: transitioned.Spells.map(({ name, level }) => [name, level]),
-    nextTask: { caption: transitioned.Task.description, durationMs: transitioned.Task.durationMs },
+    nextTask: { caption: transitioned.Task.description, durationMs: transitioned.Task.durationMs, loot: transitioned.Task.loot },
     events: result.events.map(describeGameEvent),
     rng: [...rng.getState()],
     progression: {
