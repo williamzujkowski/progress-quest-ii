@@ -17,7 +17,7 @@ export const InventoryView: React.FC = () => {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: 'var(--accent-warning)', fontWeight: 'bold' }}>
           <Coins size={16} />
-          <span>{character.Gold} GP</span>
+          <ItemTooltip kind="inventory" name="Gold" quantity={character.Gold}>{character.Gold} GP</ItemTooltip>
         </div>
       </div>
 

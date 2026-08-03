@@ -1,4 +1,4 @@
-import { ARMORS, DEFENSE_ATTRIB, DEFENSE_BAD, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, WEAPONS } from './traits';
+import { ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, WEAPONS } from './traits';
 import type { EquipSlot } from '../engine/types';
 
 export interface ItemDetails {
@@ -14,8 +14,22 @@ const stableIndex = (key: string, length: number): number => {
 
 const choose = (options: readonly string[], key: string): string => options[stableIndex(key, options.length)];
 
+const boundedLabel = (name: string, fallback: string): string => {
+  const characters = Array.from(name);
+  return characters.length > 60 ? `${characters.slice(0, 59).join('')}…` : name || fallback;
+};
+
 const valueOf = (name: string, table: readonly (readonly [string, number])[]): number =>
   table.find(([label]) => name.includes(label))?.[1] ?? 0;
+
+const labelOf = (name: string, table: readonly (readonly [string, number])[]): string | undefined =>
+  table.find(([label]) => name.includes(label))?.[0];
+
+const valuesOf = (name: string, table: readonly (readonly [string, number])[]): number =>
+  table.reduce((total, [label, value]) => total + (name.includes(label) ? value : 0), 0);
+
+const labelsOf = (name: string, table: readonly (readonly [string, number])[]): string[] =>
+  table.flatMap(([label]) => name.includes(label) ? [label] : []);
 
 const baseValue = (name: string, slot: EquipSlot): number => {
   const table = slot === 'Weapon' ? WEAPONS : slot === 'Shield' ? SHIELDS : ARMORS;
@@ -27,29 +41,25 @@ export function describeEquipment(name: string, slot: EquipSlot): ItemDetails {
     return { description: 'An empty slot. The void remains undefeated.', effect: 'No combat effect.' };
   }
 
-  const explicit = Number(name.match(/^[+-]?\d+/)?.[0] ?? 0);
+  const explicitLabel = name.match(/^[+-]?\d+/)?.[0];
+  const explicit = Number(explicitLabel ?? 0);
   const modifiers = slot === 'Weapon'
-    ? valueOf(name, OFFENSE_ATTRIB) + valueOf(name, OFFENSE_BAD)
-    : valueOf(name, DEFENSE_ATTRIB) + valueOf(name, DEFENSE_BAD);
+    ? valuesOf(name, [...OFFENSE_ATTRIB, ...OFFENSE_BAD])
+    : valuesOf(name, [...DEFENSE_ATTRIB, ...DEFENSE_BAD]);
   const rating = baseValue(name, slot) + explicit + modifiers;
   const verb = slot === 'Weapon' ? 'attack' : 'defense';
-  const lead = slot === 'Weapon'
-    ? [
-      'A legally questionable way to turn a monster into a footnote',
-      'A heroic solution to the ancient problem of having a monster nearby',
-      'The sort of weapon a procurement department calls “within tolerance”',
-    ]
-    : [
-      'Protective apparel for adventurers who prefer their organs inside',
-      'A wearable argument against the sharp parts of other people',
-      'Defensive tailoring for a profession with terrible occupational health',
-    ];
+  const base = labelOf(name, slot === 'Weapon' ? WEAPONS : slot === 'Shield' ? SHIELDS : ARMORS)
+    ?? boundedLabel(name, 'unnamed equipment');
+  const modifier = labelsOf(name, slot === 'Weapon' ? [...OFFENSE_ATTRIB, ...OFFENSE_BAD] : [...DEFENSE_ATTRIB, ...DEFENSE_BAD]).join(' and ');
   const closer = [
     'It has survived at least one meeting with a monster.',
     'The warranty was eaten by a small but ambitious animal.',
     'It looks expensive enough to discourage immediate questions.',
   ];
-  const description = `${choose(lead, `${name}:${slot}`)}. ${choose(closer, `${slot}:${name}`)}`;
+  const subject = slot === 'Weapon' ? `This ${base}` : `Issued as ${slot.toLowerCase()}, this ${base}`;
+  const description = modifier
+    ? `${subject} remains in service under its ${modifier} designation${explicitLabel ? `; the ${explicitLabel} assessor’s mark survived appeal` : ''}. ${choose(closer, `${slot}:${name}:closer`)}`
+    : `${subject} entered service with ${explicitLabel ? `a ${explicitLabel} assessor’s mark and no` : 'no'} named modifier, which procurement calls restraint. ${choose(closer, `${slot}:${name}:closer`)}`;
 
   return {
     description,
@@ -58,12 +68,53 @@ export function describeEquipment(name: string, slot: EquipSlot): ItemDetails {
 }
 
 const SPELL_FLAVOR: Record<string, string> = {
-  'Slime Finger': 'For pointing, poking, and making handshakes legally actionable.',
-  'Rabbit Punch': 'A surprisingly effective argument delivered at high velocity.',
-  Hastiness: 'Because waiting your turn is for people with a retirement plan.',
-  'Cone of Annoyance': 'A focused beam of weaponized irritation.',
-  'Magnetic Orb': 'Attracts metal, trouble, and occasionally both.',
-  'Infinite Confusion': 'The spellbook calls it strategy. Everyone else calls it Tuesday.',
+  'Slime Finger': 'A minor rite for making one finger somebody else’s compliance problem.',
+  'Rabbit Punch': 'A close-quarters memorandum delivered without the customary envelope.',
+  Hastiness: 'The minutes were approved before the meeting, preserving valuable time and all known errors.',
+  'Good Move': 'Records the caster’s latest decision as sound policy before evidence can arrive.',
+  Sadness: 'A mandatory reflection on every choice that led to the present corridor.',
+  Seasick: 'The spellbook’s maritime section, written by someone who distrusted both boats and breakfast.',
+  Shoelaces: 'The oldest binding doctrine in footwear, now available without bending over.',
+  Inoculate: 'A preventative filing prepared for ailments that have not yet submitted their paperwork.',
+  'Cone of Annoyance': 'A geometrically rigorous complaint addressed to everyone inside the diagram.',
+  'Magnetic Orb': 'A polished sphere with a procurement file inexplicably stapled to every nearby form.',
+  'Invisible Hands': 'An outsourcing proposal whose contractors cannot be seen, reached, or invoiced.',
+  'Revolting Cloud': 'An atmospheric grievance jointly filed by sanitation, morale, and the ceiling.',
+  'Aqueous Humor': 'A damp medical joke preserved long after both the medicine and audience expired.',
+  'Spectral Miasma': 'An incorporeal air-quality incident with no department willing to claim jurisdiction.',
+  'Clever Fellow': 'The author’s self-assessment, entered into the curriculum as supporting evidence.',
+  Lockjaw: 'The spellbook’s preferred response to oral argument and dental reimbursement.',
+  'History Lesson': 'Explains the current emergency as the inevitable result of an obsolete filing system.',
+  Hydrophobia: 'Reclassifies water as an aggressive stakeholder with unacceptable boundary practices.',
+  'Big Sister': 'Requests oversight from a senior relative whose authority has never been formally tested.',
+  'Cone of Paste': 'An adhesive memorandum distributed across a geometrically defensible area.',
+  Mulligan: 'Invokes the sacred doctrine that the previous outcome was only a rehearsal.',
+  "Nestor's Bright Idea": 'A celebrated proposal whose brilliance remains protected by missing implementation notes.',
+  'Holy Batpole': 'An implausible climbing aid certified for liturgical and municipal use.',
+  'Tumor (Benign)': 'An anatomical footnote notable chiefly for the reassurance in its parentheses.',
+  Braingate: 'A cognitive checkpoint staffed by one suspicious clerk and several unsigned waivers.',
+  'Summon a Bitch': 'A cross-planar requisition for one exceptionally displeased independent contractor.',
+  Nonplus: 'A procedural pause in which the agenda survives but nobody recalls approving it.',
+  'Animate Nightstand': 'A promotion from bedroom furniture to mobile staff, with no salary adjustment.',
+  'Eye of the Troglodyte': 'A subterranean witness whose visual standards predate disclosure law.',
+  'Curse Name': 'A sanctions notice addressed to a proper noun while sparing the underlying paperwork.',
+  Dropsy: 'A retired diagnosis recalled for being less precise than the symptoms deserved.',
+  'Vitreous Humor': 'The joke inside the eye, submitted to ophthalmology for a second opinion.',
+  "Roger's Grand Illusion": 'A grand illusion attributed to Roger because liability required a full name.',
+  Covet: 'A formal expression of interest in property burdened by somebody else’s ownership.',
+  'Black Idaho': 'A region, condition, or root vegetable; cartography declines to decide.',
+  'Astral Miasma': 'An air-quality complaint escalated beyond the jurisdiction of ordinary ceilings.',
+  'Spectral Oyster': 'A translucent mollusk retained under an extremely narrow advisory contract.',
+  'Acrid Hands': 'A manual-handling policy revised in stronger language and cheaper gloves.',
+  Angioplasty: 'Circulation described as a plumbing request requiring celestial preauthorization.',
+  "Grognor's Big Day Off": 'The rare interval when Grognor was absent and everyone remained extremely careful.',
+  'Tumor (Malignant)': 'An anatomical escalation whose parentheses have stopped attempting reassurance.',
+  'Animate Tunic': 'A garment offered independent agency before anyone checked where it intended to go.',
+  'Ursine Armor': 'A defensive dress code drafted by bears and reviewed from a prudent distance.',
+  'Holy Roller': 'A sanctified procedure that declines to specify whether the subject is wheel or zealot.',
+  Tonsillectomy: 'A throat complaint reduced to a surgical work order and an alarming consent form.',
+  'Curse Family': 'A naming dispute extended to relatives, dependants, and everyone copied on the thread.',
+  'Infinite Confusion': 'A standing agenda item that explains itself by generating another standing agenda item.',
 };
 
 const SPELL_CLOSERS = [
@@ -74,39 +125,75 @@ const SPELL_CLOSERS = [
 ];
 
 export function describeSpell(name: string, level: number): ItemDetails {
+  const premise = SPELL_FLAVOR[name]
+    ?? `The incantation “${boundedLabel(name, 'unnamed spell')}” arrived without syllabus, sponsor, or declared learning outcome.`;
   return {
-    description: `${SPELL_FLAVOR[name] ?? 'A spell of dubious provenance and excellent paperwork.'} ${choose(SPELL_CLOSERS, `${name}:${level}`)}`,
-    effect: `Spell level: ${level}. Higher levels improve its priority in the abstract combat simulation; exact damage is intentionally not surfaced by the engine.`,
+    description: `${premise} ${choose(SPELL_CLOSERS, `${name}:closer`)}`,
+    effect: `Spell level: ${level}. The simulation does not expose a spell-specific combat effect.`,
   };
 }
 
+function specialItemParts(name: string): { attribute: string; object: string; concept?: string } | undefined {
+  const attribute = ITEM_ATTRIB.find((candidate) => name.startsWith(`${candidate} `));
+  if (!attribute) return undefined;
+  const remainder = name.slice(attribute.length + 1);
+  const object = SPECIALS.find((candidate) => remainder === candidate || remainder.startsWith(`${candidate} of `));
+  if (!object) return undefined;
+  const concept = ITEM_OFS.find((candidate) => remainder === `${object} of ${candidate}`);
+  return { attribute, object, concept };
+}
+
+function monsterLootParts(name: string): { monster: string; drop: string } | undefined {
+  const canonical = MONSTERS.find(({ name: monster, item }) =>
+    item !== '*' && `${monster} ${item}`.toLowerCase() === name.toLowerCase());
+  if (canonical) return { monster: canonical.name, drop: canonical.item };
+
+  const generatedMonster = name.endsWith(' item') ? name.slice(0, -' item'.length) : undefined;
+  const generated = MONSTERS.find(({ name: monster }) => monster === generatedMonster);
+  return generated ? { monster: generated.name, drop: 'item' } : undefined;
+}
+
 export function describeInventoryItem(name: string, quantity: number): ItemDetails {
-  const lead = name.includes(' item')
-    ? [
-      'A trophy from something that objected to being converted into loot',
-      'Evidence that the monster had possessions and poor legal representation',
-      'A souvenir from a workplace incident involving teeth',
-    ]
-    : name.includes(' of ')
-      ? [
-        'A suspiciously ornate treasure with more adjectives than practical uses',
-        'An heirloom of uncertain ancestry and aggressively certain marketing',
-        'A treasure whose primary enchantment is making inventory management worse',
-      ]
-      : [
-        'A portable reminder that the killing fields have a procurement department',
-        'A humble object promoted beyond its station by random chance',
-        'A thing the market daemon will accept if nobody asks follow-up questions',
-      ];
+  const special = specialItemParts(name);
+  const monsterLoot = monsterLootParts(name);
+  const label = boundedLabel(name, 'unnamed object');
   const closer = [
     'It is not edible, unless the situation has become unusually philosophical.',
     'It will become someone else’s problem at the next market visit.',
     'It occupies space with the quiet confidence of a tax audit.',
   ];
-  const description = `${choose(lead, name)}. ${choose(closer, `${name}:${quantity}`)}`;
+  const description = name === 'Gold'
+    ? 'Gold is weightless in the pack and ruinously heavy in the quarterly ledger. Every coin has been counted twice and trusted once.'
+    : special
+    ? `The ${special.attribute} ${special.object} was declared authentic by ${choose([
+      'a guild that now denies owning stationery',
+      'an assessor compensated entirely in exposure',
+      'the Office of Improbable Assets',
+    ], `${name}:origin`)}. ${special.concept
+      ? choose([
+        `Its connection to ${special.concept} is contractual, untested, and regrettably transferable.`,
+        `${special.concept} appears in the provenance as patron, substance, or spelling error.`,
+        `The Office of ${special.concept} denies sponsoring it but appreciates the publicity.`,
+      ], `${name}:consequence`)
+      : choose([
+        'It has failed every practical-use hearing with distinction.',
+        'Its former ceremonial purpose remains sealed pending a less embarrassing century.',
+        'The market accepts it under a policy nobody admits to writing.',
+      ], `${name}:warning`)}`
+    : monsterLoot
+      ? `Recovered from ${monsterLoot.monster}, whose comments were unavailable after the encounter. The guild logged the ${monsterLoot.drop} as “field salvage” to avoid a considerably longer form.`
+    : BORING_ITEMS.includes(name)
+      ? `Once merely “${name},” this object was reassigned as treasure. ${choose([
+        'The promotion includes no raise, purpose, or right of appeal.',
+        'Procurement insists this is upward mobility.',
+        'Its former household duties remain available upon request.',
+      ], `${name}:demotion`)}`
+    : `The label “${label}” is all that survived the encounter and subsequent filing error. ${choose(closer, `${name}:closer`)}`;
 
   return {
     description,
-    effect: `Quantity carried: ${quantity}. Loot contributes to encumbrance; it has no direct combat effect until the market daemon gets involved.`,
+    effect: name === 'Gold'
+      ? `Quantity carried: ${quantity}. Gold is weightless currency; it does not contribute to encumbrance or combat.`
+      : `Quantity carried: ${quantity}. Loot contributes to encumbrance; it has no direct combat effect until the market daemon gets involved.`,
   };
 }

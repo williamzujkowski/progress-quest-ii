@@ -245,8 +245,14 @@
   position: relative;
   display: inline-flex;
   min-width: 0;
+  padding: 0;
   cursor: help;
+  border: 0;
   border-bottom: 1px dotted var(--text-muted);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
 }
 
 .item-tooltip {
@@ -271,6 +277,7 @@
 
 .item-tooltip-visible {
   opacity: 1;
+  pointer-events: auto;
   transform: translateY(0);
 }
 

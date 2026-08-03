@@ -1,36 +1,180 @@
 import { describe, expect, it } from 'vitest';
 import { describeEquipment, describeInventoryItem, describeSpell } from '../data/itemDetails';
+import {
+  ARMORS,
+  DEFENSE_ATTRIB,
+  DEFENSE_BAD,
+  EQUIP_SLOTS,
+  ITEM_ATTRIB,
+  ITEM_OFS,
+  OFFENSE_ATTRIB,
+  OFFENSE_BAD,
+  SHIELDS,
+  SPECIALS,
+  SPELLS,
+  WEAPONS,
+} from '../data/traits';
 
 describe('item tooltip details', () => {
   it('reports equipment slot power without inventing combat damage', () => {
     const details = describeEquipment('Venomed Shortsword', 'Weapon');
 
+    expect(details.description).toContain('Venomed');
+    expect(details.description).toContain('Shortsword');
     expect(details.effect).toContain('Attack rating: 9');
     expect(details.effect).toContain('damage and mitigation remain abstract');
   });
 
-  it('explains spell level and keeps the abstract combat model explicit', () => {
+  it('keeps an explicit equipment rating mark in the item story', () => {
+    const details = describeEquipment('-3 Burlap', 'Hauberk');
+
+    expect(details.description).toContain('-3');
+    expect(details.description).toContain('Burlap');
+    expect(details.effect).toContain('Defense rating: 0');
+  });
+
+  it('includes every canonical modifier in an accepted equipment name', () => {
+    const details = describeEquipment('Venomed Vicious Stick', 'Weapon');
+
+    expect(details.description).toContain('Venomed');
+    expect(details.description).toContain('Vicious');
+    expect(details.effect).toContain('Attack rating: 7');
+  });
+
+  it('keeps the equipped slot meaningful for the same armor', () => {
+    const armorSlots = EQUIP_SLOTS.filter((slot) => slot !== 'Weapon' && slot !== 'Shield');
+    const descriptions = armorSlots.map((slot) => describeEquipment('Burlap', slot).description);
+
+    expect(new Set(descriptions).size).toBe(armorSlots.length);
+  });
+
+  it.each([
+    ['accepted long equipment', 'X'.repeat(200), 'Helm' as const],
+    ['stacked canonical equipment', '+100 Threadbare Diamond Mail', 'Hauberk' as const],
+  ])('bounds %s flavor', (_case, name, slot) => {
+    expect(describeEquipment(name, slot).description.length).toBeLessThanOrEqual(220);
+  });
+
+  it('keeps every generated equipment identity distinct and bounded', () => {
+    const equipment = [
+      ...WEAPONS.flatMap(([base]) => [...OFFENSE_ATTRIB, ...OFFENSE_BAD].map(([modifier]) => [`${modifier} ${base}`, 'Weapon'] as const)),
+      ...SHIELDS.flatMap(([base]) => [...DEFENSE_ATTRIB, ...DEFENSE_BAD].map(([modifier]) => [`${modifier} ${base}`, 'Shield'] as const)),
+      ...EQUIP_SLOTS.filter((slot) => slot !== 'Weapon' && slot !== 'Shield').flatMap((slot) =>
+        ARMORS.flatMap(([base]) => [...DEFENSE_ATTRIB, ...DEFENSE_BAD].map(([modifier]) => [`${modifier} ${base}`, slot] as const))),
+    ];
+    const descriptions = equipment.map(([name, slot]) => describeEquipment(name, slot).description);
+
+    expect(new Set(descriptions).size).toBe(equipment.length);
+    expect(descriptions.every((description) => description.length <= 220)).toBe(true);
+  });
+
+  it('keeps spell flavor stable across levels without inventing a combat effect', () => {
     const details = describeSpell('Rabbit Punch', 2);
 
-    expect(details.description).toContain('high velocity');
-    expect(details.effect).toContain('Spell level: 2');
-    expect(details.effect).toContain('exact damage is intentionally not surfaced');
+    expect(details.description).toContain('customary envelope');
+    expect(describeSpell('Rabbit Punch', 7).description).toBe(details.description);
+    expect(details.effect).toBe('Spell level: 2. The simulation does not expose a spell-specific combat effect.');
+  });
+
+  it('gives every canonical spell a distinct bounded description', () => {
+    const descriptions = SPELLS.map((name) => describeSpell(name, 1).description);
+
+    expect(new Set(descriptions).size).toBe(SPELLS.length);
+    expect(descriptions.every((description) => description.length <= 220)).toBe(true);
+  });
+
+  it('keeps an accepted unknown spell identifiable', () => {
+    expect(describeSpell('Conjure Meeting Minutes', 1).description).toContain('Conjure Meeting Minutes');
   });
 
   it('describes loot quantity and encumbrance without claiming combat stats', () => {
     const details = describeInventoryItem('Golden Orb of Fortune', 3);
 
-    expect(details.description).toMatch(/treasure|heirloom/);
+    expect(details.description).toContain('Golden');
+    expect(details.description).toContain('Orb');
+    expect(details.description).toContain('Fortune');
+    expect(details.description.length).toBeLessThanOrEqual(220);
     expect(details.effect).toContain('Quantity carried: 3');
     expect(details.effect).toContain('no direct combat effect');
   });
 
-  it('varies flavor deterministically by item context', () => {
+  it('reports Gold as weightless currency', () => {
+    const details = describeInventoryItem('Gold', 42);
+
+    expect(details.description).toContain('Gold');
+    expect(details.effect).toBe(
+      'Quantity carried: 42. Gold is weightless currency; it does not contribute to encumbrance or combat.',
+    );
+  });
+
+  it('names the monster in a recovered-item incident report', () => {
+    const description = describeInventoryItem('Gelatinous Cube item', 1).description;
+
+    expect(description).toContain('Gelatinous Cube');
+    expect(description.length).toBeLessThanOrEqual(220);
+  });
+
+  it('recognizes the canonical monster and drop in live fixed loot', () => {
+    const description = describeInventoryItem('gelatinous cube jam', 1).description;
+
+    expect(description).toContain('Gelatinous Cube');
+    expect(description).toContain('jam');
+  });
+
+  it('does not invent monster provenance for an accepted unknown item', () => {
+    expect(describeInventoryItem('Uncatalogued item', 1).description).not.toContain('Recovered from');
+  });
+
+  it('names mundane loot in its bureaucratic demotion story', () => {
+    const description = describeInventoryItem('nail', 1).description;
+
+    expect(description).toContain('nail');
+    expect(description).toContain('treasure');
+  });
+
+  it('keeps an accepted unknown item identifiable', () => {
+    expect(describeInventoryItem('Uncatalogued Chair', 1).description).toContain('Uncatalogued Chair');
+  });
+
+  it('keeps every generated special-item identity distinct and bounded', () => {
+    const names = ITEM_ATTRIB.flatMap((attribute) =>
+      SPECIALS.flatMap((object) => ITEM_OFS.map((concept) => `${attribute} ${object} of ${concept}`)));
+    const descriptions = names.map((name) => describeInventoryItem(name, 1).description);
+
+    expect(new Set(descriptions).size).toBe(names.length);
+    expect(descriptions.every((description) => description.length <= 220)).toBe(true);
+  });
+
+  it.each(['', 'Żółć Chair 🪑', 'X'.repeat(200)])('bounds accepted item identity %j', (name) => {
+    const details = describeInventoryItem(name, 1);
+
+    expect(details.description.length).toBeGreaterThan(0);
+    expect(details.description.length).toBeLessThanOrEqual(220);
+    expect(`${details.description} ${details.effect}`).not.toMatch(/undefined|NaN/);
+  });
+
+  it('truncates accepted long Unicode identities at code-point boundaries', () => {
+    const name = '🪑'.repeat(100);
+    const descriptions = [
+      describeEquipment(name, 'Weapon').description,
+      describeInventoryItem(name, 1).description,
+      describeSpell(name, 1).description,
+    ];
+    const hasUnpairedSurrogate = (value: string) => [...value].some((character) => {
+      const code = character.charCodeAt(0);
+      return character.length === 1 && code >= 0xD800 && code <= 0xDFFF;
+    });
+
+    expect(descriptions.some(hasUnpairedSurrogate)).toBe(false);
+    expect(descriptions.every((description) => [...description].length <= 220)).toBe(true);
+  });
+
+  it('keeps an inventory item story stable when its quantity changes', () => {
     const first = describeInventoryItem('Golden Orb of Fortune', 3).description;
     const repeat = describeInventoryItem('Golden Orb of Fortune', 3).description;
     const other = describeInventoryItem('Golden Orb of Fortune', 4).description;
 
     expect(repeat).toBe(first);
-    expect(other).not.toBe(first);
+    expect(other).toBe(first);
   });
 });
