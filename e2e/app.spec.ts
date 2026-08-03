@@ -494,6 +494,31 @@ test.describe('Progress Quest terminal dashboard', () => {
     await expect(page.locator('.hero-name > span:not(.badge)')).toHaveText(activeName);
   });
 
+  test('rejects impossible imported progress without exposing NaN progress bars', async ({ page }) => {
+    await page.goto('/');
+    const activeName = await page.locator('.hero-name > span:not(.badge)').innerText();
+    const invalidPqw = await page.evaluate(async () => {
+      const { useGameStore } = await import('/src/state/gameStore.ts');
+      const { encodePQWSave } = await import('/src/state/saveManager.ts');
+      const character = useGameStore.getState().character;
+      return encodePQWSave({
+        ...character,
+        Quest: { ...character.Quest, currentProgress: 1, maxProgress: 0 },
+      });
+    });
+
+    await page.getByRole('button', { name: /Roster & Saves/i }).click();
+    await page.getByPlaceholder('Paste base64 .pqw save string here...').fill(invalidPqw);
+    await page.getByRole('button', { name: 'Load Character' }).click();
+
+    await expect(page.getByRole('dialog', { name: /Character Roster/i })).toBeVisible();
+    await expect(page.getByRole('alert')).toContainText('Invalid Character Sheet Schema');
+    await expect(page.locator('.hero-name > span:not(.badge)')).toHaveText(activeName);
+    for (const value of await page.getByRole('progressbar').evaluateAll((bars) => bars.map((bar) => bar.getAttribute('aria-valuenow')))) {
+      expect(value).toMatch(/^\d+$/);
+    }
+  });
+
   for (const width of [320, 375, 768]) {
     test(`keeps the full interface inside a ${width}px viewport`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
