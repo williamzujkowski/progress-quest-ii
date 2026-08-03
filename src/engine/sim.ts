@@ -105,7 +105,7 @@ export function generateExterminateQuest(rng: RandomGenerator, level: number): {
   }
   return {
     kind: 'exterminate',
-    description: `Exterminate ${definite(target.name)}`,
+    description: `Exterminate ${definite(target.name, 2)}`,
     target: `${target.name}|${target.level}|${target.item}`,
     targetIndex,
   };

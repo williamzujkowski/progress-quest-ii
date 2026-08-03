@@ -57,13 +57,18 @@ describe('Progress Quest Engine Math', () => {
   });
 
   it('generates an exterminate quest with exactly four deterministic monster picks', () => {
-    const first = generateExterminateQuest(new RandomGenerator('quest-seed'), 1);
-    const second = generateExterminateQuest(new RandomGenerator('quest-seed'), 1);
+    const firstRng = new RandomGenerator('quest-seed');
+    const secondRng = new RandomGenerator('quest-seed');
+    const first = generateExterminateQuest(firstRng, 1);
+    const second = generateExterminateQuest(secondRng, 1);
+    const expectedRng = new RandomGenerator('quest-seed');
+    for (let pick = 0; pick < 4; pick += 1) expectedRng.random(1000);
 
     expect(first).toEqual(second);
     expect(first.kind).toBe('exterminate');
     expect(first.description).toMatch(/^Exterminate the /);
     expect(first.target.split('|')).toHaveLength(3);
     expect(first.targetIndex).toBeGreaterThanOrEqual(0);
+    expect(firstRng.getState()).toEqual(expectedRng.getState());
   });
 });

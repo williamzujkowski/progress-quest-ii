@@ -13,6 +13,6 @@ export function indefinite(value: string, quantity = 1): string {
   return `${article} ${value}`;
 }
 
-export function definite(value: string): string {
-  return `the ${value}`;
+export function definite(value: string, quantity = 1): string {
+  return `the ${quantity === 1 ? value : plural(value)}`;
 }
