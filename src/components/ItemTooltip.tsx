@@ -66,6 +66,12 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
   const scheduleHide = () => {
     closeTimerRef.current = window.setTimeout(() => setOpen(false), 100);
   };
+  const showFromHover = (event: React.PointerEvent) => {
+    if (event.pointerType === 'mouse') show();
+  };
+  const hideFromHover = (event: React.PointerEvent) => {
+    if (event.pointerType === 'mouse') scheduleHide();
+  };
   const toggleFromPointer = (event: React.MouseEvent) => {
     if (event.detail > 0) setOpen(!openAtPressRef.current);
   };
@@ -82,8 +88,8 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
       ref={tooltipRef}
       role="tooltip"
       style={{ left: position.left, top: position.top }}
-      onMouseEnter={show}
-      onMouseLeave={scheduleHide}
+      onPointerEnter={showFromHover}
+      onPointerLeave={hideFromHover}
     >
       <strong>{props.name || 'Empty slot'}</strong>
       <span>{details.description}</span>
@@ -102,8 +108,8 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
       aria-describedby={open ? tooltipId : undefined}
       aria-expanded={open}
       title={details.description}
-      onMouseEnter={show}
-      onMouseLeave={scheduleHide}
+      onPointerEnter={showFromHover}
+      onPointerLeave={hideFromHover}
       onFocus={show}
       onBlur={() => setOpen(false)}
       onPointerDown={() => { openAtPressRef.current = open; }}

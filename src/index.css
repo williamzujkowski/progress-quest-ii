@@ -575,7 +575,7 @@ textarea.form-control { resize: vertical; }
   }
 
   .character-card {
-    overflow-y: auto;
+    overflow: hidden;
   }
 
   .activity-card,

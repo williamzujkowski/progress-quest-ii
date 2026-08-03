@@ -10,10 +10,16 @@ const loadDenseDashboard = async (page: Page) => {
     useGameStore.setState({
       character: {
         ...state.character,
+        Equip: {
+          ...state.character.Equip,
+          Weapon: '+100 Threadbare Diamond Sword of Administrative Finality',
+          Helm: 'Enchanted Tax Hat of Unscheduled Compliance',
+        },
         Inventory: [
           { name: 'Gold', qty: 0 },
           ...Array.from({ length: 80 }, (_, index) => ({ name: `Loot item ${index + 1}`, qty: index + 1 })),
         ],
+        Spells: Array.from({ length: 18 }, (_, index) => ({ name: `Procedural Disappointment ${index + 1}`, level: index + 1 })),
       },
       log: Array.from({ length: 50 }, (_, index) => `Event ${50 - index}`),
     });
@@ -571,10 +577,14 @@ test.describe('Progress Quest II terminal dashboard', () => {
     const log = page.getByRole('region', { name: 'Activity Event Log' });
     const inventory = page.getByRole('region', { name: 'Inventory items' });
     const character = page.getByRole('region', { name: 'Character Loadout' });
+    const equipment = page.getByRole('region', { name: 'Equipment List' });
+    const spellBook = page.getByRole('region', { name: 'Spell Book' });
     const metrics = {
       page: await page.evaluate(() => ({ height: document.documentElement.scrollHeight, viewport: window.innerHeight })),
       log: await log.evaluate((element) => ({ client: element.clientHeight, scroll: element.scrollHeight, top: element.scrollTop })),
       inventory: await inventory.evaluate((element) => ({ client: element.clientHeight, scroll: element.scrollHeight })),
+      character: await character.evaluate((element) => ({ client: element.clientHeight, scroll: element.scrollHeight })),
+      spells: await spellBook.evaluate((element) => ({ client: element.clientHeight, scroll: element.scrollHeight })),
     };
 
     expect(metrics.page.height).toBeLessThanOrEqual(metrics.page.viewport);
@@ -586,9 +596,38 @@ test.describe('Progress Quest II terminal dashboard', () => {
     expect(metrics.log.scroll).toBeGreaterThan(metrics.log.client);
     expect(metrics.log.top + metrics.log.client).toBeGreaterThanOrEqual(metrics.log.scroll - 1);
     expect(metrics.inventory.scroll).toBeGreaterThan(metrics.inventory.client);
+    expect(metrics.character.scroll).toBeLessThanOrEqual(metrics.character.client);
+    expect(metrics.spells.scroll).toBeGreaterThan(metrics.spells.client);
+    await expect(equipment).toHaveCSS('grid-template-columns', /\S+\s+\S+/);
+    await expect(page.getByText('Spell Book (18)')).toBeInViewport();
     await character.focus();
     await expect(character).toBeFocused();
     await expect(log.locator('.log-entry').last()).toContainText('Event 50');
+  });
+
+  test('contains the loadout at the one-screen desktop breakpoint', async ({ page }) => {
+    await page.setViewportSize({ width: 1025, height: 760 });
+    await page.goto('/');
+    await loadDenseDashboard(page);
+
+    const character = page.getByRole('region', { name: 'Character Loadout' });
+    const spellBook = page.getByRole('region', { name: 'Spell Book' });
+    const characterBox = await character.boundingBox();
+    const spellBox = await spellBook.boundingBox();
+
+    expect(await character.evaluate((element) => element.scrollHeight)).toBeLessThanOrEqual(await character.evaluate((element) => element.clientHeight));
+    expect(spellBox).not.toBeNull();
+    expect(spellBox!.height).toBeGreaterThan(0);
+    expect(spellBox!.y + spellBox!.height).toBeLessThanOrEqual(characterBox!.y + characterBox!.height);
+  });
+
+  test('keeps the compact equipment grid on wide, short screens', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 700 });
+    await page.goto('/');
+    await loadDenseDashboard(page);
+
+    await expect(page.getByRole('region', { name: 'Equipment List' })).toHaveCSS('grid-template-columns', /\S+\s+\S+/);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => document.documentElement.clientWidth));
   });
 
   for (const width of [320, 375, 768]) {
@@ -599,16 +638,20 @@ test.describe('Progress Quest II terminal dashboard', () => {
 
       const log = page.getByRole('region', { name: 'Activity Event Log' });
       const inventory = page.getByRole('region', { name: 'Inventory items' });
+      const spellBook = page.getByRole('region', { name: 'Spell Book' });
       const metrics = {
         page: await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth })),
         log: await log.evaluate((element) => ({ client: element.clientHeight, scroll: element.scrollHeight, top: element.scrollTop })),
         inventory: await inventory.evaluate((element) => ({ client: element.clientHeight, scroll: element.scrollHeight })),
+        spells: await spellBook.evaluate((element) => ({ client: element.clientHeight, scroll: element.scrollHeight })),
       };
 
       expect(metrics.page.scroll).toBeLessThanOrEqual(metrics.page.client);
       expect(metrics.log.scroll).toBeGreaterThan(metrics.log.client);
       expect(metrics.log.top + metrics.log.client).toBeGreaterThanOrEqual(metrics.log.scroll - 1);
       expect(metrics.inventory.scroll).toBeGreaterThan(metrics.inventory.client);
+      expect(metrics.spells.scroll).toBeGreaterThan(metrics.spells.client);
+      await expect(page.getByRole('region', { name: 'Equipment List' })).toHaveCSS('grid-template-columns', /^[^ ]+$/);
       await expect(log.locator('.log-entry').last()).toContainText('Event 50');
     });
   }

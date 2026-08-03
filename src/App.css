@@ -264,12 +264,21 @@
 .hero-stat span { color: var(--text-muted); font-weight: 700; }
 .hero-stat strong { color: var(--text-main); font-size: 0.9rem; }
 
-.loadout-list { max-height: none; }
+.equipment-list { max-height: none; }
+
+.spell-list {
+  max-height: 17.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--panel-border) transparent;
+}
 
 .tooltip-trigger {
   position: relative;
   display: inline-flex;
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   padding: 0;
   cursor: help;
   border: 0;
@@ -278,6 +287,8 @@
   color: inherit;
   font: inherit;
   text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .item-tooltip {
@@ -347,6 +358,8 @@
 .equip-item > :last-child,
 .progress-label > :last-child { flex: 0 0 auto; }
 
+.equip-item > .tooltip-trigger { flex: 1 1 auto; }
+
 @media (max-width: 1024px) {
   .main-grid > :last-child { grid-column: 1 / -1; }
   .hero-banner { grid-template-columns: minmax(0, 1fr) minmax(17rem, 1fr); }
@@ -390,7 +403,23 @@
   .modal-content { width: calc(100% - 1rem); padding: 1rem; }
 }
 
+@media (min-width: 1025px) {
+  .equipment-list {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(6, minmax(0, auto));
+    column-gap: var(--space-3);
+  }
+}
+
 @media (min-width: 1025px) and (min-height: 760px) {
+  .spell-list {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+  }
+
   .quest-column {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);

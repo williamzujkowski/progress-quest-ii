@@ -20,7 +20,7 @@ export const CharacterSheetView: React.FC = () => {
       <div className="section-label">
         <Shield size={14} /> Equipment Slots
       </div>
-      <div className="equip-list loadout-list" role="region" tabIndex={0} aria-label="Equipment List">
+      <div className="equip-list equipment-list" role="region" tabIndex={0} aria-label="Equipment List">
         {EQUIP_SLOTS.map((slot: EquipSlot) => {
           const equipName = character.Equip[slot] || '—';
           return (
@@ -38,16 +38,16 @@ export const CharacterSheetView: React.FC = () => {
       <div className="section-label">
         <Sparkles size={14} /> Spell Book ({character.Spells.length})
       </div>
-      <div className="equip-list loadout-list" role="region" tabIndex={0} aria-label="Spell Book">
+      <div className="equip-list spell-list" role="region" tabIndex={0} aria-label="Spell Book">
         {character.Spells.length === 0 ? (
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+          <div className="empty-state">
             No spells learned yet. Complete quests to learn spells!
           </div>
         ) : (
           character.Spells.map((spell) => (
             <div className="equip-item" key={spell.name}>
               <ItemTooltip kind="spell" name={spell.name} level={spell.level} />
-              <span className="badge" style={{ fontSize: '0.75rem' }}>Lvl {spell.level}</span>
+              <span className="badge">Lvl {spell.level}</span>
             </div>
           ))
         )}
