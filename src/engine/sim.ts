@@ -113,17 +113,17 @@ export function generateExterminateQuest(rng: RandomGenerator, level: number): {
 
 export function generateSeekQuest(rng: RandomGenerator) {
   const target = `${rng.pick(ITEM_ATTRIB)} ${rng.pick(SPECIALS)}`;
-  return { kind: 'seek' as const, description: `Seek ${definite(target)}`, target };
+  return { kind: 'seek' as const, description: `Seek ${definite(target)}` };
 }
 
 export function generateDeliverQuest(rng: RandomGenerator) {
   const target = rng.pick(BORING_ITEMS);
-  return { kind: 'deliver' as const, description: `Deliver this ${target}`, target };
+  return { kind: 'deliver' as const, description: `Deliver this ${target}` };
 }
 
 export function generateFetchQuest(rng: RandomGenerator) {
   const target = rng.pick(BORING_ITEMS);
-  return { kind: 'fetch' as const, description: `Fetch me ${indefinite(target)}`, target };
+  return { kind: 'fetch' as const, description: `Fetch me ${indefinite(target)}` };
 }
 
 export function generatePlacateQuest(rng: RandomGenerator, level: number) {

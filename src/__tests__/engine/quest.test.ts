@@ -13,7 +13,7 @@ describe('legacy quest generators', () => {
     const rng = new RandomGenerator('seek');
     const quest = generateSeekQuest(rng);
 
-    expect(quest).toMatchObject({ kind: 'seek', description: expect.stringMatching(/^Seek the /) });
+    expect(quest).toEqual({ kind: 'seek', description: 'Seek the Spectral Hood' });
     expect(rng.getState()).toEqual(stateAfterPicks('seek', 2));
   });
 
@@ -21,8 +21,8 @@ describe('legacy quest generators', () => {
     const deliverRng = new RandomGenerator('deliver');
     const fetchRng = new RandomGenerator('fetch');
 
-    expect(generateDeliverQuest(deliverRng)).toMatchObject({ kind: 'deliver', description: expect.stringMatching(/^Deliver this /) });
-    expect(generateFetchQuest(fetchRng)).toMatchObject({ kind: 'fetch', description: expect.stringMatching(/^Fetch me (a|an) /) });
+    expect(generateDeliverQuest(deliverRng)).toEqual({ kind: 'deliver', description: 'Deliver this dirtclod' });
+    expect(generateFetchQuest(fetchRng)).toEqual({ kind: 'fetch', description: 'Fetch me an egg' });
     expect(deliverRng.getState()).toEqual(stateAfterPicks('deliver', 1));
     expect(fetchRng.getState()).toEqual(stateAfterPicks('fetch', 1));
   });
@@ -31,7 +31,7 @@ describe('legacy quest generators', () => {
     const rng = new RandomGenerator('placate');
     const quest = generatePlacateQuest(rng, 1);
 
-    expect(quest).toEqual({ kind: 'placate', description: expect.stringMatching(/^Placate the /) });
+    expect(quest).toEqual({ kind: 'placate', description: 'Placate the Swamp Elves' });
     expect('target' in quest).toBe(false);
     expect(rng.getState()).toEqual(stateAfterPicks('placate', 2));
   });
