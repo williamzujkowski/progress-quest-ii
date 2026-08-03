@@ -12,17 +12,22 @@ export type DiagnosticCode =
   | 'roster_delete_failed'
   | 'diagnostic_export_failed'
   | 'save_export_failed'
-  | 'game_tick_failed';
+  | 'game_tick_failed'
+  | 'audio_unsupported'
+  | 'audio_initialize_failed'
+  | 'audio_resume_failed'
+  | 'audio_play_failed';
 
-export type DiagnosticSubsystem = 'react' | 'browser' | 'clipboard' | 'diagnostics' | 'save' | 'storage';
-export type DiagnosticOperation = 'render' | 'recover' | 'event-handler' | 'promise' | 'read' | 'write' | 'delete' | 'copy' | 'export';
+export type DiagnosticSubsystem = 'react' | 'browser' | 'clipboard' | 'diagnostics' | 'save' | 'storage' | 'audio';
+export type DiagnosticOperation = 'render' | 'recover' | 'event-handler' | 'promise' | 'read' | 'write' | 'delete' | 'copy' | 'export' | 'initialize' | 'resume' | 'play';
 export type DiagnosticSource =
   | 'react-root'
   | 'window-error'
   | 'unhandled-rejection'
   | 'save-modal'
   | 'recovery-ui'
-  | 'game-clock';
+  | 'game-clock'
+  | 'audio-engine';
 
 export interface DiagnosticEvent {
   id: string;
@@ -82,10 +87,12 @@ function safeErrorType(error: unknown): string {
 
 export class DiagnosticRecorder {
   private readonly events: DiagnosticEvent[] = [];
-  private readonly seenErrors = new WeakSet<object>();
+  private readonly seenErrors = new WeakMap<object, number>();
   private readonly buildId: string;
   private readonly interactionId: string;
   private readonly now: () => string;
+  private dedupeGeneration = 0;
+  private dedupeCleanupQueued = false;
   private sequence = 0;
 
   public constructor({ buildId, interactionId = randomInteractionId(), now = () => new Date().toISOString() }: DiagnosticRecorderOptions) {
@@ -96,9 +103,15 @@ export class DiagnosticRecorder {
 
   public record(input: DiagnosticInput): DiagnosticEvent | null {
     if (typeof input.error === 'object' && input.error !== null) {
-      if (this.seenErrors.has(input.error)) return null;
-      this.seenErrors.add(input.error);
-      queueMicrotask(() => this.seenErrors.delete(input.error as object));
+      if (this.seenErrors.get(input.error) === this.dedupeGeneration) return null;
+      this.seenErrors.set(input.error, this.dedupeGeneration);
+      if (!this.dedupeCleanupQueued) {
+        this.dedupeCleanupQueued = true;
+        queueMicrotask(() => {
+          this.dedupeGeneration += 1;
+          this.dedupeCleanupQueued = false;
+        });
+      }
     }
 
     this.sequence += 1;
