@@ -4,6 +4,9 @@ import { defineConfig } from 'vitest/config';
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
+  build: {
+    assetsInlineLimit: 0,
+  },
   define: {
     __BUILD_ID__: JSON.stringify(process.env.GITHUB_SHA ?? 'development'),
   },
