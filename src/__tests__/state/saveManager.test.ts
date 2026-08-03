@@ -9,6 +9,7 @@ import {
   MAX_ROSTER_SERIALIZED_LENGTH,
   decodePQWSave,
   encodePQWSave,
+  loadMostRecentRosterCharacter,
   loadRoster,
   removeFromRoster,
   saveToRoster,
@@ -519,6 +520,81 @@ describe('Save Manager & Serialization', () => {
     if (!loaded.ok) return;
     expect(Object.keys(loaded.value)).toEqual(['Same Name']);
     expect(loaded.value['Same Name']).toEqual(replacement);
+  });
+
+  it('returns the most recently saved roster character, including an updated identity', () => {
+    const first = createNewCharacter('First Saved', 'Half Orc', 'Robot Monk', 520);
+    const second = createNewCharacter('Second Saved', 'Dung Elf', 'Vermineer', 521);
+    const updatedFirst = createNewCharacter('First Saved', 'Demicanadian', 'Bastard Lunatic', 522);
+
+    saveToRoster(first);
+    saveToRoster(second);
+    saveToRoster(updatedFirst);
+
+    expect(loadMostRecentRosterCharacter()).toEqual({ ok: true, value: updatedFirst });
+  });
+
+  it('tracks recency independently of numeric-like roster names', () => {
+    const named = createNewCharacter('Named First', 'Half Orc', 'Robot Monk', 523);
+    const numeric = createNewCharacter('2', 'Dung Elf', 'Vermineer', 524);
+
+    saveToRoster(named);
+    saveToRoster(numeric);
+
+    expect(loadMostRecentRosterCharacter()).toEqual({ ok: true, value: numeric });
+  });
+
+  it('restores the most recent remaining character after deleting the latest save', () => {
+    const first = createNewCharacter('First', 'Half Orc', 'Robot Monk', 525);
+    const second = createNewCharacter('Second', 'Dung Elf', 'Vermineer', 526);
+    const updatedFirst = createNewCharacter('First', 'Demicanadian', 'Bastard Lunatic', 527);
+    const latest = createNewCharacter('Latest', 'Half Orc', 'Robot Monk', 528);
+
+    saveToRoster(first);
+    saveToRoster(second);
+    saveToRoster(updatedFirst);
+    saveToRoster(latest);
+    removeFromRoster('Latest');
+
+    expect(loadMostRecentRosterCharacter()).toEqual({ ok: true, value: updatedFirst });
+  });
+
+  it('reports a partial failure when roster recency cannot be persisted', () => {
+    const character = createNewCharacter('Partially Saved', 'Half Orc', 'Robot Monk', 529);
+    const nativeSetItem = Storage.prototype.setItem;
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
+      if (key === 'progquest_roster_recent_v1') throw new DOMException('Quota exceeded', 'QuotaExceededError');
+      nativeSetItem.call(this, key, value);
+    });
+
+    try {
+      const result = saveToRoster(character);
+      expect(result).toMatchObject({
+        ok: false,
+        error: { code: 'storage_full' },
+      });
+      expect(result).not.toMatchObject({ ok: true });
+      expect(loadRoster()).toMatchObject({ ok: true, value: { 'Partially Saved': character } });
+    } finally {
+      setItem.mockRestore();
+    }
+  });
+
+  it('recovers stale history after a partial delete at the roster limit', () => {
+    for (let index = 0; index < MAX_ROSTER_ENTRIES; index += 1) {
+      expect(saveToRoster(createNewCharacter(`Full Roster ${index}`, 'Half Orc', 'Robot Monk', 600 + index))).toMatchObject({ ok: true });
+    }
+    const nativeSetItem = Storage.prototype.setItem;
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
+      if (key === 'progquest_roster_recent_v1') throw new Error('Synthetic recency failure');
+      nativeSetItem.call(this, key, value);
+    });
+    expect(removeFromRoster('Full Roster 99')).toMatchObject({ ok: false, error: { code: 'storage_failed' } });
+    setItem.mockRestore();
+
+    const replacement = createNewCharacter('Roster Replacement', 'Dung Elf', 'Vermineer', 700);
+    expect(saveToRoster(replacement)).toMatchObject({ ok: true });
+    expect(loadMostRecentRosterCharacter()).toEqual({ ok: true, value: replacement });
   });
 
   it('keeps names that differ only by case as distinct roster identities', () => {

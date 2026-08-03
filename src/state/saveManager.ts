@@ -1,10 +1,13 @@
+import { z } from 'zod';
 import type { CharacterSheet } from '../engine/types';
-import { characterSheetSchema, type PersistedCharacterSheet } from './schemas';
+import { characterNameSchema, characterSheetSchema, type PersistedCharacterSheet } from './schemas';
 
 const ROSTER_STORAGE_KEY = 'progquest_roster_v1';
+const ROSTER_RECENCY_STORAGE_KEY = 'progquest_roster_recent_v1';
 export const MAX_PQW_INPUT_LENGTH = 1_000_000;
 export const MAX_ROSTER_ENTRIES = 100;
 export const MAX_ROSTER_SERIALIZED_LENGTH = 500_000;
+const rosterRecencySchema = z.array(characterNameSchema).max(MAX_ROSTER_ENTRIES);
 
 export type SaveErrorCode =
   | 'input_too_large'
@@ -131,9 +134,55 @@ function writeFailure(error: unknown, action: string): SaveResult<never> {
   return saveFailure('storage_failed', `Browser storage could not ${action}. Nothing was changed.`);
 }
 
-export function loadRoster(): SaveResult<Record<string, CharacterSheet>> {
-  const storage = getStorage();
+function recencyWriteFailure(error: unknown, action: string): SaveResult<never> {
+  try {
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      return saveFailure('storage_full', `The character was ${action}, but browser storage is full and could not update roster recency. Try again after freeing space.`);
+    }
+  } catch {
+    // ponytail: hostile platform errors fall through to the generic partial-write result.
+  }
+  return saveFailure('storage_failed', `The character was ${action}, but browser storage could not update roster recency. Try again.`);
+}
+
+function readRosterRecency(storage: Storage, roster: Record<string, CharacterSheet>): SaveResult<string[]> {
+  let raw: string | null;
+  try {
+    raw = storage.getItem(ROSTER_RECENCY_STORAGE_KEY);
+  } catch {
+    return saveFailure('storage_unavailable', 'Browser storage could not read roster recency. Nothing was changed.');
+  }
+  if (raw === null) return { ok: true, value: Object.keys(roster) };
+  if (raw.length > MAX_ROSTER_SERIALIZED_LENGTH) {
+    return saveFailure('storage_corrupt', 'The saved roster recency is too large to process. Nothing was changed.');
+  }
+  try {
+    const parsed = rosterRecencySchema.safeParse(JSON.parse(raw) as unknown);
+    return parsed.success
+      ? { ok: true, value: [...new Set(parsed.data)] }
+      : saveFailure('storage_corrupt', 'The saved roster recency is unreadable. Nothing was changed.');
+  } catch {
+    return saveFailure('storage_corrupt', 'The saved roster recency is unreadable. Nothing was changed.');
+  }
+}
+
+export function loadRoster(storageOverride?: Storage): SaveResult<Record<string, CharacterSheet>> {
+  const storage: SaveResult<Storage> = storageOverride ? { ok: true, value: storageOverride } : getStorage();
   return storage.ok ? readRoster(storage.value) : storage;
+}
+
+export function loadMostRecentRosterCharacter(storage?: Storage): SaveResult<CharacterSheet | null> {
+  const availableStorage: SaveResult<Storage> = storage ? { ok: true, value: storage } : getStorage();
+  if (!availableStorage.ok) return availableStorage;
+  const loaded = readRoster(availableStorage.value);
+  if (!loaded.ok) return loaded;
+  const recency = readRosterRecency(availableStorage.value, loaded.value);
+  if (!recency.ok) return recency;
+  for (let index = recency.value.length - 1; index >= 0; index -= 1) {
+    const name = recency.value[index];
+    if (Object.hasOwn(loaded.value, name)) return { ok: true, value: loaded.value[name] };
+  }
+  return { ok: true, value: Object.values(loaded.value).at(-1) ?? null };
 }
 
 export function saveToRoster(sheet: CharacterSheet): SaveResult<Record<string, CharacterSheet>> {
@@ -145,6 +194,8 @@ export function saveToRoster(sheet: CharacterSheet): SaveResult<Record<string, C
   if (!storage.ok) return storage;
   const loaded = readRoster(storage.value);
   if (!loaded.ok) return loaded;
+  const recency = readRosterRecency(storage.value, loaded.value);
+  if (!recency.ok) return recency;
 
   try {
     const roster = loaded.value;
@@ -156,7 +207,19 @@ export function saveToRoster(sheet: CharacterSheet): SaveResult<Record<string, C
     if (serialized.length > MAX_ROSTER_SERIALIZED_LENGTH) {
       return saveFailure('roster_too_large', 'The roster is too large to save. Nothing was changed.');
     }
+    const nextRecency = rosterRecencySchema.safeParse([
+      ...recency.value.filter((name) => name !== candidate.data.Traits.Name && Object.hasOwn(roster, name)),
+      candidate.data.Traits.Name,
+    ]);
+    if (!nextRecency.success) return saveFailure('storage_failed', 'Roster recency could not be updated safely. Nothing was changed.');
+    const serializedRecency = JSON.stringify(nextRecency.data);
     storage.value.setItem(ROSTER_STORAGE_KEY, serialized);
+    try {
+      storage.value.setItem(ROSTER_RECENCY_STORAGE_KEY, serializedRecency);
+    } catch (error) {
+      // ponytail: LocalStorage cannot transact two keys, so expose the accurate partial result for a safe retry.
+      return recencyWriteFailure(error, 'saved');
+    }
     return { ok: true, value: roster };
   } catch (error) {
     return writeFailure(error, 'save this character');
@@ -168,11 +231,23 @@ export function removeFromRoster(characterName: string): SaveResult<Record<strin
   if (!storage.ok) return storage;
   const loaded = readRoster(storage.value);
   if (!loaded.ok) return loaded;
+  const recency = readRosterRecency(storage.value, loaded.value);
+  if (!recency.ok) return recency;
 
   try {
     const roster = loaded.value;
     delete roster[characterName];
-    storage.value.setItem(ROSTER_STORAGE_KEY, JSON.stringify(roster));
+    const serialized = JSON.stringify(roster);
+    const nextRecency = rosterRecencySchema.safeParse(recency.value.filter((name) => name !== characterName && Object.hasOwn(roster, name)));
+    if (!nextRecency.success) return saveFailure('storage_failed', 'Roster recency could not be updated safely. Nothing was changed.');
+    const serializedRecency = JSON.stringify(nextRecency.data);
+    storage.value.setItem(ROSTER_STORAGE_KEY, serialized);
+    try {
+      storage.value.setItem(ROSTER_RECENCY_STORAGE_KEY, serializedRecency);
+    } catch (error) {
+      // ponytail: LocalStorage cannot transact two keys, so expose the accurate partial result for a safe retry.
+      return recencyWriteFailure(error, 'removed');
+    }
     return { ok: true, value: roster };
   } catch (error) {
     return writeFailure(error, 'remove this character');

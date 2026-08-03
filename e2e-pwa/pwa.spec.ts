@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { returningSessionStorageState } from '../e2e/fixtures/returningSession';
+
+test.use({ storageState: returningSessionStorageState('http://127.0.0.1:4173') });
 
 test('publishes the Progress Quest II install contract at its Pages scope', async ({ page }) => {
   await page.goto('./');

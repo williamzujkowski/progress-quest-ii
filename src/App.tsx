@@ -51,7 +51,8 @@ export const App: React.FC<AppProps> = ({ sessionCheckpoints }) => {
     };
   });
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-  const [isCharacterCreatorOpen, setIsCharacterCreatorOpen] = useState(false);
+  const [requiresCharacterCreation, setRequiresCharacterCreation] = useState(sessionCheckpoints?.requiresCharacterCreation ?? false);
+  const [isCharacterCreatorOpen, setIsCharacterCreatorOpen] = useState(requiresCharacterCreation);
   const tick = useGameStore((state) => state.tick);
 
   useLayoutEffect(() => {
@@ -90,6 +91,7 @@ export const App: React.FC<AppProps> = ({ sessionCheckpoints }) => {
 
   // Main 50ms tick game loop timer
   useEffect(() => {
+    if (requiresCharacterCreation) return;
     return startGameClock(tick, undefined, (error) => {
       diagnostics.record({
         code: 'game_tick_failed',
@@ -101,7 +103,7 @@ export const App: React.FC<AppProps> = ({ sessionCheckpoints }) => {
         error,
       });
     });
-  }, [tick]);
+  }, [requiresCharacterCreation, tick]);
 
   return (
     <div className="app-container">
@@ -134,7 +136,12 @@ export const App: React.FC<AppProps> = ({ sessionCheckpoints }) => {
 
       <CharacterCreatorModal
         isOpen={isCharacterCreatorOpen}
+        isRequired={requiresCharacterCreation}
         onClose={() => setIsCharacterCreatorOpen(false)}
+        onCreated={() => {
+          setRequiresCharacterCreation(false);
+          setIsCharacterCreatorOpen(false);
+        }}
       />
     </div>
   );
