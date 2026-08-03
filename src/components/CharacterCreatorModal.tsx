@@ -6,6 +6,7 @@ import { RandomGenerator } from '../engine/prng';
 import { generateRandomName } from '../engine/sim';
 import type { StatsMap } from '../engine/types';
 import { useGameStore } from '../state/gameStore';
+import { MAX_CHARACTER_NAME_LENGTH } from '../state/schemas';
 
 interface CharacterCreatorModalProps {
   isOpen: boolean;
@@ -84,6 +85,7 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
                 id="character-name"
                 type="text"
                 value={name}
+                maxLength={MAX_CHARACTER_NAME_LENGTH}
                 onChange={(e) => setName(e.target.value)}
                 required
                 className="form-control"

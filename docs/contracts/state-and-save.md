@@ -10,7 +10,9 @@ Owner: `src/state/schemas.ts`
 - Imported and roster data is parsed as `unknown` and must satisfy `characterSheetSchema` before state mutation.
 - Strings, collections, quantities, currency, levels, and progress values have explicit upper bounds.
 - A save import larger than 1 MB is rejected before base64 decoding.
-- Unknown or invalid roster records are dropped; prototype-like character names remain ordinary own keys.
+- A roster is rejected and preserved in full if any record is invalid; partial recovery must never make the next write destructive.
+- Character names contain 1–120 UTF-16 code units. Exact names are case-sensitive roster identities, and a later explicit save replaces the prior entry with that identity.
+- Prototype-like character names remain ordinary own keys. Existing object-shaped roster JSON is rehydrated into a null-prototype record without changing the persisted shape.
 - A versioned envelope is deferred because introducing one is a compatibility decision requiring unanimous approval.
 
 Verified by: `src/__tests__/state/saveManager.test.ts`.

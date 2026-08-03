@@ -12,7 +12,7 @@ import {
   removeFromRoster,
   saveToRoster,
 } from '../../state/saveManager';
-import { characterSheetSchema } from '../../state/schemas';
+import { characterSheetSchema, MAX_CHARACTER_NAME_LENGTH } from '../../state/schemas';
 import { useGameStore } from '../../state/gameStore';
 
 afterEach(() => {
@@ -357,5 +357,87 @@ describe('Save Manager & Serialization', () => {
     if (!loaded.ok) return;
     expect(Object.hasOwn(loaded.value, '__proto__')).toBe(true);
     expect(loaded.value['__proto__'].Traits.Name).toBe('__proto__');
+  });
+
+  it('round-trips and removes constructor as an ordinary own roster key', () => {
+    const character = createNewCharacter('constructor', 'Half Orc', 'Robot Monk', 506);
+
+    expect(saveToRoster(character)).toMatchObject({ ok: true });
+    expect(Object.hasOwn(JSON.parse(localStorage.getItem('progquest_roster_v1') ?? '{}'), 'constructor')).toBe(true);
+
+    const loaded = loadRoster();
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(Object.getPrototypeOf(loaded.value)).toBeNull();
+    expect(loaded.value['constructor'].Traits.Name).toBe('constructor');
+
+    expect(removeFromRoster('constructor')).toMatchObject({ ok: true, value: {} });
+    expect(Object.hasOwn(JSON.parse(localStorage.getItem('progquest_roster_v1') ?? '{}'), 'constructor')).toBe(false);
+  });
+
+  it('replaces an exact duplicate name with the latest complete sheet', () => {
+    const first = createNewCharacter('Same Name', 'Half Orc', 'Robot Monk', 507);
+    const replacement = createNewCharacter('Same Name', 'Dung Elf', 'Vermineer', 508);
+
+    saveToRoster(first);
+    expect(saveToRoster(replacement)).toMatchObject({ ok: true });
+
+    const loaded = loadRoster();
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(Object.keys(loaded.value)).toEqual(['Same Name']);
+    expect(loaded.value['Same Name']).toEqual(replacement);
+  });
+
+  it('keeps names that differ only by case as distinct roster identities', () => {
+    saveToRoster(createNewCharacter('Hero', 'Half Orc', 'Robot Monk', 509));
+    saveToRoster(createNewCharacter('hero', 'Dung Elf', 'Vermineer', 510));
+
+    const loaded = loadRoster();
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(Object.keys(loaded.value)).toEqual(['Hero', 'hero']);
+  });
+
+  it('keeps existing object-shaped roster JSON compatible across the next save', () => {
+    const legacyOne = createNewCharacter('Existing One', 'Half Orc', 'Robot Monk', 511);
+    const legacyTwo = createNewCharacter('Existing Two', 'Dung Elf', 'Vermineer', 512);
+    const originalRoster = JSON.stringify({ 'Existing One': legacyOne, 'Existing Two': legacyTwo });
+    localStorage.setItem('progquest_roster_v1', originalRoster);
+
+    const loaded = loadRoster();
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(Object.getPrototypeOf(loaded.value)).toBeNull();
+    expect(localStorage.getItem('progquest_roster_v1')).toBe(originalRoster);
+
+    const next = createNewCharacter('Next Save', 'Half Orc', 'Robot Monk', 513);
+    expect(saveToRoster(next)).toMatchObject({ ok: true });
+    expect(Object.keys(JSON.parse(localStorage.getItem('progquest_roster_v1') ?? '{}'))).toEqual([
+      'Existing One',
+      'Existing Two',
+      'Next Save',
+    ]);
+  });
+
+  it('accepts a character name at the persisted length boundary', () => {
+    const boundaryName = 'N'.repeat(MAX_CHARACTER_NAME_LENGTH);
+
+    expect(saveToRoster(createNewCharacter(boundaryName, 'Half Orc', 'Robot Monk', 514))).toMatchObject({ ok: true });
+    expect(loadRoster()).toMatchObject({ ok: true, value: { [boundaryName]: { Traits: { Name: boundaryName } } } });
+  });
+
+  it('rejects an overlength character name without changing existing roster bytes', () => {
+    const existing = createNewCharacter('ExistingName', 'Dung Elf', 'Vermineer', 506);
+    const originalRoster = JSON.stringify({ ExistingName: existing });
+    localStorage.setItem('progquest_roster_v1', originalRoster);
+
+    const overlength = createNewCharacter('N'.repeat(MAX_CHARACTER_NAME_LENGTH + 1), 'Half Orc', 'Robot Monk', 515);
+
+    expect(saveToRoster(overlength)).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_schema' },
+    });
+    expect(localStorage.getItem('progquest_roster_v1')).toBe(originalRoster);
   });
 });

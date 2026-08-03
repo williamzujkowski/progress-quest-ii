@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const MAX_PERSISTED_ITEMS = 5_000;
+export const MAX_CHARACTER_NAME_LENGTH = 120;
 
 const shortText = z.string().max(200);
 const description = z.string().max(1_000);
@@ -8,8 +9,10 @@ const boundedInteger = z.number().int().min(0).max(1_000_000_000);
 const boundedNumber = z.number().min(0).max(1_000_000_000);
 const signedBoundedNumber = z.number().min(-1_000_000_000).max(1_000_000_000);
 
+export const characterNameSchema = z.string().min(1).max(MAX_CHARACTER_NAME_LENGTH);
+
 export const characterTraitsSchema = z.object({
-  Name: z.string().min(1).max(120),
+  Name: characterNameSchema,
   Race: z.string().min(1).max(120),
   Class: z.string().min(1).max(120),
   Level: z.number().int().min(1).max(1_000_000_000),

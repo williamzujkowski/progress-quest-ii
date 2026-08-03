@@ -415,6 +415,7 @@ test.describe('Progress Quest terminal dashboard', () => {
 
     await expect(page.getByText('Progress Quest - New Character')).toBeVisible();
     await expect(page.getByText(/Prime Stats \(3d6 Rolls\)/i)).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Character Name' })).toHaveAttribute('maxlength', '120');
 
     // Click Roll 'Em
     const rollBtn = page.getByRole('button', { name: /Roll 'Em/i });

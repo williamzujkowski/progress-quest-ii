@@ -1,5 +1,5 @@
 import type { CharacterSheet } from '../engine/types';
-import { characterSheetSchema, type PersistedCharacterSheet } from './schemas';
+import { characterNameSchema, characterSheetSchema, type PersistedCharacterSheet } from './schemas';
 
 const ROSTER_STORAGE_KEY = 'progquest_roster_v1';
 export const MAX_PQW_INPUT_LENGTH = 1_000_000;
@@ -137,6 +137,9 @@ export function loadRoster(): SaveResult<Record<string, CharacterSheet>> {
 }
 
 export function saveToRoster(sheet: CharacterSheet): SaveResult<Record<string, CharacterSheet>> {
+  if (!characterNameSchema.safeParse(sheet.Traits.Name).success) {
+    return saveFailure('invalid_schema', 'This character has an invalid name and was not saved. Nothing was changed.');
+  }
   const storage = getStorage();
   if (!storage.ok) return storage;
   const loaded = readRoster(storage.value);
