@@ -144,6 +144,12 @@ export function generateQuest(rng: RandomGenerator, level: number) {
   }
 }
 
+export type QuestRewardKind = 'spell' | 'equipment' | 'stat' | 'item';
+
+export function selectQuestReward(rng: RandomGenerator): QuestRewardKind {
+  return (['spell', 'equipment', 'stat', 'item'] as const)[rng.random(4)];
+}
+
 export function generateLootItem(rng: RandomGenerator, monsterName?: string): string {
   if (monsterName && rng.random(2) === 0) {
     return `${monsterName} item`;
