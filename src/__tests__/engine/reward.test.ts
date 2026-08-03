@@ -26,4 +26,12 @@ describe('legacy spell reward', () => {
       [0.1777116870507598, 0.3775933461729437, 0.8863792216870934, 802657],
     ]);
   });
+
+  it('does not consume RNG when an accepted save has an invalid spell pool', () => {
+    const rng = new RandomGenerator('invalid-spell-pool');
+    const initialState = rng.getState();
+
+    expect(generateSpellReward(rng, 1, -1)).toBeUndefined();
+    expect(rng.getState()).toEqual(initialState);
+  });
 });

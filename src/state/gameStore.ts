@@ -50,6 +50,7 @@ function chooseStatUpgrade(rng: RandomGenerator, stats: StatsMap): keyof StatsMa
 
 function upgradeSpell(rng: RandomGenerator, level: number, wisdom: number, spells: CharacterSheet['Spells']): CharacterSheet['Spells'] {
   const spellName = generateSpellReward(rng, level, wisdom);
+  if (!spellName) return spells;
   const existing = spells.find((spell) => spell.name === spellName);
   return existing
     ? spells.map((spell) => spell.name === spellName ? { ...spell, level: spell.level + 1 } : spell)
