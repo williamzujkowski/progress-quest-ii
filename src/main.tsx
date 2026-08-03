@@ -6,8 +6,11 @@ import './index.css'
 import App from './App.tsx'
 import { RuntimeErrorBoundary } from './components/RuntimeErrorBoundary.tsx'
 import { diagnostics, installBrowserDiagnosticHandlers } from './state/diagnostics.ts'
+import { startSessionCheckpoints } from './state/sessionCheckpoint.ts'
 
 installBrowserDiagnosticHandlers()
+const sessionCheckpoints = startSessionCheckpoints()
+if (import.meta.hot) import.meta.hot.dispose(() => sessionCheckpoints.dispose())
 
 createRoot(document.getElementById('root')!, {
   onCaughtError: (error) => diagnostics.record({ code: 'react_caught', severity: 'error', subsystem: 'react', operation: 'render', outcome: 'failed', source: 'react-root', error }),
@@ -16,7 +19,7 @@ createRoot(document.getElementById('root')!, {
 }).render(
   <StrictMode>
     <RuntimeErrorBoundary>
-      <App />
+      <App sessionCheckpoints={sessionCheckpoints} />
     </RuntimeErrorBoundary>
   </StrictMode>,
 )

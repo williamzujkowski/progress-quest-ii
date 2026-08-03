@@ -108,3 +108,35 @@ export const characterSheetSchema = z.object({
 });
 
 export type PersistedCharacterSheet = z.infer<typeof characterSheetSchema>;
+
+const aleaFraction = z.number().min(0).lt(1).refine((value) => Number.isInteger(value * 0x1_0000_0000), {
+  message: 'Alea fractions must align to 32-bit state.',
+});
+
+export const activeCheckpointV1Schema = z.object({
+  schemaVersion: z.literal(1),
+  session: z.object({
+    character: characterSheetSchema,
+    rngState: z.tuple([
+      aleaFraction,
+      aleaFraction,
+      aleaFraction,
+      z.number().int().min(0).max(2_091_638),
+    ]),
+    progression: z.object({
+      experience: z.object({
+        currentSeconds: z.number().finite().min(0),
+        maxSeconds: z.number().finite().positive(),
+      }).strict().refine(({ currentSeconds, maxSeconds }) => currentSeconds <= maxSeconds, {
+        message: 'Experience progress cannot exceed its maximum.',
+        path: ['currentSeconds'],
+      }),
+      completedTasks: boundedInteger,
+      elapsedSeconds: boundedInteger,
+    }).strict(),
+    isPaused: z.boolean(),
+    log: z.array(description).max(50),
+  }).strict(),
+}).strict();
+
+export type ActiveCheckpointV1 = z.infer<typeof activeCheckpointV1Schema>;

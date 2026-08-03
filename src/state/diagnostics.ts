@@ -19,6 +19,8 @@ export type DiagnosticCode =
   | 'audio_play_failed'
   | 'theme_read_failed'
   | 'theme_write_failed'
+  | 'session_checkpoint_failed'
+  | 'session_checkpoint_recovered'
   | 'pwa_registration_failed'
   | 'pwa_update_failed';
 
@@ -33,6 +35,7 @@ export type DiagnosticSource =
   | 'game-clock'
   | 'audio-engine'
   | 'theme-preference'
+  | 'session-checkpoint'
   | 'pwa-lifecycle';
 
 export interface DiagnosticEvent {

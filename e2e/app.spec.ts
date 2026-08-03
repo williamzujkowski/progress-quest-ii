@@ -23,6 +23,73 @@ const loadDenseDashboard = async (page: Page) => {
 };
 
 test.describe('Progress Quest II terminal dashboard', () => {
+  test('resumes the exact active session before the game clock starts', async ({ page }) => {
+    await page.goto('/');
+    const expected = await page.evaluate(async () => {
+      const [{ useGameStore }, { RandomGenerator }, { captureActiveSession }] = await Promise.all([
+        import('/src/state/gameStore.ts'),
+        import('/src/engine/prng.ts'),
+        import('/src/state/sessionCheckpoint.ts'),
+      ]);
+      const state = useGameStore.getState();
+      const rng = new RandomGenerator('e2e-checkpoint');
+      rng.random(999);
+      useGameStore.setState({
+        character: {
+          ...state.character,
+          Traits: { ...state.character.Traits, Name: 'Reloaded Bureaucrat' },
+          Task: { ...state.character.Task, elapsedMs: 321 },
+        },
+        rng,
+        isPaused: true,
+        log: ['Checkpointed indignity', 'Earlier paperwork'],
+        progression: { experience: { currentSeconds: 3, maxSeconds: 10 }, completedTasks: 7, elapsedSeconds: 22 },
+      });
+      window.dispatchEvent(new PageTransitionEvent('pagehide'));
+      return captureActiveSession();
+    });
+
+    await page.reload({ waitUntil: 'networkidle' });
+
+    const restored = await page.evaluate(async () => {
+      const { captureActiveSession } = await import('/src/state/sessionCheckpoint.ts');
+      return captureActiveSession();
+    });
+    expect(restored).toEqual(expected);
+    await expect(page.getByText('Reloaded Bureaucrat')).toBeVisible();
+  });
+
+  test('recovers the last-known-good session without overwriting corrupt bytes', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.goto('/');
+    await page.evaluate(async () => {
+      const { ACTIVE_CHECKPOINT_KEY, ACTIVE_CHECKPOINT_LKG_KEY, captureActiveSession } = await import('/src/state/sessionCheckpoint.ts');
+      localStorage.setItem(ACTIVE_CHECKPOINT_LKG_KEY, JSON.stringify(captureActiveSession()));
+      localStorage.setItem(ACTIVE_CHECKPOINT_KEY, '{unreadable');
+    });
+
+    await page.reload({ waitUntil: 'networkidle' });
+
+    await expect(page.getByRole('alert')).toContainText('Recovered the last known good session');
+    await page.waitForTimeout(1_100);
+    expect(await page.evaluate(() => localStorage.getItem('progquest_active_session_v1'))).toBe('{unreadable');
+    await page.getByRole('button', { name: 'Replace unreadable checkpoint' }).click();
+    await expect(page.getByRole('status')).toContainText('Automatic checkpoints resumed');
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('progquest_active_session_v1') ?? '').schemaVersion)).toBe(1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+
+  test('reports denied checkpoint storage without preventing play', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(window, 'localStorage', { configurable: true, get: () => { throw new DOMException('Denied', 'SecurityError'); } });
+    });
+
+    await page.goto('/');
+
+    await expect(page.getByRole('alert')).toContainText('Browser storage is unavailable. Automatic checkpoints are paused.');
+    await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest II' })).toBeVisible();
+  });
+
   test('recovers accessibly from an unexpected root render failure', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.addInitScript(() => {

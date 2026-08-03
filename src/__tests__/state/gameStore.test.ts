@@ -288,4 +288,22 @@ describe('Game Store State Machine', () => {
     loaded.Gold = 999;
     expect(session.character.Gold).not.toBe(999);
   });
+
+  it('restores a validated complete session through one atomic store action', () => {
+    const character = createNewCharacter('RestoredHero', 'Dung Elf', 'Vermineer', 704);
+    const rng = new RandomGenerator('restored-rng');
+    rng.random(100);
+    const rngState = rng.getState();
+    const progression = { experience: { currentSeconds: 4, maxSeconds: 9 }, completedTasks: 3, elapsedSeconds: 12 };
+
+    useGameStore.getState().restoreSession({ character, rngState, progression, isPaused: true, log: ['Restored event'] });
+    const restored = useGameStore.getState();
+
+    expect(restored.character).toEqual(character);
+    expect(restored.character).not.toBe(character);
+    expect(restored.rng.getState()).toEqual(rngState);
+    expect(restored.progression).toEqual(progression);
+    expect(restored.isPaused).toBe(true);
+    expect(restored.log).toEqual(['Restored event']);
+  });
 });

@@ -23,14 +23,14 @@ The dashboard is responsive at phone widths and keeps growing activity, inventor
 
 ### PWA status, without the marketing fog
 
-The live site is an installable PWA deployed over HTTPS to GitHub Pages. After one successful online visit, the current app shell starts offline while validated characters remain in browser storage. When an open session discovers a new build, it offers an explicit **Update now** action; browsers may also activate a waiting worker naturally after every controlled tab closes. A failed install leaves the previous offline shell in office.
+The live site is an installable PWA deployed over HTTPS to GitHub Pages. After one successful online visit, the current app shell starts offline while validated characters remain in browser storage and the active adventure resumes from a bounded deterministic checkpoint. When an open session discovers a new build, it offers an explicit **Update now** action; browsers may also activate a waiting worker naturally after every controlled tab closes. A failed install leaves the previous offline shell in office.
 
 If a cached shell ever becomes impressively confused, use the browser's site settings to clear data or unregister the service worker, then revisit the site online. This removes browser-local characters too, so export any valued `.pqw` files first. Nothing is uploaded during this administrative ceremony.
 
 ## What is in the box
 
 - Deterministic, zero-player progression based on the legacy game behavior.
-- Character creation, roster/save import and export, quests, combat progression, equipment, spells, loot, and activity history.
+- Character creation, deterministic session resume, roster/save import and export, quests, combat progression, equipment, spells, loot, and activity history.
 - Responsive desktop and mobile layouts with bounded scrolling panels.
 - Remarque Dark, Remarque Light, and legacy ProgrOS themes powered by [`@williamzujkowski/oklch-terminal-themes`](https://github.com/williamzujkowski/oklch-terminal-themes).
 - Accessible keyboard paths, tooltip descriptions, local validation, and fail-closed save imports.

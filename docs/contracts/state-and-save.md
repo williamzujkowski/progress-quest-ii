@@ -29,10 +29,25 @@ Owner: `src/state/gameStore.ts`
 - `creation` supplies name, race, class, an explicit deterministic seed, and optionally an accepted stat roll.
 - `import` and `roster` supply a schema-validated character sheet.
 - The action replaces character, RNG, activity log, and pause state atomically.
+- `restoreSession` is the sole full-session replacement seam for a validated checkpoint and restores exact RNG continuation, progression, pause, and bounded activity state atomically.
 - Imported objects are defensively copied.
 - Equal creation inputs and seed replay the same character and RNG state.
 
 Verified by: `src/__tests__/state/gameStore.test.ts` and `e2e/app.spec.ts`.
+
+## Active-session checkpoint
+
+Owner: `src/state/sessionCheckpoint.ts`; schema owner: `src/state/schemas.ts`
+
+- The active session uses a strict `{ schemaVersion: 1, session }` envelope under `progquest_active_session_v1`; it never changes the roster or PQW v0 formats.
+- The checkpoint contains only the character sheet, exact Alea continuation, progression counters, pause state, and the newest 50 activity strings. Diagnostics, preferences, wall-clock timestamps, functions, and offline catch-up are excluded.
+- Hydration validates the entire envelope before atomically replacing session state and occurs before React rendering and the game clock.
+- Routine mutations coalesce to at most one write per second. A dirty session flushes when the document becomes hidden and on `pagehide`.
+- Before replacing a valid primary checkpoint, its exact bytes rotate to `progquest_active_session_lkg_v1`. Invalid or unavailable reads block automatic writes; a validated last-known-good session may restore in memory, but only the explicit repair action may replace unreadable primary bytes.
+- A cross-tab primary change blocks this tab's writer. This is conservative loss prevention, not a locking or merge protocol.
+- Expected failures expose persistent accessible feedback and redacted diagnostics; raw checkpoint data and character/activity content never enter diagnostics.
+
+Verified by: `src/__tests__/state/sessionCheckpoint.test.ts` and the active-session scenarios in `e2e/app.spec.ts`.
 
 ## Save import outcome
 
