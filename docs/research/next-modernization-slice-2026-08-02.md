@@ -1,7 +1,7 @@
 # Next ProgQuest modernization slice
 
 **Research date:** 2026-08-02  
-**Repository baseline:** [`0f21491`](https://github.com/williamzujkowski/progress-quest-ii/tree/0f21491b245b36de8bcf289f8f71101408a593b2)
+**Repository baseline:** [`0f21491`](https://github.com/williamzujkowski/progress-quest-ii/tree/0f21491b245b36de8bcf289f8f71101408a593b2)\
 **Evidence policy:** repository and legacy source, project issues, and official web-platform, Playwright, and GitHub documentation only
 
 ## Recommendation

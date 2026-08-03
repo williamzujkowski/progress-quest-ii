@@ -75,7 +75,7 @@ to presentation effects such as sound.
 
 - Local and CI gates have explicit commands for lint, types, unit tests, build,
   browser tests, accessibility, and dependency/security checks.
-- The installed/offline `/progquest/` build updates safely and has a tested
+- The installed/offline `/progress-quest-ii/` build updates safely and has a tested
   rollback/unregister path.
 - Deployment inputs are reproducible and the deployed artifact is attributable to
   its source commit and workflow.
