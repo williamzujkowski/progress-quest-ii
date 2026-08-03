@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createNewCharacter } from '../../engine/sim';
 import {
   MAX_PQW_INPUT_LENGTH,
@@ -10,6 +10,10 @@ import {
   saveToRoster,
 } from '../../state/saveManager';
 import { characterSheetSchema } from '../../state/schemas';
+
+afterEach(() => {
+  localStorage.clear();
+});
 
 describe('Save Manager & Serialization', () => {
   it('encodes and decodes a character sheet to base64 .pqw format cleanly', () => {
@@ -75,17 +79,24 @@ describe('Save Manager & Serialization', () => {
     saveToRoster(char2);
 
     const loaded = loadRoster();
-    expect(loaded['RosterHero1']).toBeDefined();
-    expect(loaded['RosterHero2']).toBeDefined();
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(loaded.value['RosterHero1']).toBeDefined();
+    expect(loaded.value['RosterHero2']).toBeDefined();
 
     removeFromRoster('RosterHero1');
     const updated = loadRoster();
-    expect(updated['RosterHero1']).toBeUndefined();
-    expect(updated['RosterHero2']).toBeDefined();
+    expect(updated.ok).toBe(true);
+    if (!updated.ok) return;
+    expect(updated.value['RosterHero1']).toBeUndefined();
+    expect(updated.value['RosterHero2']).toBeDefined();
   });
 
   it('returns a typed failure when browser storage rejects a write', () => {
     const character = createNewCharacter('QuotaHero', 'Half Orc', 'Robot Monk', 505);
+    const existing = createNewCharacter('ExistingQuotaHero', 'Dung Elf', 'Vermineer', 504);
+    const originalRoster = JSON.stringify({ ExistingQuotaHero: existing });
+    localStorage.setItem('progquest_roster_v1', originalRoster);
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementationOnce(() => {
       throw new DOMException('Quota exceeded', 'QuotaExceededError');
     });
@@ -93,11 +104,141 @@ describe('Save Manager & Serialization', () => {
     try {
       expect(saveToRoster(character)).toMatchObject({
         ok: false,
-        error: { code: 'storage_failed' },
+        error: { code: 'storage_full' },
       });
+      expect(localStorage.getItem('progquest_roster_v1')).toBe(originalRoster);
     } finally {
       setItem.mockRestore();
     }
+  });
+
+  it('returns a typed failure when the browser storage capability is denied', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(window, 'localStorage');
+    if (!descriptor) throw new Error('Expected a configurable localStorage property in jsdom.');
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get: () => { throw new DOMException('Denied', 'SecurityError'); },
+    });
+
+    try {
+      expect(loadRoster()).toMatchObject({
+        ok: false,
+        error: { code: 'storage_unavailable' },
+      });
+    } finally {
+      Object.defineProperty(window, 'localStorage', descriptor);
+    }
+  });
+
+  it('distinguishes a denied roster read from corrupt roster data', () => {
+    const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementationOnce(() => {
+      throw new DOMException('Denied', 'SecurityError');
+    });
+
+    try {
+      expect(loadRoster()).toMatchObject({
+        ok: false,
+        error: { code: 'storage_unavailable' },
+      });
+    } finally {
+      getItem.mockRestore();
+    }
+  });
+
+  it('preserves corrupt roster bytes instead of overwriting them', () => {
+    const character = createNewCharacter('Preserver', 'Half Orc', 'Robot Monk', 606);
+    const corruptRoster = '{not-json';
+    localStorage.setItem('progquest_roster_v1', corruptRoster);
+
+    expect(saveToRoster(character)).toMatchObject({
+      ok: false,
+      error: { code: 'storage_corrupt' },
+    });
+    expect(localStorage.getItem('progquest_roster_v1')).toBe(corruptRoster);
+  });
+
+  it('treats an existing empty roster string as corrupt and preserves it', () => {
+    const character = createNewCharacter('EmptyPreserver', 'Half Orc', 'Robot Monk', 607);
+    localStorage.setItem('progquest_roster_v1', '');
+
+    expect(saveToRoster(character)).toMatchObject({
+      ok: false,
+      error: { code: 'storage_corrupt' },
+    });
+    expect(localStorage.getItem('progquest_roster_v1')).toBe('');
+  });
+
+  it('rejects roster entries whose storage key does not match the character name', () => {
+    const character = createNewCharacter('ActualName', 'Half Orc', 'Robot Monk', 608);
+    const mismatchedRoster = JSON.stringify({ Alias: character });
+    localStorage.setItem('progquest_roster_v1', mismatchedRoster);
+
+    expect(loadRoster()).toMatchObject({
+      ok: false,
+      error: { code: 'storage_corrupt' },
+    });
+    expect(localStorage.getItem('progquest_roster_v1')).toBe(mismatchedRoster);
+  });
+
+  it('rejects and preserves roster entries that fail the character schema', () => {
+    const invalidRoster = JSON.stringify({ Broken: { Traits: { Name: 'Broken' } } });
+    localStorage.setItem('progquest_roster_v1', invalidRoster);
+
+    expect(loadRoster()).toMatchObject({
+      ok: false,
+      error: { code: 'storage_corrupt' },
+    });
+    expect(localStorage.getItem('progquest_roster_v1')).toBe(invalidRoster);
+  });
+
+  it('returns a generic typed failure when storage rejects a write for another reason', () => {
+    const character = createNewCharacter('WriteFailure', 'Half Orc', 'Robot Monk', 609);
+    const existing = createNewCharacter('ExistingWriteHero', 'Dung Elf', 'Vermineer', 608);
+    const originalRoster = JSON.stringify({ ExistingWriteHero: existing });
+    localStorage.setItem('progquest_roster_v1', originalRoster);
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementationOnce(() => {
+      throw new Error('Synthetic write failure');
+    });
+
+    expect(saveToRoster(character)).toMatchObject({
+      ok: false,
+      error: { code: 'storage_failed' },
+    });
+    expect(localStorage.getItem('progquest_roster_v1')).toBe(originalRoster);
+    setItem.mockRestore();
+  });
+
+  it('preserves the previous roster when deleting fails', () => {
+    const existing = createNewCharacter('DeletePreserver', 'Dung Elf', 'Vermineer', 612);
+    const originalRoster = JSON.stringify({ DeletePreserver: existing });
+    localStorage.setItem('progquest_roster_v1', originalRoster);
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementationOnce(() => {
+      throw new Error('Synthetic delete failure');
+    });
+
+    expect(removeFromRoster('DeletePreserver')).toMatchObject({
+      ok: false,
+      error: { code: 'storage_failed' },
+    });
+    expect(localStorage.getItem('progquest_roster_v1')).toBe(originalRoster);
+    setItem.mockRestore();
+  });
+
+  it('preserves the previous roster when serialization fails', () => {
+    const existing = createNewCharacter('Existing', 'Dung Elf', 'Vermineer', 610);
+    const incoming = createNewCharacter('Incoming', 'Half Orc', 'Robot Monk', 611);
+    const originalRoster = JSON.stringify({ Existing: existing });
+    localStorage.setItem('progquest_roster_v1', originalRoster);
+    const stringify = vi.spyOn(JSON, 'stringify').mockImplementationOnce(() => {
+      throw new TypeError('Synthetic serialization failure');
+    });
+
+    expect(saveToRoster(incoming)).toMatchObject({
+      ok: false,
+      error: { code: 'storage_failed' },
+    });
+    expect(localStorage.getItem('progquest_roster_v1')).toBe(originalRoster);
+    stringify.mockRestore();
   });
 
   it('stores prototype-like character names as ordinary roster keys', () => {
@@ -106,7 +247,9 @@ describe('Save Manager & Serialization', () => {
     saveToRoster(character);
 
     const loaded = loadRoster();
-    expect(Object.hasOwn(loaded, '__proto__')).toBe(true);
-    expect(loaded['__proto__'].Traits.Name).toBe('__proto__');
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(Object.hasOwn(loaded.value, '__proto__')).toBe(true);
+    expect(loaded.value['__proto__'].Traits.Name).toBe('__proto__');
   });
 });
