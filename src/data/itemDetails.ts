@@ -75,8 +75,8 @@ const SPELL_CLOSERS = [
 
 export function describeSpell(name: string, level: number): ItemDetails {
   return {
-    description: `${SPELL_FLAVOR[name] ?? 'A spell of dubious provenance and excellent paperwork.'} ${choose(SPELL_CLOSERS, `${name}:${level}`)}`,
-    effect: `Spell level: ${level}. Higher levels improve its priority in the abstract combat simulation; exact damage is intentionally not surfaced by the engine.`,
+    description: `${SPELL_FLAVOR[name] ?? 'A spell of dubious provenance and excellent paperwork.'} ${choose(SPELL_CLOSERS, `${name}:closer`)}`,
+    effect: `Spell level: ${level}. The simulation does not expose a spell-specific combat effect.`,
   };
 }
 
@@ -103,10 +103,12 @@ export function describeInventoryItem(name: string, quantity: number): ItemDetai
     'It will become someone else’s problem at the next market visit.',
     'It occupies space with the quiet confidence of a tax audit.',
   ];
-  const description = `${choose(lead, name)}. ${choose(closer, `${name}:${quantity}`)}`;
+  const description = `${choose(lead, name)}. ${choose(closer, `${name}:closer`)}`;
 
   return {
     description,
-    effect: `Quantity carried: ${quantity}. Loot contributes to encumbrance; it has no direct combat effect until the market daemon gets involved.`,
+    effect: name === 'Gold'
+      ? `Quantity carried: ${quantity}. Gold is weightless currency; it does not contribute to encumbrance or combat.`
+      : `Quantity carried: ${quantity}. Loot contributes to encumbrance; it has no direct combat effect until the market daemon gets involved.`,
   };
 }
