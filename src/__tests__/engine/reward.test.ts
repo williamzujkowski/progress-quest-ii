@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RandomGenerator } from '../../engine/prng';
-import { generateItemReward, generateSpellReward, generateStatReward, selectQuestReward } from '../../engine/sim';
+import { applyQuestReward, createNewCharacter, generateItemReward, generateSpellReward, generateStatReward, selectQuestReward } from '../../engine/sim';
 import type { StatsMap } from '../../engine/types';
 
 const balancedStats: StatsMap = { STR: 10, CON: 10, DEX: 10, INT: 10, WIS: 10, CHA: 10, 'HP Max': 10, 'MP Max': 10 };
@@ -20,6 +20,113 @@ describe('legacy quest reward selector', () => {
     expect(rng.getState()).toEqual(expectedState);
   });
 
+});
+
+describe('legacy quest reward dispatcher', () => {
+  it.each([
+    {
+      kind: 'spell',
+      state: [0.578806129284203, 0.5098025279585272, 0.04669409594498575, 1],
+      reset: 57,
+      expected: { spells: [{ name: 'Rabbit Punch', level: 1 }] },
+      rng: [0.8500585230067372, 0.1923965464811772, 0.23654911993071437, 990286],
+    },
+    {
+      kind: 'equipment',
+      state: [0.6359334820881486, 0.37374331383034587, 0.28759220940992236, 1],
+      reset: 85,
+      expected: { equipment: ['Vambraces', 'Patched Dented Flannel'] },
+      rng: [0.062331163324415684, 0.7646989999338984, 0.471838767407462, 276700],
+    },
+    {
+      kind: 'item',
+      state: [0.6739257371518761, 0.3510640109889209, 0.8553721038624644, 1],
+      reset: 76,
+      expected: { inventory: [{ name: 'Unearthly Tiara of Craft', qty: 1 }], message: 'Gained an Unearthly Tiara of Craft' },
+      rng: [0.7132585479412228, 0.37233209586702287, 0.28208580473437905, 1364003],
+    },
+    {
+      kind: 'stat',
+      state: [0.7377883812878281, 0.3013112908229232, 0.7470456755254418, 1],
+      reset: 36,
+      expected: { stat: ['CHA', 11], message: 'Gained a CHA' },
+      rng: [0.44738486921414733, 0.8698570972774178, 0.7554666411597282, 1991341],
+    },
+  ] as const)('applies the $kind branch without mutating its input', ({ state, reset, kind, expected, rng: expectedRng }) => {
+    const character = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 'reward-character');
+    character.Stats = { ...balancedStats };
+    character.Equip = { ...character.Equip, Weapon: 'Sharp Rock' };
+    character.Inventory = [];
+    character.Spells = [];
+    const before = structuredClone(character);
+    const rng = new RandomGenerator('replaced-by-vector');
+    rng.setState([...state]);
+
+    expect(rng.random(100)).toBe(reset);
+    const result = applyQuestReward(rng, character);
+
+    expect(result.kind).toBe(kind);
+    if (expected.spells) expect(result.character.Spells).toEqual(expected.spells);
+    if (expected.equipment) expect(result.character.Equip[expected.equipment[0]]).toBe(expected.equipment[1]);
+    if (expected.inventory) expect(result.character.Inventory).toEqual(expected.inventory);
+    if (expected.stat) expect(result.character.Stats[expected.stat[0]]).toBe(expected.stat[1]);
+    expect(result.message).toBe('message' in expected ? expected.message : undefined);
+    expect(rng.getState()).toEqual(expectedRng);
+    expect(character).toEqual(before);
+  });
+
+  it('uses the legacy payment wording when an item reward reuses Gold', () => {
+    const character = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 'gold-vector');
+    character.Inventory = Array.from({ length: 299 }, (_, index) => ({ name: `Item ${index}`, qty: 1 }));
+    character.Gold = 0;
+    const rng = new RandomGenerator('dispatch-gold-3255');
+
+    expect(rng.random(100)).toBe(67);
+    const result = applyQuestReward(rng, character);
+
+    expect(result).toMatchObject({ kind: 'item', message: 'Got paid a gold piece' });
+    expect(result.character.Gold).toBe(1);
+    expect(result.character.Inventory).toEqual(character.Inventory);
+    expect(rng.getState()).toEqual([0.8940803778823465, 0.8042314185295254, 0.5461535649374127, 267599]);
+  });
+
+  it.each([
+    ['spell', [0.578806129284203, 0.5098025279585272, 0.04669409594498575, 1], (character: ReturnType<typeof createNewCharacter>) => { character.Spells = [{ name: 'Rabbit Punch', level: 1_000_000_000 }]; }, (character: ReturnType<typeof createNewCharacter>) => character.Spells[0]?.level],
+    ['stat', [0.7377883812878281, 0.3013112908229232, 0.7470456755254418, 1], (character: ReturnType<typeof createNewCharacter>) => { character.Stats.CHA = 1_000_000_000; }, (character: ReturnType<typeof createNewCharacter>) => character.Stats.CHA],
+  ] as const)('keeps the %s reward within accepted save bounds', (_kind, state, arrange, readValue) => {
+    const character = createNewCharacter('Boundary', 'Half Orc', 'Ur-Paladin', 'reward-boundary');
+    character.Stats = { ...balancedStats };
+    arrange(character);
+    const rng = new RandomGenerator('replaced-by-vector');
+    rng.setState([...state]);
+    rng.random(100);
+
+    const result = applyQuestReward(rng, character);
+
+    expect(readValue(result.character)).toBe(1_000_000_000);
+  });
+
+  it('keeps reused item quantity and Gold within accepted save bounds', () => {
+    const itemCharacter = createNewCharacter('Boundary', 'Half Orc', 'Ur-Paladin', 'item-boundary');
+    itemCharacter.Inventory = [{ name: 'Unearthly Tiara of Craft', qty: 1_000_000_000 }];
+    const itemRng = new RandomGenerator('replaced-by-vector');
+    itemRng.setState([0.6739257371518761, 0.3510640109889209, 0.8553721038624644, 1]);
+    itemRng.random(100);
+
+    const itemResult = applyQuestReward(itemRng, itemCharacter);
+
+    expect(itemResult.character.Inventory).toEqual([{ name: 'Unearthly Tiara of Craft', qty: 1_000_000_000 }]);
+
+    const goldCharacter = createNewCharacter('Boundary', 'Half Orc', 'Ur-Paladin', 'gold-boundary');
+    goldCharacter.Inventory = Array.from({ length: 299 }, (_, index) => ({ name: `Item ${index}`, qty: 1 }));
+    goldCharacter.Gold = 1_000_000_000_000;
+    const goldRng = new RandomGenerator('dispatch-gold-3255');
+    goldRng.random(100);
+
+    const goldResult = applyQuestReward(goldRng, goldCharacter);
+
+    expect(goldResult.character.Gold).toBe(1_000_000_000_000);
+  });
 });
 
 describe('legacy spell reward', () => {

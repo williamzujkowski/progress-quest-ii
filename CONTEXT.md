@@ -34,6 +34,10 @@ _Avoid_: XP points
 **Quest track**:
 A bounded number of seconds toward completing the current quest.
 
+**Quest reward**:
+Exactly one spell, equipment, stat, or item effect granted when a nonempty quest completes.
+_Avoid_: Kill loot, level-up reward
+
 **Plot track**:
 A bounded number of seconds toward the next cinematic or Act.
 

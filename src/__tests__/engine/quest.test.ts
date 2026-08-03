@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RandomGenerator } from '../../engine/prng';
-import { generateDeliverQuest, generateFetchQuest, generatePlacateQuest, generateQuest, generateSeekQuest } from '../../engine/sim';
+import { createNewCharacter, generateDeliverQuest, generateFetchQuest, generatePlacateQuest, generateQuest, generateSeekQuest, generateTaskDescription } from '../../engine/sim';
 
 function stateAfterPicks(seed: string, picks: number) {
   const rng = new RandomGenerator(seed);
@@ -49,5 +49,17 @@ describe('legacy quest generators', () => {
       [{ kind: 'fetch', description: 'Fetch me a sock' }, [0.9172258146572858, 0.4534230341669172, 0.2273825639858842, 134543]],
       [{ kind: 'placate', description: 'Placate the Mariliths' }, [0.685977301094681, 0.4743830212391913, 0.5976645925547928, 215245]],
     ]);
+  });
+
+  it('ignores invalid exterminate metadata without consuming the quest-target roll', () => {
+    const ordinary = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 'task-character');
+    ordinary.Quest = { ...ordinary.Quest, kind: 'exterminate' };
+    const invalid = structuredClone(ordinary);
+    invalid.Quest = { ...invalid.Quest, target: 'invented|999|nothing', targetIndex: 84 };
+    const ordinaryRng = new RandomGenerator('invalid-quest-target');
+    const invalidRng = new RandomGenerator('invalid-quest-target');
+
+    expect(generateTaskDescription(invalidRng, invalid)).toEqual(generateTaskDescription(ordinaryRng, ordinary));
+    expect(invalidRng.getState()).toEqual(ordinaryRng.getState());
   });
 });

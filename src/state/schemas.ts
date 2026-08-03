@@ -1,14 +1,15 @@
 import { z } from 'zod';
+import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../data/limits';
 
 export const MAX_PERSISTED_ITEMS = 5_000;
 export const MAX_CHARACTER_NAME_LENGTH = 120;
 
 const shortText = z.string().max(200);
 const description = z.string().max(1_000);
-const boundedInteger = z.number().int().min(0).max(1_000_000_000);
-const positiveBoundedInteger = z.number().int().positive().max(1_000_000_000);
-const boundedNumber = z.number().min(0).max(1_000_000_000);
-const positiveBoundedNumber = z.number().positive().max(1_000_000_000);
+const boundedInteger = z.number().int().min(0).max(MAX_PERSISTED_VALUE);
+const positiveBoundedInteger = z.number().int().positive().max(MAX_PERSISTED_VALUE);
+const boundedNumber = z.number().min(0).max(MAX_PERSISTED_VALUE);
+const positiveBoundedNumber = z.number().positive().max(MAX_PERSISTED_VALUE);
 
 export const characterNameSchema = z.string().min(1).max(MAX_CHARACTER_NAME_LENGTH);
 
@@ -16,7 +17,7 @@ export const characterTraitsSchema = z.object({
   Name: characterNameSchema,
   Race: z.string().min(1).max(120),
   Class: z.string().min(1).max(120),
-  Level: z.number().int().min(1).max(1_000_000_000),
+  Level: z.number().int().min(1).max(MAX_PERSISTED_VALUE),
 }).strict();
 
 export const statsMapSchema = z.object({
@@ -51,7 +52,7 @@ export const inventoryItemSchema = z.object({
 
 export const spellItemSchema = z.object({
   name: shortText,
-  level: z.number().int().min(1).max(1_000_000_000),
+  level: z.number().int().min(1).max(MAX_PERSISTED_VALUE),
 }).strict();
 
 export const questStateSchema = z.object({
@@ -68,7 +69,7 @@ export const questStateSchema = z.object({
 });
 
 export const plotStateSchema = z.object({
-  act: z.number().int().min(1).max(1_000_000_000),
+  act: z.number().int().min(1).max(MAX_PERSISTED_VALUE),
   currentProgress: boundedNumber,
   maxProgress: positiveBoundedNumber,
 }).strict().refine(({ currentProgress, maxProgress }) => currentProgress <= maxProgress, {
@@ -97,7 +98,7 @@ export const characterSheetSchema = z.object({
   Equip: equipmentMapSchema,
   Inventory: z.array(inventoryItemSchema).max(MAX_PERSISTED_ITEMS),
   Spells: z.array(spellItemSchema).max(MAX_PERSISTED_ITEMS),
-  Gold: z.number().min(0).max(1_000_000_000_000),
+  Gold: z.number().min(0).max(MAX_PERSISTED_GOLD),
   Plot: plotStateSchema,
   Quest: questStateSchema,
   Task: progressTaskSchema,
