@@ -1,8 +1,8 @@
-import { ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, EQUIP_SLOTS, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, SPELLS, WEAPONS } from '../data/traits';
+import { ALL_STATS, ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, EQUIP_SLOTS, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, PRIME_STATS, SHIELDS, SPECIALS, SPELLS, WEAPONS } from '../data/traits';
 import { calculateEncumbranceMax, generateInitialStats } from './math';
 import { RandomGenerator, type PRNGSeed } from './prng';
 import { definite, indefinite } from './text';
-import type { CharacterSheet, EquipSlot, InventoryItem, ProgressTask, SpellItem } from './types';
+import type { CharacterSheet, EquipSlot, InventoryItem, ProgressTask, SpellItem, StatsMap } from './types';
 
 const NAME_PARTS_1 = ['Brog', 'Grim', 'Kael', 'Thor', 'Zar', 'Vex', 'Gor', 'Drak', 'Thul', 'Borg', 'Loth', 'Morg', 'Fizz', 'Wiz', 'Snag'];
 const NAME_PARTS_2 = ['nar', 'gath', 'dor', 'karn', 'rak', 'mar', 'vark', 'zog', 'thor', 'bluff', 'sout', 'fang', 'jaw', 'beard', 'gorm'];
@@ -155,6 +155,16 @@ export function generateSpellReward(rng: RandomGenerator, level: number, wisdom:
   if (!Number.isInteger(limit) || limit <= 0) return undefined;
   const spellName = SPELLS[Math.min(rng.random(limit), rng.random(limit))];
   return spellName;
+}
+
+export function generateStatReward(rng: RandomGenerator, stats: StatsMap): keyof StatsMap {
+  if (rng.random(2) < 1) return rng.pick(ALL_STATS);
+  let roll = rng.random(PRIME_STATS.reduce((total, stat) => total + stats[stat] ** 2, 0));
+  for (const stat of PRIME_STATS) {
+    roll -= stats[stat] ** 2;
+    if (roll < 0) return stat;
+  }
+  return PRIME_STATS.at(-1) ?? 'STR';
 }
 
 export function generateLootItem(rng: RandomGenerator, monsterName?: string): string {

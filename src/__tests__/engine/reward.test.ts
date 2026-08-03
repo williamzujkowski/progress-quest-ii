@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { RandomGenerator } from '../../engine/prng';
-import { generateSpellReward, selectQuestReward } from '../../engine/sim';
+import { generateSpellReward, generateStatReward, selectQuestReward } from '../../engine/sim';
+import type { StatsMap } from '../../engine/types';
+
+const balancedStats: StatsMap = { STR: 10, CON: 10, DEX: 10, INT: 10, WIS: 10, CHA: 10, 'HP Max': 10, 'MP Max': 10 };
 
 describe('legacy quest reward selector', () => {
   it.each([
@@ -33,5 +36,16 @@ describe('legacy spell reward', () => {
 
     expect(generateSpellReward(rng, 1, -1)).toBeUndefined();
     expect(rng.getState()).toEqual(initialState);
+  });
+});
+
+describe('legacy stat reward', () => {
+  it.each([
+    ['stat-0', 'CHA', [0.3283885531127453, 0.29530849447473884, 0.5603134867269546, 1437228]],
+    ['stat-3', 'DEX', [0.35300477920100093, 0.5078754595015198, 0.07098527019843459, 555139]],
+  ] as const)('covers direct and weighted selection for %s', (seed, stat, state) => {
+    const rng = new RandomGenerator(seed);
+
+    expect([generateStatReward(rng, balancedStats), rng.getState()]).toEqual([stat, state]);
   });
 });

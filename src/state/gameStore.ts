@@ -1,8 +1,7 @@
 import { create } from 'zustand';
-import { ALL_STATS, PRIME_STATS } from '../data/traits';
 import { soundFX } from './audio';
 import { RandomGenerator, type PRNGSeed } from '../engine/prng';
-import { createNewCharacter, equipPrice, generateEquipUpgrade, generateLootItem, generateSpellReward, generateSpellUpgrade, generateTaskDescription } from '../engine/sim';
+import { createNewCharacter, equipPrice, generateEquipUpgrade, generateLootItem, generateSpellReward, generateSpellUpgrade, generateStatReward, generateTaskDescription } from '../engine/sim';
 import { indefinite } from '../engine/text';
 import { levelUpTime } from '../engine/math';
 import type { CharacterSheet, ProgressionState, ProgressTask, StatsMap } from '../engine/types';
@@ -36,16 +35,6 @@ function createProgression(level: number): ProgressionState {
 
 function gained(value: string, quantity = 1): string {
   return `Gained ${indefinite(value, quantity)}`;
-}
-
-function chooseStatUpgrade(rng: RandomGenerator, stats: StatsMap): keyof StatsMap {
-  if (rng.random(2) < 1) return rng.pick(ALL_STATS);
-  let roll = rng.random(PRIME_STATS.reduce((total, stat) => total + stats[stat] ** 2, 0));
-  for (const stat of PRIME_STATS) {
-    roll -= stats[stat] ** 2;
-    if (roll < 0) return stat;
-  }
-  return PRIME_STATS.at(-1) ?? 'STR';
 }
 
 function upgradeSpell(rng: RandomGenerator, level: number, wisdom: number, spells: CharacterSheet['Spells']): CharacterSheet['Spells'] {
@@ -158,7 +147,7 @@ export const useGameStore = create<GameStore>((set, get) => {
             newLog.unshift(gained('MP Max', mpGain));
 
             for (let upgrades = 0; upgrades < 2; upgrades += 1) {
-              const stat = chooseStatUpgrade(rng, newStats);
+              const stat = generateStatReward(rng, newStats);
               newStats[stat] += 1;
               newLog.unshift(gained(stat));
             }
