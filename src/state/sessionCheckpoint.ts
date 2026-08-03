@@ -1,6 +1,7 @@
 import { useGameStore } from './gameStore';
 import { activeCheckpointV1Schema, type ActiveCheckpointV1 } from './schemas';
 import { diagnostics } from './diagnostics';
+import { loadMostRecentRosterCharacter } from './saveManager';
 
 export const ACTIVE_CHECKPOINT_KEY = 'progquest_active_session_v1';
 export const ACTIVE_CHECKPOINT_LKG_KEY = 'progquest_active_session_lkg_v1';
@@ -201,6 +202,7 @@ export interface CheckpointNotice {
 }
 
 export interface SessionCheckpointController {
+  readonly requiresCharacterCreation: boolean;
   getNotice: () => CheckpointNotice | null;
   subscribe: (listener: () => void) => () => void;
   repair: () => void;
@@ -247,6 +249,7 @@ export function startSessionCheckpoints({
   let timer: ReturnType<typeof setTimeout> | undefined;
   let failureRecorded = false;
   let repairAllowed = false;
+  let requiresCharacterCreation = false;
   let repairSuccessMessage = 'The active-session checkpoint was replaced. Automatic checkpoints resumed.';
 
   const publish = (next: CheckpointNotice | null) => {
@@ -290,7 +293,17 @@ export function startSessionCheckpoints({
       expectedPrimaryRaw = loaded.expectedPrimaryRaw;
       canPersist = true;
     } else if (loaded.status === 'missing') {
-      canPersist = true;
+      const mostRecentRosterCharacter = loadMostRecentRosterCharacter(storage);
+      if (!mostRecentRosterCharacter.ok) {
+        requiresCharacterCreation = true;
+        block(`${mostRecentRosterCharacter.error.message} Automatic checkpoints are paused.`, 'read');
+      } else if (mostRecentRosterCharacter.value) {
+        canPersist = true;
+        useGameStore.getState().startSession({ source: 'roster', character: mostRecentRosterCharacter.value });
+      } else {
+        canPersist = true;
+        requiresCharacterCreation = true;
+      }
     } else if (loaded.status === 'recovered_lkg') {
       restoreActiveSession(loaded.checkpoint);
       expectedPrimaryRaw = loaded.expectedPrimaryRaw;
@@ -318,6 +331,7 @@ export function startSessionCheckpoints({
   pagehideTarget?.addEventListener('storage', handleStorage);
 
   return {
+    requiresCharacterCreation,
     getNotice: () => notice,
     subscribe: (listener) => {
       listeners.add(listener);

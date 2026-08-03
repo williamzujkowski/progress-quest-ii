@@ -13,11 +13,11 @@ Open the [Progress Quest II GitHub Pages site](https://williamzujkowski.github.i
 The intended player story is pleasantly hands-off:
 
 1. Visit the site. No account, launcher, or solemn oath is required.
-2. Choose **New Character**, roll a name and stats, and accept the results before the dice start asking questions.
+2. If no resumable adventurer exists, the required **New Character** screen opens itself. Roll a name and stats, then accept the results before the dice start asking questions.
 3. Watch the hero banner, quest progress, activity log, equipment, spells, and loot update themselves.
 4. Hover or keyboard-focus equipment, loot, and spells for a compact tooltip with the item's dry commentary and the mechanics the engine actually exposes.
 5. Change the OKLCH terminal theme if the default darkness is not sufficiently dramatic.
-6. Leave the tab open. Your hero will continue making brave, statistically questionable decisions on your behalf, as progress intended.
+6. Leave the tab open—or return later. The active session saves automatically and resumes before the machinery starts making brave, statistically questionable decisions on your behalf.
 
 The dashboard is responsive at phone widths and keeps growing activity, inventory, and loadout content inside bounded scrolling regions instead of extending the page into the next geological era.
 

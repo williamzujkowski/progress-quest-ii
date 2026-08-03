@@ -4,6 +4,7 @@ import { RandomGenerator } from '../../engine/prng';
 import { createNewCharacter } from '../../engine/sim';
 import { useGameStore } from '../../state/gameStore';
 import { diagnostics } from '../../state/diagnostics';
+import { saveToRoster } from '../../state/saveManager';
 import {
   ACTIVE_CHECKPOINT_KEY,
   ACTIVE_CHECKPOINT_LKG_KEY,
@@ -25,6 +26,56 @@ afterEach(() => {
 });
 
 describe('active session checkpoint boundary', () => {
+  it('requires character creation when no active session or roster exists', () => {
+    const controller = startSessionCheckpoints({ storage: localStorage });
+
+    expect(controller.requiresCharacterCreation).toBe(true);
+    controller.dispose();
+  });
+
+  it('starts the most recently saved roster character when no active session exists', () => {
+    saveToRoster(createNewCharacter('Earlier Roster', 'Half Orc', 'Robot Monk', 704));
+    saveToRoster(createNewCharacter('Latest Roster', 'Dung Elf', 'Vermineer', 705));
+
+    const controller = startSessionCheckpoints({ storage: localStorage });
+
+    expect(controller.requiresCharacterCreation).toBe(false);
+    expect(useGameStore.getState().character.Traits.Name).toBe('Latest Roster');
+    expect(useGameStore.getState().log).toEqual(['Loaded character Latest Roster from roster.']);
+    controller.dispose();
+  });
+
+  it('restores the active checkpoint before considering the roster', () => {
+    const active = createNewCharacter('Active Wins', 'Half Orc', 'Robot Monk', 706);
+    useGameStore.setState({ character: active });
+    expect(writeActiveCheckpoint(localStorage, captureActiveSession(), null)).toMatchObject({ ok: true });
+    saveToRoster(createNewCharacter('Roster Loses', 'Dung Elf', 'Vermineer', 707));
+    useGameStore.setState(originalState, true);
+
+    const controller = startSessionCheckpoints({ storage: localStorage });
+
+    expect(controller.requiresCharacterCreation).toBe(false);
+    expect(useGameStore.getState().character.Traits.Name).toBe('Active Wins');
+    controller.dispose();
+  });
+
+  it('blocks startup without replacing an unreadable roster', () => {
+    vi.useFakeTimers();
+    const corruptRoster = '{broken';
+    localStorage.setItem('progquest_roster_v1', corruptRoster);
+
+    const controller = startSessionCheckpoints({ storage: localStorage, intervalMs: 1 });
+
+    expect(controller.requiresCharacterCreation).toBe(true);
+    expect(controller.getNotice()).toMatchObject({ kind: 'alert', canRepair: false });
+    expect(controller.getNotice()?.message).toContain('saved roster is unreadable');
+    useGameStore.setState({ log: ['The placeholder must not become authoritative.'] });
+    vi.runAllTimers();
+    expect(localStorage.getItem(ACTIVE_CHECKPOINT_KEY)).toBeNull();
+    expect(localStorage.getItem('progquest_roster_v1')).toBe(corruptRoster);
+    controller.dispose();
+  });
+
   it('round-trips the complete deterministic session through a strict v1 envelope', () => {
     const character = createNewCharacter('Checkpoint', 'Dung Elf', 'Vermineer', 701);
     character.Task.elapsedMs = 123;

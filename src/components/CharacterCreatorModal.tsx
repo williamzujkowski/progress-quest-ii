@@ -11,12 +11,17 @@ import { useModalDialog } from './useModalDialog';
 
 interface CharacterCreatorModalProps {
   isOpen: boolean;
+  isRequired?: boolean;
   onClose: () => void;
+  onCreated?: () => void;
 }
 
-export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ isOpen, onClose }) => {
+export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ isOpen, isRequired = false, onClose, onCreated = onClose }) => {
   const { startSession } = useGameStore();
-  const dialogRef = useModalDialog(isOpen, onClose);
+  const dismiss = () => {
+    if (!isRequired) onClose();
+  };
+  const dialogRef = useModalDialog(isOpen, dismiss);
 
   const [name, setName] = useState(generateRandomName());
   const [race, setRace] = useState(RACES[0].name);
@@ -61,20 +66,28 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
     e.preventDefault();
     if (!name.trim()) return;
     startSession({ source: 'creation', name: name.trim(), race, klass, seed: currentSeed, stats });
-    onClose();
+    onCreated();
   };
 
   return (
-    <dialog ref={dialogRef} className="modal-overlay" onClick={onClose} aria-labelledby="creator-title">
+    <dialog ref={dialogRef} className="modal-overlay" onClick={dismiss} aria-labelledby="creator-title">
       <div className="modal-content modal-wide" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2 id="creator-title">
             Progress Quest II — New Character
           </h2>
-          <button className="btn btn-compact" onClick={onClose} aria-label="Close character creator modal">
-            <X size={16} />
-          </button>
+          {isRequired ? null : (
+            <button className="btn btn-compact" onClick={onClose} aria-label="Close character creator modal">
+              <X size={16} />
+            </button>
+          )}
         </div>
+
+        {isRequired ? (
+          <p className="creator-intro">
+            No resumable adventurer was found. Appoint one before the bureaucracy can proceed.
+          </p>
+        ) : null}
 
         <form className="modal-form" onSubmit={handleSubmit}>
           {/* Name & Random Name Generator */}

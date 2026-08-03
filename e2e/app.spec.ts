@@ -1,6 +1,10 @@
 import { devices, expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFile } from 'node:fs/promises';
+import { createNewCharacter } from '../src/engine/sim';
+import { returningSessionStorageState } from './fixtures/returningSession';
+
+const returningStorageState = returningSessionStorageState('http://localhost:5173');
 
 const loadDenseDashboard = async (page: Page) => {
   // ponytail: seed through Zustand's exported API; a production-only fixture route would add more test machinery.
@@ -29,6 +33,64 @@ const loadDenseDashboard = async (page: Page) => {
 };
 
 test.describe('Progress Quest II terminal dashboard', () => {
+  test.use({ storageState: returningStorageState });
+
+  test('requires character creation on a first visit and automatically checkpoints the result', async ({ browser }) => {
+    const context = await browser.newContext({
+      baseURL: 'http://localhost:5173',
+      viewport: { width: 320, height: 900 },
+      storageState: { cookies: [], origins: [] },
+    });
+    const page = await context.newPage();
+    await page.goto('/');
+
+    const creator = page.getByRole('dialog', { name: /New Character/i });
+    await expect(creator).toBeVisible();
+    await expect(creator).toContainText('No resumable adventurer was found');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()).violations).toEqual([]);
+    await expect(creator.getByRole('button', { name: /Close character creator/i })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(creator).toBeVisible();
+    await creator.click({ position: { x: 2, y: 2 } });
+    await expect(creator).toBeVisible();
+    await page.waitForTimeout(1_100);
+    expect(await page.evaluate(() => localStorage.getItem('progquest_active_session_v1'))).toBeNull();
+
+    await creator.getByRole('textbox', { name: 'Character Name' }).fill('First Bureaucrat');
+    await creator.getByRole('button', { name: /Sold! Start Questing/i }).click();
+    await expect(creator).toBeHidden();
+    await expect(page.locator('.hero-name > span:not(.badge)')).toHaveText('First Bureaucrat');
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('progquest_active_session_v1'))).not.toBeNull();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('progquest_active_session_v1') ?? '').session.character.Traits.Name)).toBe('First Bureaucrat');
+    await context.close();
+  });
+
+  test('promotes the most recently saved roster character when no active checkpoint exists', async ({ browser }) => {
+    const earlier = createNewCharacter('Earlier Roster', 'Half Orc', 'Robot Monk', 706);
+    const latest = createNewCharacter('Latest Roster', 'Dung Elf', 'Vermineer', 707);
+    const context = await browser.newContext({
+      baseURL: 'http://localhost:5173',
+      storageState: {
+        cookies: [],
+        origins: [{
+          origin: 'http://localhost:5173',
+          localStorage: [{ name: 'progquest_roster_v1', value: JSON.stringify({ 'Earlier Roster': earlier, 'Latest Roster': latest }) }],
+        }],
+      },
+    });
+    const page = await context.newPage();
+    await page.goto('/');
+
+    await expect(page.getByRole('dialog', { name: /New Character/i })).toHaveCount(0);
+    await expect(page.locator('.hero-name > span:not(.badge)')).toHaveText('Latest Roster');
+    await expect.poll(() => page.evaluate(() => {
+      const raw = localStorage.getItem('progquest_active_session_v1');
+      return raw ? JSON.parse(raw).session.character.Traits.Name : null;
+    })).toBe('Latest Roster');
+    await context.close();
+  });
+
   test('resumes the exact active session before the game clock starts', async ({ page }) => {
     await page.goto('/');
     const expected = await page.evaluate(async () => {
@@ -371,7 +433,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
   });
 
   test('toggles a tooltip by touch inside a narrow viewport', async ({ browser }) => {
-    const context = await browser.newContext({ ...devices['iPhone 13'], baseURL: 'http://localhost:5173' });
+    const context = await browser.newContext({ ...devices['iPhone 13'], baseURL: 'http://localhost:5173', storageState: returningStorageState });
     const page = await context.newPage();
     await page.goto('/');
 
