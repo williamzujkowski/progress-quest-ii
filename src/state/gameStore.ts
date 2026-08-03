@@ -94,14 +94,15 @@ export const useGameStore = create<GameStore>((set, get) => {
         let newEquip = { ...character.Equip };
 
         if (task.type === 'kill') {
-          const itemLoot = generateLootItem(rng);
+          const itemLoot = task.loot?.type === 'fixed' ? task.loot.item : generateLootItem(rng);
           const existingIndex = newInventory.findIndex((item) => item.name === itemLoot);
           if (existingIndex >= 0) {
             newInventory = newInventory.map((item, index) => (index === existingIndex ? { ...item, qty: item.qty + 1 } : item));
           } else {
             newInventory = [...newInventory, { name: itemLoot, qty: 1 }];
           }
-          newLog.unshift(`Defeated monster and looted ${itemLoot}.`);
+          const article = 'AEIOUÜaeiouü'.includes(itemLoot.charAt(0)) ? 'an' : 'a';
+          newLog.unshift(`Gained ${article} ${itemLoot}`);
 
           newQuest.currentProgress += 1;
           if (newQuest.currentProgress >= newQuest.maxProgress) {
@@ -170,7 +171,10 @@ export const useGameStore = create<GameStore>((set, get) => {
           durationMs: nextTaskInfo.durationMs,
           elapsedMs: 0,
           type: nextTaskInfo.type,
+          loot: nextTaskInfo.loot,
         };
+
+        newLog.unshift(nextTask.description);
 
         set({
           character: {

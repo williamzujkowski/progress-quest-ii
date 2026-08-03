@@ -67,6 +67,10 @@ export const progressTaskSchema = z.object({
   durationMs: z.number().min(1).max(86_400_000),
   elapsedMs: z.number().min(0).max(86_400_000),
   type: z.enum(['kill', 'buying', 'selling', 'quest', 'plot', 'heading_to_market', 'heading']),
+  loot: z.discriminatedUnion('type', [
+    z.object({ type: z.literal('fixed'), item: z.string().min(1).max(200) }),
+    z.object({ type: z.literal('random') }),
+  ]).optional(),
 });
 
 export const characterSheetSchema = z.object({
