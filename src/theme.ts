@@ -11,6 +11,24 @@ export const THEME_OPTIONS = [
 ] as const;
 
 export type ThemeId = (typeof THEME_OPTIONS)[number]['id'];
+export type ThemeStorageResult<T> = { ok: true; value: T } | { ok: false; error: unknown };
+
+export function readThemePreference(storage?: Pick<Storage, 'getItem'>): ThemeStorageResult<string | null> {
+  try {
+    return { ok: true, value: (storage ?? window.localStorage).getItem(THEME_STORAGE_KEY) };
+  } catch (error) {
+    return { ok: false, error };
+  }
+}
+
+export function writeThemePreference(theme: ThemeId, storage?: Pick<Storage, 'setItem'>): ThemeStorageResult<void> {
+  try {
+    (storage ?? window.localStorage).setItem(THEME_STORAGE_KEY, theme);
+    return { ok: true, value: undefined };
+  } catch (error) {
+    return { ok: false, error };
+  }
+}
 
 const terminalThemes: Record<Exclude<ThemeId, 'progros'>, TerminalColorTheme> = {
   'remarque-dark': remarqueDark as TerminalColorTheme,

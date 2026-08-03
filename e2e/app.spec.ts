@@ -367,6 +367,72 @@ test.describe('Progress Quest terminal dashboard', () => {
     await expect(page.locator('html')).not.toHaveAttribute('data-terminal-theme', /.+/);
   });
 
+  test('keeps the selected theme usable when preference storage rejects the write', async ({ page }) => {
+    const pageErrors: string[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/');
+    await page.evaluate(() => {
+      const original = Storage.prototype.setItem;
+      Storage.prototype.setItem = function(key, value) {
+        if (key === 'progquest_theme_v1') throw new DOMException('Quota exceeded', 'QuotaExceededError');
+        return original.call(this, key, value);
+      };
+    });
+
+    await page.getByRole('combobox', { name: 'Visual theme' }).selectOption('remarque-light');
+
+    await expect(page.locator('html')).toHaveAttribute('data-terminal-theme', 'remarque-light');
+    await expect(page.getByRole('status')).toHaveText('Theme changed, but this browser could not remember it.');
+    const diagnosticCodes = await page.evaluate(async () => {
+      const { diagnostics } = await import('/src/state/diagnostics.ts');
+      return diagnostics.snapshot().map((event) => event.code);
+    });
+    expect(diagnosticCodes).toContain('theme_write_failed');
+    expect(pageErrors).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test('uses the system theme accessibly when preference storage rejects the read', async ({ page }) => {
+    const pageErrors: string[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.addInitScript(() => {
+      localStorage.setItem('progquest_theme_v1', 'progros');
+      const originalGet = Storage.prototype.getItem;
+      const originalSet = Storage.prototype.setItem;
+      const trackedWindow = window as Window & { __themeWrites?: number };
+      trackedWindow.__themeWrites = 0;
+      Storage.prototype.getItem = function(key) {
+        if (key === 'progquest_theme_v1') throw new DOMException('Access denied', 'SecurityError');
+        return originalGet.call(this, key);
+      };
+      Storage.prototype.setItem = function(key, value) {
+        if (key === 'progquest_theme_v1') {
+          trackedWindow.__themeWrites = (trackedWindow.__themeWrites ?? 0) + 1;
+          throw new DOMException('Access denied', 'SecurityError');
+        }
+        return originalSet.call(this, key, value);
+      };
+    });
+    await page.goto('/');
+
+    await expect(page.getByRole('combobox', { name: 'Visual theme' })).toHaveValue('remarque-dark');
+    await expect(page.getByRole('status')).toHaveText('Theme preference unavailable; using your system default.');
+    const diagnosticCodes = await page.evaluate(async () => {
+      const { diagnostics } = await import('/src/state/diagnostics.ts');
+      return diagnostics.snapshot().map((event) => event.code);
+    });
+    expect(diagnosticCodes).toContain('theme_read_failed');
+    expect(await page.evaluate(() => (window as Window & { __themeWrites?: number }).__themeWrites)).toBe(0);
+    expect(pageErrors).toEqual([]);
+  });
+
   test('keeps the theme picker keyboard reachable with a visible focus ring', async ({ page }) => {
     await page.goto('/');
 
