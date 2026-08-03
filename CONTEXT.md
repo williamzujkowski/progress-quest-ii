@@ -33,6 +33,17 @@ A bounded number of seconds toward the next cinematic or Act.
 Derived carried-item quantity, excluding Gold, measured in cubits.
 _Avoid_: Persisted weight
 
+**Item identity**:
+The stable kind and canonical name of an item, plus its equipment slot when applicable. Quantity, owner, render order, and time are not identity.
+
+**Micro-story**:
+Deterministic flavor derived from an item's identity components. It may be absurd but never asserts an unmodeled mechanic.
+_Avoid_: Random description, item effect
+
+**Item effect**:
+The mechanically authoritative facts exposed for an item, kept separate from its micro-story.
+_Avoid_: Flavor text
+
 **Task count**:
 The number of completed tasks in a session.
 
