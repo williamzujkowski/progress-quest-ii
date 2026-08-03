@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "lint:legacy": "oxlint --no-ignore -c .oxlintrc.legacy.json pq-web-src",
     "preview": "vite preview",
     "test": "vitest run && node --test scripts/test-legacy-oracle.mjs",
     "test:fidelity": "vitest run src/__tests__/fidelity && node --test scripts/test-legacy-oracle.mjs",
