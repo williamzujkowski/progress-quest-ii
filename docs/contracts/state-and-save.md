@@ -7,13 +7,16 @@ These are the deliberately small, executable contracts at module seams. TypeScri
 Owner: `src/state/schemas.ts`
 
 - The existing JSON character-sheet shape remains unchanged.
+- That exact unversioned modern shape is the frozen **PQW v0** compatibility profile. Every object boundary is strict, so unknown fields and unrecognized version markers fail closed instead of being silently discarded.
 - Imported and roster data is parsed as `unknown` and must satisfy `characterSheetSchema` before state mutation.
 - Strings, collections, quantities, currency, levels, and progress values have explicit upper bounds.
+- Prime stats are positive integers; HP/MP maxima are positive numbers. Quest/plot progress may equal but never exceed its positive maximum, and task elapsed time may equal but never exceed its duration.
+- Inventory identities are exact and case-sensitive. One empty identity remains valid for established reward parity, but duplicate identities are rejected without normalization.
 - A save import larger than 1 MB is rejected before base64 decoding.
 - A roster is rejected and preserved in full if any record is invalid; partial recovery must never make the next write destructive.
 - Character names contain 1–120 UTF-16 code units. Exact names are case-sensitive roster identities, and a later explicit save replaces the prior entry with that identity.
 - Prototype-like character names remain ordinary own keys. Existing object-shaped roster JSON is rehydrated into a null-prototype record without changing the persisted shape.
-- A versioned envelope is deferred because introducing one is a compatibility decision requiring unanimous approval.
+- A future format must use a versioned envelope and retain a PQW v0 reader. Classic tuple-shaped PQW migration remains tracked by #2; it must not be parsed as modern v0.
 
 Verified by: `src/__tests__/state/saveManager.test.ts`.
 

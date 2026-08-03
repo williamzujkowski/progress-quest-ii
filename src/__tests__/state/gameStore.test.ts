@@ -4,6 +4,7 @@ import { levelUpTime } from '../../engine/math';
 import { createNewCharacter, generateLootItem } from '../../engine/sim';
 import type { StatsMap } from '../../engine/types';
 import { useGameStore } from '../../state/gameStore';
+import { characterSheetSchema } from '../../state/schemas';
 
 describe('Game Store State Machine', () => {
   beforeEach(() => {
@@ -124,6 +125,36 @@ describe('Game Store State Machine', () => {
     expect(quest.maxProgress).toBeGreaterThanOrEqual(50);
     expect(quest.maxProgress).toBeLessThan(150);
     expect(quest.history).toEqual(['Test quest']);
+  });
+
+  it('keeps a boundary-valid imported sheet valid through a level-up', () => {
+    const character = createNewCharacter('BoundaryHero', 'Half Orc', 'Robot Monk', 310);
+    character.Stats = { STR: 1, CON: 1, DEX: 1, INT: 1, WIS: 1, CHA: 1, 'HP Max': 0.5, 'MP Max': 1.5 };
+    character.Task = {
+      description: 'Executing boundary monster...',
+      durationMs: 1,
+      elapsedMs: 0,
+      type: 'kill',
+      loot: { type: 'fixed', item: 'boundary receipt' },
+    };
+    expect(characterSheetSchema.safeParse(character).success).toBe(true);
+    useGameStore.setState({
+      character,
+      rng: new RandomGenerator('boundary-level-up'),
+      progression: {
+        experience: { currentSeconds: 1, maxSeconds: 1 },
+        completedTasks: 0,
+        elapsedSeconds: 0,
+      },
+    });
+
+    useGameStore.getState().tick(1);
+
+    const leveled = useGameStore.getState().character;
+    expect(leveled.Traits.Level).toBe(2);
+    expect(leveled.Stats['HP Max']).toBeGreaterThan(0);
+    expect(leveled.Stats['MP Max']).toBeGreaterThan(0);
+    expect(characterSheetSchema.safeParse(leveled).success).toBe(true);
   });
 
   it('caps quest history at the legacy 100-entry boundary', () => {

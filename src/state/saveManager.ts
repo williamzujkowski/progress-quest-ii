@@ -1,5 +1,5 @@
 import type { CharacterSheet } from '../engine/types';
-import { characterNameSchema, characterSheetSchema, type PersistedCharacterSheet } from './schemas';
+import { characterSheetSchema, type PersistedCharacterSheet } from './schemas';
 
 const ROSTER_STORAGE_KEY = 'progquest_roster_v1';
 export const MAX_PQW_INPUT_LENGTH = 1_000_000;
@@ -137,8 +137,9 @@ export function loadRoster(): SaveResult<Record<string, CharacterSheet>> {
 }
 
 export function saveToRoster(sheet: CharacterSheet): SaveResult<Record<string, CharacterSheet>> {
-  if (!characterNameSchema.safeParse(sheet.Traits.Name).success) {
-    return saveFailure('invalid_schema', 'This character has an invalid name and was not saved. Nothing was changed.');
+  const candidate = characterSheetSchema.safeParse(sheet);
+  if (!candidate.success) {
+    return saveFailure('invalid_schema', 'This character has invalid save data and was not saved. Nothing was changed.');
   }
   const storage = getStorage();
   if (!storage.ok) return storage;
@@ -147,7 +148,7 @@ export function saveToRoster(sheet: CharacterSheet): SaveResult<Record<string, C
 
   try {
     const roster = loaded.value;
-    roster[sheet.Traits.Name] = sheet;
+    roster[candidate.data.Traits.Name] = candidate.data;
     if (Object.keys(roster).length > MAX_ROSTER_ENTRIES) {
       return saveFailure('roster_too_large', 'The roster already contains the maximum number of characters. Nothing was changed.');
     }

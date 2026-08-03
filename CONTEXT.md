@@ -12,6 +12,10 @@ _Avoid_: Save, character
 A character's exact, case-sensitive name, bounded to 1–120 UTF-16 code units. Saving the same identity replaces its prior roster entry; names that differ by case remain distinct.
 _Avoid_: Normalized name, roster index
 
+**PQW v0**:
+The exact unversioned modern character-sheet payload. It is distinct from the classic game's tuple-based PQW payload and accepts no unknown fields.
+_Avoid_: Legacy PQW, versionless data
+
 **Transition**:
 One application of elapsed time and RNG to a session; it may complete zero, one, or several tasks.
 _Avoid_: Task completion

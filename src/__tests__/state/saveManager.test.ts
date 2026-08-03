@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { PRIME_STATS } from '../../data/traits';
 import { MAX_FINITE_CHARACTER_LEVEL } from '../../engine/math';
 import { createNewCharacter } from '../../engine/sim';
 import {
@@ -18,6 +19,13 @@ import { useGameStore } from '../../state/gameStore';
 afterEach(() => {
   localStorage.clear();
 });
+
+function encodeTestValue(value: unknown): string {
+  const bytes = new TextEncoder().encode(JSON.stringify(value));
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
 
 describe('Save Manager & Serialization', () => {
   it('encodes and decodes a character sheet to base64 .pqw format cleanly', () => {
@@ -73,10 +81,16 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('rejects oversized input before attempting to decode it', () => {
-    expect(decodePQWSave('A'.repeat(MAX_PQW_INPUT_LENGTH + 1))).toMatchObject({
-      ok: false,
-      error: { code: 'input_too_large' },
-    });
+    const decode = vi.spyOn(globalThis, 'atob');
+    try {
+      expect(decodePQWSave(' '.repeat(MAX_PQW_INPUT_LENGTH + 1))).toMatchObject({
+        ok: false,
+        error: { code: 'input_too_large' },
+      });
+      expect(decode).not.toHaveBeenCalled();
+    } finally {
+      decode.mockRestore();
+    }
   });
 
   it('rejects syntactically valid saves with unreasonable collection sizes', () => {
@@ -87,6 +101,124 @@ describe('Save Manager & Serialization', () => {
       ok: false,
       error: { code: 'invalid_schema' },
     });
+  });
+
+  it('rejects unknown keys at every object boundary in the modern PQW v0 profile', () => {
+    const character = createNewCharacter('StrictV0', 'Half Orc', 'Robot Monk', 305);
+    character.Spells = [{ name: 'Strictly Speaking', level: 1 }];
+    character.Task.loot = { type: 'fixed', item: 'paperwork' };
+    const candidates: unknown[] = [
+      { ...character, version: 1 },
+      { ...character, Traits: { ...character.Traits, Alias: 'Absolutely not' } },
+      { ...character, Stats: { ...character.Stats, Luck: 99 } },
+      { ...character, Equip: { ...character.Equip, Cape: 'Regrettable' } },
+      { ...character, Inventory: [{ ...character.Inventory[0], taxable: true }] },
+      { ...character, Spells: [{ ...character.Spells[0], tasteful: false }] },
+      { ...character, Plot: { ...character.Plot, spoilers: true } },
+      { ...character, Quest: { ...character.Quest, dignity: 0 } },
+      { ...character, Task: { ...character.Task, overtime: true } },
+      { ...character, Task: { ...character.Task, loot: { ...character.Task.loot, cursed: true } } },
+      { ...character, Task: { ...character.Task, loot: { type: 'random', audited: false } } },
+    ];
+
+    for (const candidate of candidates) {
+      expect(decodePQWSave(encodeTestValue(candidate))).toMatchObject({
+        ok: false,
+        error: { code: 'invalid_schema' },
+      });
+    }
+  });
+
+  it('rejects invalid progress and task relationships while accepting completed boundaries', () => {
+    const character = createNewCharacter('RelationalV0', 'Half Orc', 'Robot Monk', 306);
+    const invalid: unknown[] = [
+      { ...character, Quest: { ...character.Quest, maxProgress: 0 } },
+      { ...character, Quest: { ...character.Quest, currentProgress: 6, maxProgress: 5 } },
+      { ...character, Plot: { ...character.Plot, maxProgress: 0 } },
+      { ...character, Plot: { ...character.Plot, currentProgress: 11, maxProgress: 10 } },
+      { ...character, Task: { ...character.Task, elapsedMs: character.Task.durationMs + 1 } },
+    ];
+
+    for (const candidate of invalid) {
+      expect(decodePQWSave(encodeTestValue(candidate))).toMatchObject({
+        ok: false,
+        error: { code: 'invalid_schema' },
+      });
+    }
+
+    expect(decodePQWSave(encodeTestValue({
+      ...character,
+      Quest: { ...character.Quest, currentProgress: 5, maxProgress: 5 },
+      Plot: { ...character.Plot, currentProgress: 10, maxProgress: 10 },
+      Task: { ...character.Task, elapsedMs: character.Task.durationMs },
+    }))).toMatchObject({ ok: true });
+  });
+
+  it('requires positive HP and MP maxima while retaining finite fractional compatibility', () => {
+    const character = createNewCharacter('VitalV0', 'Half Orc', 'Robot Monk', 307);
+
+    for (const Stats of [
+      { ...character.Stats, 'HP Max': 0 },
+      { ...character.Stats, 'MP Max': -1 },
+    ]) {
+      expect(decodePQWSave(encodeTestValue({ ...character, Stats }))).toMatchObject({
+        ok: false,
+        error: { code: 'invalid_schema' },
+      });
+    }
+
+    expect(decodePQWSave(encodeTestValue({
+      ...character,
+      Stats: { ...character.Stats, 'HP Max': 0.5, 'MP Max': 1.5 },
+    }))).toMatchObject({ ok: true });
+  });
+
+  it('rejects non-finite numeric values at the direct schema boundary', () => {
+    const character = createNewCharacter('FiniteV0', 'Half Orc', 'Robot Monk', 308);
+
+    for (const value of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      expect(characterSheetSchema.safeParse({
+        ...character,
+        Stats: { ...character.Stats, STR: value },
+      }).success).toBe(false);
+    }
+  });
+
+  it('requires every prime stat to be a positive integer', () => {
+    const character = createNewCharacter('PrimeV0', 'Half Orc', 'Robot Monk', 309);
+
+    for (const stat of PRIME_STATS) {
+      for (const value of [0, -1, 1.5]) {
+        expect(characterSheetSchema.safeParse({
+          ...character,
+          Stats: { ...character.Stats, [stat]: value },
+        }).success).toBe(false);
+      }
+    }
+
+    expect(characterSheetSchema.safeParse({
+      ...character,
+      Stats: { ...character.Stats, ...Object.fromEntries(PRIME_STATS.map((stat) => [stat, 1])) },
+    }).success).toBe(true);
+  });
+
+  it('rejects duplicate exact inventory identities without normalizing accepted labels', () => {
+    const character = createNewCharacter('InventoryV0', 'Half Orc', 'Robot Monk', 310);
+
+    for (const Inventory of [
+      [{ name: 'Gold', qty: 0 }, { name: 'Rat tail', qty: 1 }, { name: 'Rat tail', qty: 2 }],
+      [{ name: 'Gold', qty: 0 }, { name: '', qty: 1 }, { name: '', qty: 2 }],
+    ]) {
+      expect(decodePQWSave(encodeTestValue({ ...character, Inventory }))).toMatchObject({
+        ok: false,
+        error: { code: 'invalid_schema' },
+      });
+    }
+
+    expect(decodePQWSave(encodeTestValue({
+      ...character,
+      Inventory: [{ name: 'Gold', qty: 0 }, { name: '', qty: 1 }, { name: 'rat tail', qty: 1 }, { name: 'Rat tail', qty: 1 }],
+    }))).toMatchObject({ ok: true });
   });
 
   it('keeps an accepted high-level save loadable with finite runtime progression', () => {
@@ -435,6 +567,20 @@ describe('Save Manager & Serialization', () => {
     const overlength = createNewCharacter('N'.repeat(MAX_CHARACTER_NAME_LENGTH + 1), 'Half Orc', 'Robot Monk', 515);
 
     expect(saveToRoster(overlength)).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_schema' },
+    });
+    expect(localStorage.getItem('progquest_roster_v1')).toBe(originalRoster);
+  });
+
+  it('validates the complete sheet before a roster write and preserves existing bytes on failure', () => {
+    const existing = createNewCharacter('ExistingValidSheet', 'Dung Elf', 'Vermineer', 516);
+    const originalRoster = JSON.stringify({ ExistingValidSheet: existing });
+    localStorage.setItem('progquest_roster_v1', originalRoster);
+    const invalid = createNewCharacter('InvalidProgressSheet', 'Half Orc', 'Robot Monk', 517);
+    invalid.Quest.maxProgress = 0;
+
+    expect(saveToRoster(invalid)).toMatchObject({
       ok: false,
       error: { code: 'invalid_schema' },
     });
