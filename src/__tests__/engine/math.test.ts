@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { calculateEncumbranceMax, generateInitialStats, levelUpTime, MAX_FINITE_CHARACTER_LEVEL, roll3d6 } from '../../engine/math';
 import { RandomGenerator } from '../../engine/prng';
+import { generateExterminateQuest } from '../../engine/sim';
 
 describe('Progress Quest Engine Math', () => {
   it('calculates level up time correctly according to exponential formula', () => {
@@ -53,5 +54,16 @@ describe('Progress Quest Engine Math', () => {
     const roll2 = roll3d6(rng2);
 
     expect(roll1).toBe(roll2);
+  });
+
+  it('generates an exterminate quest with exactly four deterministic monster picks', () => {
+    const first = generateExterminateQuest(new RandomGenerator('quest-seed'), 1);
+    const second = generateExterminateQuest(new RandomGenerator('quest-seed'), 1);
+
+    expect(first).toEqual(second);
+    expect(first.kind).toBe('exterminate');
+    expect(first.description).toMatch(/^Exterminate the /);
+    expect(first.target.split('|')).toHaveLength(3);
+    expect(first.targetIndex).toBeGreaterThanOrEqual(0);
   });
 });
