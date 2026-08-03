@@ -146,6 +146,10 @@ describe('Save Manager & Serialization', () => {
       ...character,
       Quest: { ...character.Quest, targetIndex: -1 },
     }).success).toBe(false);
+    expect(characterSheetSchema.safeParse({
+      ...character,
+      Quest: { ...character.Quest, target: '' },
+    }).success).toBe(false);
   });
 
   it('saves, loads, and removes character sheets from local storage roster', () => {

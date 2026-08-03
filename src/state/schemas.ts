@@ -56,7 +56,7 @@ export const questStateSchema = z.object({
   maxProgress: boundedNumber,
   history: z.array(description).max(100).optional(),
   kind: z.enum(['exterminate', 'seek', 'deliver', 'fetch', 'placate']).optional(),
-  target: shortText.optional(),
+  target: z.string().min(1).max(200).optional(),
   targetIndex: boundedInteger.optional(),
 });
 
