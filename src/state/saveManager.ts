@@ -3,6 +3,8 @@ import { characterSheetSchema, type PersistedCharacterSheet } from './schemas';
 
 const ROSTER_STORAGE_KEY = 'progquest_roster_v1';
 export const MAX_PQW_INPUT_LENGTH = 1_000_000;
+export const MAX_ROSTER_ENTRIES = 100;
+export const MAX_ROSTER_SERIALIZED_LENGTH = 500_000;
 
 export type SaveErrorCode =
   | 'input_too_large'
@@ -12,6 +14,7 @@ export type SaveErrorCode =
   | 'storage_unavailable'
   | 'storage_corrupt'
   | 'storage_full'
+  | 'roster_too_large'
   | 'storage_failed';
 
 export type SaveResult<T> =
@@ -81,6 +84,9 @@ function readRoster(storage: Storage): SaveResult<Record<string, CharacterSheet>
     return saveFailure('storage_unavailable', 'Browser storage could not be read. Nothing was changed.');
   }
   if (raw === null) return { ok: true, value: emptyRoster() };
+  if (raw.length > MAX_ROSTER_SERIALIZED_LENGTH) {
+    return saveFailure('storage_corrupt', 'The saved roster is too large to process. Nothing was changed.');
+  }
 
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -90,6 +96,9 @@ function readRoster(storage: Storage): SaveResult<Record<string, CharacterSheet>
 
     const validRoster = emptyRoster();
     for (const [key, value] of Object.entries(parsed)) {
+      if (Object.keys(validRoster).length >= MAX_ROSTER_ENTRIES) {
+        return saveFailure('storage_corrupt', 'The saved roster has too many characters. Nothing was changed.');
+      }
       const check = characterSheetSchema.safeParse(value);
       if (!check.success) return saveFailure('storage_corrupt', 'The saved roster is unreadable. Nothing was changed.');
       if (key !== check.data.Traits.Name) {
@@ -128,7 +137,14 @@ export function saveToRoster(sheet: CharacterSheet): SaveResult<Record<string, C
   try {
     const roster = loaded.value;
     roster[sheet.Traits.Name] = sheet;
-    storage.value.setItem(ROSTER_STORAGE_KEY, JSON.stringify(roster));
+    if (Object.keys(roster).length > MAX_ROSTER_ENTRIES) {
+      return saveFailure('roster_too_large', 'The roster already contains the maximum number of characters. Nothing was changed.');
+    }
+    const serialized = JSON.stringify(roster);
+    if (serialized.length > MAX_ROSTER_SERIALIZED_LENGTH) {
+      return saveFailure('roster_too_large', 'The roster is too large to save. Nothing was changed.');
+    }
+    storage.value.setItem(ROSTER_STORAGE_KEY, serialized);
     return { ok: true, value: roster };
   } catch (error) {
     return writeFailure(error, 'save this character');
