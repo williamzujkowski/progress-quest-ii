@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RandomGenerator } from '../../engine/prng';
-import { generateSpellReward, generateStatReward, selectQuestReward } from '../../engine/sim';
+import { generateItemReward, generateSpellReward, generateStatReward, selectQuestReward } from '../../engine/sim';
 import type { StatsMap } from '../../engine/types';
 
 const balancedStats: StatsMap = { STR: 10, CON: 10, DEX: 10, INT: 10, WIS: 10, CHA: 10, 'HP Max': 10, 'MP Max': 10 };
@@ -62,5 +62,23 @@ describe('legacy stat reward', () => {
     const rng = new RandomGenerator('edge-0');
     expect(generateStatReward(rng, fractionalStats)).toBe('CON');
     expect(rng.getState()).toEqual([0.9787654045503587, 0.00042752851732075214, 0.1746194192674011, 1634575]);
+  });
+});
+
+describe('legacy item reward', () => {
+  it('generates a three-part special item for an ordinary inventory', () => {
+    const rng = new RandomGenerator('item-special');
+    expect([generateItemReward(rng, ['Gold']), rng.getState()]).toEqual([
+      'Reverential Galoon of Grob',
+      [0.6745457765646279, 0.42392367543652654, 0.7211832229513675, 1289757],
+    ]);
+  });
+
+  it('can duplicate the ordered Gold row in a sufficiently large inventory', () => {
+    const inventoryNames = ['Gold', ...Array.from({ length: 299 }, (_, index) => `Item ${index}`)];
+    const rng = new RandomGenerator('reuse-733');
+
+    expect(generateItemReward(rng, inventoryNames)).toBe('Gold');
+    expect(rng.getState()).toEqual([0.41563358227722347, 0.8341085575520992, 0.955911073833704, 1794342]);
   });
 });
