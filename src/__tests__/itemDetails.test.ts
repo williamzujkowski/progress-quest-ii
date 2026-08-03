@@ -12,6 +12,14 @@ describe('item tooltip details', () => {
     expect(details.effect).toContain('damage and mitigation remain abstract');
   });
 
+  it('keeps an explicit equipment rating mark in the item story', () => {
+    const details = describeEquipment('-3 Burlap', 'Hauberk');
+
+    expect(details.description).toContain('-3');
+    expect(details.description).toContain('Burlap');
+    expect(details.effect).toContain('Defense rating: 0');
+  });
+
   it('keeps spell flavor stable across levels without inventing a combat effect', () => {
     const details = describeSpell('Rabbit Punch', 2);
 

@@ -33,7 +33,8 @@ export function describeEquipment(name: string, slot: EquipSlot): ItemDetails {
     return { description: 'An empty slot. The void remains undefeated.', effect: 'No combat effect.' };
   }
 
-  const explicit = Number(name.match(/^[+-]?\d+/)?.[0] ?? 0);
+  const explicitLabel = name.match(/^[+-]?\d+/)?.[0];
+  const explicit = Number(explicitLabel ?? 0);
   const modifiers = slot === 'Weapon'
     ? valueOf(name, OFFENSE_ATTRIB) + valueOf(name, OFFENSE_BAD)
     : valueOf(name, DEFENSE_ATTRIB) + valueOf(name, DEFENSE_BAD);
@@ -47,8 +48,8 @@ export function describeEquipment(name: string, slot: EquipSlot): ItemDetails {
     'It looks expensive enough to discourage immediate questions.',
   ];
   const description = modifier
-    ? `${slot === 'Weapon' ? `This ${base} entered service` : `Issued as ${slot.toLowerCase()}, this ${base} remains in service`} after its ${modifier} designation passed a review with no surviving minutes. ${choose(closer, `${slot}:${name}:closer`)}`
-    : `This ${base} entered service without a named modifier, which procurement calls restraint. ${choose(closer, `${slot}:${name}:closer`)}`;
+    ? `${slot === 'Weapon' ? `This ${base} entered service` : `Issued as ${slot.toLowerCase()}, this ${base} remains in service`} after its ${modifier} designation passed a review with no surviving minutes${explicitLabel ? `; its ${explicitLabel} assessor’s mark survived appeal` : ''}. ${choose(closer, `${slot}:${name}:closer`)}`
+    : `This ${base} entered service with ${explicitLabel ? `a ${explicitLabel} assessor’s mark and no` : 'no'} named modifier, which procurement calls restraint. ${choose(closer, `${slot}:${name}:closer`)}`;
 
   return {
     description,
@@ -145,7 +146,7 @@ export function describeInventoryItem(name: string, quantity: number): ItemDetai
   const description = name === 'Gold'
     ? 'Gold is weightless in the pack and ruinously heavy in the quarterly ledger. Every coin has been counted twice and trusted once.'
     : special
-    ? `A ${special.object} declared ${special.attribute} by ${choose([
+    ? `The ${special.attribute} ${special.object} was declared authentic by ${choose([
       'a guild that now denies owning stationery',
       'an assessor compensated entirely in exposure',
       'the Office of Improbable Assets',
