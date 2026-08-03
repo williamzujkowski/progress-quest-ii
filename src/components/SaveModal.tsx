@@ -1,5 +1,5 @@
 import { Copy, Save as SaveIcon, Trash2, Upload, X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { CharacterSheet } from '../engine/types';
 import { diagnostics } from '../state/diagnostics';
 import { useGameStore } from '../state/gameStore';
@@ -14,27 +14,38 @@ function recordRosterFailure(code: 'roster_read_failed' | 'roster_write_failed' 
   diagnostics.record({ code, severity: 'warning', subsystem: 'storage', operation, outcome: 'failed', source: 'save-modal' });
 }
 
+function isClipboardDenied(error: unknown): boolean {
+  try {
+    return error instanceof DOMException && error.name === 'NotAllowedError';
+  } catch {
+    return false;
+  }
+}
+
 export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
   const startSession = useGameStore((state) => state.startSession);
   const [roster, setRoster] = useState<Record<string, CharacterSheet> | null>({});
   const [importInput, setImportInput] = useState('');
   const [currentName, setCurrentName] = useState('');
   const [currentPQW, setCurrentPQW] = useState('');
+  const [isCopying, setIsCopying] = useState(false);
   const [feedback, setFeedback] = useState<{ kind: 'status' | 'alert'; message: string } | null>(null);
+  const copyOperation = useRef(0);
 
-  const refreshRoster = (): boolean => {
+  const refreshRoster = (): void => {
     const result = loadRoster();
     if (!result.ok) {
       recordRosterFailure('roster_read_failed', 'read');
       setRoster(null);
       setFeedback({ kind: 'alert', message: result.error.message });
-      return false;
+      return;
     }
     setRoster(result.value);
-    return true;
   };
 
   useEffect(() => {
+    copyOperation.current += 1;
+    setIsCopying(false);
     if (isOpen) {
       const character = useGameStore.getState().character;
       setCurrentName(character.Traits.Name);
@@ -56,18 +67,42 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
     }
     setCurrentName(character.Traits.Name);
     setCurrentPQW(encodePQWSave(character));
-    refreshRoster();
+    setRoster(result.value);
     setFeedback({ kind: 'status', message: 'Character saved to this browser.' });
   };
 
   const handleCopyPQW = async () => {
+    if (isCopying) return;
+    const character = useGameStore.getState().character;
+    const saveText = encodePQWSave(character);
+    setCurrentName(character.Traits.Name);
+    setCurrentPQW(saveText);
+    setFeedback(null);
+    setIsCopying(true);
+    const operation = ++copyOperation.current;
     try {
-      if (!navigator.clipboard?.writeText) throw new DOMException('Clipboard unavailable', 'NotAllowedError');
-      await navigator.clipboard.writeText(currentPQW);
+      const clipboard = navigator.clipboard;
+      if (!clipboard?.writeText) {
+        if (copyOperation.current !== operation) return;
+        diagnostics.record({ code: 'clipboard_unavailable', severity: 'warning', subsystem: 'clipboard', operation: 'copy', outcome: 'failed', source: 'save-modal' });
+        setFeedback({ kind: 'alert', message: 'Clipboard API is unavailable. Select the save text and copy it manually.' });
+        return;
+      }
+      await clipboard.writeText(saveText);
+      if (copyOperation.current !== operation) return;
       setFeedback({ kind: 'status', message: 'Save text copied to the clipboard.' });
     } catch (error) {
-      diagnostics.record({ code: 'clipboard_write_failed', severity: 'warning', subsystem: 'clipboard', operation: 'copy', outcome: 'failed', source: 'save-modal', error });
-      setFeedback({ kind: 'alert', message: 'Clipboard access was denied. Select the save text and copy it manually.' });
+      if (copyOperation.current !== operation) return;
+      const denied = isClipboardDenied(error);
+      diagnostics.record({ code: denied ? 'clipboard_denied' : 'clipboard_write_failed', severity: 'warning', subsystem: 'clipboard', operation: 'copy', outcome: 'failed', source: 'save-modal', error });
+      setFeedback({
+        kind: 'alert',
+        message: denied
+          ? 'Clipboard access was denied. Select the save text and copy it manually.'
+          : 'Save text could not be copied. Select it and copy it manually.',
+      });
+    } finally {
+      if (copyOperation.current === operation) setIsCopying(false);
     }
   };
 
@@ -87,7 +122,6 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
     }
 
     startSession({ source: 'import', character: result.value });
-    refreshRoster();
     setImportInput('');
     onClose();
   };
@@ -100,7 +134,7 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
         setFeedback({ kind: 'alert', message: result.error.message });
         return;
       }
-      refreshRoster();
+      setRoster(result.value);
       setFeedback({ kind: 'status', message: 'Character removed from this browser.' });
     }
   };
@@ -136,8 +170,8 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
           </button>
           <label htmlFor="current-save-text" style={{ display: 'block', fontSize: '0.75rem', marginTop: '0.5rem' }}>Current save text</label>
           <textarea id="current-save-text" className="form-control" value={currentPQW} readOnly rows={3} />
-          <button className="btn btn-block" onClick={handleCopyPQW}>
-            <Copy size={16} /> Copy Base64 .pqw Save String
+          <button className="btn btn-block" disabled={isCopying} aria-busy={isCopying} onClick={handleCopyPQW}>
+            <Copy size={16} /> {isCopying ? 'Copying…' : 'Copy Base64 .pqw Save String'}
           </button>
         </div>
 

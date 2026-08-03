@@ -118,6 +118,13 @@ test.describe('Progress Quest terminal dashboard', () => {
     expect(await page.evaluate(() => (window as Window & { __rosterWrites?: number }).__rosterWrites)).toBe(0);
     const fallback = page.getByRole('textbox', { name: 'Current save text' });
     await expect(fallback).toHaveAttribute('readonly', '');
+    await fallback.focus();
+    await expect(fallback).toBeFocused();
+    await fallback.selectText();
+    expect(await fallback.evaluate((element) => {
+      const textarea = element as HTMLTextAreaElement;
+      return textarea.selectionStart === 0 && textarea.selectionEnd === textarea.value.length;
+    })).toBe(true);
 
     await page.getByRole('button', { name: 'Save current character' }).click();
     await expect(page.getByRole('status')).toContainText('Character saved');

@@ -4,6 +4,8 @@ export type DiagnosticCode =
   | 'react_recoverable'
   | 'window_error'
   | 'unhandled_rejection'
+  | 'clipboard_unavailable'
+  | 'clipboard_denied'
   | 'clipboard_write_failed'
   | 'roster_read_failed'
   | 'roster_write_failed'

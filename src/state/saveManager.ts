@@ -80,7 +80,7 @@ function readRoster(storage: Storage): SaveResult<Record<string, CharacterSheet>
   } catch {
     return saveFailure('storage_unavailable', 'Browser storage could not be read. Nothing was changed.');
   }
-  if (!raw) return { ok: true, value: emptyRoster() };
+  if (raw === null) return { ok: true, value: emptyRoster() };
 
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -92,6 +92,9 @@ function readRoster(storage: Storage): SaveResult<Record<string, CharacterSheet>
     for (const [key, value] of Object.entries(parsed)) {
       const check = characterSheetSchema.safeParse(value);
       if (!check.success) return saveFailure('storage_corrupt', 'The saved roster is unreadable. Nothing was changed.');
+      if (key !== check.data.Traits.Name) {
+        return saveFailure('storage_corrupt', 'The saved roster is unreadable. Nothing was changed.');
+      }
       validRoster[key] = check.data;
     }
     return { ok: true, value: validRoster };
@@ -116,7 +119,7 @@ export function loadRoster(): SaveResult<Record<string, CharacterSheet>> {
   return storage.ok ? readRoster(storage.value) : storage;
 }
 
-export function saveToRoster(sheet: CharacterSheet): SaveResult<void> {
+export function saveToRoster(sheet: CharacterSheet): SaveResult<Record<string, CharacterSheet>> {
   const storage = getStorage();
   if (!storage.ok) return storage;
   const loaded = readRoster(storage.value);
@@ -126,13 +129,13 @@ export function saveToRoster(sheet: CharacterSheet): SaveResult<void> {
     const roster = loaded.value;
     roster[sheet.Traits.Name] = sheet;
     storage.value.setItem(ROSTER_STORAGE_KEY, JSON.stringify(roster));
-    return { ok: true, value: undefined };
+    return { ok: true, value: roster };
   } catch (error) {
     return writeFailure(error, 'save this character');
   }
 }
 
-export function removeFromRoster(characterName: string): SaveResult<void> {
+export function removeFromRoster(characterName: string): SaveResult<Record<string, CharacterSheet>> {
   const storage = getStorage();
   if (!storage.ok) return storage;
   const loaded = readRoster(storage.value);
@@ -142,7 +145,7 @@ export function removeFromRoster(characterName: string): SaveResult<void> {
     const roster = loaded.value;
     delete roster[characterName];
     storage.value.setItem(ROSTER_STORAGE_KEY, JSON.stringify(roster));
-    return { ok: true, value: undefined };
+    return { ok: true, value: roster };
   } catch (error) {
     return writeFailure(error, 'remove this character');
   }
