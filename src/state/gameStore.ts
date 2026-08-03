@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { ALL_STATS, PRIME_STATS, SPELLS } from '../data/traits';
+import { ALL_STATS, PRIME_STATS } from '../data/traits';
 import { soundFX } from './audio';
 import { RandomGenerator, type PRNGSeed } from '../engine/prng';
-import { createNewCharacter, equipPrice, generateEquipUpgrade, generateLootItem, generateSpellUpgrade, generateTaskDescription } from '../engine/sim';
+import { createNewCharacter, equipPrice, generateEquipUpgrade, generateLootItem, generateSpellReward, generateSpellUpgrade, generateTaskDescription } from '../engine/sim';
 import { indefinite } from '../engine/text';
 import { levelUpTime } from '../engine/math';
 import type { CharacterSheet, ProgressionState, ProgressTask, StatsMap } from '../engine/types';
@@ -49,9 +49,7 @@ function chooseStatUpgrade(rng: RandomGenerator, stats: StatsMap): keyof StatsMa
 }
 
 function upgradeSpell(rng: RandomGenerator, level: number, wisdom: number, spells: CharacterSheet['Spells']): CharacterSheet['Spells'] {
-  const limit = Math.min(wisdom + level, SPELLS.length);
-  const spellName = SPELLS[Math.min(rng.random(limit), rng.random(limit))];
-  if (!spellName) return spells;
+  const spellName = generateSpellReward(rng, level, wisdom);
   const existing = spells.find((spell) => spell.name === spellName);
   return existing
     ? spells.map((spell) => spell.name === spellName ? { ...spell, level: spell.level + 1 } : spell)

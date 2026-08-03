@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RandomGenerator } from '../../engine/prng';
-import { selectQuestReward } from '../../engine/sim';
+import { generateSpellReward, selectQuestReward } from '../../engine/sim';
 
 describe('legacy quest reward selector', () => {
   it.each([
@@ -13,5 +13,17 @@ describe('legacy quest reward selector', () => {
 
     expect(selectQuestReward(rng)).toBe(expected);
     expect(rng.getState()).toEqual(expectedState);
+  });
+});
+
+describe('legacy spell reward', () => {
+  it('uses two low-biased picks from the level and wisdom capped pool', () => {
+    const rng = new RandomGenerator('spell-reward');
+    const spell = generateSpellReward(rng, 1, 10);
+
+    expect([spell, rng.getState()]).toEqual([
+      'Cone of Annoyance',
+      [0.1777116870507598, 0.3775933461729437, 0.8863792216870934, 802657],
+    ]);
   });
 });

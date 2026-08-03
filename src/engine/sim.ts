@@ -150,6 +150,13 @@ export function selectQuestReward(rng: RandomGenerator): QuestRewardKind {
   return (['spell', 'equipment', 'stat', 'item'] as const)[rng.random(4)];
 }
 
+export function generateSpellReward(rng: RandomGenerator, level: number, wisdom: number): string {
+  const limit = Math.min(wisdom + level, SPELLS.length);
+  const spellName = SPELLS[Math.min(rng.random(limit), rng.random(limit))];
+  if (!spellName) throw new RangeError('Spell reward pool is empty');
+  return spellName;
+}
+
 export function generateLootItem(rng: RandomGenerator, monsterName?: string): string {
   if (monsterName && rng.random(2) === 0) {
     return `${monsterName} item`;
