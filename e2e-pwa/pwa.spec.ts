@@ -37,6 +37,8 @@ test('publishes the Progress Quest II install contract at its Pages scope', asyn
 test('loads the Pages-scoped app offline after one successful visit', async ({ page, context }) => {
   await page.goto('./');
   await page.evaluate(() => navigator.serviceWorker.ready);
+  await expect(page.getByRole('button', { name: 'Update now' })).toHaveCount(0);
+  await expect(page.getByRole('status')).toHaveCount(0);
   await page.reload();
 
   expect(await page.evaluate(() => navigator.serviceWorker.controller?.scriptURL)).toMatch(/\/progress-quest-ii\/sw\.js$/);

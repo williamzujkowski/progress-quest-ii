@@ -32,7 +32,7 @@ export function registerPwa(onNotice: (notice: PwaNotice) => void): () => void {
     }
   };
   const announceWaitingUpdate = () => {
-    if (!registration?.waiting || disposed) return;
+    if (!registration?.waiting || !navigator.serviceWorker.controller || disposed) return;
     onNotice({
       kind: 'update',
       message: 'A new edition is ready. The bureaucracy requests a reload.',
