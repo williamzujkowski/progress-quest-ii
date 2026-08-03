@@ -8,6 +8,13 @@ The canonical language for a deterministic zero-player RPG session and its progr
 An active character together with progression tracks, counters, pending work, pause state, and deterministic continuation.
 _Avoid_: Save, character
 
+**Active-session checkpoint**:
+A strict, versioned browser record that resumes one Session before rendering. It is separate from portable PQW character data and the multi-character roster.
+_Avoid_: Autosave character, PQW v1
+
+**Last-known-good checkpoint**:
+The previously validated primary checkpoint retained for in-memory recovery. Recovery never authorizes automatic replacement of unreadable primary bytes.
+
 **Roster identity**:
 A character's exact, case-sensitive name, bounded to 1–120 UTF-16 code units. Saving the same identity replaces its prior roster entry; names that differ by case remain distinct.
 _Avoid_: Normalized name, roster index

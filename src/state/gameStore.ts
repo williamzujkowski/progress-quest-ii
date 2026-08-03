@@ -21,6 +21,13 @@ export interface GameStore {
   tick: (elapsedMs: number) => void;
   togglePause: () => void;
   startSession: (request: StartSessionRequest) => void;
+  restoreSession: (session: {
+    character: CharacterSheet;
+    rngState: [number, number, number, number];
+    progression: ProgressionState;
+    isPaused: boolean;
+    log: string[];
+  }) => void;
 }
 
 const MAX_CATCH_UP_TASKS = 100;
@@ -72,6 +79,18 @@ export const useGameStore = create<GameStore>((set, get) => {
         log: [message],
         isPaused: false,
         progression: createProgression(character.Traits.Level),
+      });
+    },
+
+    restoreSession: (session) => {
+      const rng = new RandomGenerator('restored-session');
+      rng.setState([...session.rngState]);
+      set({
+        character: structuredClone(session.character),
+        rng,
+        progression: structuredClone(session.progression),
+        isPaused: session.isPaused,
+        log: [...session.log],
       });
     },
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import './App.css';
 import { CharacterCreatorModal } from './components/CharacterCreatorModal';
 import { CharacterSheetView } from './components/CharacterSheet';
@@ -12,6 +12,7 @@ import { SaveModal } from './components/SaveModal';
 import { useGameStore } from './state/gameStore';
 import { startGameClock } from './state/gameClock';
 import { diagnostics } from './state/diagnostics';
+import type { SessionCheckpointController } from './state/sessionCheckpoint';
 import { applyTheme, readThemePreference, resolveInitialTheme, type ThemeId, writeThemePreference } from './theme';
 
 const THEME_READ_FAILURE = 'Theme preference unavailable; using your system default.';
@@ -23,7 +24,22 @@ interface ThemeSelection {
   persistPending: boolean;
 }
 
-export const App: React.FC = () => {
+interface AppProps {
+  sessionCheckpoints?: SessionCheckpointController;
+}
+
+const SessionCheckpointStatus: React.FC<{ controller: SessionCheckpointController }> = ({ controller }) => {
+  const notice = useSyncExternalStore(controller.subscribe, controller.getNotice, controller.getNotice);
+  if (!notice) return null;
+  return (
+    <aside className="session-status" role={notice.kind} aria-live={notice.kind === 'status' ? 'polite' : 'assertive'} aria-atomic="true">
+      <span>{notice.message}</span>
+      {notice.canRepair ? <button className="btn btn-compact" type="button" onClick={controller.repair}>{notice.repairLabel}</button> : null}
+    </aside>
+  );
+};
+
+export const App: React.FC<AppProps> = ({ sessionCheckpoints }) => {
   const initialThemeReadError = useRef<unknown>(undefined);
   const [themeSelection, setThemeSelection] = useState<ThemeSelection>(() => {
     const storedTheme = readThemePreference();
@@ -98,6 +114,7 @@ export const App: React.FC = () => {
         onOpenCharacterCreator={() => setIsCharacterCreatorOpen(true)}
       />
       <PwaStatus />
+      {sessionCheckpoints ? <SessionCheckpointStatus controller={sessionCheckpoints} /> : null}
 
       <HeroBanner />
 

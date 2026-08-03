@@ -17,10 +17,10 @@ afterEach(() => {
 });
 
 describe('Save Manager recovery', () => {
-  it('states that character saves do not preserve session progression yet', () => {
+  it('distinguishes portable character saves from automatic session checkpoints', () => {
     render(<SaveModal isOpen onClose={() => undefined} />);
 
-    expect(screen.getByText(/Loading starts fresh session XP and task counters/)).toBeTruthy();
+    expect(screen.getByText(/starts fresh session counters and deterministic continuation/)).toBeTruthy();
   });
 
   it('writes only when the player explicitly saves', async () => {

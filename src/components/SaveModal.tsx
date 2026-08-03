@@ -150,7 +150,7 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         <p className="roster-meta">
-          Character saves preserve the hero sheet. Loading starts fresh session XP and task counters; deterministic checkpoints are not available yet.
+          Character saves preserve the hero sheet. Loading one keeps its sheet tracks but starts fresh session counters and deterministic continuation; automatic checkpoints resume the active adventure.
         </p>
 
         {feedback && (
