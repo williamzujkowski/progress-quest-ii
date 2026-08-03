@@ -167,6 +167,14 @@ export function generateStatReward(rng: RandomGenerator, stats: StatsMap): keyof
   return PRIME_STATS.at(-1) ?? 'STR';
 }
 
+export function generateItemReward(rng: RandomGenerator, inventoryNames: readonly string[]): string {
+  if (Math.max(250, rng.random(999)) < inventoryNames.length) {
+    const existing = inventoryNames[rng.random(inventoryNames.length)];
+    if (existing !== undefined) return existing;
+  }
+  return `${rng.pick(ITEM_ATTRIB)} ${rng.pick(SPECIALS)} of ${rng.pick(ITEM_OFS)}`;
+}
+
 export function generateLootItem(rng: RandomGenerator, monsterName?: string): string {
   if (monsterName && rng.random(2) === 0) {
     return `${monsterName} item`;
