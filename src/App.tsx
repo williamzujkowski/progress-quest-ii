@@ -10,6 +10,7 @@ import { QuestLog } from './components/QuestLog';
 import { SaveModal } from './components/SaveModal';
 import { useGameStore } from './state/gameStore';
 import { startGameClock } from './state/gameClock';
+import { diagnostics } from './state/diagnostics';
 import { applyTheme, resolveInitialTheme, THEME_STORAGE_KEY, type ThemeId } from './theme';
 
 export const App: React.FC = () => {
@@ -37,7 +38,17 @@ export const App: React.FC = () => {
 
   // Main 50ms tick game loop timer
   useEffect(() => {
-    return startGameClock(tick);
+    return startGameClock(tick, undefined, (error) => {
+      diagnostics.record({
+        code: 'game_tick_failed',
+        severity: 'error',
+        subsystem: 'browser',
+        operation: 'event-handler',
+        outcome: 'failed',
+        source: 'game-clock',
+        error,
+      });
+    });
   }, [tick]);
 
   return (
