@@ -36,7 +36,7 @@ interface LegacyExpected {
   task: { caption: string; maxMs: number };
   xp: { positionSeconds: number; maxSeconds: number };
   encumbrance: { positionCubits: number; maxCubits: number };
-  quest: { caption: string; positionSeconds: number; maxSeconds: number; monsterIndex: number | null };
+  quest: { caption: string; positionSeconds: number; maxSeconds: number; history: string[]; monster: string | null; monsterIndex: number | null };
   plot: { act: number; positionSeconds: number; maxSeconds: number };
   inventory: Pair<number>[];
   equipment: Pair<string>[];
@@ -108,6 +108,34 @@ export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixtur
       },
       plot: { act: expected.plot.act, currentSeconds: expected.plot.positionSeconds, maxSeconds: expected.plot.maxSeconds },
     },
+  };
+}
+
+export interface QuestCompletionObservation {
+  caption: string;
+  positionSeconds: number;
+  maxSeconds: number;
+  history: string[];
+  monster: string | null;
+  monsterIndex: number | null;
+  rewardSpells: [string, string, number][];
+  events: string[];
+  rng: AleaState;
+}
+
+export function observeLegacyQuestCompletion(fixture: LegacyTransitionFixture): QuestCompletionObservation {
+  assertCompletedKill(fixture.input.sheet);
+  const expected = fixture.expected;
+  return {
+    caption: expected.quest.caption,
+    positionSeconds: expected.quest.positionSeconds,
+    maxSeconds: expected.quest.maxSeconds,
+    history: [...expected.quest.history],
+    monster: expected.quest.monster,
+    monsterIndex: expected.quest.monsterIndex,
+    rewardSpells: expected.spells.map(([name, romanLevel, level]) => [name, romanLevel, level]),
+    events: [...expected.log],
+    rng: [...expected.rng],
   };
 }
 
