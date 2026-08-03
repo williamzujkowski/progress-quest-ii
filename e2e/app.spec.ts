@@ -94,6 +94,75 @@ test.describe('Progress Quest terminal dashboard', () => {
     expect(report).not.toMatch(/Krg|secret|william|save\.pqw|auth=/i);
   });
 
+  test('contains rejected audio startup and reports an accessible unavailable state', async ({ page }) => {
+    const pageErrors: string[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.addInitScript(() => {
+      class RejectedAudioContext {
+        public readonly state = 'suspended';
+        public readonly currentTime = 0;
+        public readonly destination = {};
+        private resumeAttempts = 0;
+
+        public resume(): Promise<void> {
+          this.resumeAttempts += 1;
+          return this.resumeAttempts === 1
+            ? Promise.reject(new DOMException('Activation denied', 'NotAllowedError'))
+            : Promise.resolve();
+        }
+
+        public createOscillator() {
+          return { connect() {}, start() {}, stop() {} };
+        }
+
+        public createGain() {
+          return { gain: { setValueAtTime() {} }, connect() {} };
+        }
+      }
+      Object.defineProperty(window, 'AudioContext', { configurable: true, value: RejectedAudioContext });
+    });
+    await page.goto('/');
+    const initialCharacter = await page.evaluate(async () => {
+      const { useGameStore } = await import('/src/state/gameStore.ts');
+      return useGameStore.getState().character.Traits.Name;
+    });
+
+    await page.getByRole('button', { name: 'Audio' }).click();
+    await page.getByRole('button', { name: 'Muted' }).click();
+
+    await expect(page.getByRole('button', { name: 'Retry audio' })).toBeVisible();
+    await expect(page.locator('.audio-status')).toHaveText(
+      'Sound effects are unavailable. Questing will continue in dignified silence.',
+    );
+    const recovery = await page.evaluate(async () => {
+      const [{ diagnostics }, { useGameStore }] = await Promise.all([
+        import('/src/state/diagnostics.ts'),
+        import('/src/state/gameStore.ts'),
+      ]);
+      const before = useGameStore.getState();
+      before.tick(1);
+      const after = useGameStore.getState();
+      return {
+        diagnosticCodes: diagnostics.snapshot().map((event) => event.code),
+        name: after.character.Traits.Name,
+        progressed: after.progression.completedTasks > before.progression.completedTasks
+          || after.character.Task.elapsedMs > before.character.Task.elapsedMs,
+      };
+    });
+    expect(recovery.diagnosticCodes).toContain('audio_resume_failed');
+    expect(recovery.name).toBe(initialCharacter);
+    expect(recovery.progressed).toBe(true);
+
+    await page.getByRole('button', { name: 'Retry audio' }).click();
+    await expect(page.getByRole('button', { name: 'Audio' })).toBeVisible();
+    await expect(page.locator('.audio-status')).toHaveCount(0);
+    expect(pageErrors).toEqual([]);
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+
   test('saves explicitly and recovers from clipboard denial without a write storm', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 900 });
     const pageErrors: string[] = [];

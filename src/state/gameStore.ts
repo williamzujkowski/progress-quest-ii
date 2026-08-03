@@ -158,7 +158,7 @@ export const useGameStore = create<GameStore>((set, get) => {
               experience: { currentSeconds: 0, maxSeconds: levelUpTime(newTraits.Level) },
             };
             newLog.unshift(`Saving game: ${newTraits.Name}`);
-            soundFX.playLevelUp();
+            void soundFX.playLevelUp();
           }
           const questWasComplete = newQuest.currentProgress >= newQuest.maxProgress;
           if (!questWasComplete) {
@@ -168,7 +168,7 @@ export const useGameStore = create<GameStore>((set, get) => {
             newQuest.maxProgress = 50 + rng.random(100);
             newQuest.history = [...(newQuest.history ?? []), newQuest.description].slice(-100);
             newLog.unshift(`Quest Completed: ${newQuest.description}!`);
-            soundFX.playQuestComplete();
+            void soundFX.playQuestComplete();
             newSpells = generateSpellUpgrade(rng, newSpells);
 
           }
@@ -196,7 +196,7 @@ export const useGameStore = create<GameStore>((set, get) => {
           });
           newGold += earned;
           newLog.unshift(`Sold loot at market for ${earned} gold!`);
-          soundFX.playSellLoot();
+          void soundFX.playSellLoot();
         } else if (task.type === 'buying') {
           const price = equipPrice(newTraits.Level);
           if (newGold >= price) {
@@ -204,7 +204,7 @@ export const useGameStore = create<GameStore>((set, get) => {
             const upgrade = generateEquipUpgrade(rng, newTraits.Level);
             newEquip = { ...newEquip, [upgrade.slot]: upgrade.name };
             newLog.unshift(`Negotiated purchase: Equipped ${upgrade.name} in ${upgrade.slot} slot!`);
-            soundFX.playSellLoot();
+            void soundFX.playSellLoot();
           }
         }
 

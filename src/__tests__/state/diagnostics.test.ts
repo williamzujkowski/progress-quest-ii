@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DiagnosticRecorder, installBrowserDiagnosticHandlers } from '../../state/diagnostics';
 
 const diagnostic = (error: unknown = new Error('failure')) => ({
@@ -32,6 +32,21 @@ describe('runtime diagnostics', () => {
     expect(events.at(-1)?.id).toBe('interaction-456:102');
     expect(report).toContain('build-123');
     expect(report).not.toMatch(/Krg|secret|william|save\.pqw|auth=/i);
+  });
+
+  it('batches same-turn deduplication cleanup during an error storm', () => {
+    const queue = vi.spyOn(globalThis, 'queueMicrotask');
+    const recorder = new DiagnosticRecorder({ buildId: 'test', interactionId: 'storm' });
+    try {
+      for (let index = 0; index < 10_000; index += 1) {
+        recorder.record(diagnostic(new Error(`private storm detail ${index}`)));
+      }
+
+      expect(recorder.snapshot()).toHaveLength(100);
+      expect(queue).toHaveBeenCalledTimes(1);
+    } finally {
+      queue.mockRestore();
+    }
   });
 
   it('deduplicates the same Error object across capture channels', () => {
