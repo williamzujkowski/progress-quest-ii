@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateEncumbranceMax, generateInitialStats, levelUpTime, roll3d6 } from '../../engine/math';
+import { calculateEncumbranceMax, generateInitialStats, levelUpTime, MAX_FINITE_CHARACTER_LEVEL, roll3d6 } from '../../engine/math';
 import { RandomGenerator } from '../../engine/prng';
 
 describe('Progress Quest Engine Math', () => {
@@ -10,6 +10,11 @@ describe('Progress Quest Engine Math', () => {
     expect(levelUpTime(2)).toBe(1279);
     // Higher levels scale exponentially
     expect(levelUpTime(10)).toBeGreaterThan(levelUpTime(5));
+  });
+
+  it('keeps experience duration finite when an accepted level exceeds numeric range', () => {
+    expect(Number.isFinite(levelUpTime(MAX_FINITE_CHARACTER_LEVEL))).toBe(true);
+    expect(levelUpTime(MAX_FINITE_CHARACTER_LEVEL + 1)).toBe(Number.MAX_VALUE);
   });
 
   it('rolls 3d6 within bounds [3, 18]', () => {

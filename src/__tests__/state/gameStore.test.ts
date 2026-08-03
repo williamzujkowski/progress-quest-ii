@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { RandomGenerator } from '../../engine/prng';
+import { levelUpTime } from '../../engine/math';
 import { createNewCharacter, generateLootItem } from '../../engine/sim';
 import type { StatsMap } from '../../engine/types';
 import { useGameStore } from '../../state/gameStore';
@@ -21,11 +22,13 @@ describe('Game Store State Machine', () => {
   it('advances task progress on tick when not paused', () => {
     const store = useGameStore.getState();
     const initialElapsed = store.character.Task.elapsedMs;
+    const initialProgression = structuredClone(store.progression);
 
     store.tick(500);
 
     const updatedChar = useGameStore.getState().character;
     expect(updatedChar.Task.elapsedMs).toBe(initialElapsed + 500);
+    expect(useGameStore.getState().progression).toEqual(initialProgression);
   });
 
   it('does not advance tick when paused', () => {
@@ -67,6 +70,7 @@ describe('Game Store State Machine', () => {
     const updated = useGameStore.getState();
     expect(updated.character.Task.elapsedMs).toBeLessThan(updated.character.Task.durationMs);
     expect(updated.log.length).toBeGreaterThan(initialLogLength);
+    expect(updated.progression.completedTasks).toBeGreaterThan(1);
   });
 
   it('bounds catch-up work for an extreme delayed tick', () => {
@@ -75,6 +79,7 @@ describe('Game Store State Machine', () => {
     const updated = useGameStore.getState();
     expect(updated.character.Task.elapsedMs).toBe(0);
     expect(updated.log.length).toBeLessThanOrEqual(50);
+    expect(updated.progression.completedTasks).toBe(100);
   });
 
   it('chooses the next task from gold earned by the completed transition', () => {
@@ -97,6 +102,7 @@ describe('Game Store State Machine', () => {
     const updated = useGameStore.getState().character;
     expect(updated.Gold).toBeGreaterThanOrEqual(35);
     expect(updated.Task.type).toBe('buying');
+    expect(useGameStore.getState().progression).toMatchObject({ completedTasks: 1, elapsedSeconds: 0 });
   });
 
   it('chooses the next task from gold spent by the completed transition', () => {
@@ -181,6 +187,11 @@ describe('Game Store State Machine', () => {
     expect(session.rng).not.toBe(previousRng);
     expect(session.isPaused).toBe(false);
     expect(session.log).toEqual(['Loaded character ImportedHero from save data.']);
+    expect(session.progression).toEqual({
+      experience: { currentSeconds: 0, maxSeconds: levelUpTime(loaded.Traits.Level) },
+      completedTasks: 0,
+      elapsedSeconds: 0,
+    });
 
     loaded.Gold = 999;
     expect(session.character.Gold).not.toBe(999);

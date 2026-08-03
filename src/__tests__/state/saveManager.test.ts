@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { MAX_FINITE_CHARACTER_LEVEL } from '../../engine/math';
 import { createNewCharacter } from '../../engine/sim';
 import {
   MAX_PQW_INPUT_LENGTH,
@@ -10,6 +11,7 @@ import {
   saveToRoster,
 } from '../../state/saveManager';
 import { characterSheetSchema } from '../../state/schemas';
+import { useGameStore } from '../../state/gameStore';
 
 afterEach(() => {
   localStorage.clear();
@@ -30,6 +32,8 @@ describe('Save Manager & Serialization', () => {
     expect(decoded.value.Traits.Race).toBe('Demicanadian');
     expect(decoded.value.Traits.Class).toBe('Bastard Lunatic');
     expect(decoded.value.Stats.STR).toBe(originalChar.Stats.STR);
+    expect(decoded.value.Quest).toEqual(originalChar.Quest);
+    expect(decoded.value.Plot).toEqual(originalChar.Plot);
   });
 
   it('returns a typed error for malformed base64', () => {
@@ -64,6 +68,17 @@ describe('Save Manager & Serialization', () => {
       ok: false,
       error: { code: 'invalid_schema' },
     });
+  });
+
+  it('keeps an accepted high-level save loadable with finite runtime progression', () => {
+    const character = createNewCharacter('Overflow', 'Dung Elf', 'Vermineer', 304);
+    character.Traits.Level = MAX_FINITE_CHARACTER_LEVEL + 1;
+
+    const decoded = decodePQWSave(encodePQWSave(character));
+    expect(decoded.ok).toBe(true);
+    if (!decoded.ok) return;
+    useGameStore.getState().startSession({ source: 'import', character: decoded.value });
+    expect(useGameStore.getState().progression.experience.maxSeconds).toBe(Number.MAX_VALUE);
   });
 
   it('keeps generated character output compatible with the save contract', () => {

@@ -1,8 +1,10 @@
 import { EQUIP_SLOTS } from '../../data/traits';
 import { RandomGenerator } from '../../engine/prng';
-import type { CharacterSheet, CharacterTraits, EquipSlot, StatName } from '../../engine/types';
+import { calculateEncumbrance } from '../../engine/sim';
+import { calculateEncumbranceMax } from '../../engine/math';
+import type { CharacterSheet, CharacterTraits, EquipSlot, ProgressionState, StatName } from '../../engine/types';
 import { soundFX } from '../../state/audio';
-import { useGameStore } from '../../state/gameStore';
+import { useGameStore, type GameStore } from '../../state/gameStore';
 
 type AleaState = [number, number, number, number];
 type Pair<T> = [string, T];
@@ -17,16 +19,25 @@ interface LegacySheet {
   bestplot: string;
   bestquest: string;
   task: string;
+  tasks: number;
+  elapsed: number;
   kill: string;
   PlotBar: { position: number; max: number };
   QuestBar: { position: number; max: number };
+  ExpBar: { position: number; max: number };
+  EncumBar: { position: number; max: number };
   TaskBar: { position: number; max: number };
   seed: AleaState;
 }
 
 interface LegacyExpected {
+  counters: { tasks: number; elapsedSeconds: number };
   character: { traits: CharacterTraits; stats: Pair<number>[] };
   task: { caption: string; maxMs: number };
+  xp: { positionSeconds: number; maxSeconds: number };
+  encumbrance: { positionCubits: number; maxCubits: number };
+  quest: { caption: string; positionSeconds: number; maxSeconds: number; monsterIndex: number | null };
+  plot: { act: number; positionSeconds: number; maxSeconds: number };
   inventory: Pair<number>[];
   equipment: Pair<string>[];
   spells: [string, string, number][];
@@ -48,6 +59,13 @@ export interface EncounterTransitionObservation {
   nextTask: { caption: string; durationMs: number };
   events: string[];
   rng: AleaState;
+  progression: {
+    counters: { completedTasks: number; elapsedSeconds: number };
+    experience: { currentSeconds: number; maxSeconds: number };
+    encumbrance: { currentCubits: number; maxCubits: number };
+    quest: { description: string; currentSeconds: number; maxSeconds: number };
+    plot: { act: number; currentSeconds: number; maxSeconds: number };
+  };
 }
 
 function assertCompletedKill(sheet: LegacySheet): void {
@@ -79,6 +97,17 @@ export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixtur
     nextTask: { caption: expected.task.caption, durationMs: expected.task.maxMs },
     events: [...expected.log],
     rng: [...expected.rng],
+    progression: {
+      counters: { completedTasks: expected.counters.tasks, elapsedSeconds: expected.counters.elapsedSeconds },
+      experience: { currentSeconds: expected.xp.positionSeconds, maxSeconds: expected.xp.maxSeconds },
+      encumbrance: { currentCubits: expected.encumbrance.positionCubits, maxCubits: expected.encumbrance.maxCubits },
+      quest: {
+        description: expected.quest.caption,
+        currentSeconds: expected.quest.positionSeconds,
+        maxSeconds: expected.quest.maxSeconds,
+      },
+      plot: { act: expected.plot.act, currentSeconds: expected.plot.positionSeconds, maxSeconds: expected.plot.maxSeconds },
+    },
   };
 }
 
@@ -91,6 +120,7 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
     character: structuredClone(previousStore.character),
     log: [...previousStore.log],
     rng: previousStore.rng.getState(),
+    progression: structuredClone(previousStore.progression),
   };
   const wasMuted = soundFX.getMuted();
   const rng = new RandomGenerator('legacy-fixture');
@@ -122,14 +152,26 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
 
   if (!wasMuted) soundFX.toggleMute();
   try {
-    useGameStore.setState({ character, log: [], isPaused: false, rng });
+    useGameStore.setState({
+      character,
+      log: [],
+      isPaused: false,
+      rng,
+      progression: {
+        experience: { currentSeconds: sheet.ExpBar.position, maxSeconds: sheet.ExpBar.max },
+        completedTasks: sheet.tasks,
+        elapsedSeconds: sheet.elapsed,
+      },
+    } satisfies Partial<GameStore>);
     useGameStore.getState().tick(sheet.TaskBar.max);
     const result = useGameStore.getState();
+    const progression: ProgressionState = result.progression;
     if (result.character.Task.elapsedMs !== 0) throw new Error('Modern transition must complete exactly one task without overshoot');
     if (JSON.stringify(fixture) !== fixtureSnapshot) throw new Error('Modern transition mutated its legacy fixture');
     if (JSON.stringify(previousStore.character) !== JSON.stringify(previousSnapshot.character)
       || JSON.stringify(previousStore.log) !== JSON.stringify(previousSnapshot.log)
-      || JSON.stringify(previousStore.rng.getState()) !== JSON.stringify(previousSnapshot.rng)) {
+      || JSON.stringify(previousStore.rng.getState()) !== JSON.stringify(previousSnapshot.rng)
+      || JSON.stringify(previousStore.progression) !== JSON.stringify(previousSnapshot.progression)) {
       throw new Error('Modern transition mutated the previous Zustand state');
     }
     return {
@@ -141,6 +183,24 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
       nextTask: { caption: result.character.Task.description, durationMs: result.character.Task.durationMs },
       events: [...result.log].reverse(),
       rng: [...result.rng.getState()],
+      progression: {
+        counters: { completedTasks: progression.completedTasks, elapsedSeconds: progression.elapsedSeconds },
+        experience: structuredClone(progression.experience),
+        encumbrance: {
+          currentCubits: calculateEncumbrance(result.character.Inventory),
+          maxCubits: calculateEncumbranceMax(result.character.Stats.STR),
+        },
+        quest: {
+          description: result.character.Quest.description,
+          currentSeconds: result.character.Quest.currentProgress,
+          maxSeconds: result.character.Quest.maxProgress,
+        },
+        plot: {
+          act: result.character.Plot.act,
+          currentSeconds: result.character.Plot.currentProgress,
+          maxSeconds: result.character.Plot.maxProgress,
+        },
+      },
     };
   } finally {
     useGameStore.setState(previousStore, true);
