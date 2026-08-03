@@ -6,12 +6,13 @@ import { THEME_OPTIONS, type ThemeId } from '../theme';
 
 interface NavbarProps {
   theme: ThemeId;
+  themeStatus: string;
   onThemeChange: (theme: ThemeId) => void;
   onOpenSaveModal: () => void;
   onOpenCharacterCreator: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ theme, onThemeChange, onOpenSaveModal, onOpenCharacterCreator }) => {
+export const Navbar: React.FC<NavbarProps> = ({ theme, themeStatus, onThemeChange, onOpenSaveModal, onOpenCharacterCreator }) => {
   const { character, isPaused, togglePause } = useGameStore();
   const [isMuted, setIsMuted] = useState(soundFX.getMuted());
   const [audioStatus, setAudioStatus] = useState('');
@@ -88,6 +89,7 @@ export const Navbar: React.FC<NavbarProps> = ({ theme, onThemeChange, onOpenSave
           <span>Theme</span>
           <select
             aria-label="Visual theme"
+            aria-describedby={themeStatus ? 'theme-status' : undefined}
             value={theme}
             onChange={(event) => onThemeChange(event.target.value as ThemeId)}
           >
@@ -96,6 +98,11 @@ export const Navbar: React.FC<NavbarProps> = ({ theme, onThemeChange, onOpenSave
             ))}
           </select>
         </label>
+        {themeStatus ? (
+          <span id="theme-status" className="theme-status" role="status" aria-live="polite">
+            {themeStatus}
+          </span>
+        ) : null}
       </div>
     </header>
   );

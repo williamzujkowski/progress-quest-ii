@@ -16,9 +16,11 @@ export type DiagnosticCode =
   | 'audio_unsupported'
   | 'audio_initialize_failed'
   | 'audio_resume_failed'
-  | 'audio_play_failed';
+  | 'audio_play_failed'
+  | 'theme_read_failed'
+  | 'theme_write_failed';
 
-export type DiagnosticSubsystem = 'react' | 'browser' | 'clipboard' | 'diagnostics' | 'save' | 'storage' | 'audio';
+export type DiagnosticSubsystem = 'react' | 'browser' | 'clipboard' | 'diagnostics' | 'save' | 'storage' | 'audio' | 'theme';
 export type DiagnosticOperation = 'render' | 'recover' | 'event-handler' | 'promise' | 'read' | 'write' | 'delete' | 'copy' | 'export' | 'initialize' | 'resume' | 'play';
 export type DiagnosticSource =
   | 'react-root'
@@ -27,7 +29,8 @@ export type DiagnosticSource =
   | 'save-modal'
   | 'recovery-ui'
   | 'game-clock'
-  | 'audio-engine';
+  | 'audio-engine'
+  | 'theme-preference';
 
 export interface DiagnosticEvent {
   id: string;

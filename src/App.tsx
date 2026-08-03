@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import './App.css';
 import { CharacterCreatorModal } from './components/CharacterCreatorModal';
 import { CharacterSheetView } from './components/CharacterSheet';
@@ -11,30 +11,65 @@ import { SaveModal } from './components/SaveModal';
 import { useGameStore } from './state/gameStore';
 import { startGameClock } from './state/gameClock';
 import { diagnostics } from './state/diagnostics';
-import { applyTheme, resolveInitialTheme, THEME_STORAGE_KEY, type ThemeId } from './theme';
+import { applyTheme, readThemePreference, resolveInitialTheme, type ThemeId, writeThemePreference } from './theme';
+
+const THEME_READ_FAILURE = 'Theme preference unavailable; using your system default.';
+const THEME_WRITE_FAILURE = 'Theme changed, but this browser could not remember it.';
+
+interface ThemeSelection {
+  id: ThemeId;
+  status: string;
+  persistPending: boolean;
+}
 
 export const App: React.FC = () => {
-  const [theme, setTheme] = useState<ThemeId>(() => {
-    let storedTheme: string | null = null;
-    try {
-      storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-    } catch {
-      // ponytail: storage is optional; a browser privacy mode must not block the game.
-    }
-    return resolveInitialTheme(storedTheme, window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const initialThemeReadError = useRef<unknown>(undefined);
+  const [themeSelection, setThemeSelection] = useState<ThemeSelection>(() => {
+    const storedTheme = readThemePreference();
+    if (!storedTheme.ok) initialThemeReadError.current = storedTheme.error;
+    return {
+      id: resolveInitialTheme(storedTheme.ok ? storedTheme.value : null, window.matchMedia('(prefers-color-scheme: dark)').matches),
+      status: storedTheme.ok ? '' : THEME_READ_FAILURE,
+      persistPending: false,
+    };
   });
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isCharacterCreatorOpen, setIsCharacterCreatorOpen] = useState(false);
   const tick = useGameStore((state) => state.tick);
 
   useLayoutEffect(() => {
-    applyTheme(document.documentElement, theme);
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, theme);
-    } catch {
-      // ponytail: keep the in-memory choice when persistence is unavailable.
+    if (initialThemeReadError.current) {
+      diagnostics.record({
+        code: 'theme_read_failed',
+        severity: 'warning',
+        subsystem: 'theme',
+        operation: 'read',
+        outcome: 'failed',
+        source: 'theme-preference',
+        error: initialThemeReadError.current,
+      });
+      initialThemeReadError.current = undefined;
     }
-  }, [theme]);
+    applyTheme(document.documentElement, themeSelection.id);
+    if (!themeSelection.persistPending) return;
+    const writeResult = writeThemePreference(themeSelection.id);
+    if (!writeResult.ok) {
+      diagnostics.record({
+        code: 'theme_write_failed',
+        severity: 'warning',
+        subsystem: 'theme',
+        operation: 'write',
+        outcome: 'failed',
+        source: 'theme-preference',
+        error: writeResult.error,
+      });
+    }
+    setThemeSelection((current) => {
+      if (current.id !== themeSelection.id) return current;
+      const status = writeResult.ok ? current.status : THEME_WRITE_FAILURE;
+      return { ...current, status, persistPending: false };
+    });
+  }, [themeSelection.id, themeSelection.persistPending]);
 
   // Main 50ms tick game loop timer
   useEffect(() => {
@@ -55,8 +90,9 @@ export const App: React.FC = () => {
     <div className="app-container">
       <a className="skip-link" href="#game-dashboard">Skip to game dashboard</a>
       <Navbar
-        theme={theme}
-        onThemeChange={setTheme}
+        theme={themeSelection.id}
+        themeStatus={themeSelection.status}
+        onThemeChange={(id) => setThemeSelection({ id, status: '', persistPending: true })}
         onOpenSaveModal={() => setIsSaveModalOpen(true)}
         onOpenCharacterCreator={() => setIsCharacterCreatorOpen(true)}
       />

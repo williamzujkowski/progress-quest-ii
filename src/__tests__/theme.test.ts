@@ -3,8 +3,10 @@ import remarqueDark from '@williamzujkowski/oklch-terminal-themes/themes/remarqu
 import remarqueLight from '@williamzujkowski/oklch-terminal-themes/themes/remarque-light.json';
 import {
   getTerminalThemeVariables,
+  readThemePreference,
   resolveInitialTheme,
   THEME_STORAGE_KEY,
+  writeThemePreference,
 } from '../theme';
 
 describe('theme contract', () => {
@@ -15,6 +17,16 @@ describe('theme contract', () => {
     expect(resolveInitialTheme('dracula', true)).toBe('remarque-dark');
     expect(resolveInitialTheme('dracula', false)).toBe('remarque-light');
     expect(THEME_STORAGE_KEY).toBe('progquest_theme_v1');
+  });
+
+  it('returns typed outcomes when theme preference storage cannot be read or written', () => {
+    const readError = new DOMException('Access denied', 'SecurityError');
+    const writeError = new DOMException('Quota exceeded', 'QuotaExceededError');
+    const reader: Pick<Storage, 'getItem'> = { getItem: () => { throw readError; } };
+    const writer: Pick<Storage, 'setItem'> = { setItem: () => { throw writeError; } };
+
+    expect(readThemePreference(reader)).toEqual({ ok: false, error: readError });
+    expect(writeThemePreference('progros', writer)).toEqual({ ok: false, error: writeError });
   });
 
   it('maps the upstream Remarque palette to terminal CSS variables', () => {
