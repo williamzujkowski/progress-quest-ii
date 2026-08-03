@@ -177,7 +177,7 @@ export const useGameStore = create<GameStore>((set, get) => {
             newQuest.currentProgress = Math.min(newQuest.maxProgress, newQuest.currentProgress + progressDelta);
           } else {
             newQuest.currentProgress = 0;
-            newQuest.maxProgress = Math.floor(newQuest.maxProgress * 1.2) + 1;
+            newQuest.maxProgress = 50 + rng.random(100);
             newLog.unshift(`Quest Completed: ${newQuest.description}!`);
             soundFX.playQuestComplete();
             newSpells = generateSpellUpgrade(rng, newSpells);
