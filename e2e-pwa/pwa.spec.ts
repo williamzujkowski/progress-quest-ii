@@ -110,6 +110,69 @@ test('applies an update only after the user approves it and removes the stale ca
   }
 });
 
+test('bounds a stalled activation and restores a retry without disturbing the session', async ({ page, request }) => {
+  const clockOrigin = Date.UTC(2026, 0, 1);
+  await page.clock.install({ time: clockOrigin });
+  await page.goto('./');
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  const initialCaches = await page.evaluate(() => caches.keys());
+  const initialController = await page.evaluate(() => navigator.serviceWorker.controller?.scriptURL);
+  await page.evaluate(() => localStorage.setItem('progquest_roster_v1', 'STILL-QUESTING'));
+
+  await request.post('./__test__/worker-mode/stalled');
+  try {
+    await page.evaluate(async () => (await navigator.serviceWorker.getRegistration('./'))?.update());
+    const updateButton = page.getByRole('button', { name: 'Update now' });
+    await expect(updateButton).toBeVisible();
+    await page.clock.pauseAt(clockOrigin + 60_000);
+    await updateButton.click();
+
+    const status = page.getByRole('status');
+    await expect(status).toHaveAttribute('aria-busy', 'true');
+    await expect(status).toHaveText('Applying the new edition. Please hold while progress is reclassified.');
+    await expect(status.getByRole('button')).toHaveCount(0);
+
+    await page.clock.runFor(4_000);
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.clock.runFor(20_000);
+    await expect(status).toHaveAttribute('aria-busy', 'true');
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.clock.runFor(5_999);
+    await expect(status).toHaveAttribute('aria-busy', 'true');
+    await page.clock.runFor(1);
+
+    await expect(status).toContainText('The update declined its promotion. The current edition remains in office.');
+    await expect(status).toHaveAttribute('aria-busy', 'false');
+    const retryButton = page.getByRole('button', { name: 'Retry update' });
+    await expect(retryButton).toBeVisible();
+    expect(await page.evaluate(() => navigator.serviceWorker.controller?.scriptURL)).toBe(initialController);
+    expect(await page.evaluate(() => localStorage.getItem('progquest_roster_v1'))).toBe('STILL-QUESTING');
+    expect(await page.evaluate(() => caches.keys())).toEqual([
+      ...initialCaches,
+      'progress-quest-ii-shell-pwa-test-stalled',
+    ]);
+
+    await retryButton.click();
+    await expect(status).toHaveAttribute('aria-busy', 'true');
+    await expect(status.getByRole('button')).toHaveCount(0);
+    await page.clock.resume();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  } finally {
+    await request.post('./__test__/worker-mode/normal');
+  }
+});
+
 test('keeps the previous offline shell when an update fails atomically', async ({ page, context, request }) => {
   await page.goto('./');
   await page.evaluate(() => navigator.serviceWorker.ready);

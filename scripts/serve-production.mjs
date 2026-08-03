@@ -6,7 +6,7 @@ const host = '127.0.0.1';
 const port = 4173;
 const basePath = '/progress-quest-ii/';
 const distPath = resolve('dist');
-const workerModes = new Set(['normal', 'missing', 'update', 'broken']);
+const workerModes = new Set(['normal', 'missing', 'update', 'broken', 'stalled']);
 let workerMode = 'normal';
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -53,8 +53,9 @@ const server = createServer(async (request, response) => {
     let contents = await readFile(filePath);
     if (relativePath === 'sw.js' && workerMode !== 'normal') {
       let worker = contents.toString();
-      if (workerMode === 'update') {
-        worker = worker.replace(/(const CACHE_NAME = `\$\{CACHE_PREFIX\})[^`]+/, '$1pwa-test-update');
+      if (workerMode === 'update' || workerMode === 'stalled') {
+        worker = worker.replace(/(const CACHE_NAME = `\$\{CACHE_PREFIX\})[^`]+/, `$1pwa-test-${workerMode}`);
+        if (workerMode === 'stalled') worker = worker.replace(') void self.skipWaiting();', ') void 0;');
       } else {
         worker = worker
           .replace(/(const CACHE_NAME = `\$\{CACHE_PREFIX\})[^`]+/, '$1pwa-test-broken')
