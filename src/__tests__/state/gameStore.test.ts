@@ -105,6 +105,26 @@ describe('Game Store State Machine', () => {
     expect(useGameStore.getState().progression).toMatchObject({ completedTasks: 1, elapsedSeconds: 0 });
   });
 
+  it('resets a completed quest to the legacy bounded duration range', () => {
+    const character = structuredClone(useGameStore.getState().character);
+    character.Quest = { description: 'Test quest', currentProgress: 1, maxProgress: 1 };
+    character.Task = {
+      description: 'Executing test monster...',
+      durationMs: 1,
+      elapsedMs: 0,
+      type: 'kill',
+      loot: { type: 'fixed', item: 'rat tail' },
+    };
+    useGameStore.setState({ character, rng: new RandomGenerator('quest-reset') });
+
+    useGameStore.getState().tick(1);
+
+    const quest = useGameStore.getState().character.Quest;
+    expect(quest.currentProgress).toBe(0);
+    expect(quest.maxProgress).toBeGreaterThanOrEqual(50);
+    expect(quest.maxProgress).toBeLessThan(150);
+  });
+
   it('chooses the next task from gold spent by the completed transition', () => {
     const character = structuredClone(useGameStore.getState().character);
     character.Gold = 35;
