@@ -30,6 +30,8 @@ describe('Save Manager & Serialization', () => {
     expect(decoded.value.Traits.Race).toBe('Demicanadian');
     expect(decoded.value.Traits.Class).toBe('Bastard Lunatic');
     expect(decoded.value.Stats.STR).toBe(originalChar.Stats.STR);
+    expect(decoded.value.Quest).toEqual(originalChar.Quest);
+    expect(decoded.value.Plot).toEqual(originalChar.Plot);
   });
 
   it('returns a typed error for malformed base64', () => {

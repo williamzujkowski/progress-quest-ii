@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { soundFX } from './audio';
 import { RandomGenerator, type PRNGSeed } from '../engine/prng';
 import { createNewCharacter, equipPrice, generateEquipUpgrade, generateLootItem, generateSpellUpgrade, generateTaskDescription } from '../engine/sim';
-import type { CharacterSheet, ProgressTask, StatsMap } from '../engine/types';
+import { levelUpTime } from '../engine/math';
+import type { CharacterSheet, ProgressionState, ProgressTask, StatsMap } from '../engine/types';
 
 type StartSessionRequest =
   | { source: 'creation'; name: string; race: string; klass: string; seed: PRNGSeed; stats?: StatsMap }
@@ -13,6 +14,7 @@ export interface GameStore {
   log: string[];
   isPaused: boolean;
   rng: RandomGenerator;
+  progression: ProgressionState;
   
   // Actions
   tick: (elapsedMs: number) => void;
@@ -21,6 +23,14 @@ export interface GameStore {
 }
 
 const MAX_CATCH_UP_TASKS = 100;
+
+function createProgression(level: number): ProgressionState {
+  return {
+    experience: { currentSeconds: 0, maxSeconds: levelUpTime(level) },
+    completedTasks: 0,
+    elapsedSeconds: 0,
+  };
+}
 
 export const useGameStore = create<GameStore>((set, get) => {
   const initialRng = new RandomGenerator('default-seed');
@@ -31,6 +41,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     log: [`Welcome to Progress Quest! ${initialChar.Traits.Name} the ${initialChar.Traits.Race} ${initialChar.Traits.Class} sets out on an adventure.`],
     isPaused: false,
     rng: initialRng,
+    progression: createProgression(initialChar.Traits.Level),
 
     togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
 
@@ -55,6 +66,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         rng,
         log: [message],
         isPaused: false,
+        progression: createProgression(character.Traits.Level),
       });
     },
 
@@ -64,7 +76,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       let remainingMs = elapsedMs;
       // ponytail: cap synchronous catch-up; drop older excess instead of freezing a resumed tab.
       for (let completedTasks = 0; completedTasks < MAX_CATCH_UP_TASKS; completedTasks += 1) {
-        const { character, isPaused, rng, log } = get();
+        const { character, isPaused, rng, log, progression } = get();
         if (isPaused) return;
 
         const task = { ...character.Task };
@@ -81,6 +93,12 @@ export const useGameStore = create<GameStore>((set, get) => {
         }
 
         remainingMs = task.elapsedMs - task.durationMs;
+        const progressDelta = task.durationMs / 1000;
+        let newProgression: ProgressionState = {
+          experience: { ...progression.experience },
+          completedTasks: progression.completedTasks + 1,
+          elapsedSeconds: progression.elapsedSeconds + Math.floor(progressDelta),
+        };
 
         // Task complete! Process outcome
         let newLog = [...log];
@@ -94,6 +112,15 @@ export const useGameStore = create<GameStore>((set, get) => {
         let newEquip = { ...character.Equip };
 
         if (task.type === 'kill') {
+          if (newProgression.experience.currentSeconds < newProgression.experience.maxSeconds) {
+            newProgression = {
+              ...newProgression,
+              experience: {
+                ...newProgression.experience,
+                currentSeconds: Math.min(newProgression.experience.maxSeconds, newProgression.experience.currentSeconds + progressDelta),
+              },
+            };
+          }
           const itemLoot = task.loot?.type === 'fixed' ? task.loot.item : generateLootItem(rng);
           const existingIndex = newInventory.findIndex((item) => item.name === itemLoot);
           if (existingIndex >= 0) {
@@ -104,8 +131,10 @@ export const useGameStore = create<GameStore>((set, get) => {
           const article = 'AEIOUÜaeiouü'.includes(itemLoot.charAt(0)) ? 'an' : 'a';
           newLog.unshift(`Gained ${article} ${itemLoot}`);
 
-          newQuest.currentProgress += 1;
-          if (newQuest.currentProgress >= newQuest.maxProgress) {
+          const questWasComplete = newQuest.currentProgress >= newQuest.maxProgress;
+          if (!questWasComplete) {
+            newQuest.currentProgress = Math.min(newQuest.maxProgress, newQuest.currentProgress + progressDelta);
+          } else {
             newQuest.currentProgress = 0;
             newQuest.maxProgress = Math.floor(newQuest.maxProgress * 1.2) + 1;
             newLog.unshift(`Quest Completed: ${newQuest.description}!`);
@@ -127,6 +156,10 @@ export const useGameStore = create<GameStore>((set, get) => {
             newStats['HP Max'] += 5;
             newLog.unshift(`LEVEL UP! Advanced to level ${newTraits.Level}!`);
             soundFX.playLevelUp();
+          }
+
+          if (!questWasComplete && newPlot.currentProgress < newPlot.maxProgress) {
+            newPlot.currentProgress = Math.min(newPlot.maxProgress, newPlot.currentProgress + progressDelta);
           }
         } else if (task.type === 'selling') {
           let earned = 0;
@@ -182,6 +215,7 @@ export const useGameStore = create<GameStore>((set, get) => {
             Task: nextTask,
           },
           log: newLog.slice(0, 50),
+          progression: newProgression,
         });
 
         if (remainingMs === 0) return;

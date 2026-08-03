@@ -50,6 +50,15 @@ export interface QuestState {
   maxProgress: number;
 }
 
+export interface ProgressionState {
+  experience: {
+    currentSeconds: number;
+    maxSeconds: number;
+  };
+  completedTasks: number;
+  elapsedSeconds: number;
+}
+
 export interface CharacterSheet {
   Traits: CharacterTraits;
   Stats: StatsMap;
