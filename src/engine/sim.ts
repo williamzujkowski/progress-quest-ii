@@ -1,4 +1,5 @@
 import { ALL_STATS, ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, EQUIP_SLOTS, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, PRIME_STATS, SHIELDS, SPECIALS, SPELLS, WEAPONS } from '../data/traits';
+import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../data/limits';
 import { calculateEncumbranceMax, generateInitialStats } from './math';
 import { RandomGenerator, type PRNGSeed } from './prng';
 import { definite, indefinite } from './text';
@@ -157,6 +158,15 @@ export function generateSpellReward(rng: RandomGenerator, level: number, wisdom:
   return spellName;
 }
 
+export function applySpellReward(rng: RandomGenerator, level: number, wisdom: number, spells: SpellItem[]): SpellItem[] {
+  const spellName = generateSpellReward(rng, level, wisdom);
+  if (!spellName) return spells;
+  const existing = spells.find((spell) => spell.name === spellName);
+  return existing
+    ? spells.map((spell) => spell.name === spellName ? { ...spell, level: Math.min(MAX_PERSISTED_VALUE, spell.level + 1) } : spell)
+    : [...spells, { name: spellName, level: 1 }];
+}
+
 export function generateStatReward(rng: RandomGenerator, stats: StatsMap): keyof StatsMap {
   if (rng.random(2) < 1) return rng.pick(ALL_STATS);
   let roll = rng.random(PRIME_STATS.reduce((total, stat) => total + Math.trunc(stats[stat]) ** 2, 0));
@@ -205,32 +215,73 @@ export function generateEquipUpgrade(rng: RandomGenerator, level: number): { slo
     worse = DEFENSE_BAD;
   }
 
-  const baseItem = rng.pick(stuff)[0];
-  let name = baseItem;
-  let plus = level - 1;
-  if (plus > 0) {
-    const mod = rng.pick(better)[0];
-    name = `${mod} ${name}`;
-    plus -= 1;
-  } else if (plus < 0) {
-    const mod = rng.pick(worse)[0];
-    name = `${mod} ${name}`;
+  let [name, quality] = rng.pick(stuff);
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const candidate = rng.pick(stuff);
+    if (Math.abs(level - quality) > Math.abs(level - candidate[1])) [name, quality] = candidate;
   }
 
-  if (plus > 0) {
-    name = `+${plus} ${name}`;
+  let plus = level - quality;
+  if (plus < 0) better = worse;
+  for (let count = 0; count < 2 && plus !== 0; count += 1) {
+    const [modifier, value] = rng.pick(better);
+    if (name.includes(modifier) || Math.abs(plus) < Math.abs(value)) break;
+    name = `${modifier} ${name}`;
+    plus -= value;
   }
+  if (plus !== 0) name = `${plus} ${name}`;
+  if (plus > 0) name = `+${name}`;
 
   return { slot, name };
 }
 
-export function generateSpellUpgrade(rng: RandomGenerator, currentSpells: SpellItem[]): SpellItem[] {
-  const spellName = rng.pick(SPELLS);
-  const existing = currentSpells.find((s) => s.name === spellName);
-  if (existing) {
-    return currentSpells.map((s) => (s.name === spellName ? { ...s, level: s.level + 1 } : s));
+export function applyQuestReward(rng: RandomGenerator, character: CharacterSheet): {
+  kind: QuestRewardKind;
+  character: CharacterSheet;
+  message: string | undefined;
+} {
+  const kind = selectQuestReward(rng);
+  if (kind === 'spell') {
+    const spells = applySpellReward(rng, character.Traits.Level, character.Stats.WIS, character.Spells);
+    return { kind, character: { ...character, Spells: spells }, message: undefined };
   }
-  return [...currentSpells, { name: spellName, level: 1 }];
+  if (kind === 'equipment') {
+    const upgrade = generateEquipUpgrade(rng, character.Traits.Level);
+    return {
+      kind,
+      character: { ...character, Equip: { ...character.Equip, [upgrade.slot]: upgrade.name } },
+      message: undefined,
+    };
+  }
+  if (kind === 'stat') {
+    const stat = generateStatReward(rng, character.Stats);
+    return {
+      kind,
+      character: { ...character, Stats: { ...character.Stats, [stat]: Math.min(MAX_PERSISTED_VALUE, Math.trunc(character.Stats[stat]) + 1) } },
+      message: `Gained ${indefinite(stat)}`,
+    };
+  }
+
+  const itemName = generateItemReward(rng, [
+    'Gold',
+    ...character.Inventory.filter(({ name }) => name !== 'Gold').map(({ name }) => name),
+  ]);
+  if (itemName === 'Gold') {
+    return {
+      kind,
+      character: { ...character, Gold: Math.min(MAX_PERSISTED_GOLD, character.Gold + 1) },
+      message: 'Got paid a gold piece',
+    };
+  }
+  const existing = character.Inventory.find(({ name }) => name === itemName);
+  const inventory = existing
+    ? character.Inventory.map((item) => item.name === itemName ? { ...item, qty: Math.min(MAX_PERSISTED_VALUE, item.qty + 1) } : item)
+    : [...character.Inventory, { name: itemName, qty: 1 }];
+  return {
+    kind,
+    character: { ...character, Inventory: inventory },
+    message: `Gained ${indefinite(itemName)}`,
+  };
 }
 
 function generateMonsterTask(rng: RandomGenerator, character: CharacterSheet): { description: string; durationMs: number; loot: NonNullable<ProgressTask['loot']> } {
@@ -243,10 +294,50 @@ function generateMonsterTask(rng: RandomGenerator, character: CharacterSheet): {
 
   // ponytail: consume the legacy NPC branch roll; add that branch only with its own #39 oracle vector.
   rng.random(25);
-  const monster = getRandomMonster(rng, targetLevel);
+  const questMonster = character.Quest.targetIndex === undefined ? undefined : MONSTERS[character.Quest.targetIndex];
+  const validQuestTarget = character.Quest.kind === 'exterminate'
+    && questMonster !== undefined
+    && character.Quest.target === `${questMonster.name}|${questMonster.level}|${questMonster.item}`;
+  const monster = validQuestTarget && rng.random(4) === 0
+    ? questMonster
+    : getRandomMonster(rng, targetLevel);
+  let quantity = 1;
+  if (targetLevel - monster.level > 10) {
+    const divisor = Math.max(monster.level, 1);
+    quantity = Math.max(1, Math.floor((targetLevel + rng.random(divisor)) / divisor));
+    targetLevel = Math.floor(targetLevel / quantity);
+  }
+
+  const prefix = (values: readonly string[], magnitude: number, name: string, separator = ' ') => {
+    const value = values[Math.abs(magnitude) - 1];
+    return value ? `${value}${separator}${name}` : name;
+  };
+  const sick = (magnitude: number, name: string) => prefix(['dead', 'comatose', 'crippled', 'sick', 'undernourished'], 6 - Math.abs(magnitude), name);
+  const young = (magnitude: number, name: string) => prefix(['foetal', 'baby', 'preadolescent', 'teenage', 'underage'], 6 - Math.abs(magnitude), name);
+  const big = (magnitude: number, name: string) => prefix(['greater', 'massive', 'enormous', 'giant', 'titanic'], magnitude, name);
+  const special = (magnitude: number, name: string) => name.includes(' ')
+    ? prefix(['veteran', 'cursed', 'warrior', 'undead', 'demon'], magnitude, name)
+    : prefix(['Battle-', 'cursed ', 'Were-', 'undead ', 'demon '], magnitude, name, '');
+
+  let displayName = monster.name;
+  const difference = targetLevel - monster.level;
+  if (difference <= -10) displayName = `imaginary ${displayName}`;
+  else if (difference < -5) {
+    const sickMagnitude = 5 - rng.random(11 + difference);
+    displayName = sick(sickMagnitude, young(-difference - sickMagnitude, displayName));
+  } else if (difference < 0 && rng.random(2) === 1) displayName = sick(difference, displayName);
+  else if (difference < 0) displayName = young(difference, displayName);
+  else if (difference >= 10) displayName = `messianic ${displayName}`;
+  else if (difference > 5) {
+    const bigMagnitude = 5 - rng.random(11 - difference);
+    displayName = big(bigMagnitude, special(difference - bigMagnitude, displayName));
+  } else if (difference > 0 && rng.random(2) === 1) displayName = big(difference, displayName);
+  else if (difference > 0) displayName = special(difference, displayName);
+
+  const opponentLevel = targetLevel * quantity;
   return {
-    description: `Executing ${indefinite(monster.name)}...`,
-    durationMs: Math.floor((2 * 3 * targetLevel * 1000) / characterLevel),
+    description: `Executing ${indefinite(displayName, quantity)}...`,
+    durationMs: Math.floor((2 * 3 * opponentLevel * 1000) / characterLevel),
     loot: monster.item === '*'
       ? { type: 'random' }
       : { type: 'fixed', item: `${monster.name} ${monster.item}`.toLowerCase() },

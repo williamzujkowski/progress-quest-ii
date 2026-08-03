@@ -36,6 +36,7 @@ describe('modern encounter-output fidelity', () => {
   it.each([
     ['ordinary kill', oneKillFixtureJson],
     ['XP level boundary', xpLevelUpFixtureJson],
+    ['quest completion', questCompletionFixtureJson],
   ])('matches the legacy %s transition on the shared observable surface', (_name, fixtureJson) => {
     const fixture = fixtureJson as unknown as LegacyTransitionFixture;
 

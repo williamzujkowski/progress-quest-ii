@@ -462,7 +462,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
           'Welcome to Progress Quest II! Krg sets out on an adventure.',
           'Act 2 Unlocked!',
           'LEVEL UP! Advanced to level 2!',
-          'Quest Completed: Find the lost stapler!',
+          'Quest completed: Find the lost stapler',
           'Defeated monster and looted a bent fork.',
           'Sold loot at market for 10 gold!',
           'Executing a passing pigeon...',
@@ -477,7 +477,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(tagFor('Welcome to Progress Quest II! Krg sets out on an adventure.')).toHaveCount(0);
     await expect(tagFor('Act 2 Unlocked!')).toHaveText('Level');
     await expect(tagFor('LEVEL UP! Advanced to level 2!')).toHaveText('Level');
-    await expect(tagFor('Quest Completed: Find the lost stapler!')).toHaveText('Quest');
+    await expect(tagFor('Quest completed: Find the lost stapler')).toHaveText('Quest');
     await expect(tagFor('Defeated monster and looted a bent fork.')).toHaveText('Loot');
     await expect(tagFor('Sold loot at market for 10 gold!')).toHaveText('Market');
     await expect(tagFor('Executing a passing pigeon...')).toHaveText('Combat');

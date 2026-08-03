@@ -108,7 +108,7 @@ describe('Game Store State Machine', () => {
 
   it('resets a completed quest to the legacy bounded duration range', () => {
     const character = structuredClone(useGameStore.getState().character);
-    character.Quest = { description: 'Test quest', currentProgress: 1, maxProgress: 1 };
+    character.Quest = { description: 'Test quest', currentProgress: 1, maxProgress: 1, history: ['Test quest'] };
     character.Task = {
       description: 'Executing test monster...',
       durationMs: 1,
@@ -124,7 +124,27 @@ describe('Game Store State Machine', () => {
     expect(quest.currentProgress).toBe(0);
     expect(quest.maxProgress).toBeGreaterThanOrEqual(50);
     expect(quest.maxProgress).toBeLessThan(150);
-    expect(quest.history).toEqual(['Test quest']);
+    expect(quest.description).toBe('Seek the Golden Hood');
+    expect(quest.history).toEqual(['Test quest', 'Seek the Golden Hood']);
+  });
+
+  it('starts the first quest without awarding the placeholder quest', () => {
+    const character = structuredClone(useGameStore.getState().character);
+    const initialStats = structuredClone(character.Stats);
+    const initialEquip = structuredClone(character.Equip);
+    character.Quest = { description: 'Heading to the killing fields...', currentProgress: 0, maxProgress: 5 };
+    character.Task = { description: 'Executing test monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    useGameStore.setState({ character, log: [], rng: new RandomGenerator('first-quest') });
+
+    useGameStore.getState().tick(1);
+
+    const updated = useGameStore.getState();
+    expect(updated.character.Quest.history).toEqual([updated.character.Quest.description]);
+    expect(updated.log.some((entry) => entry.startsWith('Quest completed:'))).toBe(false);
+    expect(updated.character.Stats).toEqual(initialStats);
+    expect(updated.character.Equip).toEqual(initialEquip);
+    expect(updated.character.Spells).toEqual(character.Spells);
+    expect(updated.character.Gold).toBe(character.Gold);
   });
 
   it('keeps a boundary-valid imported sheet valid through a level-up', () => {
@@ -173,7 +193,8 @@ describe('Game Store State Machine', () => {
     const history = useGameStore.getState().character.Quest.history ?? [];
     expect(history).toHaveLength(100);
     expect(history[0]).toBe('Quest 1');
-    expect(history.at(-1)).toBe('Newest quest');
+    expect(history.at(-2)).toBe('Quest 99');
+    expect(history.at(-1)).toBe(useGameStore.getState().character.Quest.description);
   });
 
   it('chooses the next task from gold spent by the completed transition', () => {
@@ -204,7 +225,7 @@ describe('Game Store State Machine', () => {
       { name: lootName, qty: 1 },
       { name: 'Unrelated Trinket', qty: 1 },
     ];
-    character.Quest = { ...character.Quest, currentProgress: 0, maxProgress: 99 };
+    character.Quest = { ...character.Quest, currentProgress: 0, maxProgress: 99, history: [character.Quest.description] };
     character.Task = {
       description: 'Executing test monster...',
       durationMs: 1,

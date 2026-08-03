@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { soundFX } from './audio';
 import { RandomGenerator, type PRNGSeed } from '../engine/prng';
-import { createNewCharacter, equipPrice, generateEquipUpgrade, generateLootItem, generateSpellReward, generateSpellUpgrade, generateStatReward, generateTaskDescription } from '../engine/sim';
+import { applyQuestReward, applySpellReward, createNewCharacter, equipPrice, generateEquipUpgrade, generateLootItem, generateQuest, generateStatReward, generateTaskDescription } from '../engine/sim';
 import { indefinite } from '../engine/text';
 import { levelUpTime } from '../engine/math';
 import type { CharacterSheet, ProgressionState, ProgressTask, StatsMap } from '../engine/types';
@@ -35,15 +35,6 @@ function createProgression(level: number): ProgressionState {
 
 function gained(value: string, quantity = 1): string {
   return `Gained ${indefinite(value, quantity)}`;
-}
-
-function upgradeSpell(rng: RandomGenerator, level: number, wisdom: number, spells: CharacterSheet['Spells']): CharacterSheet['Spells'] {
-  const spellName = generateSpellReward(rng, level, wisdom);
-  if (!spellName) return spells;
-  const existing = spells.find((spell) => spell.name === spellName);
-  return existing
-    ? spells.map((spell) => spell.name === spellName ? { ...spell, level: spell.level + 1 } : spell)
-    : [...spells, { name: spellName, level: 1 }];
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
@@ -152,7 +143,7 @@ export const useGameStore = create<GameStore>((set, get) => {
               newLog.unshift(gained(stat));
             }
 
-            newSpells = upgradeSpell(rng, newTraits.Level, newStats.WIS, newSpells);
+            newSpells = applySpellReward(rng, newTraits.Level, newStats.WIS, newSpells);
             newProgression = {
               ...newProgression,
               experience: { currentSeconds: 0, maxSeconds: levelUpTime(newTraits.Level) },
@@ -160,17 +151,52 @@ export const useGameStore = create<GameStore>((set, get) => {
             newLog.unshift(`Saving game: ${newTraits.Name}`);
             void soundFX.playLevelUp();
           }
-          const questWasComplete = newQuest.currentProgress >= newQuest.maxProgress;
+          const questHistory = newQuest.history ?? [];
+          const questWasComplete = newQuest.currentProgress >= newQuest.maxProgress || questHistory.length === 0;
           if (!questWasComplete) {
             newQuest.currentProgress = Math.min(newQuest.maxProgress, newQuest.currentProgress + progressDelta);
           } else {
+            const completedQuest = newQuest.description;
             newQuest.currentProgress = 0;
             newQuest.maxProgress = 50 + rng.random(100);
-            newQuest.history = [...(newQuest.history ?? []), newQuest.description].slice(-100);
-            newLog.unshift(`Quest Completed: ${newQuest.description}!`);
-            void soundFX.playQuestComplete();
-            newSpells = generateSpellUpgrade(rng, newSpells);
+            if (questHistory.length > 0) {
+              newLog.unshift(`Quest completed: ${completedQuest}`);
+              void soundFX.playQuestComplete();
+              const reward = applyQuestReward(rng, {
+                ...character,
+                Traits: newTraits,
+                Stats: newStats,
+                Equip: newEquip,
+                Spells: newSpells,
+                Inventory: newInventory,
+                Gold: newGold,
+                Quest: newQuest,
+                Plot: newPlot,
+                Task: task,
+              });
+              newStats = reward.character.Stats;
+              newEquip = reward.character.Equip;
+              newSpells = reward.character.Spells;
+              newInventory = reward.character.Inventory;
+              newGold = reward.character.Gold;
+              if (reward.message) newLog.unshift(reward.message);
+            }
 
+            const generatedQuest = generateQuest(rng, newTraits.Level);
+            const history = [...questHistory];
+            while (history.length > 99) history.shift();
+            history.push(generatedQuest.description);
+            newQuest = {
+              description: generatedQuest.description,
+              currentProgress: 0,
+              maxProgress: newQuest.maxProgress,
+              history,
+              kind: generatedQuest.kind,
+              ...('target' in generatedQuest ? { target: generatedQuest.target } : {}),
+              ...('targetIndex' in generatedQuest ? { targetIndex: generatedQuest.targetIndex } : {}),
+            };
+            newLog.unshift(`Commencing quest: ${generatedQuest.description}`);
+            newLog.unshift(`Saving game: ${newTraits.Name}`);
           }
 
           if (newPlot.currentProgress < newPlot.maxProgress) {

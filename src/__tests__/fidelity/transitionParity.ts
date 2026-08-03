@@ -15,6 +15,7 @@ interface LegacySheet {
   Equips: Record<EquipSlot, string>;
   Inventory: Pair<number>[];
   Spells: [string, string][];
+  Quests: string[];
   act: number;
   bestplot: string;
   bestquest: string;
@@ -63,7 +64,7 @@ export interface EncounterTransitionObservation {
     counters: { completedTasks: number; elapsedSeconds: number };
     experience: { currentSeconds: number; maxSeconds: number };
     encumbrance: { currentCubits: number; maxCubits: number };
-    quest: { description: string; currentSeconds: number; maxSeconds: number };
+    quest: { description: string; currentSeconds: number; maxSeconds: number; history: string[]; target: string | null; targetIndex: number | null };
     plot: { act: number; currentSeconds: number; maxSeconds: number };
   };
 }
@@ -105,6 +106,9 @@ export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixtur
         description: expected.quest.caption,
         currentSeconds: expected.quest.positionSeconds,
         maxSeconds: expected.quest.maxSeconds,
+        history: [...expected.quest.history],
+        target: expected.quest.monster || null,
+        targetIndex: expected.quest.monsterIndex,
       },
       plot: { act: expected.plot.act, currentSeconds: expected.plot.positionSeconds, maxSeconds: expected.plot.maxSeconds },
     },
@@ -166,7 +170,7 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
     Spells: sheet.Spells.map(([name, level]) => ({ name, level: romanToNumber(level) })),
     Gold: gold,
     Plot: { act: sheet.act, currentProgress: sheet.PlotBar.position, maxProgress: sheet.PlotBar.max },
-    Quest: { description: sheet.bestquest, currentProgress: sheet.QuestBar.position, maxProgress: sheet.QuestBar.max },
+    Quest: { description: sheet.bestquest, currentProgress: sheet.QuestBar.position, maxProgress: sheet.QuestBar.max, history: [...sheet.Quests] },
     Task: {
       description: sheet.kill,
       durationMs: sheet.TaskBar.max,
@@ -222,6 +226,9 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
           description: result.character.Quest.description,
           currentSeconds: result.character.Quest.currentProgress,
           maxSeconds: result.character.Quest.maxProgress,
+          history: [...(result.character.Quest.history ?? [])],
+          target: result.character.Quest.target ?? null,
+          targetIndex: result.character.Quest.targetIndex ?? null,
         },
         plot: {
           act: result.character.Plot.act,
