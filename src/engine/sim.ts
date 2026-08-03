@@ -77,9 +77,12 @@ export function calculateEncumbrance(inventory: InventoryItem[]): number {
 }
 
 export function getRandomMonster(rng: RandomGenerator, level: number) {
-  let candidates = MONSTERS.filter((m) => Math.abs(m.level - level) <= 3);
-  if (candidates.length === 0) candidates = MONSTERS;
-  return rng.pick(candidates);
+  let result = rng.pick(MONSTERS);
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const candidate = rng.pick(MONSTERS);
+    if (Math.abs(level - candidate.level) < Math.abs(level - result.level)) result = candidate;
+  }
+  return result;
 }
 
 export function generateLootItem(rng: RandomGenerator, monsterName?: string): string {
@@ -140,7 +143,31 @@ export function generateSpellUpgrade(rng: RandomGenerator, currentSpells: SpellI
   return [...currentSpells, { name: spellName, level: 1 }];
 }
 
-export function generateTaskDescription(rng: RandomGenerator, character: CharacterSheet): { description: string; type: ProgressTask['type']; durationMs: number } {
+function indefiniteArticle(value: string): string {
+  return `${'AEIOUÜaeiouü'.includes(value.charAt(0)) ? 'an' : 'a'} ${value}`;
+}
+
+function generateMonsterTask(rng: RandomGenerator, character: CharacterSheet): { description: string; durationMs: number; loot: NonNullable<ProgressTask['loot']> } {
+  const characterLevel = character.Traits.Level;
+  let targetLevel = characterLevel;
+  for (let step = targetLevel; step >= 1; step -= 1) {
+    if (rng.random(5) < 2) targetLevel += rng.random(2) * 2 - 1;
+  }
+  targetLevel = Math.max(1, targetLevel);
+
+  // ponytail: consume the legacy NPC branch roll; add that branch only with its own #39 oracle vector.
+  rng.random(25);
+  const monster = getRandomMonster(rng, targetLevel);
+  return {
+    description: `Executing ${indefiniteArticle(monster.name)}...`,
+    durationMs: Math.floor((2 * 3 * targetLevel * 1000) / characterLevel),
+    loot: monster.item === '*'
+      ? { type: 'random' }
+      : { type: 'fixed', item: `${monster.name} ${monster.item}`.toLowerCase() },
+  };
+}
+
+export function generateTaskDescription(rng: RandomGenerator, character: CharacterSheet): { description: string; type: ProgressTask['type']; durationMs: number; loot?: ProgressTask['loot'] } {
   const encum = calculateEncumbrance(character.Inventory);
   const maxEncum = calculateEncumbranceMax(character.Stats.STR);
   const price = equipPrice(character.Traits.Level);
@@ -161,10 +188,11 @@ export function generateTaskDescription(rng: RandomGenerator, character: Charact
     };
   }
 
-  const monster = getRandomMonster(rng, character.Traits.Level);
+  const monster = generateMonsterTask(rng, character);
   return {
-    description: `Executing ${monster.name}...`,
+    description: monster.description,
     type: 'kill',
-    durationMs: 2500 + rng.random(1500),
+    durationMs: monster.durationMs,
+    loot: monster.loot,
   };
 }

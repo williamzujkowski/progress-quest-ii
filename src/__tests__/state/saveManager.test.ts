@@ -71,6 +71,19 @@ describe('Save Manager & Serialization', () => {
     expect(characterSheetSchema.safeParse(character).success).toBe(true);
   });
 
+  it('validates explicit fixed and random task loot without accepting blank items', () => {
+    const character = createNewCharacter('LootContractHero', 'Half Orc', 'Robot Monk', 405);
+
+    expect(characterSheetSchema.safeParse({
+      ...character,
+      Task: { ...character.Task, loot: { type: 'random' } },
+    }).success).toBe(true);
+    expect(characterSheetSchema.safeParse({
+      ...character,
+      Task: { ...character.Task, loot: { type: 'fixed', item: '' } },
+    }).success).toBe(false);
+  });
+
   it('saves, loads, and removes character sheets from local storage roster', () => {
     const char1 = createNewCharacter('RosterHero1', 'Half Orc', 'Robot Monk', 101);
     const char2 = createNewCharacter('RosterHero2', 'Dung Elf', 'Vermineer', 202);

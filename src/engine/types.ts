@@ -41,6 +41,7 @@ export interface ProgressTask {
   durationMs: number;
   elapsedMs: number;
   type: 'kill' | 'buying' | 'selling' | 'quest' | 'plot' | 'heading_to_market' | 'heading';
+  loot?: { type: 'fixed'; item: string } | { type: 'random' };
 }
 
 export interface QuestState {
