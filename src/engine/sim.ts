@@ -1,4 +1,4 @@
-import { ARMORS, DEFENSE_ATTRIB, DEFENSE_BAD, EQUIP_SLOTS, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, SPELLS, WEAPONS } from '../data/traits';
+import { ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, EQUIP_SLOTS, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, SPELLS, WEAPONS } from '../data/traits';
 import { calculateEncumbranceMax, generateInitialStats } from './math';
 import { RandomGenerator, type PRNGSeed } from './prng';
 import { definite, indefinite } from './text';
@@ -109,6 +109,28 @@ export function generateExterminateQuest(rng: RandomGenerator, level: number): {
     target: `${target.name}|${target.level}|${target.item}`,
     targetIndex,
   };
+}
+
+export function generateSeekQuest(rng: RandomGenerator) {
+  const target = `${rng.pick(ITEM_ATTRIB)} ${rng.pick(SPECIALS)}`;
+  return { kind: 'seek' as const, description: `Seek ${definite(target)}` };
+}
+
+export function generateDeliverQuest(rng: RandomGenerator) {
+  const target = rng.pick(BORING_ITEMS);
+  return { kind: 'deliver' as const, description: `Deliver this ${target}` };
+}
+
+export function generateFetchQuest(rng: RandomGenerator) {
+  const target = rng.pick(BORING_ITEMS);
+  return { kind: 'fetch' as const, description: `Fetch me ${indefinite(target)}` };
+}
+
+export function generatePlacateQuest(rng: RandomGenerator, level: number) {
+  let target = rng.pick(MONSTERS);
+  const candidate = rng.pick(MONSTERS);
+  if (Math.abs(level - candidate.level) < Math.abs(level - target.level)) target = candidate;
+  return { kind: 'placate' as const, description: `Placate ${definite(target.name, 2)}` };
 }
 
 export function generateLootItem(rng: RandomGenerator, monsterName?: string): string {
