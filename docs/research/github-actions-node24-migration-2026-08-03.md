@@ -1,7 +1,7 @@
 # GitHub Actions Node.js 24 migration
 
 **Research date:** 2026-08-03
-**Scope:** issue [#98](https://github.com/williamzujkowski/progquest/issues/98), `.github/workflows/ci.yml`, and `.github/workflows/deploy.yml`
+**Scope:** issue [#98](https://github.com/williamzujkowski/progress-quest-ii/issues/98), `.github/workflows/ci.yml`, and `.github/workflows/deploy.yml`
 **Evidence policy:** first-party GitHub documentation, release notes, and action source only
 
 ## Recommendation

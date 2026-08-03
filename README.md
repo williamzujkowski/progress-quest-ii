@@ -1,10 +1,14 @@
-# Progress Quest
+# Progress Quest II
 
-Progress Quest is a modern web edition of Eric Fredricksen's classic zero-player RPG: create an adventurer, point them toward danger, and observe the consequences while pretending you are in charge.
+> The sequel nobody had to play.
+
+First, humans wrote a game that played itself. Then computers helped rebuild the game. The circle is complete, the paperwork has been misplaced, and nobody has had to play anything.
+
+**Progress Quest II** is an unofficial modern continuation of Eric Fredricksen's classic zero-player RPG *Progress Quest*. Created by humans. Rebuilt by machines. Played by nobody.
 
 ## Visit the live game
 
-Open the [Progress Quest GitHub Pages site](https://williamzujkowski.github.io/progquest/) in a current desktop or mobile browser.
+Open the [Progress Quest II GitHub Pages site](https://williamzujkowski.github.io/progress-quest-ii/) in a current desktop or mobile browser.
 
 The intended player story is pleasantly hands-off:
 
@@ -13,13 +17,13 @@ The intended player story is pleasantly hands-off:
 3. Watch the hero banner, quest progress, activity log, equipment, spells, and loot update themselves.
 4. Hover or keyboard-focus equipment, loot, and spells for a compact tooltip with the item's dry commentary and the mechanics the engine actually exposes.
 5. Change the OKLCH terminal theme if the default darkness is not sufficiently dramatic.
-6. Leave the tab open. Your hero will continue making brave, statistically questionable decisions.
+6. Leave the tab open. Your hero will continue making brave, statistically questionable decisions on your behalf, as progress intended.
 
 The dashboard is responsive at phone widths and keeps growing activity, inventory, and loadout content inside bounded scrolling regions instead of extending the page into the next geological era.
 
 ### PWA status, without the marketing fog
 
-The live site is a fast static web app deployed over HTTPS to GitHub Pages, with validated local saves. Full installable/offline PWA behavior—manifest, service worker, update handling, and offline end-to-end coverage—is planned in the [modernization roadmap](./docs/modernization-roadmap.md), but is not shipped yet. Your browser may offer an install prompt anyway; that is not evidence that offline play works, merely evidence that browsers are optimistic.
+The live site is a fast static web app deployed over HTTPS to GitHub Pages, with validated local saves. Full installable/offline PWA behavior—manifest, service worker, update handling, and offline end-to-end coverage—is in progress on the [modernization roadmap](./docs/modernization-roadmap.md), but is not shipped yet. Your browser may offer an install prompt anyway; that is not evidence that offline play works, merely evidence that browsers are optimistic.
 
 ## What is in the box
 
@@ -29,6 +33,8 @@ The live site is a fast static web app deployed over HTTPS to GitHub Pages, with
 - Remarque Dark, Remarque Light, and legacy ProgrOS themes powered by [`@williamzujkowski/oklch-terminal-themes`](https://github.com/williamzujkowski/oklch-terminal-themes).
 - Accessible keyboard paths, tooltip descriptions, local validation, and fail-closed save imports.
 - A Playwright browser suite covering dense dashboards, mobile widths, themes, accessibility, saves, and creator flows.
+
+Existing `.pqw` saves and locally stored rosters remain compatible. The Roman numeral is branding, not an excuse to confiscate anybody's Hob-Hobbit.
 
 ## Local development
 

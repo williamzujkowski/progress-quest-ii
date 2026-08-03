@@ -52,7 +52,7 @@ export const useGameStore = create<GameStore>((set, get) => {
 
   return {
     character: initialChar,
-    log: [`Welcome to Progress Quest! ${initialChar.Traits.Name} the ${initialChar.Traits.Race} ${initialChar.Traits.Class} sets out on an adventure.`],
+    log: [`Welcome to Progress Quest II! ${initialChar.Traits.Name} the ${initialChar.Traits.Race} ${initialChar.Traits.Class} sets out on an adventure.`],
     isPaused: false,
     rng: initialRng,
     progression: createProgression(initialChar.Traits.Level),

@@ -1,6 +1,6 @@
 # Minimal deterministic legacy VM oracle
 
-Research for [issue #39](https://github.com/williamzujkowski/progquest/issues/39), against the pinned legacy source at `pq-web-src` commit `3e9431b38cb54647530197501a29b8cce6c9f4f4`.
+Research for [issue #39](https://github.com/williamzujkowski/progress-quest-ii/issues/39), against the pinned legacy source at `pq-web-src` commit `3e9431b38cb54647530197501a29b8cce6c9f4f4`.
 
 ## Decision
 
