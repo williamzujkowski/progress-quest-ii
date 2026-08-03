@@ -4,6 +4,8 @@ import { MAX_FINITE_CHARACTER_LEVEL } from '../../engine/math';
 import { createNewCharacter } from '../../engine/sim';
 import {
   MAX_PQW_INPUT_LENGTH,
+  MAX_ROSTER_ENTRIES,
+  MAX_ROSTER_SERIALIZED_LENGTH,
   decodePQWSave,
   encodePQWSave,
   loadRoster,
@@ -118,6 +120,31 @@ describe('Save Manager & Serialization', () => {
     if (!updated.ok) return;
     expect(updated.value['RosterHero1']).toBeUndefined();
     expect(updated.value['RosterHero2']).toBeDefined();
+  });
+
+  it('rejects a roster with too many entries before validating every sheet', () => {
+    const roster = Object.fromEntries(Array.from({ length: MAX_ROSTER_ENTRIES + 1 }, (_, index) => [
+      `Hero${index}`,
+      createNewCharacter(`Hero${index}`, 'Half Orc', 'Robot Monk', index + 1),
+    ]));
+    const raw = JSON.stringify(roster);
+    expect(raw.length).toBeLessThan(MAX_ROSTER_SERIALIZED_LENGTH);
+    localStorage.setItem('progquest_roster_v1', raw);
+
+    expect(loadRoster()).toMatchObject({
+      ok: false,
+      error: { code: 'storage_corrupt' },
+    });
+  });
+
+  it('rejects an oversized roster before parsing it', () => {
+    const oversized = ' '.repeat(MAX_ROSTER_SERIALIZED_LENGTH + 1);
+    localStorage.setItem('progquest_roster_v1', oversized);
+
+    expect(loadRoster()).toMatchObject({
+      ok: false,
+      error: { code: 'storage_corrupt' },
+    });
   });
 
   it('returns a typed failure when browser storage rejects a write', () => {
