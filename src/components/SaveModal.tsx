@@ -4,6 +4,7 @@ import type { CharacterSheet } from '../engine/types';
 import { diagnostics } from '../state/diagnostics';
 import { useGameStore } from '../state/gameStore';
 import { decodePQWSave, encodePQWSave, loadRoster, removeFromRoster, saveToRoster } from '../state/saveManager';
+import { useModalDialog } from './useModalDialog';
 
 interface SaveModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ function isClipboardDenied(error: unknown): boolean {
 }
 
 export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
+  const dialogRef = useModalDialog(isOpen, onClose);
   const startSession = useGameStore((state) => state.startSession);
   const [roster, setRoster] = useState<Record<string, CharacterSheet> | null>({});
   const [importInput, setImportInput] = useState('');
@@ -140,7 +142,7 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <dialog ref={dialogRef} className="modal-overlay" onClick={onClose} aria-labelledby="modal-title">
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2 id="modal-title">Character Roster & Save Manager</h2>
@@ -173,7 +175,7 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
             <SaveIcon size={16} /> Save current character
           </button>
           <label htmlFor="current-save-text" style={{ display: 'block', fontSize: '0.75rem', marginTop: '0.5rem' }}>Current save text</label>
-          <textarea id="current-save-text" className="form-control" value={currentPQW} readOnly rows={3} />
+          <textarea id="current-save-text" name="currentSaveText" className="form-control" value={currentPQW} readOnly rows={3} />
           <button className="btn btn-block" disabled={isCopying} aria-busy={isCopying} onClick={handleCopyPQW}>
             <Copy size={16} /> {isCopying ? 'Copying…' : 'Copy Base64 .pqw Save String'}
           </button>
@@ -184,9 +186,11 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
           <label htmlFor="import-save-text" style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Import Save String (.pqw)</label>
           <textarea
             id="import-save-text"
+            name="importSaveText"
             value={importInput}
             onChange={(e) => setImportInput(e.target.value)}
-            placeholder="Paste base64 .pqw save string here..."
+            placeholder="Paste a base64 .pqw save string here…"
+            autoComplete="off"
             rows={3}
             className="form-control"
           />
@@ -226,6 +230,6 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 };
