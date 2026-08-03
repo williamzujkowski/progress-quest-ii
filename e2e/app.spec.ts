@@ -157,7 +157,8 @@ test.describe('Progress Quest terminal dashboard', () => {
     await expect(page.getByText('Character Loadout')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Character Loadout' })).not.toContainText('Prime Stats');
     await expect(page.getByText(/Spell Book/i)).toBeVisible();
-    await expect(page.locator('.tooltip-trigger')).toHaveCount(11);
+    await expect(page.getByRole('region', { name: 'Equipment List' }).locator('.tooltip-trigger')).toHaveCount(11);
+    await expect(page.locator('.inventory-card .card-header .tooltip-trigger')).toBeVisible();
     await page.locator('.tooltip-trigger').first().focus();
     await expect(page.getByRole('tooltip')).toBeVisible();
     expect(await page.getByRole('tooltip').evaluate((element) => element.parentElement === document.body)).toBe(true);
