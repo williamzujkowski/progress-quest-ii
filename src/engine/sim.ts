@@ -3,7 +3,7 @@ import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../data/limits';
 import { calculateEncumbranceMax, generateInitialStats } from './math';
 import { RandomGenerator, type PRNGSeed } from './prng';
 import { definite, indefinite } from './text';
-import type { CharacterSheet, EquipSlot, InventoryItem, ProgressTask, SpellItem, StatsMap } from './types';
+import type { CharacterSheet, EquipSlot, InventoryItem, ProgressTask, SpellItem, StatName, StatsMap } from './types';
 
 const NAME_PARTS_1 = ['Brog', 'Grim', 'Kael', 'Thor', 'Zar', 'Vex', 'Gor', 'Drak', 'Thul', 'Borg', 'Loth', 'Morg', 'Fizz', 'Wiz', 'Snag'];
 const NAME_PARTS_2 = ['nar', 'gath', 'dor', 'karn', 'rak', 'mar', 'vark', 'zog', 'thor', 'bluff', 'sout', 'fang', 'jaw', 'beard', 'gorm'];
@@ -146,6 +146,10 @@ export function generateQuest(rng: RandomGenerator, level: number) {
 }
 
 export type QuestRewardKind = 'spell' | 'equipment' | 'stat' | 'item';
+export type QuestRewardEffect =
+  | { type: 'stat'; stat: StatName; amount: number }
+  | { type: 'item'; name: string; quantity: number }
+  | { type: 'gold'; amount: number };
 
 export function selectQuestReward(rng: RandomGenerator): QuestRewardKind {
   return (['spell', 'equipment', 'stat', 'item'] as const)[rng.random(4)];
@@ -238,19 +242,18 @@ export function generateEquipUpgrade(rng: RandomGenerator, level: number): { slo
 export function applyQuestReward(rng: RandomGenerator, character: CharacterSheet): {
   kind: QuestRewardKind;
   character: CharacterSheet;
-  message: string | undefined;
+  effect?: QuestRewardEffect;
 } {
   const kind = selectQuestReward(rng);
   if (kind === 'spell') {
     const spells = applySpellReward(rng, character.Traits.Level, character.Stats.WIS, character.Spells);
-    return { kind, character: { ...character, Spells: spells }, message: undefined };
+    return { kind, character: { ...character, Spells: spells } };
   }
   if (kind === 'equipment') {
     const upgrade = generateEquipUpgrade(rng, character.Traits.Level);
     return {
       kind,
       character: { ...character, Equip: { ...character.Equip, [upgrade.slot]: upgrade.name } },
-      message: undefined,
     };
   }
   if (kind === 'stat') {
@@ -258,7 +261,7 @@ export function applyQuestReward(rng: RandomGenerator, character: CharacterSheet
     return {
       kind,
       character: { ...character, Stats: { ...character.Stats, [stat]: Math.min(MAX_PERSISTED_VALUE, Math.trunc(character.Stats[stat]) + 1) } },
-      message: `Gained ${indefinite(stat)}`,
+      effect: { type: 'stat', stat, amount: 1 },
     };
   }
 
@@ -270,7 +273,7 @@ export function applyQuestReward(rng: RandomGenerator, character: CharacterSheet
     return {
       kind,
       character: { ...character, Gold: Math.min(MAX_PERSISTED_GOLD, character.Gold + 1) },
-      message: 'Got paid a gold piece',
+      effect: { type: 'gold', amount: 1 },
     };
   }
   const existing = character.Inventory.find(({ name }) => name === itemName);
@@ -280,7 +283,7 @@ export function applyQuestReward(rng: RandomGenerator, character: CharacterSheet
   return {
     kind,
     character: { ...character, Inventory: inventory },
-    message: `Gained ${indefinite(itemName)}`,
+    effect: { type: 'item', name: itemName, quantity: 1 },
   };
 }
 

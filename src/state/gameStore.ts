@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { soundFX } from './audio';
+import { describeGameEvent, soundCueForGameEvent } from './gameEventAdapter';
 import { RandomGenerator, type PRNGSeed } from '../engine/prng';
-import { applyQuestReward, applySpellReward, createNewCharacter, equipPrice, generateEquipUpgrade, generateLootItem, generateQuest, generateStatReward, generateTaskDescription } from '../engine/sim';
-import { indefinite } from '../engine/text';
+import { createNewCharacter } from '../engine/sim';
 import { levelUpTime } from '../engine/math';
-import type { CharacterSheet, ProgressionState, ProgressTask, StatsMap } from '../engine/types';
+import { advanceGame, type GameTransitionEvent } from '../engine/transition';
+import type { CharacterSheet, ProgressionState, StatsMap } from '../engine/types';
 
 type StartSessionRequest =
   | { source: 'creation'; name: string; race: string; klass: string; seed: PRNGSeed; stats?: StatsMap }
@@ -30,8 +31,6 @@ export interface GameStore {
   }) => void;
 }
 
-const MAX_CATCH_UP_TASKS = 100;
-
 function createProgression(level: number): ProgressionState {
   return {
     experience: { currentSeconds: 0, maxSeconds: levelUpTime(level) },
@@ -40,13 +39,17 @@ function createProgression(level: number): ProgressionState {
   };
 }
 
-function gained(value: string, quantity = 1): string {
-  return `Gained ${indefinite(value, quantity)}`;
+function playEventSound(event: GameTransitionEvent): void {
+  const cue = soundCueForGameEvent(event);
+  if (cue === 'level_up') void soundFX.playLevelUp();
+  else if (cue === 'quest_complete') void soundFX.playQuestComplete();
+  else if (cue === 'market') void soundFX.playSellLoot();
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
   const initialRng = new RandomGenerator('default-seed');
   const initialChar = createNewCharacter('Krg', 'Hob-Hobbit', 'Robot Monk', initialRng);
+  let pendingElapsedMs = 0;
 
   return {
     character: initialChar,
@@ -58,6 +61,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
 
     startSession: (request: StartSessionRequest) => {
+      pendingElapsedMs = 0;
       let character: CharacterSheet;
       let rng: RandomGenerator;
       let message: string;
@@ -83,6 +87,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     },
 
     restoreSession: (session) => {
+      pendingElapsedMs = 0;
       const rng = new RandomGenerator('restored-session');
       rng.setState([...session.rngState]);
       set({
@@ -96,199 +101,13 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     tick: (elapsedMs: number) => {
       if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return;
-
-      let remainingMs = elapsedMs;
-      // ponytail: cap synchronous catch-up; drop older excess instead of freezing a resumed tab.
-      for (let completedTasks = 0; completedTasks < MAX_CATCH_UP_TASKS; completedTasks += 1) {
-        const { character, isPaused, rng, log, progression } = get();
-        if (isPaused) return;
-
-        const task = { ...character.Task };
-        task.elapsedMs += remainingMs;
-
-        if (task.elapsedMs < task.durationMs) {
-          set({
-            character: {
-              ...character,
-              Task: task,
-            },
-          });
-          return;
-        }
-
-        remainingMs = task.elapsedMs - task.durationMs;
-        const progressDelta = task.durationMs / 1000;
-        let newProgression: ProgressionState = {
-          experience: { ...progression.experience },
-          completedTasks: progression.completedTasks + 1,
-          elapsedSeconds: progression.elapsedSeconds + Math.floor(progressDelta),
-        };
-
-        // Task complete! Process outcome
-        let newLog = [...log];
-        let newInventory = character.Inventory;
-        let newGold = character.Gold;
-        let newQuest = { ...character.Quest };
-        let newPlot = { ...character.Plot };
-        let newTraits = { ...character.Traits };
-        let newStats = { ...character.Stats };
-        let newSpells = [...character.Spells];
-        let newEquip = { ...character.Equip };
-
-        if (task.type === 'kill') {
-          if (newProgression.experience.currentSeconds < newProgression.experience.maxSeconds) {
-            newProgression = {
-              ...newProgression,
-              experience: {
-                ...newProgression.experience,
-                currentSeconds: Math.min(newProgression.experience.maxSeconds, newProgression.experience.currentSeconds + progressDelta),
-              },
-            };
-          } else {
-            newTraits.Level += 1;
-            newLog.unshift(gained('Level'));
-
-            const hpGain = Math.floor(newStats.CON / 3) + 1 + rng.random(4);
-            newStats['HP Max'] += hpGain;
-            newLog.unshift(gained('HP Max', hpGain));
-
-            const mpGain = Math.floor(newStats.INT / 3) + 1 + rng.random(4);
-            newStats['MP Max'] += mpGain;
-            newLog.unshift(gained('MP Max', mpGain));
-
-            for (let upgrades = 0; upgrades < 2; upgrades += 1) {
-              const stat = generateStatReward(rng, newStats);
-              newStats[stat] = Math.trunc(newStats[stat]) + 1;
-              newLog.unshift(gained(stat));
-            }
-
-            newSpells = applySpellReward(rng, newTraits.Level, newStats.WIS, newSpells);
-            newProgression = {
-              ...newProgression,
-              experience: { currentSeconds: 0, maxSeconds: levelUpTime(newTraits.Level) },
-            };
-            newLog.unshift(`Saving game: ${newTraits.Name}`);
-            void soundFX.playLevelUp();
-          }
-          const questHistory = newQuest.history ?? [];
-          const questWasComplete = newQuest.currentProgress >= newQuest.maxProgress || questHistory.length === 0;
-          if (!questWasComplete) {
-            newQuest.currentProgress = Math.min(newQuest.maxProgress, newQuest.currentProgress + progressDelta);
-          } else {
-            const completedQuest = newQuest.description;
-            newQuest.currentProgress = 0;
-            newQuest.maxProgress = 50 + rng.random(100);
-            if (questHistory.length > 0) {
-              newLog.unshift(`Quest completed: ${completedQuest}`);
-              void soundFX.playQuestComplete();
-              const reward = applyQuestReward(rng, {
-                ...character,
-                Traits: newTraits,
-                Stats: newStats,
-                Equip: newEquip,
-                Spells: newSpells,
-                Inventory: newInventory,
-                Gold: newGold,
-                Quest: newQuest,
-                Plot: newPlot,
-                Task: task,
-              });
-              newStats = reward.character.Stats;
-              newEquip = reward.character.Equip;
-              newSpells = reward.character.Spells;
-              newInventory = reward.character.Inventory;
-              newGold = reward.character.Gold;
-              if (reward.message) newLog.unshift(reward.message);
-            }
-
-            const generatedQuest = generateQuest(rng, newTraits.Level);
-            const history = [...questHistory];
-            while (history.length > 99) history.shift();
-            history.push(generatedQuest.description);
-            newQuest = {
-              description: generatedQuest.description,
-              currentProgress: 0,
-              maxProgress: newQuest.maxProgress,
-              history,
-              kind: generatedQuest.kind,
-              ...('target' in generatedQuest ? { target: generatedQuest.target } : {}),
-              ...('targetIndex' in generatedQuest ? { targetIndex: generatedQuest.targetIndex } : {}),
-            };
-            newLog.unshift(`Commencing quest: ${generatedQuest.description}`);
-            newLog.unshift(`Saving game: ${newTraits.Name}`);
-          }
-
-          if (newPlot.currentProgress < newPlot.maxProgress) {
-            newPlot.currentProgress = Math.min(newPlot.maxProgress, newPlot.currentProgress + progressDelta);
-          }
-
-          const itemLoot = task.loot?.type === 'fixed' ? task.loot.item : generateLootItem(rng);
-          const existingIndex = newInventory.findIndex((item) => item.name === itemLoot);
-          if (existingIndex >= 0) {
-            newInventory = newInventory.map((item, index) => (index === existingIndex ? { ...item, qty: item.qty + 1 } : item));
-          } else {
-            newInventory = [...newInventory, { name: itemLoot, qty: 1 }];
-          }
-          newLog.unshift(gained(itemLoot));
-        } else if (task.type === 'selling') {
-          let earned = 0;
-          newInventory = newInventory.filter((item) => {
-            if (item.name !== 'Gold') {
-              earned += item.qty * (10 + rng.random(20));
-              return false;
-            }
-            return true;
-          });
-          newGold += earned;
-          newLog.unshift(`Sold loot at market for ${earned} gold!`);
-          void soundFX.playSellLoot();
-        } else if (task.type === 'buying') {
-          const price = equipPrice(newTraits.Level);
-          if (newGold >= price) {
-            newGold -= price;
-            const upgrade = generateEquipUpgrade(rng, newTraits.Level);
-            newEquip = { ...newEquip, [upgrade.slot]: upgrade.name };
-            newLog.unshift(`Negotiated purchase: Equipped ${upgrade.name} in ${upgrade.slot} slot!`);
-            void soundFX.playSellLoot();
-          }
-        }
-
-        // Generate next task
-        const transitionedCharacter: CharacterSheet = {
-          ...character,
-          Traits: newTraits,
-          Stats: newStats,
-          Equip: newEquip,
-          Spells: newSpells,
-          Inventory: newInventory,
-          Gold: newGold,
-          Quest: newQuest,
-          Plot: newPlot,
-          Task: task,
-        };
-        const nextTaskInfo = generateTaskDescription(rng, transitionedCharacter);
-
-        const nextTask: ProgressTask = {
-          description: nextTaskInfo.description,
-          durationMs: nextTaskInfo.durationMs,
-          elapsedMs: 0,
-          type: nextTaskInfo.type,
-          loot: nextTaskInfo.loot,
-        };
-
-        newLog.unshift(nextTask.description);
-
-        set({
-          character: {
-            ...transitionedCharacter,
-            Task: nextTask,
-          },
-          log: newLog.slice(0, 50),
-          progression: newProgression,
-        });
-
-        if (remainingMs === 0) return;
-      }
+      const { character, isPaused, rng, log, progression } = get();
+      if (isPaused) return;
+      const result = advanceGame({ character, progression }, pendingElapsedMs + elapsedMs, rng);
+      pendingElapsedMs = result.remainingElapsedMs;
+      for (const event of result.events) playEventSound(event);
+      const activity = result.events.map(describeGameEvent).reverse();
+      set({ ...result.state, log: [...activity, ...log].slice(0, 50) });
     },
   };
 });

@@ -27,6 +27,9 @@ _Avoid_: Legacy PQW, versionless data
 One application of elapsed time and RNG to a session; it may complete zero, one, or several tasks.
 _Avoid_: Task completion
 
+**Transition module interface**:
+`advanceGame(state, elapsedMs, rng)` returns the next character/progression state, chronological Events, and any elapsed milliseconds left after the bounded 100-task catch-up. It never mutates the supplied state. The injected RNG continuation is the single deliberate mutable input and advances in canonical legacy order. Pause policy, activity presentation, sounds, clocks, storage, and carrying bounded remainder into a later scheduler tick belong to the Zustand adapter.
+
 **Task**:
 Timed work whose duration and current position are measured in milliseconds.
 _Avoid_: Action, job
