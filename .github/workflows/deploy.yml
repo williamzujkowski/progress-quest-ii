@@ -64,6 +64,9 @@ jobs:
       - name: Run end-to-end tests
         run: npm run test:e2e
 
+      - name: Run PWA production tests
+        run: npm run test:pwa
+
       - name: Setup Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 

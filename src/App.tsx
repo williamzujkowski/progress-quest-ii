@@ -6,6 +6,7 @@ import { HeroBanner } from './components/HeroBanner';
 import { InventoryView } from './components/InventoryView';
 import { LogFeed } from './components/LogFeed';
 import { Navbar } from './components/Navbar';
+import { PwaStatus } from './components/PwaStatus';
 import { QuestLog } from './components/QuestLog';
 import { SaveModal } from './components/SaveModal';
 import { useGameStore } from './state/gameStore';
@@ -96,6 +97,7 @@ export const App: React.FC = () => {
         onOpenSaveModal={() => setIsSaveModalOpen(true)}
         onOpenCharacterCreator={() => setIsCharacterCreatorOpen(true)}
       />
+      <PwaStatus />
 
       <HeroBanner />
 

@@ -18,10 +18,12 @@ export type DiagnosticCode =
   | 'audio_resume_failed'
   | 'audio_play_failed'
   | 'theme_read_failed'
-  | 'theme_write_failed';
+  | 'theme_write_failed'
+  | 'pwa_registration_failed'
+  | 'pwa_update_failed';
 
-export type DiagnosticSubsystem = 'react' | 'browser' | 'clipboard' | 'diagnostics' | 'save' | 'storage' | 'audio' | 'theme';
-export type DiagnosticOperation = 'render' | 'recover' | 'event-handler' | 'promise' | 'read' | 'write' | 'delete' | 'copy' | 'export' | 'initialize' | 'resume' | 'play';
+export type DiagnosticSubsystem = 'react' | 'browser' | 'clipboard' | 'diagnostics' | 'save' | 'storage' | 'audio' | 'theme' | 'pwa';
+export type DiagnosticOperation = 'render' | 'recover' | 'event-handler' | 'promise' | 'read' | 'write' | 'delete' | 'copy' | 'export' | 'initialize' | 'resume' | 'play' | 'update';
 export type DiagnosticSource =
   | 'react-root'
   | 'window-error'
@@ -30,7 +32,8 @@ export type DiagnosticSource =
   | 'recovery-ui'
   | 'game-clock'
   | 'audio-engine'
-  | 'theme-preference';
+  | 'theme-preference'
+  | 'pwa-lifecycle';
 
 export interface DiagnosticEvent {
   id: string;
