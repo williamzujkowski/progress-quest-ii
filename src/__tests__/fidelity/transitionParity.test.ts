@@ -14,6 +14,7 @@ describe('legacy quest-completion contract', () => {
     const fixture = questCompletionFixtureJson as unknown as LegacyTransitionFixture;
     expect(observeLegacyQuestCompletion(fixture)).toEqual({
       caption: 'Exterminate the Swamp Elves',
+      positionSeconds: 0,
       maxSeconds: 138,
       history: ['Test quest', 'Exterminate the Swamp Elves'],
       monster: 'Swamp Elf|1|lilypad',

@@ -113,6 +113,7 @@ export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixtur
 
 export interface QuestCompletionObservation {
   caption: string;
+  positionSeconds: number;
   maxSeconds: number;
   history: string[];
   monster: string | null;
@@ -127,6 +128,7 @@ export function observeLegacyQuestCompletion(fixture: LegacyTransitionFixture): 
   const expected = fixture.expected;
   return {
     caption: expected.quest.caption,
+    positionSeconds: expected.quest.positionSeconds,
     maxSeconds: expected.quest.maxSeconds,
     history: [...expected.quest.history],
     monster: expected.quest.monster,
