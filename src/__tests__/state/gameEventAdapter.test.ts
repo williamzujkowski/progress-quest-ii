@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_PERSISTED_DESCRIPTION_LENGTH } from '../../data/limits';
 import type { GameTransitionEvent } from '../../engine/transition';
 import { describeGameEvent, soundCueForGameEvent } from '../../state/gameEventAdapter';
 
@@ -11,11 +12,19 @@ describe('game event presentation adapter', () => {
     [{ type: 'save_requested', characterName: 'Oracle' }, 'Saving game: Oracle', undefined],
     [{ type: 'item_gained', name: 'rat tail', quantity: 1 }, 'Gained a rat tail', undefined],
     [{ type: 'gold_received', amount: 1 }, 'Got paid a gold piece', undefined],
+    [{ type: 'gold_received', amount: 0.5 }, 'Got paid 0.5 gold pieces', undefined],
     [{ type: 'inventory_sold', gold: 47 }, 'Sold loot at market for 47 gold!', 'market'],
     [{ type: 'equipment_purchased', slot: 'Helm', name: 'Tax Hat' }, 'Negotiated purchase: Equipped Tax Hat in Helm slot!', 'market'],
     [{ type: 'task_started', task: { description: 'Waiting heroically...', durationMs: 1, elapsedMs: 0, type: 'heading' } }, 'Waiting heroically...', undefined],
   ] as const)('presents %o as legacy activity with its sound cue', (event, message, cue) => {
     expect(describeGameEvent(event as GameTransitionEvent)).toBe(message);
     expect(soundCueForGameEvent(event as GameTransitionEvent)).toBe(cue);
+  });
+
+  it('keeps prefixed event text within the checkpoint log limit', () => {
+    const message = describeGameEvent({ type: 'quest_completed', description: 'q'.repeat(MAX_PERSISTED_DESCRIPTION_LENGTH) });
+
+    expect(message).toHaveLength(MAX_PERSISTED_DESCRIPTION_LENGTH);
+    expect(message).toMatch(/^Quest completed: /);
   });
 });

@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../data/limits';
+import { MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../data/limits';
 
-export const MAX_PERSISTED_ITEMS = 5_000;
+export { MAX_PERSISTED_ITEMS } from '../data/limits';
 export const MAX_CHARACTER_NAME_LENGTH = 120;
 
 const shortText = z.string().max(200);
-const description = z.string().max(1_000);
+const description = z.string().max(MAX_PERSISTED_DESCRIPTION_LENGTH);
 const boundedInteger = z.number().int().min(0).max(MAX_PERSISTED_VALUE);
 const positiveBoundedInteger = z.number().int().positive().max(MAX_PERSISTED_VALUE);
 const boundedNumber = z.number().min(0).max(MAX_PERSISTED_VALUE);

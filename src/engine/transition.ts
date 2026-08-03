@@ -1,4 +1,5 @@
 import { applyQuestReward, applySpellReward, equipPrice, generateEquipUpgrade, generateLootItem, generateQuest, generateStatReward, generateTaskDescription } from './sim';
+import { MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../data/limits';
 import { levelUpTime } from './math';
 import type { RandomGenerator } from './prng';
 import type { CharacterSheet, EquipSlot, ProgressionState, ProgressTask, StatName } from './types';
@@ -56,21 +57,25 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
       if (experience.currentSeconds < experience.maxSeconds) {
         experience.currentSeconds = Math.min(experience.maxSeconds, experience.currentSeconds + progressDelta);
       } else {
-        traits.Level += 1;
-        events.push({ type: 'level_gained', level: traits.Level });
+        const nextLevel = Math.min(MAX_PERSISTED_VALUE, traits.Level + 1);
+        if (nextLevel > traits.Level) events.push({ type: 'level_gained', level: nextLevel });
+        traits.Level = nextLevel;
 
         const hpGain = Math.floor(stats.CON / 3) + 1 + rng.random(4);
-        stats['HP Max'] += hpGain;
-        events.push({ type: 'stat_gained', stat: 'HP Max', amount: hpGain });
+        const nextHpMax = Math.min(MAX_PERSISTED_VALUE, stats['HP Max'] + hpGain);
+        if (nextHpMax > stats['HP Max']) events.push({ type: 'stat_gained', stat: 'HP Max', amount: nextHpMax - stats['HP Max'] });
+        stats['HP Max'] = nextHpMax;
 
         const mpGain = Math.floor(stats.INT / 3) + 1 + rng.random(4);
-        stats['MP Max'] += mpGain;
-        events.push({ type: 'stat_gained', stat: 'MP Max', amount: mpGain });
+        const nextMpMax = Math.min(MAX_PERSISTED_VALUE, stats['MP Max'] + mpGain);
+        if (nextMpMax > stats['MP Max']) events.push({ type: 'stat_gained', stat: 'MP Max', amount: nextMpMax - stats['MP Max'] });
+        stats['MP Max'] = nextMpMax;
 
         for (let upgrades = 0; upgrades < 2; upgrades += 1) {
           const stat = generateStatReward(rng, stats);
-          stats[stat] = Math.trunc(stats[stat]) + 1;
-          events.push({ type: 'stat_gained', stat, amount: 1 });
+          const nextStat = Math.min(MAX_PERSISTED_VALUE, Math.trunc(stats[stat]) + 1);
+          if (nextStat !== stats[stat]) events.push({ type: 'stat_gained', stat, amount: nextStat - stats[stat] });
+          stats[stat] = nextStat;
         }
 
         spells = applySpellReward(rng, traits.Level, stats.WIS, spells);
@@ -80,8 +85,8 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
     }
     const nextProgression: ProgressionState = {
       experience,
-      completedTasks: progression.completedTasks + 1,
-      elapsedSeconds: progression.elapsedSeconds + Math.floor(progressDelta),
+      completedTasks: Math.min(MAX_PERSISTED_VALUE, progression.completedTasks + 1),
+      elapsedSeconds: Math.min(MAX_PERSISTED_VALUE, progression.elapsedSeconds + Math.floor(progressDelta)),
     };
     let quest = { ...character.Quest };
     let plot = { ...character.Plot };
@@ -142,10 +147,16 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
 
       const itemName = task.loot?.type === 'fixed' ? task.loot.item : generateLootItem(rng);
       const existingIndex = inventory.findIndex((item) => item.name === itemName);
-      inventory = existingIndex >= 0
-        ? inventory.map((item, index) => index === existingIndex ? { ...item, qty: item.qty + 1 } : item)
-        : [...inventory, { name: itemName, qty: 1 }];
-      events.push({ type: 'item_gained', name: itemName, quantity: 1 });
+      const existingItem = inventory[existingIndex];
+      let itemGained = false;
+      if (existingItem && existingItem.qty < MAX_PERSISTED_VALUE) {
+        inventory = inventory.map((item, index) => index === existingIndex ? { ...item, qty: item.qty + 1 } : item);
+        itemGained = true;
+      } else if (existingIndex < 0 && inventory.length < MAX_PERSISTED_ITEMS) {
+        inventory = [...inventory, { name: itemName, qty: 1 }];
+        itemGained = true;
+      }
+      if (itemGained) events.push({ type: 'item_gained', name: itemName, quantity: 1 });
     } else if (task.type === 'selling') {
       let earned = 0;
       inventory = inventory.filter((item) => {
@@ -155,8 +166,9 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
         }
         return true;
       });
-      gold += earned;
-      events.push({ type: 'inventory_sold', gold: earned });
+      const previousGold = gold;
+      gold = Math.min(MAX_PERSISTED_GOLD, gold + earned);
+      events.push({ type: 'inventory_sold', gold: gold - previousGold });
     } else if (task.type === 'buying') {
       const price = equipPrice(traits.Level);
       if (gold >= price) {

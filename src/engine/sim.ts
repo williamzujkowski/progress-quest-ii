@@ -1,6 +1,6 @@
 import { ALL_STATS, ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, EQUIP_SLOTS, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, PRIME_STATS, SHIELDS, SPECIALS, SPELLS, WEAPONS } from '../data/traits';
-import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../data/limits';
-import { calculateEncumbranceMax, generateInitialStats } from './math';
+import { MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../data/limits';
+import { calculateEncumbranceMax, generateInitialStats, MAX_FINITE_CHARACTER_LEVEL } from './math';
 import { RandomGenerator, type PRNGSeed } from './prng';
 import { definite, indefinite } from './text';
 import type { CharacterSheet, EquipSlot, InventoryItem, ProgressTask, SpellItem, StatName, StatsMap } from './types';
@@ -168,7 +168,7 @@ export function applySpellReward(rng: RandomGenerator, level: number, wisdom: nu
   const existing = spells.find((spell) => spell.name === spellName);
   return existing
     ? spells.map((spell) => spell.name === spellName ? { ...spell, level: Math.min(MAX_PERSISTED_VALUE, spell.level + 1) } : spell)
-    : [...spells, { name: spellName, level: 1 }];
+    : spells.length < MAX_PERSISTED_ITEMS ? [...spells, { name: spellName, level: 1 }] : spells;
 }
 
 export function generateStatReward(rng: RandomGenerator, stats: StatsMap): keyof StatsMap {
@@ -258,10 +258,11 @@ export function applyQuestReward(rng: RandomGenerator, character: CharacterSheet
   }
   if (kind === 'stat') {
     const stat = generateStatReward(rng, character.Stats);
+    const value = Math.min(MAX_PERSISTED_VALUE, Math.trunc(character.Stats[stat]) + 1);
     return {
       kind,
-      character: { ...character, Stats: { ...character.Stats, [stat]: Math.min(MAX_PERSISTED_VALUE, Math.trunc(character.Stats[stat]) + 1) } },
-      effect: { type: 'stat', stat, amount: 1 },
+      character: { ...character, Stats: { ...character.Stats, [stat]: value } },
+      effect: value !== character.Stats[stat] ? { type: 'stat', stat, amount: value - character.Stats[stat] } : undefined,
     };
   }
 
@@ -270,27 +271,30 @@ export function applyQuestReward(rng: RandomGenerator, character: CharacterSheet
     ...character.Inventory.filter(({ name }) => name !== 'Gold').map(({ name }) => name),
   ]);
   if (itemName === 'Gold') {
+    const gold = Math.min(MAX_PERSISTED_GOLD, character.Gold + 1);
     return {
       kind,
-      character: { ...character, Gold: Math.min(MAX_PERSISTED_GOLD, character.Gold + 1) },
-      effect: { type: 'gold', amount: 1 },
+      character: { ...character, Gold: gold },
+      effect: gold > character.Gold ? { type: 'gold', amount: gold - character.Gold } : undefined,
     };
   }
   const existing = character.Inventory.find(({ name }) => name === itemName);
   const inventory = existing
     ? character.Inventory.map((item) => item.name === itemName ? { ...item, qty: Math.min(MAX_PERSISTED_VALUE, item.qty + 1) } : item)
-    : [...character.Inventory, { name: itemName, qty: 1 }];
+    : character.Inventory.length < MAX_PERSISTED_ITEMS ? [...character.Inventory, { name: itemName, qty: 1 }] : character.Inventory;
+  const itemGained = existing ? existing.qty < MAX_PERSISTED_VALUE : inventory !== character.Inventory;
   return {
     kind,
     character: { ...character, Inventory: inventory },
-    effect: { type: 'item', name: itemName, quantity: 1 },
+    effect: itemGained ? { type: 'item', name: itemName, quantity: 1 } : undefined,
   };
 }
 
 function generateMonsterTask(rng: RandomGenerator, character: CharacterSheet): { description: string; durationMs: number; loot: NonNullable<ProgressTask['loot']> } {
   const characterLevel = character.Traits.Level;
   let targetLevel = characterLevel;
-  for (let step = targetLevel; step >= 1; step -= 1) {
+  // ponytail: levels beyond finite progression get the last finite level's legacy roll budget.
+  for (let step = Math.min(targetLevel, MAX_FINITE_CHARACTER_LEVEL); step >= 1; step -= 1) {
     if (rng.random(5) < 2) targetLevel += rng.random(2) * 2 - 1;
   }
   targetLevel = Math.max(1, targetLevel);
