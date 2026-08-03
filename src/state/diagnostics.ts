@@ -11,7 +11,8 @@ export type DiagnosticCode =
   | 'roster_write_failed'
   | 'roster_delete_failed'
   | 'diagnostic_export_failed'
-  | 'save_export_failed';
+  | 'save_export_failed'
+  | 'game_tick_failed';
 
 export type DiagnosticSubsystem = 'react' | 'browser' | 'clipboard' | 'diagnostics' | 'save' | 'storage';
 export type DiagnosticOperation = 'render' | 'recover' | 'event-handler' | 'promise' | 'read' | 'write' | 'delete' | 'copy' | 'export';
@@ -20,7 +21,8 @@ export type DiagnosticSource =
   | 'window-error'
   | 'unhandled-rejection'
   | 'save-modal'
-  | 'recovery-ui';
+  | 'recovery-ui'
+  | 'game-clock';
 
 export interface DiagnosticEvent {
   id: string;
