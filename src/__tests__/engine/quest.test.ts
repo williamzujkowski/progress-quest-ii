@@ -9,6 +9,38 @@ function stateAfterPicks(seed: string, picks: number) {
 }
 
 describe('legacy quest generators', () => {
+  it.each([
+    {
+      form: 'passing',
+      initialState: [0.8579177698120475, 0.8263699773233384, 0.24956287536770105, 1] as [number, number, number, number],
+      expectedTask: {
+        description: 'Executing a passing Talking Pony Robot Monk...',
+        type: 'kill',
+        durationMs: 6_000,
+        loot: { type: 'random' },
+      },
+      finalState: [0.44347366294823587, 0.86426544142887, 0.03502870723605156, 1408544],
+    },
+    {
+      form: 'titled',
+      initialState: [0.1729756232816726, 0.18765057669952512, 0.41180504229851067, 1] as [number, number, number, number],
+      expectedTask: {
+        description: 'Executing Mr. Midan the Half Halfling...',
+        type: 'kill',
+        durationMs: 6_000,
+        loot: { type: 'random' },
+      },
+      finalState: [0.21785219269804657, 0.8072053005453199, 0.47258021542802453, 308334],
+    },
+  ])('matches the legacy $form named-NPC task and RNG continuation', ({ initialState, expectedTask, finalState }) => {
+    const character = createNewCharacter('NPC Oracle', 'Half Orc', 'Ur-Paladin', 'npc-character');
+    const rng = new RandomGenerator('npc-vector');
+    rng.setState(initialState);
+
+    expect(generateTaskDescription(rng, character)).toEqual(expectedTask);
+    expect(rng.getState()).toEqual(finalState);
+  });
+
   it('generates Seek with two RNG picks', () => {
     const rng = new RandomGenerator('seek');
     const quest = generateSeekQuest(rng);

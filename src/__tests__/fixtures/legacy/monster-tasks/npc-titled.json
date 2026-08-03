@@ -1,0 +1,15 @@
+{
+  "input": {
+    "requestedLevel": 1,
+    "characterLevel": 1,
+    "seed": [0.1729756232816726, 0.18765057669952512, 0.41180504229851067, 1]
+  },
+  "expected": {
+    "taskTag": "kill|Mr. Midan the Half Halfling|1|*",
+    "caption": "Executing Mr. Midan the Half Halfling...",
+    "opponentLevel": 1,
+    "durationMs": 6000,
+    "loot": { "type": "random" },
+    "rng": [0.21785219269804657, 0.8072053005453199, 0.47258021542802453, 308334]
+  }
+}

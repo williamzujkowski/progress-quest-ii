@@ -49,6 +49,39 @@ function createContext() {
   );
 }
 
+export function runLegacyMonsterTask({ requestedLevel, characterLevel, seed }) {
+  if (!Number.isInteger(requestedLevel) || requestedLevel < 1 || !Number.isInteger(characterLevel) || characterLevel < 1) {
+    throw new TypeError('Legacy monster-task levels must be positive integers');
+  }
+  if (!isSerializedAleaState(seed)) throw new TypeError('Legacy fixture seed must be a serialized Alea state');
+  const context = createContext();
+  vm.runInContext(configSource, context, { ...executionOptions, filename: 'pq-web-src/config.js' });
+  vm.runInContext(mainSource, context, { ...executionOptions, filename: 'pq-web-src/main.js' });
+  context.__monsterTaskInput = JSON.stringify({ requestedLevel, characterLevel, seed });
+
+  const output = vm.runInContext(
+    `
+      var input = JSON.parse(__monsterTaskInput);
+      game = { questmonster: '', questmonsterindex: null };
+      randseed(input.seed);
+      var task = MonsterTask(input.requestedLevel);
+      var fields = game.task.split('|');
+      JSON.stringify({
+        taskTag: game.task,
+        caption: 'Executing ' + task.description + '...',
+        opponentLevel: task.level,
+        durationMs: Math.floor(2 * 3 * task.level * 1000 / input.characterLevel),
+        loot: fields[3] === '*' ? { type: 'random' } : { type: 'fixed', item: (fields[1] + ' ' + fields[3]).toLowerCase() },
+        rng: randseed()
+      });
+    `,
+    context,
+    { ...executionOptions, filename: 'scripts/legacy-oracle-monster-task.js' },
+  );
+
+  return JSON.parse(output);
+}
+
 export function runLegacyTransition({ sheet }) {
   if (!isSerializedAleaState(sheet.seed)) {
     throw new TypeError('Legacy fixture seed must be a serialized Alea state');

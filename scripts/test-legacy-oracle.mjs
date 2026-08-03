@@ -1,19 +1,31 @@
 import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { runLegacyTransition } from './legacy-oracle.mjs';
+import { runLegacyMonsterTask, runLegacyTransition } from './legacy-oracle.mjs';
 
 const fixtureDirectory = new URL('../src/__tests__/fixtures/legacy/', import.meta.url);
 const fixtureNames = (await readdir(fixtureDirectory))
   .filter((name) => name.endsWith('.json'))
   .sort();
 const baseFixture = JSON.parse(await readFile(new URL('one-kill.json', fixtureDirectory), 'utf8'));
+const monsterTaskDirectory = new URL('monster-tasks/', fixtureDirectory);
 
 for (const fixtureName of fixtureNames) {
   const fixture = JSON.parse(await readFile(new URL(fixtureName, fixtureDirectory), 'utf8'));
   test(`legacy oracle emits deterministic ${fixtureName.replace('.json', '')} vector`, () => {
     const first = runLegacyTransition(fixture.input);
     const second = runLegacyTransition(fixture.input);
+
+    assert.deepEqual(first, fixture.expected);
+    assert.equal(JSON.stringify(second), JSON.stringify(first));
+  });
+}
+
+for (const fixtureName of (await readdir(monsterTaskDirectory)).filter((name) => name.endsWith('.json')).sort()) {
+  const fixture = JSON.parse(await readFile(new URL(fixtureName, monsterTaskDirectory), 'utf8'));
+  test(`legacy oracle emits deterministic ${fixtureName.replace('.json', '')} monster-task vector`, () => {
+    const first = runLegacyMonsterTask(fixture.input);
+    const second = runLegacyMonsterTask(fixture.input);
 
     assert.deepEqual(first, fixture.expected);
     assert.equal(JSON.stringify(second), JSON.stringify(first));

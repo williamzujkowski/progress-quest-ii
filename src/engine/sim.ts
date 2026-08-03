@@ -1,6 +1,6 @@
-import { ALL_STATS, ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, EQUIP_SLOTS, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, PRIME_STATS, SHIELDS, SPECIALS, SPELLS, WEAPONS } from '../data/traits';
+import { ALL_STATS, ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, EQUIP_SLOTS, ITEM_ATTRIB, ITEM_OFS, KLASSES, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, PRIME_STATS, RACES, SHIELDS, SPECIALS, SPELLS, TITLES, WEAPONS } from '../data/traits';
 import { MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../data/limits';
-import { calculateEncumbranceMax, generateInitialStats, MAX_FINITE_CHARACTER_LEVEL } from './math';
+import { calculateEncumbranceMax, generateInitialStats, generateName, MAX_FINITE_CHARACTER_LEVEL } from './math';
 import { RandomGenerator, type PRNGSeed } from './prng';
 import { definite, indefinite } from './text';
 import type { CharacterSheet, EquipSlot, InventoryItem, ProgressTask, SpellItem, StatName, StatsMap } from './types';
@@ -299,15 +299,26 @@ function generateMonsterTask(rng: RandomGenerator, character: CharacterSheet): {
   }
   targetLevel = Math.max(1, targetLevel);
 
-  // ponytail: consume the legacy NPC branch roll; add that branch only with its own #39 oracle vector.
-  rng.random(25);
+  let definiteName = false;
   const questMonster = character.Quest.targetIndex === undefined ? undefined : MONSTERS[character.Quest.targetIndex];
   const validQuestTarget = character.Quest.kind === 'exterminate'
     && questMonster !== undefined
     && character.Quest.target === `${questMonster.name}|${questMonster.level}|${questMonster.item}`;
-  const monster = validQuestTarget && rng.random(4) === 0
-    ? questMonster
-    : getRandomMonster(rng, targetLevel);
+  let monster: (typeof MONSTERS)[number];
+  if (rng.random(25) === 0) {
+    const race = rng.pick(RACES).name;
+    if (rng.random(2) === 0) {
+      monster = { name: `passing ${race} ${rng.pick(KLASSES).name}`, level: targetLevel, item: '*' };
+    } else {
+      const title = TITLES[Math.min(rng.random(TITLES.length), rng.random(TITLES.length))];
+      monster = { name: `${title} ${generateName(rng)} the ${race}`, level: targetLevel, item: '*' };
+      definiteName = true;
+    }
+  } else {
+    monster = validQuestTarget && rng.random(4) === 0
+      ? questMonster
+      : getRandomMonster(rng, targetLevel);
+  }
   let quantity = 1;
   if (targetLevel - monster.level > 10) {
     const divisor = Math.max(monster.level, 1);
@@ -343,7 +354,7 @@ function generateMonsterTask(rng: RandomGenerator, character: CharacterSheet): {
 
   const opponentLevel = targetLevel * quantity;
   return {
-    description: `Executing ${indefinite(displayName, quantity)}...`,
+    description: `Executing ${definiteName ? displayName : indefinite(displayName, quantity)}...`,
     durationMs: Math.floor((2 * 3 * opponentLevel * 1000) / characterLevel),
     loot: monster.item === '*'
       ? { type: 'random' }
