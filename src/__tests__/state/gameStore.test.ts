@@ -123,6 +123,26 @@ describe('Game Store State Machine', () => {
     expect(quest.currentProgress).toBe(0);
     expect(quest.maxProgress).toBeGreaterThanOrEqual(50);
     expect(quest.maxProgress).toBeLessThan(150);
+    expect(quest.history).toEqual(['Test quest']);
+  });
+
+  it('caps quest history at the legacy 100-entry boundary', () => {
+    const character = structuredClone(useGameStore.getState().character);
+    character.Quest = {
+      description: 'Newest quest',
+      currentProgress: 1,
+      maxProgress: 1,
+      history: Array.from({ length: 100 }, (_, index) => `Quest ${index}`),
+    };
+    character.Task = { description: 'Executing test monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    useGameStore.setState({ character, rng: new RandomGenerator('quest-history-cap') });
+
+    useGameStore.getState().tick(1);
+
+    const history = useGameStore.getState().character.Quest.history ?? [];
+    expect(history).toHaveLength(100);
+    expect(history[0]).toBe('Quest 1');
+    expect(history.at(-1)).toBe('Newest quest');
   });
 
   it('chooses the next task from gold spent by the completed transition', () => {

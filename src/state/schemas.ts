@@ -54,6 +54,7 @@ export const questStateSchema = z.object({
   description,
   currentProgress: boundedNumber,
   maxProgress: boundedNumber,
+  history: z.array(description).max(100).optional(),
 });
 
 export const plotStateSchema = z.object({

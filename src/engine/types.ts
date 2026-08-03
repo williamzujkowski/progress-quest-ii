@@ -48,6 +48,7 @@ export interface QuestState {
   description: string;
   currentProgress: number;
   maxProgress: number;
+  history?: string[];
 }
 
 export interface ProgressionState {
