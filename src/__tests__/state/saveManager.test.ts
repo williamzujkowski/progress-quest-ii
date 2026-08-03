@@ -38,6 +38,14 @@ describe('Save Manager & Serialization', () => {
     expect(decoded.value.Plot).toEqual(originalChar.Plot);
   });
 
+  it('preserves Unicode character names with the standards-based UTF-8 codec', () => {
+    const originalChar = createNewCharacter('Éowyn 🛡️', 'Demicanadian', 'Bastard Lunatic', 9998);
+
+    const decoded = decodePQWSave(encodePQWSave(originalChar));
+
+    expect(decoded).toMatchObject({ ok: true, value: { Traits: { Name: 'Éowyn 🛡️' } } });
+  });
+
   it('returns a typed error for malformed base64', () => {
     expect(decodePQWSave('%%%INVALID_BASE64%%%')).toMatchObject({
       ok: false,

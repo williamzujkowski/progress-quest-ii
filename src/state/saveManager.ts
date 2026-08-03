@@ -27,8 +27,16 @@ function saveFailure(code: SaveErrorCode, message: string): SaveResult<never> {
 
 export function encodePQWSave(sheet: CharacterSheet): string {
   const jsonString = JSON.stringify(sheet);
-  const encoded = encodeURIComponent(jsonString);
-  return btoa(unescape(encoded));
+  const bytes = new TextEncoder().encode(jsonString);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function decodeBase64Utf8(value: string): string {
+  const binary = atob(value);
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
 }
 
 export function decodePQWSave(pqwString: string): SaveResult<PersistedCharacterSheet> {
@@ -39,7 +47,7 @@ export function decodePQWSave(pqwString: string): SaveResult<PersistedCharacterS
 
   let jsonText: string;
   try {
-    jsonText = decodeURIComponent(escape(atob(cleanString)));
+    jsonText = decodeBase64Utf8(cleanString);
   } catch {
     return saveFailure('malformed_base64', 'Malformed base64 save string.');
   }
