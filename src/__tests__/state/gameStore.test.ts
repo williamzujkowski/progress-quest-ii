@@ -123,6 +123,7 @@ describe('Game Store State Machine', () => {
     expect(quest.currentProgress).toBe(0);
     expect(quest.maxProgress).toBeGreaterThanOrEqual(50);
     expect(quest.maxProgress).toBeLessThan(150);
+    expect(quest.history).toEqual(['Test quest']);
   });
 
   it('chooses the next task from gold spent by the completed transition', () => {
