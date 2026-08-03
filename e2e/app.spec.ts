@@ -22,7 +22,7 @@ const loadDenseDashboard = async (page: Page) => {
   await expect(page.getByRole('region', { name: 'Inventory items' }).locator('.equip-item')).toHaveCount(80);
 };
 
-test.describe('Progress Quest terminal dashboard', () => {
+test.describe('Progress Quest II terminal dashboard', () => {
   test('recovers accessibly from an unexpected root render failure', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.addInitScript(() => {
@@ -213,8 +213,9 @@ test.describe('Progress Quest terminal dashboard', () => {
     await page.goto('/');
 
     // Check navbar brand
-    await expect(page.locator('.brand')).toContainText('Progress Quest');
-    await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest' })).toBeVisible();
+    await expect(page).toHaveTitle('Progress Quest II — The Sequel Nobody Had to Play');
+    await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest II' })).toBeVisible();
+    await expect(page.getByText('The sequel nobody had to play.')).toBeVisible();
 
     // Check Hero Banner
     await expect(page.getByRole('region', { name: /Hero Overview Banner/i })).toBeVisible();
@@ -311,7 +312,7 @@ test.describe('Progress Quest terminal dashboard', () => {
     expect(box).not.toBeNull();
     expect(box?.x).toBeGreaterThanOrEqual(0);
     expect(box?.x + (box?.width ?? 0)).toBeLessThanOrEqual(390);
-    await page.getByRole('heading', { name: 'Progress Quest' }).tap();
+    await page.getByRole('heading', { name: 'Progress Quest II' }).tap();
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await expect(tooltip).toBeHidden();
     await trigger.tap();
@@ -458,7 +459,7 @@ test.describe('Progress Quest terminal dashboard', () => {
         log: [
           'Activity 50',
           'Resting at the inn.',
-          'Welcome to Progress Quest! Krg sets out on an adventure.',
+          'Welcome to Progress Quest II! Krg sets out on an adventure.',
           'Act 2 Unlocked!',
           'LEVEL UP! Advanced to level 2!',
           'Quest Completed: Find the lost stapler!',
@@ -473,7 +474,7 @@ test.describe('Progress Quest terminal dashboard', () => {
     const tagFor = (message: string) => log.locator('.log-entry', { hasText: message }).locator('.log-tag');
     await expect(tagFor('Activity 50')).toHaveCount(0);
     await expect(tagFor('Resting at the inn.')).toHaveCount(0);
-    await expect(tagFor('Welcome to Progress Quest! Krg sets out on an adventure.')).toHaveCount(0);
+    await expect(tagFor('Welcome to Progress Quest II! Krg sets out on an adventure.')).toHaveCount(0);
     await expect(tagFor('Act 2 Unlocked!')).toHaveText('Level');
     await expect(tagFor('LEVEL UP! Advanced to level 2!')).toHaveText('Level');
     await expect(tagFor('Quest Completed: Find the lost stapler!')).toHaveText('Quest');
@@ -548,7 +549,7 @@ test.describe('Progress Quest terminal dashboard', () => {
     const newCharBtn = page.getByRole('button', { name: /New Character/i });
     await newCharBtn.click();
 
-    await expect(page.getByText('Progress Quest - New Character')).toBeVisible();
+    await expect(page.getByText('Progress Quest II — New Character')).toBeVisible();
     await expect(page.getByText(/Prime Stats \(3d6 Rolls\)/i)).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Character Name' })).toHaveAttribute('maxlength', '120');
 
@@ -567,7 +568,7 @@ test.describe('Progress Quest terminal dashboard', () => {
     const submitBtn = page.getByRole('button', { name: /Sold! Start Questing/i });
     await submitBtn.click();
 
-    await expect(page.getByText('Progress Quest - New Character')).not.toBeVisible();
+    await expect(page.getByText('Progress Quest II — New Character')).not.toBeVisible();
     await expect(page.locator('[data-testid="hero-prime-stats"] strong')).toHaveText(acceptedStats);
   });
 

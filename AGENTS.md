@@ -1,14 +1,14 @@
-# AGENTS.md — progquest
+# AGENTS.md — Progress Quest II
 
 Standalone guidance for AI coding agents (OpenCode, Codex CLI, Cursor, Aider, Cline, Continue, Goose, Claude Code) working in this repository. Self-contained — single source of truth for agent guidance in this project.
 
-**About this project:** `progquest` is the modern web implementation of Eric Fredricksen's classic zero-player RPG *Progress Quest* (web edition). The goal of this project is to modernize the legacy 2000s JavaScript / jQuery codebase into a clean, modular, responsive, high-performance web application while retaining 100% of the original game's iconic mechanics, flavor text, humor, and deterministic progression logic.
+**About this project:** `progress-quest-ii` is an unofficial modern continuation of Eric Fredricksen's classic zero-player RPG *Progress Quest* (web edition). The goal of this project is to modernize the legacy 2000s JavaScript / jQuery codebase into a clean, modular, responsive, high-performance web application while retaining 100% of the original game's iconic mechanics, flavor text, humor, and deterministic progression logic.
 
 ---
 
 ## Mission
 
-Build and maintain a modern, fully-typed, responsive, and tested web application for **Progress Quest**.
+Build and maintain a modern, fully-typed, responsive, and tested web application for **Progress Quest II**.
 
 - **Reference Baseline:** `pq-web-src/` contains the legacy JavaScript/HTML source (`main.js`, `config.js`, `newguy.js`, `roster.js`, `sim.js`, `cheat.js`, `clock.js`, `main.css`, `progros.css`). It serves as the authoritative functional reference.
 - **Modernization Goals:**
@@ -211,5 +211,4 @@ Every piece of identified follow-up work — including feature ideas, discovered
 1. **Feature Branches**: All non-trivial work MUST be done on a dedicated branch (e.g. `feat/game-state-machine`, `feat/save-system`, `fix/encumbrance-calc`).
 2. **Pull Requests**: Submit PRs via `gh pr create` with clear titles, descriptions, and linked issue numbers.
 3. **Verification**: Run `npm test` and `npx tsc --noEmit` before opening or merging any PR.
-
 

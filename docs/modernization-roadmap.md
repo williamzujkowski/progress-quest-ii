@@ -2,7 +2,7 @@
 
 Status: accepted direction, incremental delivery  
 Decision date: 2026-08-02  
-Tracking epic: [#37](https://github.com/williamzujkowski/progquest/issues/37)
+Tracking epic: [#37](https://github.com/williamzujkowski/progress-quest-ii/issues/37)
 
 ## Outcome
 
@@ -75,7 +75,7 @@ to presentation effects such as sound.
 
 - Local and CI gates have explicit commands for lint, types, unit tests, build,
   browser tests, accessibility, and dependency/security checks.
-- The installed/offline `/progquest/` build updates safely and has a tested
+- The installed/offline `/progress-quest-ii/` build updates safely and has a tested
   rollback/unregister path.
 - Deployment inputs are reproducible and the deployed artifact is attributable to
   its source commit and workflow.
@@ -96,41 +96,41 @@ to presentation effects such as sound.
 
 ### Phase 0 — make correctness observable
 
-1. Make the legacy baseline reproducible in fresh clones ([#38](https://github.com/williamzujkowski/progquest/issues/38)).
-2. Add deterministic legacy trace and invariant contracts ([#39](https://github.com/williamzujkowski/progquest/issues/39)).
+1. Make the legacy baseline reproducible in fresh clones ([#38](https://github.com/williamzujkowski/progress-quest-ii/issues/38)).
+2. Add deterministic legacy trace and invariant contracts ([#39](https://github.com/williamzujkowski/progress-quest-ii/issues/39)).
 3. Fix the confirmed post-transition gold and immutable-inventory defects
-   ([#40](https://github.com/williamzujkowski/progquest/issues/40),
-   [#41](https://github.com/williamzujkowski/progquest/issues/41)).
-4. Extract the approved pure transition seam ([#42](https://github.com/williamzujkowski/progquest/issues/42)).
+   ([#40](https://github.com/williamzujkowski/progress-quest-ii/issues/40),
+   [#41](https://github.com/williamzujkowski/progress-quest-ii/issues/41)).
+4. Extract the approved pure transition seam ([#42](https://github.com/williamzujkowski/progress-quest-ii/issues/42)).
 5. Restore legacy mechanics and save/RNG compatibility
-   ([#15](https://github.com/williamzujkowski/progquest/issues/15),
-   [#2](https://github.com/williamzujkowski/progquest/issues/2)).
+   ([#15](https://github.com/williamzujkowski/progress-quest-ii/issues/15),
+   [#2](https://github.com/williamzujkowski/progress-quest-ii/issues/2)).
 
 ### Phase 1 — preserve and explain a running session
 
 1. Preserve elapsed time across throttling and multi-transition steps
-   ([#44](https://github.com/williamzujkowski/progquest/issues/44)).
+   ([#44](https://github.com/williamzujkowski/progress-quest-ii/issues/44)).
 2. Checkpoint and restore the active session safely
-   ([#43](https://github.com/williamzujkowski/progquest/issues/43)).
+   ([#43](https://github.com/williamzujkowski/progress-quest-ii/issues/43)).
 3. Add recovery and privacy-safe diagnostic export
-   ([#45](https://github.com/williamzujkowski/progquest/issues/45)).
+   ([#45](https://github.com/williamzujkowski/progress-quest-ii/issues/45)).
 4. Complete recoverable storage, clipboard, and audio paths
-   ([#28](https://github.com/williamzujkowski/progquest/issues/28),
-   [#21](https://github.com/williamzujkowski/progquest/issues/21)).
+   ([#28](https://github.com/williamzujkowski/progress-quest-ii/issues/28),
+   [#21](https://github.com/williamzujkowski/progress-quest-ii/issues/21)).
 
 ### Phase 2 — complete the modern web contract
 
 1. Ship and test installable/offline PWA behavior
-   ([#4](https://github.com/williamzujkowski/progquest/issues/4)).
+   ([#4](https://github.com/williamzujkowski/progress-quest-ii/issues/4)).
 2. Complete WCAG 2.2 AA behavior and stable activity announcements
-   ([#25](https://github.com/williamzujkowski/progquest/issues/25),
-   [#48](https://github.com/williamzujkowski/progquest/issues/48)).
+   ([#25](https://github.com/williamzujkowski/progress-quest-ii/issues/25),
+   [#48](https://github.com/williamzujkowski/progress-quest-ii/issues/48)).
 3. Expand actionable browser coverage
-   ([#26](https://github.com/williamzujkowski/progquest/issues/26)).
+   ([#26](https://github.com/williamzujkowski/progress-quest-ii/issues/26)).
 4. Harden supply chain and deployment provenance
-   ([#46](https://github.com/williamzujkowski/progquest/issues/46)).
+   ([#46](https://github.com/williamzujkowski/progress-quest-ii/issues/46)).
 5. Make the quality contract explicit and Nexus-compatible
-   ([#47](https://github.com/williamzujkowski/progquest/issues/47)).
+   ([#47](https://github.com/williamzujkowski/progress-quest-ii/issues/47)).
 
 ### Phase 3 — measured cleanup
 
