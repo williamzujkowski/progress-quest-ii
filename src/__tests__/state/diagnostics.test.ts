@@ -104,4 +104,20 @@ describe('runtime diagnostics', () => {
       removeHandlers();
     }
   });
+
+  it('replaces duplicate browser handlers for the same window', () => {
+    const first = new DiagnosticRecorder({ buildId: 'test', interactionId: 'first' });
+    const second = new DiagnosticRecorder({ buildId: 'test', interactionId: 'second' });
+    const removeFirst = installBrowserDiagnosticHandlers(window, first);
+    const removeSecond = installBrowserDiagnosticHandlers(window, second);
+
+    try {
+      window.dispatchEvent(new ErrorEvent('error', { error: new Error('only once') }));
+      expect(first.snapshot()).toHaveLength(0);
+      expect(second.snapshot()).toHaveLength(1);
+    } finally {
+      removeFirst();
+      removeSecond();
+    }
+  });
 });

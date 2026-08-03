@@ -137,10 +137,13 @@ export class DiagnosticRecorder {
 
 export const diagnostics = new DiagnosticRecorder({ buildId: __BUILD_ID__ });
 
+const installedBrowserHandlers = new WeakMap<Window, () => void>();
+
 export function installBrowserDiagnosticHandlers(
   target: Window = window,
   recorder: DiagnosticRecorder = diagnostics,
 ): () => void {
+  installedBrowserHandlers.get(target)?.();
   const handleError = (event: ErrorEvent) => {
     recorder.record({
       code: 'window_error',
@@ -166,8 +169,11 @@ export function installBrowserDiagnosticHandlers(
 
   target.addEventListener('error', handleError);
   target.addEventListener('unhandledrejection', handleRejection);
-  return () => {
+  const removeHandlers = () => {
     target.removeEventListener('error', handleError);
     target.removeEventListener('unhandledrejection', handleRejection);
+    if (installedBrowserHandlers.get(target) === removeHandlers) installedBrowserHandlers.delete(target);
   };
+  installedBrowserHandlers.set(target, removeHandlers);
+  return removeHandlers;
 }
