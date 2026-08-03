@@ -8,6 +8,10 @@ The canonical language for a deterministic zero-player RPG session and its progr
 An active character together with progression tracks, counters, pending work, pause state, and deterministic continuation.
 _Avoid_: Save, character
 
+**Roster identity**:
+A character's exact, case-sensitive name, bounded to 1–120 UTF-16 code units. Saving the same identity replaces its prior roster entry; names that differ by case remain distinct.
+_Avoid_: Normalized name, roster index
+
 **Transition**:
 One application of elapsed time and RNG to a session; it may complete zero, one, or several tasks.
 _Avoid_: Task completion
