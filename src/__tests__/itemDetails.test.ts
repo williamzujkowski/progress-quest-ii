@@ -73,6 +73,13 @@ describe('item tooltip details', () => {
     expect(description.length).toBeLessThanOrEqual(220);
   });
 
+  it('recognizes the canonical monster and drop in live fixed loot', () => {
+    const description = describeInventoryItem('gelatinous cube jam', 1).description;
+
+    expect(description).toContain('Gelatinous Cube');
+    expect(description).toContain('jam');
+  });
+
   it('does not invent monster provenance for an accepted unknown item', () => {
     expect(describeInventoryItem('Uncatalogued item', 1).description).not.toContain('Recovered from');
   });

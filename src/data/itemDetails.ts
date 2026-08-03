@@ -133,10 +133,19 @@ function specialItemParts(name: string): { attribute: string; object: string; co
   return { attribute, object, concept };
 }
 
+function monsterLootParts(name: string): { monster: string; drop: string } | undefined {
+  const canonical = MONSTERS.find(({ name: monster, item }) =>
+    item !== '*' && `${monster} ${item}`.toLowerCase() === name.toLowerCase());
+  if (canonical) return { monster: canonical.name, drop: canonical.item };
+
+  const generatedMonster = name.endsWith(' item') ? name.slice(0, -' item'.length) : undefined;
+  const generated = MONSTERS.find(({ name: monster }) => monster === generatedMonster);
+  return generated ? { monster: generated.name, drop: 'item' } : undefined;
+}
+
 export function describeInventoryItem(name: string, quantity: number): ItemDetails {
   const special = specialItemParts(name);
-  const monsterName = name.endsWith(' item') ? name.slice(0, -' item'.length) : undefined;
-  const monster = MONSTERS.some(({ name: candidate }) => candidate === monsterName) ? monsterName : undefined;
+  const monsterLoot = monsterLootParts(name);
   const label = boundedLabel(name, 'unnamed object');
   const closer = [
     'It is not edible, unless the situation has become unusually philosophical.',
@@ -153,12 +162,8 @@ export function describeInventoryItem(name: string, quantity: number): ItemDetai
     ], `${name}:origin`)}. ${special.concept
       ? `Its connection to ${special.concept} is contractual, untested, and regrettably transferable.`
       : 'It has failed every practical-use hearing with distinction.'}`
-    : monster
-      ? `Recovered from ${monster} under circumstances classified as “inventory.” ${choose([
-        'Chain of custody ended at the first bite mark.',
-        'The incident report remains sticky in several jurisdictions.',
-        'Ownership transferred immediately after a brief and decisive audit.',
-      ], `${name}:incident`)}`
+    : monsterLoot
+      ? `Recovered from ${monsterLoot.monster}, whose comments were unavailable after the encounter. The guild logged the ${monsterLoot.drop} as “field salvage” to avoid a considerably longer form.`
     : BORING_ITEMS.includes(name)
       ? `Once merely “${name},” this object was reassigned as treasure. ${choose([
         'The promotion includes no raise, purpose, or right of appeal.',
