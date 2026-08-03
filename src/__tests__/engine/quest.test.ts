@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RandomGenerator } from '../../engine/prng';
-import { generateDeliverQuest, generateFetchQuest, generatePlacateQuest, generateSeekQuest } from '../../engine/sim';
+import { generateDeliverQuest, generateFetchQuest, generatePlacateQuest, generateQuest, generateSeekQuest } from '../../engine/sim';
 
 function stateAfterPicks(seed: string, picks: number) {
   const rng = new RandomGenerator(seed);
@@ -34,5 +34,20 @@ describe('legacy quest generators', () => {
     expect(quest).toEqual({ kind: 'placate', description: 'Placate the Swamp Elves' });
     expect('target' in quest).toBe(false);
     expect(rng.getState()).toEqual(stateAfterPicks('placate', 2));
+  });
+
+  it('dispatches all five legacy quest branches from one branch-selection pick', () => {
+    const outputs = ['dispatch-2', 'dispatch-9', 'dispatch-0', 'dispatch-21', 'dispatch-1'].map((seed) => {
+      const rng = new RandomGenerator(seed);
+      return [generateQuest(rng, 1), rng.getState()];
+    });
+
+    expect(outputs).toEqual([
+      [{ kind: 'exterminate', description: 'Exterminate the Piercers', target: 'Piercer|3|tip', targetIndex: 169 }, [0.7386679488699883, 0.1321149712894112, 0.25837940047495067, 1859545]],
+      [{ kind: 'seek', description: 'Seek the Mythic Amethyst' }, [0.440847976366058, 0.36323591391555965, 0.49511508364230394, 179019]],
+      [{ kind: 'deliver', description: 'Deliver this I.O.U.' }, [0.31013343250378966, 0.797919366043061, 0.5409550939220935, 1914968]],
+      [{ kind: 'fetch', description: 'Fetch me a sock' }, [0.9172258146572858, 0.4534230341669172, 0.2273825639858842, 134543]],
+      [{ kind: 'placate', description: 'Placate the Mariliths' }, [0.685977301094681, 0.4743830212391913, 0.5976645925547928, 215245]],
+    ]);
   });
 });

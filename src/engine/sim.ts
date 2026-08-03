@@ -133,6 +133,17 @@ export function generatePlacateQuest(rng: RandomGenerator, level: number) {
   return { kind: 'placate' as const, description: `Placate ${definite(target.name, 2)}` };
 }
 
+export function generateQuest(rng: RandomGenerator, level: number) {
+  switch (rng.random(5)) {
+    case 0: return generateExterminateQuest(rng, level);
+    case 1: return generateSeekQuest(rng);
+    case 2: return generateDeliverQuest(rng);
+    case 3: return generateFetchQuest(rng);
+    case 4: return generatePlacateQuest(rng, level);
+    default: throw new RangeError('Quest branch is outside the legacy table');
+  }
+}
+
 export function generateLootItem(rng: RandomGenerator, monsterName?: string): string {
   if (monsterName && rng.random(2) === 0) {
     return `${monsterName} item`;
