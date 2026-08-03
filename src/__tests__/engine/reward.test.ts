@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { RandomGenerator } from '../../engine/prng';
-import { generateSpellReward, selectQuestReward } from '../../engine/sim';
+import { generateSpellReward, generateStatReward, selectQuestReward } from '../../engine/sim';
+import type { StatsMap } from '../../engine/types';
+
+const balancedStats: StatsMap = { STR: 10, CON: 10, DEX: 10, INT: 10, WIS: 10, CHA: 10, 'HP Max': 10, 'MP Max': 10 };
+const skewedStats: StatsMap = { ...balancedStats, STR: 30 };
+const fractionalStats: StatsMap = { ...balancedStats, STR: 1.9, CON: 1, DEX: 1, INT: 1, WIS: 1, CHA: 1 };
 
 describe('legacy quest reward selector', () => {
   it.each([
@@ -14,6 +19,7 @@ describe('legacy quest reward selector', () => {
     expect(selectQuestReward(rng)).toBe(expected);
     expect(rng.getState()).toEqual(expectedState);
   });
+
 });
 
 describe('legacy spell reward', () => {
@@ -33,5 +39,28 @@ describe('legacy spell reward', () => {
 
     expect(generateSpellReward(rng, 1, -1)).toBeUndefined();
     expect(rng.getState()).toEqual(initialState);
+  });
+});
+
+describe('legacy stat reward', () => {
+  it.each([
+    ['stat-0', 'CHA', [0.3283885531127453, 0.29530849447473884, 0.5603134867269546, 1437228]],
+    ['stat-3', 'DEX', [0.35300477920100093, 0.5078754595015198, 0.07098527019843459, 555139]],
+  ] as const)('covers direct and weighted selection for %s', (seed, stat, state) => {
+    const rng = new RandomGenerator(seed);
+
+    expect([generateStatReward(rng, balancedStats), rng.getState()]).toEqual([stat, state]);
+  });
+
+  it('uses square weighting for skewed prime stats', () => {
+    const rng = new RandomGenerator('stat-3');
+    expect(generateStatReward(rng, skewedStats)).toBe('STR');
+    expect(rng.getState()).toEqual([0.35300477920100093, 0.5078754595015198, 0.07098527019843459, 555139]);
+  });
+
+  it('truncates accepted fractional stats like legacy GetI', () => {
+    const rng = new RandomGenerator('edge-0');
+    expect(generateStatReward(rng, fractionalStats)).toBe('CON');
+    expect(rng.getState()).toEqual([0.9787654045503587, 0.00042752851732075214, 0.1746194192674011, 1634575]);
   });
 });
