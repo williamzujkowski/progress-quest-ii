@@ -5,12 +5,18 @@ export function startGameClock(
   visibilityTarget: Pick<Document, 'hidden' | 'addEventListener' | 'removeEventListener'> | undefined = typeof document === 'undefined' ? undefined : document,
 ): () => void {
   let previousTime = now();
-  const resetBaseline = () => { previousTime = now(); };
+  let wasHidden = visibilityTarget?.hidden ?? false;
+  const resetBaseline = () => {
+    previousTime = now();
+    wasHidden = visibilityTarget?.hidden ?? false;
+  };
   visibilityTarget?.addEventListener('visibilitychange', resetBaseline);
   const timer = setInterval(() => {
     const currentTime = now();
-    if (visibilityTarget?.hidden) {
+    const isHidden = visibilityTarget?.hidden ?? false;
+    if (isHidden || wasHidden) {
       previousTime = currentTime;
+      wasHidden = isHidden;
       return;
     }
     try {
