@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { devices, expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFile } from 'node:fs/promises';
 
@@ -201,6 +201,45 @@ test.describe('Progress Quest terminal dashboard', () => {
     await expect(page.getByRole('tooltip')).toContainText('Quantity carried: 3');
     await page.locator('.tooltip-trigger', { hasText: 'Rabbit Punch' }).focus();
     await expect(page.getByRole('tooltip')).toContainText('Spell level: 2');
+  });
+
+  test('keeps a tooltip open under the pointer and dismisses it with Escape', async ({ page }) => {
+    await page.goto('/');
+
+    await page.locator('.tooltip-trigger').first().hover();
+    const tooltip = page.getByRole('tooltip');
+    await expect(tooltip).toBeVisible();
+    await tooltip.hover();
+    await expect(tooltip).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(tooltip).toBeHidden();
+  });
+
+  test('toggles a tooltip by touch inside a narrow viewport', async ({ browser }) => {
+    const context = await browser.newContext({ ...devices['iPhone 13'], baseURL: 'http://localhost:5173' });
+    const page = await context.newPage();
+    await page.goto('/');
+
+    const trigger = page.locator('.tooltip-trigger').first();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await trigger.tap();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const tooltip = page.getByRole('tooltip');
+    await expect(tooltip).toBeVisible();
+    const box = await tooltip.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box?.x).toBeGreaterThanOrEqual(0);
+    expect(box?.x + (box?.width ?? 0)).toBeLessThanOrEqual(390);
+    await page.getByRole('heading', { name: 'Progress Quest' }).tap();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(tooltip).toBeHidden();
+    await trigger.tap();
+    await expect(tooltip).toBeVisible();
+    await trigger.tap();
+    await expect(tooltip).toBeHidden();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await context.close();
   });
 
   test('selects and persists an OKLCH terminal theme', async ({ page }) => {

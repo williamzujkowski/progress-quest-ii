@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { useId, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { describeEquipment, describeInventoryItem, describeSpell } from '../data/itemDetails';
 import type { EquipSlot } from '../engine/types';
 
@@ -11,8 +11,10 @@ type TooltipProps =
 
 export const ItemTooltip: React.FC<TooltipProps> = (props) => {
   const tooltipId = useId();
-  const triggerRef = useRef<HTMLSpanElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const tooltipRef = useRef<HTMLSpanElement>(null);
+  const closeTimerRef = useRef<number>(undefined);
+  const openAtPressRef = useRef(false);
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ left: 8, top: 8 });
   const details = props.kind === 'equipment'
@@ -45,6 +47,33 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const dismiss = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', dismiss);
+    return () => document.removeEventListener('keydown', dismiss);
+  }, [open]);
+
+  useEffect(() => () => window.clearTimeout(closeTimerRef.current), []);
+
+  const show = () => {
+    window.clearTimeout(closeTimerRef.current);
+    setOpen(true);
+  };
+  const scheduleHide = () => {
+    closeTimerRef.current = window.setTimeout(() => setOpen(false), 100);
+  };
+  const toggleFromPointer = (event: React.MouseEvent) => {
+    if (event.detail > 0) setOpen(!openAtPressRef.current);
+  };
+  const toggleFromKeyboard = (event: React.KeyboardEvent) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    setOpen((current) => !current);
+  };
+
   const tooltip = open ? createPortal(
     <span
       className="item-tooltip item-tooltip-visible"
@@ -52,6 +81,8 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
       ref={tooltipRef}
       role="tooltip"
       style={{ left: position.left, top: position.top }}
+      onMouseEnter={show}
+      onMouseLeave={scheduleHide}
     >
       <strong>{props.name || 'Empty slot'}</strong>
       <span>{details.description}</span>
@@ -62,19 +93,24 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
 
   return (
     <>
-      <span
+      <button
+      type="button"
       className="tooltip-trigger"
       ref={triggerRef}
-      tabIndex={0}
+      aria-controls={open ? tooltipId : undefined}
       aria-describedby={open ? tooltipId : undefined}
+      aria-expanded={open}
       title={details.description}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onFocus={() => setOpen(true)}
+      onMouseEnter={show}
+      onMouseLeave={scheduleHide}
+      onFocus={show}
       onBlur={() => setOpen(false)}
+      onPointerDown={() => { openAtPressRef.current = open; }}
+      onClick={toggleFromPointer}
+      onKeyDown={toggleFromKeyboard}
     >
       {props.name}
-      </span>
+      </button>
       {tooltip}
     </>
   );
