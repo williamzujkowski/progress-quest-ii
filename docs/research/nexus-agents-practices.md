@@ -95,7 +95,7 @@ npm run agents:verify
 git diff --check
 ```
 
-Use `npm run agents:review -- <pr-url>` at PR handoff. Keep `.nexus-agents/` and browser/test artifacts ignored. Add a drift script only when a real duplicated registry or generated artifact exists; generic drift infrastructure would be speculative.
+The original recommendation to run Nexus PR review at handoff is superseded while adapterless runs can emit zero-token heuristic findings. Use independent Codex reviewers and `.agents/skills/code-review` until upstream [#4350](https://github.com/nexus-substrate/nexus-agents/issues/4350) and [#4351](https://github.com/nexus-substrate/nexus-agents/issues/4351) are fixed and verified locally. Keep `.nexus-agents/` and browser/test artifacts ignored. Add a drift script only when a real duplicated registry or generated artifact exists; generic drift infrastructure would be speculative.
 
 ### 6. Security and observability proportional to a browser game
 
