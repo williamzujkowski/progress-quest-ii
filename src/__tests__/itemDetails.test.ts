@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { describeEquipment, describeInventoryItem, describeSpell } from '../data/itemDetails';
-import { SPELLS } from '../data/traits';
+import { EQUIP_SLOTS, SPELLS } from '../data/traits';
 
 describe('item tooltip details', () => {
   it('reports equipment slot power without inventing combat damage', () => {
@@ -18,6 +18,13 @@ describe('item tooltip details', () => {
     expect(details.description).toContain('-3');
     expect(details.description).toContain('Burlap');
     expect(details.effect).toContain('Defense rating: 0');
+  });
+
+  it('keeps the equipped slot meaningful for the same armor', () => {
+    const armorSlots = EQUIP_SLOTS.filter((slot) => slot !== 'Weapon' && slot !== 'Shield');
+    const descriptions = armorSlots.map((slot) => describeEquipment('Burlap', slot).description);
+
+    expect(new Set(descriptions).size).toBe(armorSlots.length);
   });
 
   it('keeps spell flavor stable across levels without inventing a combat effect', () => {

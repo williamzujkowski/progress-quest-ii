@@ -49,7 +49,7 @@ export function describeEquipment(name: string, slot: EquipSlot): ItemDetails {
   ];
   const description = modifier
     ? `${slot === 'Weapon' ? `This ${base} entered service` : `Issued as ${slot.toLowerCase()}, this ${base} remains in service`} after its ${modifier} designation passed a review with no surviving minutes${explicitLabel ? `; its ${explicitLabel} assessor’s mark survived appeal` : ''}. ${choose(closer, `${slot}:${name}:closer`)}`
-    : `This ${base} entered service with ${explicitLabel ? `a ${explicitLabel} assessor’s mark and no` : 'no'} named modifier, which procurement calls restraint. ${choose(closer, `${slot}:${name}:closer`)}`;
+    : `${slot === 'Weapon' ? `This ${base}` : `Issued as ${slot.toLowerCase()}, this ${base}`} entered service with ${explicitLabel ? `a ${explicitLabel} assessor’s mark and no` : 'no'} named modifier, which procurement calls restraint. ${choose(closer, `${slot}:${name}:closer`)}`;
 
   return {
     description,
