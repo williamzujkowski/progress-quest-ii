@@ -7,12 +7,18 @@ const PRECACHE_PATHS = new Set(PRECACHE_URLS.map((path) => new URL(path, SCOPE_U
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(
-      PRECACHE_URLS.map((path) => new Request(new URL(path, SCOPE_URL), {
-        cache: 'reload',
-        credentials: 'same-origin',
-      })),
-    )),
+    (async () => {
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.addAll(PRECACHE_URLS.map((path) => new Request(new URL(path, SCOPE_URL), {
+          cache: 'reload',
+          credentials: 'same-origin',
+        })));
+      } catch (error) {
+        await caches.delete(CACHE_NAME);
+        throw error;
+      }
+    })(),
   );
 });
 
@@ -29,7 +35,13 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('message', (event) => {
-  if (event.data?.type === 'pwa_apply_update') void self.skipWaiting();
+  const data = event.data;
+  if (
+    typeof data === 'object'
+    && data !== null
+    && Object.keys(data).length === 1
+    && data.type === 'pwa_apply_update'
+  ) void self.skipWaiting();
 });
 
 self.addEventListener('fetch', (event) => {

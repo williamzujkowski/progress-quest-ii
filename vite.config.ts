@@ -12,6 +12,6 @@ export default defineConfig({
   },
   plugins: [react()],
   test: {
-    exclude: ['e2e/**', 'node_modules/**'],
+    exclude: ['e2e/**', 'e2e-pwa/**', 'node_modules/**'],
   },
 });

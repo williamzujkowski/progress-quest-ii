@@ -23,7 +23,9 @@ The dashboard is responsive at phone widths and keeps growing activity, inventor
 
 ### PWA status, without the marketing fog
 
-The live site is a fast static web app deployed over HTTPS to GitHub Pages, with validated local saves. Full installable/offline PWA behavior—manifest, service worker, update handling, and offline end-to-end coverage—is in progress on the [modernization roadmap](./docs/modernization-roadmap.md), but is not shipped yet. Your browser may offer an install prompt anyway; that is not evidence that offline play works, merely evidence that browsers are optimistic.
+The live site is an installable PWA deployed over HTTPS to GitHub Pages. After one successful online visit, the current app shell starts offline while validated characters remain in browser storage. New builds wait politely—an alarming development—until you approve **Update now**; a failed update leaves the previous offline shell in office.
+
+If a cached shell ever becomes impressively confused, use the browser's site settings to clear data or unregister the service worker, then revisit the site online. This removes browser-local characters too, so export any valued `.pqw` files first. Nothing is uploaded during this administrative ceremony.
 
 ## What is in the box
 
@@ -32,7 +34,7 @@ The live site is a fast static web app deployed over HTTPS to GitHub Pages, with
 - Responsive desktop and mobile layouts with bounded scrolling panels.
 - Remarque Dark, Remarque Light, and legacy ProgrOS themes powered by [`@williamzujkowski/oklch-terminal-themes`](https://github.com/williamzujkowski/oklch-terminal-themes).
 - Accessible keyboard paths, tooltip descriptions, local validation, and fail-closed save imports.
-- A Playwright browser suite covering dense dashboards, mobile widths, themes, accessibility, saves, and creator flows.
+- Playwright browser suites covering dense dashboards, mobile widths, themes, accessibility, saves, creator flows, installation, offline restart, explicit updates, rollback, and cache privacy.
 
 Existing `.pqw` saves and locally stored rosters remain compatible. The Roman numeral is branding, not an excuse to confiscate anybody's Hob-Hobbit.
 
@@ -57,6 +59,7 @@ npm run lint
 npx tsc -b
 npm run build
 npm run test:e2e
+npm run test:pwa
 npm audit --audit-level=high
 ```
 
@@ -75,6 +78,7 @@ npm run agents:review
 - `src/components/` — React game surfaces and interaction modules.
 - `src/__tests__/` — Vitest unit, fidelity, and state contracts.
 - `e2e/` — Playwright browser and responsive behavior tests.
+- `e2e-pwa/` — production-build install, offline, update, rollback, and cache-safety tests.
 - `pq-web-src/` — read-only legacy reference implementation and behavior oracle.
 - `.agents/skills/` — repository workflow and review skills.
 
