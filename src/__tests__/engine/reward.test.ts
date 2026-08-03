@@ -4,6 +4,8 @@ import { generateSpellReward, generateStatReward, selectQuestReward } from '../.
 import type { StatsMap } from '../../engine/types';
 
 const balancedStats: StatsMap = { STR: 10, CON: 10, DEX: 10, INT: 10, WIS: 10, CHA: 10, 'HP Max': 10, 'MP Max': 10 };
+const skewedStats: StatsMap = { ...balancedStats, STR: 30 };
+const fractionalStats: StatsMap = { ...balancedStats, STR: 1.9, CON: 1, DEX: 1, INT: 1, WIS: 1, CHA: 1 };
 
 describe('legacy quest reward selector', () => {
   it.each([
@@ -17,6 +19,7 @@ describe('legacy quest reward selector', () => {
     expect(selectQuestReward(rng)).toBe(expected);
     expect(rng.getState()).toEqual(expectedState);
   });
+
 });
 
 describe('legacy spell reward', () => {
@@ -47,5 +50,17 @@ describe('legacy stat reward', () => {
     const rng = new RandomGenerator(seed);
 
     expect([generateStatReward(rng, balancedStats), rng.getState()]).toEqual([stat, state]);
+  });
+
+  it('uses square weighting for skewed prime stats', () => {
+    const rng = new RandomGenerator('stat-3');
+    expect(generateStatReward(rng, skewedStats)).toBe('STR');
+    expect(rng.getState()).toEqual([0.35300477920100093, 0.5078754595015198, 0.07098527019843459, 555139]);
+  });
+
+  it('truncates accepted fractional stats like legacy GetI', () => {
+    const rng = new RandomGenerator('edge-0');
+    expect(generateStatReward(rng, fractionalStats)).toBe('CON');
+    expect(rng.getState()).toEqual([0.9787654045503587, 0.00042752851732075214, 0.1746194192674011, 1634575]);
   });
 });

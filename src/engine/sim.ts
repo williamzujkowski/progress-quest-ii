@@ -159,9 +159,9 @@ export function generateSpellReward(rng: RandomGenerator, level: number, wisdom:
 
 export function generateStatReward(rng: RandomGenerator, stats: StatsMap): keyof StatsMap {
   if (rng.random(2) < 1) return rng.pick(ALL_STATS);
-  let roll = rng.random(PRIME_STATS.reduce((total, stat) => total + stats[stat] ** 2, 0));
+  let roll = rng.random(PRIME_STATS.reduce((total, stat) => total + Math.trunc(stats[stat]) ** 2, 0));
   for (const stat of PRIME_STATS) {
-    roll -= stats[stat] ** 2;
+    roll -= Math.trunc(stats[stat]) ** 2;
     if (roll < 0) return stat;
   }
   return PRIME_STATS.at(-1) ?? 'STR';

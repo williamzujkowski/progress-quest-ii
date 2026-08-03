@@ -148,7 +148,7 @@ export const useGameStore = create<GameStore>((set, get) => {
 
             for (let upgrades = 0; upgrades < 2; upgrades += 1) {
               const stat = generateStatReward(rng, newStats);
-              newStats[stat] += 1;
+              newStats[stat] = Math.trunc(newStats[stat]) + 1;
               newLog.unshift(gained(stat));
             }
 
