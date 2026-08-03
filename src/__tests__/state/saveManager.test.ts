@@ -53,6 +53,15 @@ describe('Save Manager & Serialization', () => {
     });
   });
 
+  it('rejects base64 that decodes to malformed UTF-8', () => {
+    const malformedUtf8 = btoa(String.fromCharCode(0xc3, 0x28));
+
+    expect(decodePQWSave(malformedUtf8)).toMatchObject({
+      ok: false,
+      error: { code: 'malformed_base64' },
+    });
+  });
+
   it('returns a typed schema error for incomplete JSON', () => {
     const invalidJson = JSON.stringify({ Traits: { Name: 'Broken' } });
     const encoded = btoa(unescape(encodeURIComponent(invalidJson)));
