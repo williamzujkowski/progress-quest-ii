@@ -1,7 +1,9 @@
 import { create } from 'zustand';
+import { ALL_STATS, PRIME_STATS, SPELLS } from '../data/traits';
 import { soundFX } from './audio';
 import { RandomGenerator, type PRNGSeed } from '../engine/prng';
 import { createNewCharacter, equipPrice, generateEquipUpgrade, generateLootItem, generateSpellUpgrade, generateTaskDescription } from '../engine/sim';
+import { indefinite } from '../engine/text';
 import { levelUpTime } from '../engine/math';
 import type { CharacterSheet, ProgressionState, ProgressTask, StatsMap } from '../engine/types';
 
@@ -30,6 +32,30 @@ function createProgression(level: number): ProgressionState {
     completedTasks: 0,
     elapsedSeconds: 0,
   };
+}
+
+function gained(value: string, quantity = 1): string {
+  return `Gained ${indefinite(value, quantity)}`;
+}
+
+function chooseStatUpgrade(rng: RandomGenerator, stats: StatsMap): keyof StatsMap {
+  if (rng.random(2) < 1) return rng.pick(ALL_STATS);
+  let roll = rng.random(PRIME_STATS.reduce((total, stat) => total + stats[stat] ** 2, 0));
+  for (const stat of PRIME_STATS) {
+    roll -= stats[stat] ** 2;
+    if (roll < 0) return stat;
+  }
+  return PRIME_STATS.at(-1) ?? 'STR';
+}
+
+function upgradeSpell(rng: RandomGenerator, level: number, wisdom: number, spells: CharacterSheet['Spells']): CharacterSheet['Spells'] {
+  const limit = Math.min(wisdom + level, SPELLS.length);
+  const spellName = SPELLS[Math.min(rng.random(limit), rng.random(limit))];
+  if (!spellName) return spells;
+  const existing = spells.find((spell) => spell.name === spellName);
+  return existing
+    ? spells.map((spell) => spell.name === spellName ? { ...spell, level: spell.level + 1 } : spell)
+    : [...spells, { name: spellName, level: 1 }];
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
@@ -120,17 +146,32 @@ export const useGameStore = create<GameStore>((set, get) => {
                 currentSeconds: Math.min(newProgression.experience.maxSeconds, newProgression.experience.currentSeconds + progressDelta),
               },
             };
-          }
-          const itemLoot = task.loot?.type === 'fixed' ? task.loot.item : generateLootItem(rng);
-          const existingIndex = newInventory.findIndex((item) => item.name === itemLoot);
-          if (existingIndex >= 0) {
-            newInventory = newInventory.map((item, index) => (index === existingIndex ? { ...item, qty: item.qty + 1 } : item));
           } else {
-            newInventory = [...newInventory, { name: itemLoot, qty: 1 }];
-          }
-          const article = 'AEIOUÜaeiouü'.includes(itemLoot.charAt(0)) ? 'an' : 'a';
-          newLog.unshift(`Gained ${article} ${itemLoot}`);
+            newTraits.Level += 1;
+            newLog.unshift(gained('Level'));
 
+            const hpGain = Math.floor(newStats.CON / 3) + 1 + rng.random(4);
+            newStats['HP Max'] += hpGain;
+            newLog.unshift(gained('HP Max', hpGain));
+
+            const mpGain = Math.floor(newStats.INT / 3) + 1 + rng.random(4);
+            newStats['MP Max'] += mpGain;
+            newLog.unshift(gained('MP Max', mpGain));
+
+            for (let upgrades = 0; upgrades < 2; upgrades += 1) {
+              const stat = chooseStatUpgrade(rng, newStats);
+              newStats[stat] += 1;
+              newLog.unshift(gained(stat));
+            }
+
+            newSpells = upgradeSpell(rng, newTraits.Level, newStats.WIS, newSpells);
+            newProgression = {
+              ...newProgression,
+              experience: { currentSeconds: 0, maxSeconds: levelUpTime(newTraits.Level) },
+            };
+            newLog.unshift(`Saving game: ${newTraits.Name}`);
+            soundFX.playLevelUp();
+          }
           const questWasComplete = newQuest.currentProgress >= newQuest.maxProgress;
           if (!questWasComplete) {
             newQuest.currentProgress = Math.min(newQuest.maxProgress, newQuest.currentProgress + progressDelta);
@@ -139,28 +180,22 @@ export const useGameStore = create<GameStore>((set, get) => {
             newQuest.maxProgress = Math.floor(newQuest.maxProgress * 1.2) + 1;
             newLog.unshift(`Quest Completed: ${newQuest.description}!`);
             soundFX.playQuestComplete();
-
             newSpells = generateSpellUpgrade(rng, newSpells);
 
-            newPlot.currentProgress += 1;
-            if (newPlot.currentProgress >= newPlot.maxProgress) {
-              newPlot.act += 1;
-              newPlot.currentProgress = 0;
-              newPlot.maxProgress = Math.floor(newPlot.maxProgress * 1.5);
-              newLog.unshift(`Act ${newPlot.act} Unlocked!`);
-            }
-
-            newTraits.Level += 1;
-            newStats.STR += 1;
-            newStats.CON += 1;
-            newStats['HP Max'] += 5;
-            newLog.unshift(`LEVEL UP! Advanced to level ${newTraits.Level}!`);
-            soundFX.playLevelUp();
           }
 
-          if (!questWasComplete && newPlot.currentProgress < newPlot.maxProgress) {
+          if (newPlot.currentProgress < newPlot.maxProgress) {
             newPlot.currentProgress = Math.min(newPlot.maxProgress, newPlot.currentProgress + progressDelta);
           }
+
+          const itemLoot = task.loot?.type === 'fixed' ? task.loot.item : generateLootItem(rng);
+          const existingIndex = newInventory.findIndex((item) => item.name === itemLoot);
+          if (existingIndex >= 0) {
+            newInventory = newInventory.map((item, index) => (index === existingIndex ? { ...item, qty: item.qty + 1 } : item));
+          } else {
+            newInventory = [...newInventory, { name: itemLoot, qty: 1 }];
+          }
+          newLog.unshift(gained(itemLoot));
         } else if (task.type === 'selling') {
           let earned = 0;
           newInventory = newInventory.filter((item) => {

@@ -149,6 +149,10 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
+        <p className="roster-meta">
+          Character saves preserve the hero sheet. Loading starts fresh session XP and task counters; deterministic checkpoints are not available yet.
+        </p>
+
         {feedback && (
           <div
             aria-atomic="true"

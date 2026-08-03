@@ -36,7 +36,7 @@ interface LegacyExpected {
   task: { caption: string; maxMs: number };
   xp: { positionSeconds: number; maxSeconds: number };
   encumbrance: { positionCubits: number; maxCubits: number };
-  quest: { positionSeconds: number; maxSeconds: number };
+  quest: { caption: string; positionSeconds: number; maxSeconds: number; monsterIndex: number | null };
   plot: { act: number; positionSeconds: number; maxSeconds: number };
   inventory: Pair<number>[];
   equipment: Pair<string>[];
@@ -63,7 +63,7 @@ export interface EncounterTransitionObservation {
     counters: { completedTasks: number; elapsedSeconds: number };
     experience: { currentSeconds: number; maxSeconds: number };
     encumbrance: { currentCubits: number; maxCubits: number };
-    quest: { currentSeconds: number; maxSeconds: number };
+    quest: { description: string; currentSeconds: number; maxSeconds: number };
     plot: { act: number; currentSeconds: number; maxSeconds: number };
   };
 }
@@ -101,7 +101,11 @@ export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixtur
       counters: { completedTasks: expected.counters.tasks, elapsedSeconds: expected.counters.elapsedSeconds },
       experience: { currentSeconds: expected.xp.positionSeconds, maxSeconds: expected.xp.maxSeconds },
       encumbrance: { currentCubits: expected.encumbrance.positionCubits, maxCubits: expected.encumbrance.maxCubits },
-      quest: { currentSeconds: expected.quest.positionSeconds, maxSeconds: expected.quest.maxSeconds },
+      quest: {
+        description: expected.quest.caption,
+        currentSeconds: expected.quest.positionSeconds,
+        maxSeconds: expected.quest.maxSeconds,
+      },
       plot: { act: expected.plot.act, currentSeconds: expected.plot.positionSeconds, maxSeconds: expected.plot.maxSeconds },
     },
   };
@@ -187,6 +191,7 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
           maxCubits: calculateEncumbranceMax(result.character.Stats.STR),
         },
         quest: {
+          description: result.character.Quest.description,
           currentSeconds: result.character.Quest.currentProgress,
           maxSeconds: result.character.Quest.maxProgress,
         },

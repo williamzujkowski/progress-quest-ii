@@ -2,9 +2,13 @@ import { KLASSES, RACES } from '../data/traits';
 import { RandomGenerator } from './prng';
 import type { StatsMap } from './types';
 
+export const MAX_FINITE_CHARACTER_LEVEL = Math.floor(Math.log(Number.MAX_VALUE / 60) / Math.log(1.15));
+
 export function levelUpTime(level: number): number {
   // 20 minutes for level 1, exponential increase after that
-  return Math.round((20 + Math.pow(1.15, level)) * 60);
+  const seconds = Math.round((20 + Math.pow(1.15, level)) * 60);
+  // ponytail: preserve accepted high-level saves; saturate only when JS numbers overflow.
+  return Number.isFinite(seconds) ? seconds : Number.MAX_VALUE;
 }
 
 export function roll3d6(rng: RandomGenerator): number {

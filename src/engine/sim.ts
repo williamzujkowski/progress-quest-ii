@@ -1,6 +1,7 @@
 import { ARMORS, DEFENSE_ATTRIB, DEFENSE_BAD, EQUIP_SLOTS, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, SPELLS, WEAPONS } from '../data/traits';
 import { calculateEncumbranceMax, generateInitialStats } from './math';
 import { RandomGenerator, type PRNGSeed } from './prng';
+import { indefinite } from './text';
 import type { CharacterSheet, EquipSlot, InventoryItem, ProgressTask, SpellItem } from './types';
 
 const NAME_PARTS_1 = ['Brog', 'Grim', 'Kael', 'Thor', 'Zar', 'Vex', 'Gor', 'Drak', 'Thul', 'Borg', 'Loth', 'Morg', 'Fizz', 'Wiz', 'Snag'];
@@ -143,10 +144,6 @@ export function generateSpellUpgrade(rng: RandomGenerator, currentSpells: SpellI
   return [...currentSpells, { name: spellName, level: 1 }];
 }
 
-function indefiniteArticle(value: string): string {
-  return `${'AEIOUÜaeiouü'.includes(value.charAt(0)) ? 'an' : 'a'} ${value}`;
-}
-
 function generateMonsterTask(rng: RandomGenerator, character: CharacterSheet): { description: string; durationMs: number; loot: NonNullable<ProgressTask['loot']> } {
   const characterLevel = character.Traits.Level;
   let targetLevel = characterLevel;
@@ -159,7 +156,7 @@ function generateMonsterTask(rng: RandomGenerator, character: CharacterSheet): {
   rng.random(25);
   const monster = getRandomMonster(rng, targetLevel);
   return {
-    description: `Executing ${indefiniteArticle(monster.name)}...`,
+    description: `Executing ${indefinite(monster.name)}...`,
     durationMs: Math.floor((2 * 3 * targetLevel * 1000) / characterLevel),
     loot: monster.item === '*'
       ? { type: 'random' }

@@ -9,8 +9,8 @@ An active character together with progression tracks, counters, pending work, pa
 _Avoid_: Save, character
 
 **Transition**:
-One ordered application of a completed task to a session.
-_Avoid_: Tick, update
+One application of elapsed time and RNG to a session; it may complete zero, one, or several tasks.
+_Avoid_: Task completion
 
 **Task**:
 Timed work whose duration and current position are measured in milliseconds.
@@ -34,7 +34,7 @@ Derived carried-item quantity, excluding Gold, measured in cubits.
 _Avoid_: Persisted weight
 
 **Task count**:
-The number of completed transitions in a session.
+The number of completed tasks in a session.
 
 **Adventure elapsed**:
 Accumulated whole seconds from completed tasks.

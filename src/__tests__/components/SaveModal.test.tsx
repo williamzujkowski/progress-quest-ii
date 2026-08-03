@@ -17,6 +17,12 @@ afterEach(() => {
 });
 
 describe('Save Manager recovery', () => {
+  it('states that character saves do not preserve session progression yet', () => {
+    render(<SaveModal isOpen onClose={() => undefined} />);
+
+    expect(screen.getByText(/Loading starts fresh session XP and task counters/)).toBeTruthy();
+  });
+
   it('writes only when the player explicitly saves', async () => {
     const setItem = vi.spyOn(Storage.prototype, 'setItem');
     render(<SaveModal isOpen onClose={() => undefined} />);
