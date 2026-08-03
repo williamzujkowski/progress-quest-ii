@@ -150,6 +150,13 @@ export function selectQuestReward(rng: RandomGenerator): QuestRewardKind {
   return (['spell', 'equipment', 'stat', 'item'] as const)[rng.random(4)];
 }
 
+export function generateSpellReward(rng: RandomGenerator, level: number, wisdom: number): string | undefined {
+  const limit = Math.min(wisdom + level, SPELLS.length);
+  if (!Number.isInteger(limit) || limit <= 0) return undefined;
+  const spellName = SPELLS[Math.min(rng.random(limit), rng.random(limit))];
+  return spellName;
+}
+
 export function generateLootItem(rng: RandomGenerator, monsterName?: string): string {
   if (monsterName && rng.random(2) === 0) {
     return `${monsterName} item`;
