@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../../data/limits';
 import { RandomGenerator } from '../../engine/prng';
-import { applyQuestReward, createNewCharacter, generateItemReward, generateSpellReward, generateStatReward, selectQuestReward } from '../../engine/sim';
+import { applyQuestReward, applySpellReward, createNewCharacter, generateItemReward, generateSpellReward, generateStatReward, selectQuestReward } from '../../engine/sim';
 import type { StatsMap } from '../../engine/types';
 
 const balancedStats: StatsMap = { STR: 10, CON: 10, DEX: 10, INT: 10, WIS: 10, CHA: 10, 'HP Max': 10, 'MP Max': 10 };
@@ -104,6 +105,7 @@ describe('legacy quest reward dispatcher', () => {
     const result = applyQuestReward(rng, character);
 
     expect(readValue(result.character)).toBe(1_000_000_000);
+    expect(result.effect).toBeUndefined();
   });
 
   it('keeps reused item quantity and Gold within accepted save bounds', () => {
@@ -116,6 +118,7 @@ describe('legacy quest reward dispatcher', () => {
     const itemResult = applyQuestReward(itemRng, itemCharacter);
 
     expect(itemResult.character.Inventory).toEqual([{ name: 'Unearthly Tiara of Craft', qty: 1_000_000_000 }]);
+    expect(itemResult.effect).toBeUndefined();
 
     const goldCharacter = createNewCharacter('Boundary', 'Half Orc', 'Ur-Paladin', 'gold-boundary');
     goldCharacter.Inventory = Array.from({ length: 299 }, (_, index) => ({ name: `Item ${index}`, qty: 1 }));
@@ -126,6 +129,28 @@ describe('legacy quest reward dispatcher', () => {
     const goldResult = applyQuestReward(goldRng, goldCharacter);
 
     expect(goldResult.character.Gold).toBe(1_000_000_000_000);
+    expect(goldResult.effect).toBeUndefined();
+  });
+
+  it('reports the actual fractional stat and Gold credited at the ceiling', () => {
+    const statCharacter = createNewCharacter('Boundary', 'Half Orc', 'Robot Monk', 1);
+    statCharacter.Stats = { ...balancedStats, 'MP Max': MAX_PERSISTED_VALUE - 0.5 };
+
+    const statResult = applyQuestReward(new RandomGenerator('fraction-118'), statCharacter);
+
+    expect(statResult.character.Stats['MP Max']).toBe(MAX_PERSISTED_VALUE);
+    expect(statResult.effect).toEqual({ type: 'stat', stat: 'MP Max', amount: 0.5 });
+
+    const goldCharacter = createNewCharacter('Boundary', 'Half Orc', 'Robot Monk', 1);
+    goldCharacter.Inventory = Array.from({ length: 299 }, (_, index) => ({ name: `Item ${index}`, qty: 1 }));
+    goldCharacter.Gold = MAX_PERSISTED_GOLD - 0.5;
+    const goldRng = new RandomGenerator('dispatch-gold-3255');
+    goldRng.random(100);
+
+    const goldResult = applyQuestReward(goldRng, goldCharacter);
+
+    expect(goldResult.character.Gold).toBe(MAX_PERSISTED_GOLD);
+    expect(goldResult.effect).toEqual({ type: 'gold', amount: 0.5 });
   });
 });
 
@@ -146,6 +171,14 @@ describe('legacy spell reward', () => {
 
     expect(generateSpellReward(rng, 1, -1)).toBeUndefined();
     expect(rng.getState()).toEqual(initialState);
+  });
+
+  it('keeps a full accepted spell list within its persisted limit', () => {
+    const spells = Array.from({ length: MAX_PERSISTED_ITEMS }, () => ({ name: 'Already Accounted For', level: 1 }));
+
+    const result = applySpellReward(new RandomGenerator('spell-reward'), 1, 10, spells);
+
+    expect(result).toHaveLength(MAX_PERSISTED_ITEMS);
   });
 });
 

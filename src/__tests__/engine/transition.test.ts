@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { RandomGenerator } from '../../engine/prng';
 import { createNewCharacter } from '../../engine/sim';
 import { advanceGame } from '../../engine/transition';
 import type { CharacterSheet } from '../../engine/types';
-import { characterSheetSchema } from '../../state/schemas';
+import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../../data/limits';
+import { activeCheckpointV1Schema, characterSheetSchema, MAX_PERSISTED_ITEMS } from '../../state/schemas';
 import oneKillFixture from '../fixtures/legacy/one-kill.json';
 import levelUpFixture from '../fixtures/legacy/xp-level-up.json';
 import questFixture from '../fixtures/legacy/quest-completion.json';
@@ -148,6 +149,25 @@ describe('advanceGame', () => {
     expect(rng.getState()).toEqual(levelUpFixture.expected.rng);
   });
 
+  it('reports the actual fractional secondary-stat gain during level-up', () => {
+    const character = createNewCharacter('Fractional Hero', 'Half Orc', 'Robot Monk', 813);
+    character.Stats = { STR: 10, CON: 10, DEX: 10, INT: 10, WIS: 10, CHA: 10, 'HP Max': 10.5, 'MP Max': 10 };
+    character.Task = { description: 'Executing a fraction...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'partial receipt' } };
+    const state = stateFor(character);
+    state.progression.experience = { currentSeconds: 1, maxSeconds: 1 };
+    const rng = new RandomGenerator('legacy-level-up');
+    rng.setState([...levelUpFixture.input.sheet.seed] as [number, number, number, number]);
+
+    const result = advanceGame(state, 1, rng);
+
+    expect(result.events.filter((event) => event.type === 'stat_gained')).toEqual([
+      { type: 'stat_gained', stat: 'HP Max', amount: 6 },
+      { type: 'stat_gained', stat: 'MP Max', amount: 5 },
+      { type: 'stat_gained', stat: 'INT', amount: 1 },
+      { type: 'stat_gained', stat: 'HP Max', amount: 0.5 },
+    ]);
+  });
+
   it('matches the legacy quest-completion reward and event order', () => {
     const sheet = questFixture.input.sheet;
     const character: CharacterSheet = {
@@ -215,6 +235,20 @@ describe('advanceGame', () => {
     ]);
   });
 
+  it('keeps an accepted maximum gold balance valid when selling inventory', () => {
+    const character = createNewCharacter('Treasurer', 'Half Orc', 'Robot Monk', 810);
+    character.Gold = MAX_PERSISTED_GOLD;
+    character.Inventory = [{ name: 'Auditor bait', qty: MAX_PERSISTED_VALUE }];
+    character.Task = { description: 'Selling loot...', durationMs: 1, elapsedMs: 0, type: 'selling' };
+    expect(characterSheetSchema.safeParse(character).success).toBe(true);
+
+    const result = advanceGame(stateFor(character), 1, new RandomGenerator('maximum-sale'));
+
+    expect(result.state.character.Gold).toBe(MAX_PERSISTED_GOLD);
+    expect(result.events[0]).toEqual({ type: 'inventory_sold', gold: 0 });
+    expect(characterSheetSchema.safeParse(result.state.character).success).toBe(true);
+  });
+
   it('buys equipment before choosing the next task', () => {
     const character = createNewCharacter('Buyer', 'Half Orc', 'Robot Monk', 803);
     character.Gold = 35;
@@ -275,6 +309,36 @@ describe('advanceGame', () => {
     expect(resumed.state.progression.completedTasks).toBe(200);
   });
 
+  it('bounds next-task RNG work above the last finite progression level', () => {
+    const expectedRandomCalls = 7_150;
+    const generateAtMaximumLevel = () => {
+      const character = createNewCharacter('Patient Hero', 'Half Orc', 'Robot Monk', 812);
+      character.Traits.Level = MAX_PERSISTED_VALUE;
+      character.Inventory = [];
+      character.Gold = 0;
+      character.Task = { description: 'Finishing administrative warm-up...', durationMs: 1, elapsedMs: 0, type: 'heading' };
+      const rng = new RandomGenerator('bounded-monster-work');
+      const originalRandom = rng.random.bind(rng);
+      let randomCalls = 0;
+      vi.spyOn(rng, 'random').mockImplementation((limit) => {
+        randomCalls += 1;
+        if (randomCalls > expectedRandomCalls) throw new RangeError('Monster-task RNG budget exceeded');
+        return originalRandom(limit);
+      });
+
+      const result = advanceGame(stateFor(character), 1, rng);
+
+      return { result, rngState: rng.getState(), randomCalls };
+    };
+
+    const first = generateAtMaximumLevel();
+    const replay = generateAtMaximumLevel();
+
+    expect(first.randomCalls).toBe(expectedRandomCalls);
+    expect(characterSheetSchema.safeParse(first.result.state.character).success).toBe(true);
+    expect(replay).toEqual(first);
+  });
+
   it('keeps an accepted lower-bound character valid through level-up', () => {
     const character = createNewCharacter('Boundary Hero', 'Half Orc', 'Robot Monk', 807);
     character.Stats = { STR: 1, CON: 1, DEX: 1, INT: 1, WIS: 1, CHA: 1, 'HP Max': 0.5, 'MP Max': 1.5 };
@@ -289,6 +353,73 @@ describe('advanceGame', () => {
     expect(characterSheetSchema.safeParse(result.state.character).success).toBe(true);
   });
 
+  it('keeps an accepted maximum session valid through level-up and loot', () => {
+    const character = createNewCharacter('Boundary Hero', 'Half Orc', 'Robot Monk', 809);
+    character.Traits.Level = MAX_PERSISTED_VALUE;
+    character.Stats = {
+      STR: MAX_PERSISTED_VALUE,
+      CON: MAX_PERSISTED_VALUE,
+      DEX: MAX_PERSISTED_VALUE,
+      INT: MAX_PERSISTED_VALUE,
+      WIS: MAX_PERSISTED_VALUE,
+      CHA: MAX_PERSISTED_VALUE,
+      'HP Max': MAX_PERSISTED_VALUE,
+      'MP Max': MAX_PERSISTED_VALUE,
+    };
+    character.Inventory = [
+      { name: 'rat tail', qty: MAX_PERSISTED_VALUE },
+      { name: 'bureaucratic ballast', qty: MAX_PERSISTED_VALUE },
+    ];
+    character.Spells = Array.from({ length: MAX_PERSISTED_ITEMS }, () => ({ name: 'Already Accounted For', level: MAX_PERSISTED_VALUE }));
+    character.Gold = MAX_PERSISTED_GOLD;
+    character.Quest = {
+      description: 'Remain numerically respectable',
+      currentProgress: MAX_PERSISTED_VALUE,
+      maxProgress: MAX_PERSISTED_VALUE,
+      history: ['Remain numerically respectable'],
+    };
+    character.Plot = { act: MAX_PERSISTED_VALUE, currentProgress: MAX_PERSISTED_VALUE, maxProgress: MAX_PERSISTED_VALUE };
+    character.Task = { description: 'Executing a boundary condition...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    const state = {
+      character,
+      progression: {
+        experience: { currentSeconds: 1, maxSeconds: 1 },
+        completedTasks: MAX_PERSISTED_VALUE,
+        elapsedSeconds: MAX_PERSISTED_VALUE,
+      },
+    };
+    const rng = new RandomGenerator('maximum-transition');
+    const checkpoint = () => ({
+      schemaVersion: 1 as const,
+      session: { ...state, rngState: rng.getState(), isPaused: false, log: [] },
+    });
+    expect(activeCheckpointV1Schema.safeParse(checkpoint()).success).toBe(true);
+
+    const result = advanceGame(state, 1000, rng);
+
+    const parsed = activeCheckpointV1Schema.safeParse({
+      schemaVersion: 1,
+      session: { ...result.state, rngState: rng.getState(), isPaused: false, log: [] },
+    });
+    expect(parsed.success, parsed.error?.issues.map(({ path, message }) => `${path.join('.')}: ${message}`).join('\n')).toBe(true);
+    expect(result.events.filter(({ type }) => type === 'level_gained' || type === 'stat_gained')).toEqual([]);
+    expect(result.events.some((event) => event.type === 'item_gained' && event.name === 'rat tail')).toBe(false);
+
+    const headroomState = structuredClone(state);
+    headroomState.character.Traits.Level = MAX_PERSISTED_VALUE - 1;
+    for (const stat of Object.keys(headroomState.character.Stats) as Array<keyof CharacterSheet['Stats']>) {
+      headroomState.character.Stats[stat] = MAX_PERSISTED_VALUE / 2;
+    }
+    headroomState.character.Inventory = headroomState.character.Inventory.map((item) => ({ ...item, qty: MAX_PERSISTED_VALUE - 1 }));
+    headroomState.progression.completedTasks = MAX_PERSISTED_VALUE - 1;
+    headroomState.progression.elapsedSeconds = MAX_PERSISTED_VALUE - 1;
+    const headroomRng = new RandomGenerator('maximum-transition');
+
+    advanceGame(headroomState, 1000, headroomRng);
+
+    expect(headroomRng.getState()).toEqual(rng.getState());
+  });
+
   it('does not mutate the previous inventory when loot stacks', () => {
     const character = createNewCharacter('Collector', 'Half Orc', 'Robot Monk', 808);
     character.Inventory = [{ name: 'rat tail', qty: 1 }, { name: 'Unrelated Trinket', qty: 1 }];
@@ -300,5 +431,18 @@ describe('advanceGame', () => {
 
     expect(character.Inventory).toEqual(snapshot);
     expect(result.state.character.Inventory).toEqual([{ name: 'rat tail', qty: 2 }, { name: 'Unrelated Trinket', qty: 1 }]);
+  });
+
+  it('keeps a full accepted inventory valid when new loot drops', () => {
+    const character = createNewCharacter('Collector', 'Half Orc', 'Robot Monk', 811);
+    character.Inventory = Array.from({ length: MAX_PERSISTED_ITEMS }, (_, index) => ({ name: `Item ${index}`, qty: 1 }));
+    character.Task = { description: 'Executing test monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'one item too many' } };
+    expect(characterSheetSchema.safeParse(character).success).toBe(true);
+
+    const result = advanceGame(stateFor(character), 1, new RandomGenerator('full-inventory'));
+
+    expect(result.state.character.Inventory).toHaveLength(MAX_PERSISTED_ITEMS);
+    expect(characterSheetSchema.safeParse(result.state.character).success).toBe(true);
+    expect(result.events.some(({ type }) => type === 'item_gained')).toBe(false);
   });
 });

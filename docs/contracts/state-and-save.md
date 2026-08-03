@@ -20,6 +20,20 @@ Owner: `src/state/schemas.ts`
 
 Verified by: `src/__tests__/state/saveManager.test.ts`.
 
+## Transition closure
+
+Owner: `src/engine/transition.ts`; shared limits: `src/data/limits.ts`
+
+- Every schema-accepted session remains schema-valid after an engine transition.
+- Increasing numeric values saturate at the existing persistence ceiling. This preserves PQW v0 and checkpoint compatibility without admitting `Infinity`, lowering accepted input limits, or changing ordinary legacy progression.
+- Level, stats, spell levels, inventory quantities, Gold, completed-task count, and adventure elapsed use the shared finite limits. Quest and plot progress remain capped by their accepted per-track maxima.
+- Inventory and spell collections do not append beyond the existing 5,000-row limit. Existing rows may still advance until their value ceiling.
+- Saturation consumes the same RNG calls as the corresponding ordinary transition. A gain event or reward effect is emitted only when persisted state actually changes.
+- Monster-task perturbation retains the exact legacy roll count through the last level with a finite progression interval, then reuses that bounded roll budget for higher accepted levels.
+- Sale events report the Gold actually credited after saturation, not discarded gross proceeds.
+
+Verified by: `src/__tests__/engine/transition.test.ts`, `src/__tests__/engine/reward.test.ts`, and `src/__tests__/fidelity/transitionParity.test.ts`.
+
 ## Session entry
 
 Owner: `src/state/gameStore.ts`
@@ -41,6 +55,7 @@ Owner: `src/state/sessionCheckpoint.ts`; schema owner: `src/state/schemas.ts`
 
 - The active session uses a strict `{ schemaVersion: 1, session }` envelope under `progquest_active_session_v1`; it never changes the roster or PQW v0 formats.
 - The checkpoint contains only the character sheet, exact Alea continuation, progression counters, pause state, and the newest 50 activity strings. Diagnostics, preferences, wall-clock timestamps, functions, and offline catch-up are excluded.
+- Formatted activity strings are truncated to the checkpoint description limit after presentation prefixes are applied; domain descriptions remain unchanged.
 - Hydration validates the entire envelope before atomically replacing session state and occurs before React rendering and the game clock.
 - Routine mutations coalesce to at most one write per second. A dirty session flushes when the document becomes hidden and on `pagehide`.
 - Before replacing a valid primary checkpoint, its exact bytes rotate to `progquest_active_session_lkg_v1`. Invalid or unavailable reads block automatic writes; a validated last-known-good session may restore in memory, but only the explicit repair action may replace unreadable primary bytes.
