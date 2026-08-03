@@ -153,6 +153,22 @@ describe('item tooltip details', () => {
     expect(`${details.description} ${details.effect}`).not.toMatch(/undefined|NaN/);
   });
 
+  it('truncates accepted long Unicode identities at code-point boundaries', () => {
+    const name = '🪑'.repeat(100);
+    const descriptions = [
+      describeEquipment(name, 'Weapon').description,
+      describeInventoryItem(name, 1).description,
+      describeSpell(name, 1).description,
+    ];
+    const hasUnpairedSurrogate = (value: string) => [...value].some((character) => {
+      const code = character.charCodeAt(0);
+      return character.length === 1 && code >= 0xD800 && code <= 0xDFFF;
+    });
+
+    expect(descriptions.some(hasUnpairedSurrogate)).toBe(false);
+    expect(descriptions.every((description) => [...description].length <= 220)).toBe(true);
+  });
+
   it('keeps an inventory item story stable when its quantity changes', () => {
     const first = describeInventoryItem('Golden Orb of Fortune', 3).description;
     const repeat = describeInventoryItem('Golden Orb of Fortune', 3).description;

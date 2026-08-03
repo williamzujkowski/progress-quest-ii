@@ -14,8 +14,10 @@ const stableIndex = (key: string, length: number): number => {
 
 const choose = (options: readonly string[], key: string): string => options[stableIndex(key, options.length)];
 
-const boundedLabel = (name: string, fallback: string): string =>
-  name.length > 60 ? `${name.slice(0, 59)}…` : name || fallback;
+const boundedLabel = (name: string, fallback: string): string => {
+  const characters = Array.from(name);
+  return characters.length > 60 ? `${characters.slice(0, 59).join('')}…` : name || fallback;
+};
 
 const valueOf = (name: string, table: readonly (readonly [string, number])[]): number =>
   table.find(([label]) => name.includes(label))?.[1] ?? 0;
