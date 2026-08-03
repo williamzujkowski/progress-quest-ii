@@ -49,7 +49,12 @@ export interface QuestState {
   currentProgress: number;
   maxProgress: number;
   history?: string[];
+  kind?: QuestKind;
+  target?: string;
+  targetIndex?: number;
 }
+
+export type QuestKind = 'exterminate' | 'seek' | 'deliver' | 'fetch' | 'placate';
 
 export interface ProgressionState {
   experience: {
