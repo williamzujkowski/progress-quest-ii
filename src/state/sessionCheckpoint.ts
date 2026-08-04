@@ -92,7 +92,7 @@ export function captureActiveSession(): ActiveCheckpointV1 {
       progression: structuredClone(state.progression),
       pendingElapsedMs: state.pendingElapsedMs,
       isPaused: state.isPaused,
-      log: state.log.slice(0, 50),
+      log: state.log.slice(0, 50).map(({ message }) => message),
     },
   };
 }

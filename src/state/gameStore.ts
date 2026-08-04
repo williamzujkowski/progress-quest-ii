@@ -14,7 +14,8 @@ type StartSessionRequest =
 
 export interface GameStore {
   character: CharacterSheet;
-  log: string[];
+  log: ActivityEntry[];
+  nextActivityId: number;
   isPaused: boolean;
   rng: RandomGenerator;
   progression: ProgressionState;
@@ -32,6 +33,15 @@ export interface GameStore {
     isPaused: boolean;
     log: string[];
   }) => void;
+}
+
+export interface ActivityEntry {
+  readonly id: number;
+  readonly message: string;
+}
+
+export function createActivityEntries(messages: readonly string[], firstId: number): ActivityEntry[] {
+  return messages.map((message, index) => ({ id: firstId + index, message }));
 }
 
 function createProgression(level: number): ProgressionState {
@@ -55,7 +65,8 @@ export const useGameStore = create<GameStore>((set, get) => {
 
   return {
     character: initialChar,
-    log: [`Welcome to Progress Quest II! ${initialChar.Traits.Name} the ${initialChar.Traits.Race} ${initialChar.Traits.Class} sets out on an adventure.`],
+    log: createActivityEntries([`Welcome to Progress Quest II! ${initialChar.Traits.Name} the ${initialChar.Traits.Race} ${initialChar.Traits.Class} sets out on an adventure.`], 0),
+    nextActivityId: 1,
     isPaused: false,
     rng: initialRng,
     progression: createProgression(initialChar.Traits.Level),
@@ -64,6 +75,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
 
     startSession: (request: StartSessionRequest) => {
+      const { nextActivityId } = get();
       let character: CharacterSheet;
       let rng: RandomGenerator;
       let message: string;
@@ -82,7 +94,8 @@ export const useGameStore = create<GameStore>((set, get) => {
       set({
         character,
         rng,
-        log: [message],
+        log: createActivityEntries([message], nextActivityId),
+        nextActivityId: nextActivityId + 1,
         isPaused: false,
         progression: createProgression(character.Traits.Level),
         pendingElapsedMs: 0,
@@ -90,6 +103,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     },
 
     restoreSession: (session) => {
+      const { nextActivityId } = get();
       const rng = new RandomGenerator('restored-session');
       rng.setState([...session.rngState]);
       set({
@@ -97,20 +111,26 @@ export const useGameStore = create<GameStore>((set, get) => {
         rng,
         progression: structuredClone(session.progression),
         isPaused: session.isPaused,
-        log: [...session.log],
+        log: createActivityEntries(session.log.toReversed(), nextActivityId).reverse(),
+        nextActivityId: nextActivityId + session.log.length,
         pendingElapsedMs: session.pendingElapsedMs,
       });
     },
 
     tick: (elapsedMs: number) => {
       if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return;
-      const { character, isPaused, rng, log, progression, pendingElapsedMs } = get();
+      const { character, isPaused, rng, log, nextActivityId, progression, pendingElapsedMs } = get();
       if (isPaused) return;
       const elapsedBudgetMs = Math.min(MAX_PENDING_ELAPSED_MS, pendingElapsedMs + elapsedMs);
       const result = advanceGame({ character, progression }, elapsedBudgetMs, rng);
       for (const event of result.events) playEventSound(event);
-      const activity = result.events.map(describeGameEvent).reverse();
-      set({ ...result.state, pendingElapsedMs: result.remainingElapsedMs, log: [...activity, ...log].slice(0, 50) });
+      const activity = createActivityEntries(result.events.map(describeGameEvent), nextActivityId).reverse();
+      set({
+        ...result.state,
+        pendingElapsedMs: result.remainingElapsedMs,
+        log: [...activity, ...log].slice(0, 50),
+        nextActivityId: nextActivityId + activity.length,
+      });
     },
   };
 });

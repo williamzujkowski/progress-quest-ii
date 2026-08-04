@@ -4,7 +4,7 @@ import { RandomGenerator } from '../../engine/prng';
 import { createNewCharacter } from '../../engine/sim';
 import { advanceGame } from '../../engine/transition';
 import { MAX_PENDING_ELAPSED_MS } from '../../data/limits';
-import { useGameStore } from '../../state/gameStore';
+import { createActivityEntries, useGameStore } from '../../state/gameStore';
 import { activeCheckpointV1Schema } from '../../state/schemas';
 import { diagnostics } from '../../state/diagnostics';
 import { saveToRoster } from '../../state/saveManager';
@@ -20,6 +20,8 @@ import {
 } from '../../state/sessionCheckpoint';
 
 const originalState = useGameStore.getState();
+const activityLog = (...messages: string[]) => createActivityEntries(messages, 0);
+const activityMessages = () => useGameStore.getState().log.map(({ message }) => message);
 
 afterEach(() => {
   vi.useRealTimers();
@@ -44,7 +46,7 @@ describe('active session checkpoint boundary', () => {
 
     expect(controller.requiresCharacterCreation).toBe(false);
     expect(useGameStore.getState().character.Traits.Name).toBe('Latest Roster');
-    expect(useGameStore.getState().log).toEqual(['Loaded character Latest Roster from roster.']);
+    expect(activityMessages()).toEqual(['Loaded character Latest Roster from roster.']);
     controller.dispose();
   });
 
@@ -72,7 +74,7 @@ describe('active session checkpoint boundary', () => {
     expect(controller.requiresCharacterCreation).toBe(true);
     expect(controller.getNotice()).toMatchObject({ kind: 'alert', canRepair: false });
     expect(controller.getNotice()?.message).toContain('saved roster is unreadable');
-    useGameStore.setState({ log: ['The placeholder must not become authoritative.'] });
+    useGameStore.setState({ log: activityLog('The placeholder must not become authoritative.') });
     vi.runAllTimers();
     expect(localStorage.getItem(ACTIVE_CHECKPOINT_KEY)).toBeNull();
     expect(localStorage.getItem('progquest_roster_v1')).toBe(corruptRoster);
@@ -88,10 +90,12 @@ describe('active session checkpoint boundary', () => {
       character,
       rng,
       isPaused: true,
-      log: ['Newest event', 'Older event'],
+      log: activityLog('Newest event', 'Older event'),
       progression: { experience: { currentSeconds: 7, maxSeconds: 11 }, completedTasks: 9, elapsedSeconds: 42 },
     });
     const checkpoint = captureActiveSession();
+    expect(checkpoint.session.log).toEqual(['Newest event', 'Older event']);
+    expect(checkpoint.session.log.every((entry) => typeof entry === 'string')).toBe(true);
 
     expect(writeActiveCheckpoint(localStorage, checkpoint, null)).toMatchObject({ ok: true });
     const loaded = loadActiveCheckpoint(localStorage);
@@ -104,7 +108,7 @@ describe('active session checkpoint boundary', () => {
     expect(restored.character).toEqual(character);
     expect(restored.rng.getState()).toEqual(rng.getState());
     expect(restored.isPaused).toBe(true);
-    expect(restored.log).toEqual(['Newest event', 'Older event']);
+    expect(activityMessages()).toEqual(['Newest event', 'Older event']);
     expect(restored.progression).toEqual({ experience: { currentSeconds: 7, maxSeconds: 11 }, completedTasks: 9, elapsedSeconds: 42 });
   });
 
@@ -150,7 +154,7 @@ describe('active session checkpoint boundary', () => {
       kind: 'status',
       message: 'The recovered active session was adopted. Automatic checkpoints resumed.',
     });
-    useGameStore.setState({ log: ['Do not replace the orphan'] });
+    useGameStore.setState({ log: activityLog('Do not replace the orphan') });
     vi.runAllTimers();
     expect(localStorage.getItem(ACTIVE_CHECKPOINT_KEY)).not.toBeNull();
     expect(localStorage.getItem(ACTIVE_CHECKPOINT_LKG_KEY)).toBe(backupRaw);
@@ -183,7 +187,7 @@ describe('active session checkpoint boundary', () => {
     const first = captureActiveSession();
     const firstWrite = writeActiveCheckpoint(localStorage, first, null);
     if (!firstWrite.ok) throw new Error('Expected first checkpoint write');
-    useGameStore.setState({ log: ['Changed'] });
+    useGameStore.setState({ log: activityLog('Changed') });
     const second = captureActiveSession();
 
     expect(writeActiveCheckpoint(localStorage, second, firstWrite.value.raw)).toMatchObject({ ok: true });
@@ -221,7 +225,7 @@ describe('active session checkpoint boundary', () => {
     const setItem = vi.spyOn(Storage.prototype, 'setItem');
     const controller = startSessionCheckpoints({ storage: localStorage, intervalMs: 1 });
 
-    useGameStore.setState({ log: ['Must not overwrite'] });
+    useGameStore.setState({ log: activityLog('Must not overwrite') });
     vi.runAllTimers();
 
     expect(localStorage.getItem(ACTIVE_CHECKPOINT_KEY)).toBe(original);
@@ -310,7 +314,7 @@ describe('active session checkpoint boundary', () => {
     const first = captureActiveSession();
     const firstWrite = writeActiveCheckpoint(localStorage, first, null);
     if (!firstWrite.ok) throw new Error('Expected first checkpoint write');
-    useGameStore.setState({ log: ['Replacement'] });
+    useGameStore.setState({ log: activityLog('Replacement') });
     const replacement = captureActiveSession();
     const nativeSetItem = Storage.prototype.setItem;
     const setItem = vi.spyOn(Storage.prototype, 'setItem');
@@ -333,7 +337,7 @@ describe('active session checkpoint boundary', () => {
     character.Task = { description: 'Executing rat...', durationMs: 100, elapsedMs: 75, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
     character.PendingTasks = undefined;
     const rng = new RandomGenerator('continuation-rng');
-    useGameStore.setState({ character, rng, isPaused: false, log: ['Before'], progression: { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 } });
+    useGameStore.setState({ character, rng, isPaused: false, log: activityLog('Before'), progression: { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 } });
     const checkpoint = captureActiveSession();
 
     useGameStore.getState().tick(25);
@@ -373,7 +377,7 @@ describe('active session checkpoint boundary', () => {
       character,
       progression: { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 },
     }, 7000, rng);
-    useGameStore.setState({ ...midPrologue.state, rng, isPaused: false, log: ['Before prologue checkpoint'] });
+    useGameStore.setState({ ...midPrologue.state, rng, isPaused: false, log: activityLog('Before prologue checkpoint') });
     const checkpoint = captureActiveSession();
 
     useGameStore.getState().tick(23_000);
@@ -394,19 +398,19 @@ describe('active session checkpoint boundary', () => {
     const pagehideTarget = new EventTarget();
     const controller = startSessionCheckpoints({ storage: localStorage, visibilityTarget, pagehideTarget, intervalMs: 1_000 });
 
-    for (let index = 0; index < 20; index += 1) useGameStore.setState({ log: [`Event ${index}`] });
+    for (let index = 0; index < 20; index += 1) useGameStore.setState({ log: activityLog(`Event ${index}`) });
     vi.advanceTimersByTime(999);
     expect(setItem.mock.calls.filter(([key]) => key === ACTIVE_CHECKPOINT_KEY)).toHaveLength(0);
     vi.advanceTimersByTime(1);
     expect(setItem.mock.calls.filter(([key]) => key === ACTIVE_CHECKPOINT_KEY)).toHaveLength(1);
     expect(loadActiveCheckpoint(localStorage)).toMatchObject({ status: 'loaded', checkpoint: { session: { log: ['Event 19'] } } });
 
-    useGameStore.setState({ log: ['Hidden latest'] });
+    useGameStore.setState({ log: activityLog('Hidden latest') });
     visibilityTarget.hidden = true;
     visibilityTarget.dispatchEvent(new Event('visibilitychange'));
     expect(loadActiveCheckpoint(localStorage)).toMatchObject({ status: 'loaded', checkpoint: { session: { log: ['Hidden latest'] } } });
 
-    useGameStore.setState({ log: ['Pagehide latest'] });
+    useGameStore.setState({ log: activityLog('Pagehide latest') });
     pagehideTarget.dispatchEvent(new Event('pagehide'));
     expect(loadActiveCheckpoint(localStorage)).toMatchObject({ status: 'loaded', checkpoint: { session: { log: ['Pagehide latest'] } } });
     controller.dispose();

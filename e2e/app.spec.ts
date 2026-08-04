@@ -11,7 +11,9 @@ const loadDenseDashboard = async (page: Page) => {
   await page.evaluate(async () => {
     const { useGameStore } = await import('/src/state/gameStore.ts');
     const state = useGameStore.getState();
+    const log = Array.from({ length: 50 }, (_, index) => ({ id: 49 - index, message: `Event ${50 - index}` }));
     useGameStore.setState({
+      isPaused: true,
       character: {
         ...state.character,
         Equip: {
@@ -25,7 +27,8 @@ const loadDenseDashboard = async (page: Page) => {
         ],
         Spells: Array.from({ length: 18 }, (_, index) => ({ name: `Procedural Disappointment ${index + 1}`, level: index + 1 })),
       },
-      log: Array.from({ length: 50 }, (_, index) => `Event ${50 - index}`),
+      log,
+      nextActivityId: 50,
     });
   });
   await expect(page.locator('.log-entry')).toHaveCount(50);
@@ -108,6 +111,10 @@ test.describe('Progress Quest II terminal dashboard', () => {
       const state = useGameStore.getState();
       const rng = new RandomGenerator('e2e-checkpoint');
       rng.random(999);
+      const log = [
+        { id: state.nextActivityId + 1, message: 'Checkpointed indignity' },
+        { id: state.nextActivityId, message: 'Earlier paperwork' },
+      ];
       useGameStore.setState({
         character: {
           ...state.character,
@@ -116,7 +123,8 @@ test.describe('Progress Quest II terminal dashboard', () => {
         },
         rng,
         isPaused: true,
-        log: ['Checkpointed indignity', 'Earlier paperwork'],
+        log,
+        nextActivityId: state.nextActivityId + log.length,
         progression: { experience: { currentSeconds: 3, maxSeconds: 10 }, completedTasks: 7, elapsedSeconds: 22 },
       });
       window.dispatchEvent(new PageTransitionEvent('pagehide'));
@@ -148,7 +156,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await page.waitForTimeout(1_100);
     expect(await page.evaluate(() => localStorage.getItem('progquest_active_session_v1'))).toBe('{unreadable');
     await page.getByRole('button', { name: 'Replace unreadable checkpoint' }).click();
-    await expect(page.getByRole('status')).toContainText('Automatic checkpoints resumed');
+    await expect(page.locator('.session-status[role="status"]')).toContainText('Automatic checkpoints resumed');
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('progquest_active_session_v1') ?? '').schemaVersion)).toBe(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   });
@@ -205,7 +213,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     expect(diagnosticPath).not.toBeNull();
     const diagnosticReport = JSON.parse(await readFile(diagnosticPath!, 'utf8')) as { events: Array<{ code: string }> };
     expect(diagnosticReport.events.some((event) => event.code === 'react_caught')).toBe(true);
-    await expect(page.getByRole('status')).toHaveText(/nothing was uploaded/i);
+    await expect(page.locator('.recovery-status[role="status"]')).toHaveText(/nothing was uploaded/i);
 
     for (const theme of ['remarque-dark', 'remarque-light', 'progros'] as const) {
       await page.evaluate(async (themeId) => {
@@ -337,7 +345,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     })).toBe(true);
 
     await page.getByRole('button', { name: 'Save current character' }).click();
-    await expect(page.getByRole('status')).toContainText('Character saved');
+    await expect(page.getByRole('dialog', { name: 'Character Roster & Save Manager' }).getByRole('status')).toContainText('Character saved');
     expect(await page.evaluate(() => (window as Window & { __rosterWrites?: number }).__rosterWrites)).toBe(1);
 
     await page.getByRole('button', { name: 'Copy Base64 .pqw Save String' }).click();
@@ -529,7 +537,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await page.getByRole('combobox', { name: 'Visual theme' }).selectOption('remarque-light');
 
     await expect(page.locator('html')).toHaveAttribute('data-terminal-theme', 'remarque-light');
-    await expect(page.getByRole('status')).toHaveText('Theme changed, but this browser could not remember it.');
+    await expect(page.locator('.theme-status[role="status"]')).toHaveText('Theme changed, but this browser could not remember it.');
     const diagnosticCodes = await page.evaluate(async () => {
       const { diagnostics } = await import('/src/state/diagnostics.ts');
       return diagnostics.snapshot().map((event) => event.code);
@@ -568,7 +576,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await page.goto('/');
 
     await expect(page.getByRole('combobox', { name: 'Visual theme' })).toHaveValue('remarque-dark');
-    await expect(page.getByRole('status')).toHaveText('Theme preference unavailable; using your system default.');
+    await expect(page.locator('.theme-status[role="status"]')).toHaveText('Theme preference unavailable; using your system default.');
     const diagnosticCodes = await page.evaluate(async () => {
       const { diagnostics } = await import('/src/state/diagnostics.ts');
       return diagnostics.snapshot().map((event) => event.code);
@@ -599,19 +607,22 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await page.goto('/');
     await page.evaluate(async () => {
       const { useGameStore } = await import('/src/state/gameStore.ts');
+      const messages = [
+        'Activity 50',
+        'Resting at the inn.',
+        'Welcome to Progress Quest II! Krg sets out on an adventure.',
+        'Act 2 Unlocked!',
+        'LEVEL UP! Advanced to level 2!',
+        'Quest completed: Find the lost stapler',
+        'Defeated monster and looted a bent fork.',
+        'Got paid 10 gold pieces',
+        'Negotiated purchase: Equipped Tax Hat in Helm slot!',
+        'Executing a passing pigeon...',
+      ];
       useGameStore.setState({
-        log: [
-          'Activity 50',
-          'Resting at the inn.',
-          'Welcome to Progress Quest II! Krg sets out on an adventure.',
-          'Act 2 Unlocked!',
-          'LEVEL UP! Advanced to level 2!',
-          'Quest completed: Find the lost stapler',
-          'Defeated monster and looted a bent fork.',
-          'Got paid 10 gold pieces',
-          'Negotiated purchase: Equipped Tax Hat in Helm slot!',
-          'Executing a passing pigeon...',
-        ],
+        isPaused: true,
+        log: messages.map((message, id) => ({ id, message })),
+        nextActivityId: messages.length,
       });
     });
 
@@ -627,6 +638,70 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(tagFor('Got paid 10 gold pieces')).toHaveCount(0);
     await expect(tagFor('Negotiated purchase: Equipped Tax Hat in Helm slot!')).toHaveText('Market');
     await expect(tagFor('Executing a passing pigeon...')).toHaveText('Combat');
+  });
+
+  test('retains activity row identity and exposes only the newest event to status at 50 to 51', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await loadDenseDashboard(page);
+
+    const activityCard = page.locator('.activity-card');
+    const log = activityCard.getByRole('region', { name: 'Activity Event Log' });
+    const status = activityCard.getByRole('status', { name: 'Latest activity' });
+    const retainedBefore = await log.locator('[data-activity-id="24"]').elementHandle();
+    const droppedBefore = await log.locator('[data-activity-id="0"]').elementHandle();
+    expect(retainedBefore).not.toBeNull();
+    expect(droppedBefore).not.toBeNull();
+    await expect(log).not.toHaveAttribute('aria-live', /.+/);
+    await expect(status).toHaveAttribute('aria-atomic', 'true');
+    await expect(status).toHaveText('Event 50');
+
+    await page.evaluate(async () => {
+      const { useGameStore } = await import('/src/state/gameStore.ts');
+      const state = useGameStore.getState();
+      useGameStore.setState({
+        log: [{ id: state.nextActivityId, message: 'Event 51' }, ...state.log].slice(0, 50),
+        nextActivityId: state.nextActivityId + 1,
+      });
+    });
+
+    await expect(log.locator('.log-entry')).toHaveCount(50);
+    await expect(log.locator('.log-entry').first()).toContainText('Event 2');
+    await expect(log.locator('.log-entry').last()).toContainText('Event 51');
+    await expect(status).toHaveText('Event 51');
+    expect(await log.locator('[data-activity-id="24"]').evaluate((node, retained) => node === retained, retainedBefore)).toBe(true);
+    expect(await droppedBefore!.evaluate((node) => node.isConnected)).toBe(false);
+    expect(await log.locator('.log-entry').evaluateAll((rows) => {
+      const ids = rows.map((row) => Number((row as HTMLElement).dataset.activityId));
+      return new Set(ids).size === 50 && ids.every((id, index) => id === index + 1);
+    })).toBe(true);
+    expect(await log.evaluate((element) => element.scrollTop + element.clientHeight >= element.scrollHeight - 1)).toBe(true);
+  });
+
+  test('keeps the activity scroller keyboard-operable under reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await loadDenseDashboard(page);
+
+    const log = page.getByRole('region', { name: 'Activity Event Log' });
+    await log.focus();
+    await expect(log).toBeFocused();
+    await log.press('Home');
+    await expect.poll(() => log.evaluate((element) => element.scrollTop)).toBeLessThanOrEqual(1);
+    for (let press = 0; press < 5; press += 1) await log.press('PageDown');
+    await expect.poll(() => log.evaluate((element) => element.scrollTop)).toBeGreaterThan(1);
+
+    const motion = await log.locator('.log-entry').last().evaluate((element) => {
+      const style = getComputedStyle(element);
+      const duration = style.animationDuration.endsWith('ms')
+        ? Number.parseFloat(style.animationDuration)
+        : Number.parseFloat(style.animationDuration) * 1000;
+      return { duration, iterations: style.animationIterationCount, scrollBehavior: getComputedStyle(element.parentElement!).scrollBehavior };
+    });
+    expect(motion.duration).toBeLessThanOrEqual(1);
+    expect(motion.iterations).toBe('1');
+    expect(motion.scrollBehavior).toBe('auto');
   });
 
   test('fills the desktop middle column with a sparse activity log', async ({ page }) => {

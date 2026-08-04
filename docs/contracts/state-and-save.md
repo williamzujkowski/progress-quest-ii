@@ -69,6 +69,7 @@ Owner: `src/state/sessionCheckpoint.ts`; schema owner: `src/state/schemas.ts`
 
 - The active session uses a strict `{ schemaVersion: 1, session }` envelope under `progquest_active_session_v1`; it never changes the roster or PQW v0 formats.
 - The checkpoint contains only the character sheet, exact Alea continuation, progression counters, bounded pending scheduler elapsed time, pause state, and the newest 50 activity strings. Diagnostics, preferences, wall-clock timestamps, functions, and offline catch-up are excluded.
+- Activity rows receive monotonic runtime identities after the pure engine transition. Checkpoint v1 deliberately keeps its compatible `log: string[]`; hydration reconstructs identities before React mounts without consuming gameplay RNG.
 - Pending scheduler elapsed time preserves deterministic continuation when a tick reaches the 100-task work budget. New captures always write the finite nonnegative value; legacy v1 checkpoints that omit it normalize to zero. Older strict builds reject newly written checkpoints containing the field, a unanimously accepted one-way compatibility window for #164; portable PQW and roster formats are unchanged.
 - Formatted activity strings are truncated to the checkpoint description limit after presentation prefixes are applied; domain descriptions remain unchanged.
 - Hydration validates the entire envelope before atomically replacing session state and occurs before React rendering and the game clock.

@@ -41,7 +41,7 @@ test('loads the Pages-scoped app offline after one successful visit', async ({ p
   await page.goto('./');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect(page.getByRole('button', { name: 'Update now' })).toHaveCount(0);
-  await expect(page.getByRole('status')).toHaveCount(0);
+  await expect(page.locator('.pwa-status[role="status"]')).toHaveCount(0);
   await page.reload();
 
   expect(await page.evaluate(() => navigator.serviceWorker.controller?.scriptURL)).toMatch(/\/progress-quest-ii\/sw\.js$/);
@@ -57,9 +57,9 @@ test('keeps questing when service-worker registration fails', async ({ page, req
   try {
     await page.goto('./');
 
-    await expect(page.getByRole('status')).toHaveText('Offline mode is unavailable. Questing may require civilization.');
+    await expect(page.locator('.pwa-status[role="status"]')).toHaveText('Offline mode is unavailable. Questing may require civilization.');
     await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest II' })).toBeVisible();
-    await expect(page.getByRole('status')).toHaveCount(1);
+    await expect(page.locator('.pwa-status[role="status"]')).toHaveCount(1);
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze();
@@ -74,7 +74,7 @@ test('reports a first-install precache failure without leaving a cache', async (
   try {
     await page.goto('./');
 
-    await expect(page.getByRole('status')).toHaveText('Offline mode is unavailable. Questing may require civilization.');
+    await expect(page.locator('.pwa-status[role="status"]')).toHaveText('Offline mode is unavailable. Questing may require civilization.');
     await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest II' })).toBeVisible();
     await expect.poll(() => page.evaluate(() => caches.keys())).toEqual([]);
   } finally {
@@ -131,7 +131,7 @@ test('bounds a stalled activation and restores a retry without disturbing the se
     await page.clock.pauseAt(clockOrigin + 60_000);
     await updateButton.click();
 
-    const status = page.getByRole('status');
+    const status = page.locator('.pwa-status[role="status"]');
     await expect(status).toHaveAttribute('aria-busy', 'true');
     await expect(status).toHaveText('Applying the new edition. Please hold while progress is reclassified.');
     await expect(status.getByRole('button')).toHaveCount(0);
@@ -195,7 +195,7 @@ test('keeps the previous offline shell when an update fails atomically', async (
     });
 
     await expect(page.getByRole('button', { name: 'Update now' })).toHaveCount(0);
-    await expect(page.getByRole('status')).toHaveText('The update declined its promotion. The current edition remains in office.');
+    await expect(page.locator('.pwa-status[role="status"]')).toHaveText('The update declined its promotion. The current edition remains in office.');
     expect(await page.evaluate(() => caches.keys())).toEqual(initialCaches);
     await context.setOffline(true);
     await page.reload({ waitUntil: 'domcontentloaded' });
