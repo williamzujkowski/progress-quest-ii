@@ -19,6 +19,7 @@ export function definite(value: string, quantity = 1): string {
 
 const SCIENTIFIC_NOTATION_THRESHOLD = 1_000_000;
 const MAX_ORDINARY_CHARACTERS = 6;
+const MAX_SPOKEN_CHARACTERS = 40;
 const ordinaryFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
   useGrouping: false,
@@ -46,6 +47,12 @@ function shouldUseScientificNotation(value: number, ordinary: string): boolean {
     || ordinary.length > MAX_ORDINARY_CHARACTERS;
 }
 
+function describeScientificGameNumber(value: number): string {
+  const [mantissa, exponent = '0'] = formatGameNumber(value).split('e');
+  const exponentValue = Number(exponent);
+  return `${mantissa} times 10 to the ${exponentValue < 0 ? 'negative ' : ''}${Math.abs(exponentValue)}`;
+}
+
 export function formatGameNumber(value: number): string {
   if (!Number.isFinite(value)) return '—';
   const ordinary = ordinaryGameNumber(value);
@@ -56,5 +63,7 @@ export function formatGameNumber(value: number): string {
 export function describeGameNumber(value: number): string {
   if (!Number.isFinite(value)) return 'unavailable';
   const ordinary = ordinaryGameNumber(value);
-  return shouldUseScientificNotation(value, ordinary) ? spokenFormatter.format(value) : ordinary;
+  if (!shouldUseScientificNotation(value, ordinary)) return ordinary;
+  const spoken = spokenFormatter.format(value);
+  return spoken.length <= MAX_SPOKEN_CHARACTERS ? spoken : describeScientificGameNumber(value);
 }
