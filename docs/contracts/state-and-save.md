@@ -33,10 +33,12 @@ Owner: `src/engine/transition.ts`; shared limits: `src/data/limits.ts`
 - Inventory and spell collections do not append beyond the existing 5,000-row limit. Existing rows may still advance until their value ceiling.
 - Saturation consumes the same RNG calls as the corresponding ordinary transition. A gain event or reward effect is emitted only when persisted state actually changes.
 - Monster-task perturbation retains the exact legacy roll count through the last level with a finite progression interval, then reuses that bounded roll budget for higher accepted levels.
+- Every completed Act advances to the next accepted Act, resets duration to `min(1,000,000,000, 3600 * (1 + 5 * nextAct))`, and—after Act I—grants one canonical item roll plus one equipment roll at the hero's current level. At the persistence ceiling the numeric Act remains saturated, but later transitions, rewards, and saves continue.
 - Inter-Act nemesis loops consume at most the 95 materialized-round budget synchronously. Longer loops persist a compact replay cursor tied to the current Act and checkpoint RNG state, keeping every later narration step and canonical post-loop continuation while allowing Acts to scale to the persistence ceiling.
+- Ordinary legacy-sized cinematics consume RNG in the canonical eager order. The bounded synthetic-high-Act exception changes only *when* entropy after round 95 is consumed: one round is replayed when its narration task begins instead of materializing an enormous queue up front. Mid-fight RNG state therefore intentionally differs from an unbounded legacy queue; exact narration, per-round draws, and post-fight continuation reconverge when the cursor finishes.
 - Sale events report the Gold actually credited after saturation, not discarded gross proceeds.
 
-Verified by: `src/__tests__/engine/transition.test.ts`, `src/__tests__/engine/reward.test.ts`, and `src/__tests__/fidelity/transitionParity.test.ts`.
+Verified by: `src/__tests__/engine/actSoak.test.ts`, `src/__tests__/engine/transition.test.ts`, `src/__tests__/engine/reward.test.ts`, and `src/__tests__/fidelity/transitionParity.test.ts`.
 
 ## Session entry
 
@@ -58,7 +60,8 @@ Verified by: `src/__tests__/state/gameStore.test.ts` and `e2e/app.spec.ts`.
 Owner: `src/state/sessionCheckpoint.ts`; schema owner: `src/state/schemas.ts`
 
 - The active session uses a strict `{ schemaVersion: 1, session }` envelope under `progquest_active_session_v1`; it never changes the roster or PQW v0 formats.
-- The checkpoint contains only the character sheet, exact Alea continuation, progression counters, pause state, and the newest 50 activity strings. Diagnostics, preferences, wall-clock timestamps, functions, and offline catch-up are excluded.
+- The checkpoint contains only the character sheet, exact Alea continuation, progression counters, bounded pending scheduler elapsed time, pause state, and the newest 50 activity strings. Diagnostics, preferences, wall-clock timestamps, functions, and offline catch-up are excluded.
+- Pending scheduler elapsed time preserves deterministic continuation when a tick reaches the 100-task work budget. New captures always write the finite nonnegative value; legacy v1 checkpoints that omit it normalize to zero. Older strict builds reject newly written checkpoints containing the field, a unanimously accepted one-way compatibility window for #164; portable PQW and roster formats are unchanged.
 - Formatted activity strings are truncated to the checkpoint description limit after presentation prefixes are applied; domain descriptions remain unchanged.
 - Hydration validates the entire envelope before atomically replacing session state and occurs before React rendering and the game clock.
 - Routine mutations coalesce to at most one write per second. A dirty session flushes when the document becomes hidden and on `pagehide`.

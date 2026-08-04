@@ -90,6 +90,7 @@ export function captureActiveSession(): ActiveCheckpointV1 {
       character: structuredClone(state.character),
       rngState: [...state.rng.getState()],
       progression: structuredClone(state.progression),
+      pendingElapsedMs: state.pendingElapsedMs,
       isPaused: state.isPaused,
       log: state.log.slice(0, 50),
     },

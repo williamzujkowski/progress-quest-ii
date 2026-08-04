@@ -4,3 +4,5 @@ export const MAX_PERSISTED_GOLD = 1_000_000_000_000;
 export const MAX_PERSISTED_ITEMS = 5_000;
 export const MAX_PERSISTED_DESCRIPTION_LENGTH = 1_000;
 export const MAX_PENDING_TASKS = 100;
+// ponytail: about 11.5 days is ample scheduler debt; saturation keeps checkpoints finite and catch-up work bounded.
+export const MAX_PENDING_ELAPSED_MS = 1_000_000_000;

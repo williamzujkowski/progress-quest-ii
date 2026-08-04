@@ -115,13 +115,14 @@ describe('Game Store State Machine', () => {
     const rngState = rng.getState();
     const progression = { experience: { currentSeconds: 4, maxSeconds: 9 }, completedTasks: 3, elapsedSeconds: 12 };
 
-    useGameStore.getState().restoreSession({ character, rngState, progression, isPaused: true, log: ['Restored event'] });
+    useGameStore.getState().restoreSession({ character, rngState, progression, pendingElapsedMs: 37, isPaused: true, log: ['Restored event'] });
     const restored = useGameStore.getState();
 
     expect(restored.character).toEqual(character);
     expect(restored.character).not.toBe(character);
     expect(restored.rng.getState()).toEqual(rngState);
     expect(restored.progression).toEqual(progression);
+    expect(restored.pendingElapsedMs).toBe(37);
     expect(restored.isPaused).toBe(true);
     expect(restored.log).toEqual(['Restored event']);
   });
