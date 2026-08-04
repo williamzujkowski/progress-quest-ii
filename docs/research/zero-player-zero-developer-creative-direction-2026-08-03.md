@@ -32,6 +32,14 @@ human-authored Progress Quest baseline, and link provenance/licensing details.
 - `docs/modernization-roadmap.md` requires typed events, truthful diagnostics,
   deterministic replay, bounded UI, and no invented combat. The comic layer must
   respect those same contracts.
+- Existing UI copy already establishes the same register and should be preserved:
+  PWA updates are promotions and reclassifications (`src/pwa.ts`), first-run
+  creation appoints an adventurer before bureaucracy can proceed
+  (`src/components/CharacterCreatorModal.tsx`), runtime recovery separates a
+  dramatic interface failure from boring redacted diagnostics
+  (`src/components/RuntimeErrorBoundary.tsx`), and unavailable audio leaves the
+  quest in dignified silence (`src/state/audio.ts`). This is reuse evidence, not a
+  reason to rewrite every message.
 - Prior-art and licensing work already recommends a numeral change in
   [#140](https://github.com/williamzujkowski/progress-quest-ii/issues/140), a
   provenance audit in [#143](https://github.com/williamzujkowski/progress-quest-ii/issues/143),
@@ -53,7 +61,31 @@ human-authored Progress Quest baseline, and link provenance/licensing details.
 | [Mel Brooks, PBS American Masters interview](https://www.pbs.org/wnet/americanmasters/archive/interview/mel-brooks-interview-2/) | Brooks describes satire as grounding the surrounding reality while isolating the comic distortion; his career repeatedly works through recognizable genre structures. | Make the system credible first. One impossible policy is funnier when every adjacent metric is exact. Parody should understand its target vocabulary. | Keep progress values, mechanics, errors, and provenance boringly accurate; let the institutional interpretation be absurd. | Lines, scenes, characters, titles, catchphrases, or a request to write "in his style." |
 | [Terry Gilliam BFI interview](https://www.bfi.org.uk/interviews/terry-gilliam-his-50-year-directing-career) and [Michael Palin on Gilliam's early cut-paper work](https://www.bfi.org.uk/interviews/michael-palin-monty-python-radio-times-festival) | Gilliam describes solving severe production constraints with clear visual ideas and inexpensive substitutes; Palin describes simple cut-paper work used subversively. | Commitment and incongruous assembly beat expensive spectacle. A visibly cheap device can become the correct aesthetic. | Prefer terse terminal notices, stamps, labels, and CSS composition. If collage art is ever explored, generate original assets from public-domain/source-cleared material. | Python sketches, Gilliam compositions, cutouts, characters, visual signatures, or recreated gags. |
 | [Douglas Adams, 1999 ABC interview](https://www.abc.net.au/science/archive/articles/2015/05/21/4216835.htm) and [official collected works](https://douglasadams.com/creations/) | Adams discusses computing becoming invisible as it matures; his official catalog shows sustained interest in bureaucracy and interactive technology. | Put cosmic consequences in ordinary interfaces; make technology funniest when it is treated as mundane infrastructure. | AI authorship appears as build provenance, automated change control, and impossible competence—not a synthetic personality begging for attention. | Distinctive sentence rhythms, characters, fictional institutions, phrases, titles, or imitation of his authorial voice. |
-| [Zombo.com](https://www.zombo.com/) | Commits almost entirely to an expansive promise with negligible practical delivery. | Repetition with tiny variation can turn confidence itself into the joke. | Reserve one recurring assurance for loading/update/empty-state copy, escalating the administrative claim while the function stays ordinary. | Audio, wording, branding, presentation, or the exact promise. |
+
+### UI hierarchy, inspectability, escalation, and tone
+
+- **Kingdom of Loathing:** the official item model keeps category and use legible,
+  while official chat commands expose focused inspection (`/examine`) and owned
+  quantity (`/count`) without putting every detail in the main view
+  ([advanced chat commands](https://www.kingdomofloathing.com/doc.php?topic=advanced_chat_commands)).
+  Its documentation layers jokes around explicit rules and limits rather than
+  asking prose to substitute for mechanics. For Progress Quest: keep names,
+  quantities, progress, and effects visible; make flavor/details available on
+  focus or request; never bury a required fact inside the joke.
+- **Universal Paperclips:** the official UI gives the total output headline
+  priority, groups secondary rates/costs by operational system, and exposes local
+  next-step information beside the relevant control. Its source then hides or
+  reveals entire groups at explicit thresholds rather than presenting the late
+  game's full ontology at startup
+  ([game](https://www.decisionproblem.com/paperclips/index2.html),
+  [`main.js`](https://www.decisionproblem.com/paperclips/main.js)). The visible
+  labels stay terse and operational while project names and the growing scale
+  carry the tonal escalation. For Progress Quest: preserve the one-screen stat
+  hierarchy; disclose only optional observer concepts as their source events
+  occur; make each revealed metric locally explainable.
+- **Combined lesson:** hierarchy says what matters now, inspectability answers why,
+  progressive disclosure controls when a concept earns attention, and restrained
+  operational tone lets escalation emerge without narrating it.
 
 ## Tonal system: one project voice, four registers
 
@@ -138,6 +170,26 @@ independently observed across multiple players, reports, or periods. A one-off
 report remains ordinary backlog input even when it is public, memorable, or easy
 to joke about.
 
+The source order is deliberate:
+
+1. **Begin with classic MMO and MUD culture.** Research recurring, broadly
+   documented grievances and resigned conventions that communities complained
+   about or learned to accept: the administrative friction, repetitive labor,
+   social obligations, downtime, and systemic indignities of persistent worlds.
+   Establish recurrence from multiple independent, attributable sources rather
+   than a vivid forum post. Extract the genre pattern; do not copy community
+   wording, game-specific lore, or protected expression.
+2. **Add local themes only if a playerbase arrives.** If Progress Quest develops
+   enough real feedback to reveal a recurring local pattern, that aggregate theme
+   may join the same reviewed pool. An individual issue can contribute evidence
+   to a later pattern, but it never becomes game copy by itself.
+
+Imported genre themes must be labeled internally as historical MMO/MUD
+inspiration, never represented as complaints received by this project. A comic
+patch note may claim a local fix only when the corresponding local behavior was
+actually changed and verified; otherwise use world texture such as regulations,
+notices, item copy, or institutional commentary.
+
 Feedback is not a content feed. **Do not automatically ingest, scrape, summarize,
 transform, count, or publish issue, discussion, email, diagnostic, or
 security-report text.** There should be no runtime GitHub connection and no
@@ -145,15 +197,17 @@ unattended pipeline from feedback to game copy.
 
 The safe workflow is deliberately manual:
 
-1. A human verifies a resolved, recurring *playerbase theme* from multiple
-   independent observations over time. Duplicate reports, coordinated campaigns,
+1. A human verifies a recurring *playerbase theme* from multiple independent,
+   attributable observations over time and records whether it came from classic
+   MMO/MUD research or local feedback. Duplicate reports, coordinated campaigns,
    and raw reaction counts do not establish a community-wide grievance.
 2. Strip every player's wording, identity, circumstances, and unnecessary detail;
    retain only the aggregate product fact.
 3. Write new expression in the project's editorial registers. The automated
    institution is the target; no player or subgroup is.
-4. Review the line for truth, privacy, moderation, originality, accessibility,
-   and whether the underlying complaint was actually resolved.
+4. Review the line for truth, provenance, privacy, moderation, originality, and
+   accessibility. Any line implying a product correction must correspond to an
+   actually resolved and verified local issue.
 5. Land it through an ordinary reviewed content change. Remove it if it needs the
    player context or an individual incident to be funny.
 
@@ -228,7 +282,8 @@ These are engineering/editorial safeguards, not legal advice.
 7. **Add a collision review for generated copy.** Catalog tests should reject
    source names/catchphrases and suspiciously long overlaps alongside the existing
    bounds, determinism, and mechanical-truth tests. This is a safety net, not a
-   substitute for original human review.
+   substitute for original human review. The executable follow-up is tracked in
+   [#146](https://github.com/williamzujkowski/progress-quest-ii/issues/146).
 
 ## Minimal phased plan
 
