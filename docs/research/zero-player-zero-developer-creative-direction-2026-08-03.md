@@ -114,7 +114,9 @@ human-authored Progress Quest baseline, and link provenance/licensing details.
 - **Specificity:** one correct MMO noun is better than a paragraph of generic
   fantasy parody.
 - **Negative space:** the absent player, developer, guild, and audience are never
-  replaced by noisy fake people.
+  concealed by deceptive presence or an unbounded wall of fake chatter. The
+  bounded, explicitly fictional event projection in #153 may dramatize that
+  absence; it must not pretend to fill it with humans.
 
 ## Ten ranked ideas
 
