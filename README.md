@@ -58,13 +58,18 @@ npx playwright install chromium
 npm run quality
 ```
 
-The quality command fails on modern-code lint warnings and runs Nexus installation
-verification, lint, typecheck, unit and legacy-oracle tests, production build,
-high-severity dependency audit, browser E2E, and production PWA tests. The
+The quality command fails on modern-code or GitHub Actions workflow findings and
+runs Nexus installation verification, lint, typecheck, unit and legacy-oracle
+tests, production build, high-severity dependency audit, browser E2E, and
+production PWA tests. Workflow lint uses the official actionlint v1.7.12 archive
+for the current platform, verifies its pinned release checksum before every
+extraction, and keeps the archive under ignored `node_modules/.cache/`. The
+launcher uses the standard `tar` executable included on supported developer
+systems and GitHub-hosted runners; ShellCheck and Pyflakes remain optional. The
 read-only `pq-web-src/` behavior oracle is excluded from modern lint and remains
 available separately through `npm run lint:legacy`.
 
-Adapter-backed Nexus review, routing, and voting are temporarily bypassed because exhausted providers can produce zero-token heuristic results. Codex subagents and the repository review skills are the interim review path; see upstream [#4350](https://github.com/nexus-substrate/nexus-agents/issues/4350) and [#4351](https://github.com/nexus-substrate/nexus-agents/issues/4351). Nexus's generic quality tool also assumes ESLint and pnpm instead of repository scripts; the canonical local and CI gate is `npm run quality` until upstream [#4355](https://github.com/nexus-substrate/nexus-agents/issues/4355) is fixed.
+Adapter-backed Nexus review, routing, and voting are temporarily bypassed because exhausted providers can produce zero-token heuristic results. Codex subagents and the repository review skills are the interim review path; see upstream [#4350](https://github.com/nexus-substrate/nexus-agents/issues/4350) and [#4351](https://github.com/nexus-substrate/nexus-agents/issues/4351). Nexus's generic quality tool also assumes ESLint and pnpm instead of repository scripts; the canonical local and CI gate is `npm run quality` until upstream [#4355](https://github.com/nexus-substrate/nexus-agents/issues/4355) is fixed. The workflow-checker provenance decision and immutable-SHA input-validation limitation are recorded in [the workflow lint research note](docs/research/github-actions-workflow-lint-2026-08-04.md).
 
 ## Architecture at a glance
 
