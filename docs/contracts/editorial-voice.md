@@ -51,7 +51,8 @@ and repository/Pages migration.
 
 The fictional slogan never erases real work. Visible credits must distinguish:
 
-- Eric Fredricksen's original human-authored *Progress Quest* and web reference;
+- Eric Fredricksen as original creator and principal author of the retained web
+  reference, while preserving its contributor and third-party attribution;
 - William Zujkowski's human project direction and review; and
 - AI-assisted research, implementation, and testing.
 

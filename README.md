@@ -93,7 +93,7 @@ The legacy baseline in `pq-web-src/` is the functional reference, not a museum e
 
 ## Credits and rights
 
-*Progress Quest* and its web reference implementation are the work of Eric Fredricksen. This repository is an unofficial modernization directed and reviewed by William Zujkowski with AI-assisted research, implementation, and testing. “Zero developers” is the joke; these authorship and provenance statements are not.
+Eric Fredricksen is the original creator of *Progress Quest* and principal author of the retained web reference implementation, which also includes repository contributors and third-party material attributed in the project notices. This repository is an unofficial modernization directed and reviewed by William Zujkowski with AI-assisted research, implementation, and testing. “Zero developers” is the joke; these authorship and provenance statements are not.
 
 The root MIT license covers only material the project has authority to license under MIT. Classic implementation, names, tables, prose, the `pq-web-src/` submodule, bundled fonts, icons, and other dependencies retain their own rights and terms. The official Progress Quest site publishes a permissive license for Progress Quest, while the web-port source also contains conflicting “all rights reserved” headers; the project does not claim that this documentation resolves that ambiguity.
 

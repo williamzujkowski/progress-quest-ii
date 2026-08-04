@@ -376,8 +376,8 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(page.getByText('Character Loadout')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Character Loadout' })).not.toContainText('Prime Stats');
     await expect(page.getByText(/Spell Book/i)).toBeVisible();
-    await expect(page.getByText('No spells have been learned. The curriculum remains aggressively theoretical.')).toBeVisible();
-    await expect(page.getByText('No loot has been retained. Procurement awaits a monster with transferable assets.')).toBeVisible();
+    await expect(page.getByText('No spells have been learned. They arrive automatically at level-up and may also be awarded for completed quests; the curriculum remains aggressively theoretical.')).toBeVisible();
+    await expect(page.getByText('No loot has been retained. Combat supplies it automatically; procurement awaits a monster with transferable assets.')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Equipment List' }).locator('.tooltip-trigger')).toHaveCount(11);
     await expect(page.locator('.inventory-card .card-header .tooltip-trigger')).toBeVisible();
     await page.locator('.tooltip-trigger').first().focus();
@@ -1044,7 +1044,11 @@ test.describe('Progress Quest II terminal dashboard', () => {
       expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
       await expect(page.getByText('Zero players. Zero developers. Progress continues regardless.')).toBeVisible();
       await expect(page.getByRole('link', { name: 'Credits & notices' })).toBeVisible();
+      await expect(page.getByText('No spells have been learned. They arrive automatically at level-up and may also be awarded for completed quests; the curriculum remains aggressively theoretical.')).toBeVisible();
+      await expect(page.getByText('No loot has been retained. Combat supplies it automatically; procurement awaits a monster with transferable assets.')).toBeVisible();
       expect(await page.locator('.brand-tagline').evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      expect(await page.getByRole('region', { name: 'Spell Book' }).evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      expect(await page.getByRole('region', { name: 'Inventory items' }).evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
       await expect(page.getByRole('button', { name: /Roster & Saves/i })).toBeInViewport();
       await expect(page.getByRole('combobox', { name: 'Visual theme' })).toBeInViewport();
 

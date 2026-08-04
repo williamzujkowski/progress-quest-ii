@@ -38,9 +38,13 @@ test('uses one numeral-independent master tagline and truthful credits', async (
   assert.match(navbar, new RegExp(MASTER_TAGLINE.replaceAll('.', '\\.')));
   for (const surface of [readme, notices]) {
     assert.match(surface, /Eric Fredricksen/i);
+    assert.match(surface, /original creator/i);
+    assert.match(surface, /principal author/i);
+    assert.match(surface, /contributors? and third-party/i);
     assert.match(surface, /directed and reviewed by William Zujkowski/i);
     assert.match(surface, /AI-assisted (research, implementation, and testing|implementation)/i);
   }
+  assert.match(await read('docs/contracts/editorial-voice.md'), /principal author[\s\S]*contributors? and third-party attribution/i);
   assert.match(notices, /^PROJECT CREDIT$/m);
 });
 
@@ -54,8 +58,8 @@ test('applies the voice without obscuring PWA or empty-state facts', async () =>
   assert.match(pwa, /new edition is ready/i);
   assert.match(pwa, /applying the new edition/i);
   assert.match(pwa, /offline mode is unavailable/i);
-  assert.match(inventory, /No loot has been retained/i);
-  assert.match(characterSheet, /No spells have been learned/i);
+  assert.match(inventory, /No loot has been retained[\s\S]*Combat supplies it automatically/i);
+  assert.match(characterSheet, /No spells have been learned[\s\S]*level-up[\s\S]*completed quests/i);
 });
 
 test('provides a factual release-note template with optional institutional commentary', async () => {
