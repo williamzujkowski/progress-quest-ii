@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { RandomGenerator } from '../../engine/prng';
-import { createNewCharacter } from '../../engine/sim';
+import { createNewCharacter, equipPrice } from '../../engine/sim';
 import { advanceGame } from '../../engine/transition';
 import type { CharacterSheet } from '../../engine/types';
 import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../../data/limits';
@@ -74,6 +74,33 @@ describe('advanceGame', () => {
     expect(rng.getState()).toEqual(initialRng);
   });
 
+  it.each([
+    {
+      condition: 'encumbered',
+      arrange: (character: CharacterSheet) => {
+        character.Inventory = [{ name: 'Bureaucratic Ballast', qty: 20 }];
+      },
+      expected: { description: 'Heading to market to sell loot...', durationMs: 4000, type: 'heading_to_market' },
+    },
+    {
+      condition: 'wealthy',
+      arrange: (character: CharacterSheet) => {
+        character.Gold = equipPrice(character.Traits.Level) + 1;
+      },
+      expected: { description: 'Negotiating purchase of better equipment...', durationMs: 5000, type: 'buying' },
+    },
+  ])('schedules the canonical $condition route after an Act marker', ({ arrange, expected }) => {
+    const character = createNewCharacter('Route Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    character.Plot = { act: 1, currentProgress: 0, maxProgress: 21_600 };
+    character.Task = { description: 'Loading Act I...', durationMs: 1000, elapsedMs: 0, type: 'act_marker' };
+    character.PendingTasks = undefined;
+    arrange(character);
+
+    const result = advanceGame(stateFor(character), 1000, new RandomGenerator('unused-route-rng'));
+
+    expect(result.state.character.Task).toMatchObject(expected);
+  });
+
   it('waits for the next kill after plot progress first reaches its maximum', () => {
     const character = createNewCharacter('Patient Oracle', 'Half Orc', 'Ur-Paladin', 800);
     character.Plot = { act: 1, currentProgress: 4, maxProgress: 5 };
@@ -145,6 +172,37 @@ describe('advanceGame', () => {
     expect(rng.getState()).toEqual(finalRng);
   });
 
+  it('keeps a maximum-Act nemesis sequence compact while replaying every canonical round', () => {
+    const character = createNewCharacter('Endless Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    character.Plot = { act: MAX_PERSISTED_VALUE, currentProgress: 10, maxProgress: 10 };
+    character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
+    character.Task = { description: 'Executing a Rat...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.PendingTasks = undefined;
+    const rng = new RandomGenerator('endless-cinematic-oracle');
+    rng.setState([0.8487152096349746, 0.6674839127808809, 0.22826107195578516, 1]);
+
+    const opened = advanceGame(stateFor(character), 1000, rng);
+    const cursor = opened.state.character.PendingTasks?.find(({ type }) => type === 'nemesis_cursor');
+    expect(cursor).toMatchObject({ type: 'nemesis_cursor', rollLimit: MAX_PERSISTED_VALUE + 2 });
+    if (!cursor || cursor.type !== 'nemesis_cursor') throw new Error('Expected a compact nemesis cursor');
+    expect(cursor.remainingRounds).toBeGreaterThan(96);
+    expect(opened.state.character.PendingTasks).toHaveLength(5);
+    expect(characterSheetSchema.safeParse(opened.state.character).success).toBe(true);
+    const canonicalContinuation = rng.getState();
+
+    const atStruggle = advanceGame(opened.state, 1000, rng);
+    const firstRound = advanceGame(atStruggle.state, 4000, rng);
+    const nextCursor = firstRound.state.character.PendingTasks?.[0];
+    expect(firstRound.state.character.Task.type).toBe('cinematic');
+    expect(nextCursor).toMatchObject({
+      type: 'nemesis_cursor',
+      remainingRounds: cursor.remainingRounds - 1,
+      continuationRngState: canonicalContinuation,
+    });
+    expect(rng.getState()).toEqual(canonicalContinuation);
+    expect(characterSheetSchema.safeParse(firstRound.state.character).success).toBe(true);
+  });
+
   it('awards random-star loot before generating the remaining nemesis cinematic', () => {
     const character = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 800);
     character.Plot = { act: 1, currentProgress: 10, maxProgress: 10 };
@@ -166,6 +224,21 @@ describe('advanceGame', () => {
       'Loading',
     ]);
     expect(rng.getState()).toEqual([0.03230942226946354, 0.7913503504823893, 0.7409795469138771, 678575]);
+  });
+
+  it('uses the canonical three-part item table for random-star loot', () => {
+    const character = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    character.Plot = { act: 1, currentProgress: 10, maxProgress: 10 };
+    character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
+    character.Task = { description: 'Executing a Black Dragon...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'random' } };
+    character.PendingTasks = undefined;
+    const rng = new RandomGenerator('random-star-item-oracle');
+    rng.setState([0, 0, 0, 0]);
+
+    const result = advanceGame(stateFor(character), 1000, rng);
+
+    expect(result.state.character.Inventory).toContainEqual({ name: 'Golden Diadem of Foreboding', qty: 1 });
+    expect(rng.getState()).toEqual([0, 0, 0, 0]);
   });
 
   it('completes Act I with typed reward events in canonical RNG order', () => {

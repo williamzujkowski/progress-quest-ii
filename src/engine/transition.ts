@@ -1,10 +1,10 @@
-import { applyQuestReward, applySpellReward, equipPrice, generateEquipUpgrade, generateItemReward, generateLootItem, generateQuest, generateStatReward, generateTaskDescription } from './sim';
+import { addInventoryItem, applyQuestReward, applySpellReward, calculateEncumbrance, equipPrice, generateEquipUpgrade, generateItemReward, generateQuest, generateStatReward, generateTaskDescription } from './sim';
 import { BORING_ITEMS, IMPRESSIVE_TITLES, MONSTERS, RACES } from '../data/traits';
-import { MAX_PENDING_TASKS, MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../data/limits';
-import { generateName, levelUpTime } from './math';
-import type { RandomGenerator } from './prng';
+import { MAX_PENDING_TASKS, MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../data/limits';
+import { calculateEncumbranceMax, generateName, levelUpTime } from './math';
+import { RandomGenerator } from './prng';
 import { plural } from './text';
-import type { CharacterSheet, EquipSlot, ProgressionState, ProgressTask, SequenceTask, StatName } from './types';
+import type { CharacterSheet, EquipSlot, NemesisSequenceCursor, PendingSequenceEntry, ProgressionState, ProgressTask, SequenceTask, StatName } from './types';
 
 export interface GameTransitionState {
   character: CharacterSheet;
@@ -72,7 +72,31 @@ function namedMonster(rng: RandomGenerator, level: number): string {
   return `${generateName(rng)} the ${best.name}`;
 }
 
-function finishInterplotCinematic(rng: RandomGenerator, act: number, level: number, opening: CinematicOpening): SequenceTask[] {
+function nemesisRoundTask(nemesis: string, advantageMod3: number): SequenceTask {
+  if (advantageMod3 === 0) return sequenceTask(`Locked in grim combat with ${nemesis}`, 2);
+  if (advantageMod3 === 1) return sequenceTask(`${nemesis} seems to have the upper hand`, 2);
+  return sequenceTask(`You seem to gain the advantage over ${nemesis}`, 2);
+}
+
+function replayNemesisRound(cursor: NemesisSequenceCursor, rng: RandomGenerator): { task: SequenceTask; cursor?: NemesisSequenceCursor } {
+  rng.setState(cursor.continuationRngState);
+  const replayRng = new RandomGenerator('nemesis-replay');
+  replayRng.setState(cursor.replayRngState);
+  replayRng.random(cursor.rollLimit);
+  const advantageMod3 = (cursor.advantageMod3 + 1 + replayRng.random(2)) % 3;
+  const remainingRounds = cursor.remainingRounds - 1;
+  return {
+    task: nemesisRoundTask(cursor.nemesis, advantageMod3),
+    cursor: remainingRounds > 0 ? {
+      ...cursor,
+      remainingRounds,
+      advantageMod3,
+      replayRngState: replayRng.getState(),
+    } : undefined,
+  };
+}
+
+function finishInterplotCinematic(rng: RandomGenerator, act: number, level: number, opening: CinematicOpening): PendingSequenceEntry[] {
   if (opening.branch === 0) {
     return [
       sequenceTask('You greet old friends and meet new allies', 2),
@@ -83,22 +107,34 @@ function finishInterplotCinematic(rng: RandomGenerator, act: number, level: numb
   }
   if (opening.branch === 1) {
     const nemesis = namedMonster(rng, level + 3);
-    let advantage = rng.random(3);
-    // ponytail: cap the persisted queue and RNG work for synthetically huge accepted Act values.
+    let advantageMod3 = rng.random(3);
+    const startingAdvantageMod3 = advantageMod3;
+    const replayRngState = rng.getState();
+    const materializedRounds: SequenceTask[] = [];
+    let rounds = 0;
     const maxRounds = MAX_PENDING_TASKS - 4;
-    const tasks = [sequenceTask(`A desperate struggle commences with ${nemesis}`, 4)];
-    for (let round = 1; round <= maxRounds && round <= rng.random(1 + act + 1); round += 1) {
-      advantage += 1 + rng.random(2);
-      if (advantage % 3 === 0) tasks.push(sequenceTask(`Locked in grim combat with ${nemesis}`, 2));
-      else if (advantage % 3 === 1) tasks.push(sequenceTask(`${nemesis} seems to have the upper hand`, 2));
-      else tasks.push(sequenceTask(`You seem to gain the advantage over ${nemesis}`, 2));
+    for (let round = 1; round <= rng.random(act + 2); round += 1) {
+      advantageMod3 = (advantageMod3 + 1 + rng.random(2)) % 3;
+      rounds += 1;
+      if (rounds <= maxRounds) materializedRounds.push(nemesisRoundTask(nemesis, advantageMod3));
     }
-    tasks.push(
+    const ending = [
       sequenceTask(`Victory! ${nemesis} is slain! Exhausted, you lose consciousness`, 3),
       sequenceTask('You awake in a friendly place, but the road awaits', 2),
       sequenceTask('Loading', 1, 'act_marker'),
-    );
-    return tasks;
+    ];
+    const openingTask = sequenceTask(`A desperate struggle commences with ${nemesis}`, 4);
+    if (rounds <= maxRounds) return [openingTask, ...materializedRounds, ...ending];
+    return [openingTask, {
+      description: `Continuing the regrettably extensive struggle with ${nemesis}`,
+      type: 'nemesis_cursor',
+      nemesis,
+      remainingRounds: rounds,
+      advantageMod3: startingAdvantageMod3,
+      rollLimit: act + 2,
+      replayRngState,
+      continuationRngState: rng.getState(),
+    }, ...ending];
   }
   return [
     sequenceTask(`There is rejoicing, and an unnerving encounter with ${opening.patron} in private`, 3),
@@ -251,18 +287,19 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
         plot.currentProgress = Math.min(plot.maxProgress, plot.currentProgress + progressDelta);
       }
 
-      const itemName = task.loot?.type === 'fixed' ? task.loot.item : generateLootItem(rng);
-      const existingIndex = inventory.findIndex((item) => item.name === itemName);
-      const existingItem = inventory[existingIndex];
-      let itemGained = false;
-      if (existingItem && existingItem.qty < MAX_PERSISTED_VALUE) {
-        inventory = inventory.map((item, index) => index === existingIndex ? { ...item, qty: item.qty + 1 } : item);
-        itemGained = true;
-      } else if (existingIndex < 0 && inventory.length < MAX_PERSISTED_ITEMS) {
-        inventory = [...inventory, { name: itemName, qty: 1 }];
-        itemGained = true;
+      const itemName = task.loot?.type === 'fixed'
+        ? task.loot.item
+        : generateItemReward(rng, ['Gold', ...inventory.filter(({ name }) => name !== 'Gold').map(({ name }) => name)]);
+      if (itemName === 'Gold') {
+        if (gold < MAX_PERSISTED_GOLD) {
+          gold += 1;
+          events.push({ type: 'gold_received', amount: 1 });
+        }
+      } else {
+        const addedItem = addInventoryItem(inventory, itemName);
+        inventory = addedItem.inventory;
+        if (addedItem.added) events.push({ type: 'item_gained', name: itemName, quantity: 1 });
       }
-      if (itemGained) events.push({ type: 'item_gained', name: itemName, quantity: 1 });
       if (cinematicOpening) pendingTasks.push(...finishInterplotCinematic(rng, plot.act, traits.Level, cinematicOpening));
     } else if (task.type === 'selling') {
       let earned = 0;
@@ -295,7 +332,11 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
       const queuedTask = pendingTasks[0];
       if (!queuedTask) throw new Error('Pending task queue became empty while dequeuing');
       pendingTasks = pendingTasks.slice(1);
-      if (queuedTask.type === 'act_marker') {
+      if (queuedTask.type === 'nemesis_cursor') {
+        const replayed = replayNemesisRound(queuedTask, rng);
+        if (replayed.cursor) pendingTasks = [replayed.cursor, ...pendingTasks];
+        nextTask = activeSequenceTask(replayed.task);
+      } else if (queuedTask.type === 'act_marker') {
         const completedAct = plot.act;
         const nextAct = Math.min(MAX_PERSISTED_VALUE, plot.act + 1);
         plot = {
@@ -305,22 +346,16 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
         };
         events.push({ type: 'act_completed', act: completedAct });
         if (nextAct > 1) {
-          const itemName = generateItemReward(rng, ['Gold', ...inventory.map(({ name }) => name)]);
+          const itemName = generateItemReward(rng, ['Gold', ...inventory.filter(({ name }) => name !== 'Gold').map(({ name }) => name)]);
           if (itemName === 'Gold') {
             if (gold < MAX_PERSISTED_GOLD) {
               gold += 1;
               events.push({ type: 'gold_received', amount: 1 });
             }
           } else {
-            const existingIndex = inventory.findIndex(({ name }) => name === itemName);
-            const existing = inventory[existingIndex];
-            if (existing && existing.qty < MAX_PERSISTED_VALUE) {
-              inventory = inventory.map((item, index) => index === existingIndex ? { ...item, qty: item.qty + 1 } : item);
-              events.push({ type: 'item_gained', name: itemName, quantity: 1 });
-            } else if (existingIndex < 0 && inventory.length < MAX_PERSISTED_ITEMS) {
-              inventory = [...inventory, { name: itemName, qty: 1 }];
-              events.push({ type: 'item_gained', name: itemName, quantity: 1 });
-            }
+            const addedItem = addInventoryItem(inventory, itemName);
+            inventory = addedItem.inventory;
+            if (addedItem.added) events.push({ type: 'item_gained', name: itemName, quantity: 1 });
           }
           const upgrade = generateEquipUpgrade(rng, traits.Level);
           equip = { ...equip, [upgrade.slot]: upgrade.name };
@@ -332,7 +367,13 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
         nextTask = activeSequenceTask(queuedTask);
       }
     } else if (task.type === 'act_marker') {
-      nextTask = { description: 'Heading to the killing fields...', durationMs: 4000, elapsedMs: 0, type: 'heading' };
+      if (calculateEncumbrance(inventory) >= calculateEncumbranceMax(stats.STR)) {
+        nextTask = { description: 'Heading to market to sell loot...', durationMs: 4000, elapsedMs: 0, type: 'heading_to_market' };
+      } else if (gold > equipPrice(traits.Level)) {
+        nextTask = { description: 'Negotiating purchase of better equipment...', durationMs: 5000, elapsedMs: 0, type: 'buying' };
+      } else {
+        nextTask = { description: 'Heading to the killing fields...', durationMs: 4000, elapsedMs: 0, type: 'heading' };
+      }
     } else {
       const nextTaskInfo = generateTaskDescription(rng, transitionedCharacter);
       nextTask = { ...nextTaskInfo, elapsedMs: 0 };

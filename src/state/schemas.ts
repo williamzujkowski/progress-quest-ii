@@ -10,6 +10,15 @@ const boundedInteger = z.number().int().min(0).max(MAX_PERSISTED_VALUE);
 const positiveBoundedInteger = z.number().int().positive().max(MAX_PERSISTED_VALUE);
 const boundedNumber = z.number().min(0).max(MAX_PERSISTED_VALUE);
 const positiveBoundedNumber = z.number().positive().max(MAX_PERSISTED_VALUE);
+const aleaFraction = z.number().min(0).lt(1).refine((value) => Number.isInteger(value * 0x1_0000_0000), {
+  message: 'Alea fractions must align to 32-bit state.',
+});
+const rngStateSchema = z.tuple([
+  aleaFraction,
+  aleaFraction,
+  aleaFraction,
+  z.number().int().min(0).max(2_091_638),
+]);
 
 export const characterNameSchema = z.string().min(1).max(MAX_CHARACTER_NAME_LENGTH);
 
@@ -98,12 +107,23 @@ const sequenceTaskSchema = z.object({
   type: z.enum(['prologue', 'cinematic', 'act_marker']),
 }).strict();
 
-const pendingTasksSchema = z.array(sequenceTaskSchema).min(1).max(MAX_PENDING_TASKS).superRefine((tasks, context) => {
+const nemesisSequenceCursorSchema = z.object({
+  description,
+  type: z.literal('nemesis_cursor'),
+  nemesis: shortText,
+  remainingRounds: z.number().int().positive().max(MAX_PERSISTED_VALUE + 1),
+  advantageMod3: z.number().int().min(0).max(2),
+  rollLimit: z.number().int().min(2).max(MAX_PERSISTED_VALUE + 2),
+  replayRngState: rngStateSchema,
+  continuationRngState: rngStateSchema,
+}).strict();
+
+const pendingTasksSchema = z.array(z.union([sequenceTaskSchema, nemesisSequenceCursorSchema])).min(1).max(MAX_PENDING_TASKS).superRefine((tasks, context) => {
   const markerIndexes = tasks.flatMap((task, index) => task.type === 'act_marker' ? [index] : []);
-  if (markerIndexes.length > 1) context.addIssue({ code: 'custom', message: 'Pending tasks may contain at most one Act marker.' });
-  if (markerIndexes[0] !== undefined && markerIndexes[0] !== tasks.length - 1) {
-    context.addIssue({ code: 'custom', message: 'The Act marker must be the final pending task.' });
+  if (markerIndexes.length !== 1 || markerIndexes[0] !== tasks.length - 1) {
+    context.addIssue({ code: 'custom', message: 'Pending tasks require exactly one final Act marker.' });
   }
+  if (tasks.filter(({ type }) => type === 'nemesis_cursor').length > 1) context.addIssue({ code: 'custom', message: 'Pending tasks may contain at most one nemesis cursor.' });
 });
 
 /** The exact, recursively strict, unversioned modern PQW v0 compatibility profile. */
@@ -121,28 +141,27 @@ export const characterSheetSchema = z.object({
 }).strict().refine(({ Inventory }) => new Set(Inventory.map(({ name }) => name)).size === Inventory.length, {
   message: 'Inventory item names must be unique.',
   path: ['Inventory'],
-}).superRefine(({ PendingTasks, Task }, context) => {
-  if (PendingTasks && Task.type !== 'loading' && Task.type !== 'prologue' && Task.type !== 'cinematic') {
-    context.addIssue({ code: 'custom', message: 'Pending sequence tasks require an active sequence task.', path: ['PendingTasks'] });
+}).superRefine(({ PendingTasks, Plot, Task }, context) => {
+  if (!PendingTasks) return;
+  const sequenceEntries = PendingTasks.slice(0, -1);
+  const validPrologue = Plot.act === 0
+    && (Task.type === 'loading' || Task.type === 'prologue')
+    && sequenceEntries.every(({ type }) => type === 'prologue');
+  const validCinematic = Plot.act > 0
+    && Task.type === 'cinematic'
+    && sequenceEntries.every(({ type }) => type === 'cinematic' || type === 'nemesis_cursor');
+  if (!validPrologue && !validCinematic) {
+    context.addIssue({ code: 'custom', message: 'Pending tasks must match the active Act phase.', path: ['PendingTasks'] });
   }
 });
 
 export type PersistedCharacterSheet = z.infer<typeof characterSheetSchema>;
 
-const aleaFraction = z.number().min(0).lt(1).refine((value) => Number.isInteger(value * 0x1_0000_0000), {
-  message: 'Alea fractions must align to 32-bit state.',
-});
-
 export const activeCheckpointV1Schema = z.object({
   schemaVersion: z.literal(1),
   session: z.object({
     character: characterSheetSchema,
-    rngState: z.tuple([
-      aleaFraction,
-      aleaFraction,
-      aleaFraction,
-      z.number().int().min(0).max(2_091_638),
-    ]),
+    rngState: rngStateSchema,
     progression: z.object({
       experience: z.object({
         currentSeconds: z.number().finite().min(0),

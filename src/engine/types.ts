@@ -49,6 +49,19 @@ export type SequenceTask = Omit<ProgressTask, 'elapsedMs' | 'loot' | 'type'> & {
   type: 'prologue' | 'cinematic' | 'act_marker';
 };
 
+export interface NemesisSequenceCursor {
+  description: string;
+  type: 'nemesis_cursor';
+  nemesis: string;
+  remainingRounds: number;
+  advantageMod3: number;
+  rollLimit: number;
+  replayRngState: PRNGState;
+  continuationRngState: PRNGState;
+}
+
+export type PendingSequenceEntry = SequenceTask | NemesisSequenceCursor;
+
 export interface QuestState {
   description: string;
   currentProgress: number;
@@ -84,5 +97,6 @@ export interface CharacterSheet {
   };
   Quest: QuestState;
   Task: ProgressTask;
-  PendingTasks?: SequenceTask[];
+  PendingTasks?: PendingSequenceEntry[];
 }
+import type { PRNGState } from './prng';

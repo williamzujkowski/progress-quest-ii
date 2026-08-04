@@ -2,7 +2,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PRIME_STATS } from '../../data/traits';
 import { MAX_FINITE_CHARACTER_LEVEL } from '../../engine/math';
+import { RandomGenerator } from '../../engine/prng';
 import { createNewCharacter } from '../../engine/sim';
+import { advanceGame } from '../../engine/transition';
 import {
   MAX_PQW_INPUT_LENGTH,
   MAX_ROSTER_ENTRIES,
@@ -46,6 +48,30 @@ describe('Save Manager & Serialization', () => {
     expect(decoded.value.Quest).toEqual(originalChar.Quest);
     expect(decoded.value.Plot).toEqual(originalChar.Plot);
     expect(decoded.value.PendingTasks).toEqual(originalChar.PendingTasks);
+  });
+
+  it('preserves and resumes a partly consumed prologue through PQW and roster storage', () => {
+    const character = createNewCharacter('MidpointHero', 'Demicanadian', 'Bastard Lunatic', 9_997);
+    const progression = { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 };
+    const midpoint = advanceGame({ character, progression }, 7000, new RandomGenerator('unused-prologue-rng')).state;
+    expect(midpoint.character.Task).toMatchObject({ type: 'prologue', elapsedMs: 5000 });
+
+    const decoded = decodePQWSave(encodePQWSave(midpoint.character));
+    expect(decoded.ok).toBe(true);
+    if (!decoded.ok) return;
+    saveToRoster(midpoint.character);
+    const roster = loadRoster();
+    expect(roster.ok).toBe(true);
+    if (!roster.ok) return;
+    const rosterCharacter = roster.value.MidpointHero;
+    expect(rosterCharacter).toEqual(midpoint.character);
+
+    const expected = advanceGame(midpoint, 23_000, new RandomGenerator('same-prologue-continuation'));
+    for (const restored of [decoded.value, rosterCharacter]) {
+      if (!restored) throw new Error('Expected the midpoint character in the roster');
+      const resumed = advanceGame({ character: restored, progression: midpoint.progression }, 23_000, new RandomGenerator('same-prologue-continuation'));
+      expect(resumed).toEqual(expected);
+    }
   });
 
   it('preserves Unicode character names with the standards-based UTF-8 codec', () => {
@@ -249,6 +275,7 @@ describe('Save Manager & Serialization', () => {
     expect(characterSheetSchema.safeParse(oldSheet).success).toBe(true);
     for (const PendingTasks of [
       [],
+      [step],
       [{ ...step, elapsedMs: 1 }],
       [{ ...step, type: 'kill' }],
       [{ ...step, loot: { type: 'random' } }],
@@ -261,6 +288,10 @@ describe('Save Manager & Serialization', () => {
         step,
         { description: 'Loading', durationMs: 1000, elapsedMs: 0, type: 'act_marker' },
         { description: 'Loading again', durationMs: 1000, elapsedMs: 0, type: 'act_marker' },
+      ],
+      [
+        { ...step, type: 'cinematic' },
+        { description: 'Loading', durationMs: 1000, elapsedMs: 0, type: 'act_marker' },
       ],
     ]) {
       expect(characterSheetSchema.safeParse({ ...character, PendingTasks }).success).toBe(false);
