@@ -20,6 +20,8 @@ function stateFor(character: CharacterSheet) {
   };
 }
 
+const eventsOf = (result: ReturnType<typeof advanceGame>) => result.records.map(({ event }) => event);
+
 describe('advanceGame', () => {
   it('creates a new session at the canonical Act 0 prologue', () => {
     const character = createNewCharacter('Prologue Oracle', 'Half Orc', 'Ur-Paladin', 800);
@@ -64,7 +66,7 @@ describe('advanceGame', () => {
     expect(atMarker.state.character.Plot).toEqual({ act: 1, currentProgress: 0, maxProgress: 21_600 });
     expect(atMarker.state.character.Task).toMatchObject({ description: 'Loading Act I...', durationMs: 2000, type: 'act_marker' });
     expect(atMarker.state.character.PendingTasks).toBeUndefined();
-    expect(atMarker.events).toContainEqual({ type: 'act_completed', act: 0 });
+    expect(eventsOf(atMarker)).toContainEqual({ type: 'act_completed', act: 0 });
     expect(rng.getState()).toEqual(initialRng);
 
     const afterMarker = advanceGame(atMarker.state, 2000, rng);
@@ -72,6 +74,25 @@ describe('advanceGame', () => {
     expect(afterMarker.state.progression).toMatchObject({ completedTasks: 6, elapsedSeconds: 30 });
     expect(afterMarker.state.character.Task).toMatchObject({ description: 'Heading to the killing fields...', durationMs: 4000, type: 'heading' });
     expect(rng.getState()).toEqual(initialRng);
+  });
+
+  it('captures event-local post-task facts before later catch-up tasks run', () => {
+    const character = createNewCharacter('Context Oracle', 'Half Orc', 'Ur-Paladin', 800);
+
+    const result = advanceGame(stateFor(character), 28_000, new RandomGenerator('unused-context-rng'));
+    const taskRecords = result.records.filter(({ event }) => event.type === 'task_started');
+
+    expect(taskRecords.map(({ post }) => post.completedTasks)).toEqual([1, 2, 3, 4, 5]);
+    expect(taskRecords[0]?.post).toMatchObject({
+      completedTask: 'loading',
+      nextTask: 'prologue',
+      act: 0,
+    });
+    expect(taskRecords.at(-1)?.post).toMatchObject({
+      completedTask: 'prologue',
+      nextTask: 'act_marker',
+      act: 1,
+    });
   });
 
   it.each([
@@ -271,7 +292,7 @@ describe('advanceGame', () => {
     expect(result.state.character.Plot).toEqual({ act: 2, currentProgress: 0, maxProgress: 39_600 });
     expect(result.state.character.Inventory).toContainEqual({ name: 'Unearthly Candelabra of Silence', qty: 1 });
     expect(result.state.character.Equip.Helm).toBe('Lace');
-    expect(result.events).toEqual([
+    expect(eventsOf(result)).toEqual([
       { type: 'act_completed', act: 1 },
       { type: 'item_gained', name: 'Unearthly Candelabra of Silence', quantity: 1 },
       { type: 'equipment_gained', slot: 'Helm', name: 'Lace' },
@@ -287,9 +308,9 @@ describe('advanceGame', () => {
     const actThree = advanceGame({ character: actTwo, progression: result.state.progression }, 1000, rng);
 
     expect(actThree.state.character.Plot).toEqual({ act: 3, currentProgress: 0, maxProgress: 57_600 });
-    expect(actThree.events).toContainEqual({ type: 'act_completed', act: 2 });
-    expect(actThree.events.filter(({ type }) => type === 'item_gained' || type === 'gold_received')).toHaveLength(1);
-    expect(actThree.events.filter(({ type }) => type === 'equipment_gained')).toHaveLength(1);
+    expect(eventsOf(actThree)).toContainEqual({ type: 'act_completed', act: 2 });
+    expect(eventsOf(actThree).filter(({ type }) => type === 'item_gained' || type === 'gold_received')).toHaveLength(1);
+    expect(eventsOf(actThree).filter(({ type }) => type === 'equipment_gained')).toHaveLength(1);
     expect(characterSheetSchema.safeParse(actThree.state.character).success).toBe(true);
   });
 
@@ -323,7 +344,7 @@ describe('advanceGame', () => {
         character: { ...character, Task: { ...character.Task, elapsedMs: 500 } },
         progression: state.progression,
       },
-      events: [],
+      records: [],
       remainingElapsedMs: 0,
     });
     expect(state).toEqual(snapshot);
@@ -379,14 +400,14 @@ describe('advanceGame', () => {
         loot: { type: 'fixed', item: 'grid bug carapace' },
       },
     });
-    expect(result.events).toEqual([
+    expect(eventsOf(result)).toEqual([
       { type: 'item_gained', name: 'rat tail', quantity: 1 },
       { type: 'task_started', task: { ...result.state.character.Task, elapsedMs: 0 } },
     ]);
     expect(result.remainingElapsedMs).toBe(0);
     expect(rng.getState()).toEqual(oneKillFixture.expected.rng);
     expect(state).toEqual(snapshot);
-    const taskEvent = result.events.find((event) => event.type === 'task_started');
+    const taskEvent = eventsOf(result).find((event) => event.type === 'task_started');
     if (!taskEvent) throw new Error('Expected task-started event');
     taskEvent.task.elapsedMs = 999;
     if (taskEvent.task.loot?.type === 'fixed') taskEvent.task.loot.item = 'tampered';
@@ -423,7 +444,7 @@ describe('advanceGame', () => {
     expect(result.state.character.Stats).toEqual({ STR: 10, CON: 10, DEX: 10, INT: 11, WIS: 10, CHA: 10, 'HP Max': 17, 'MP Max': 15 });
     expect(result.state.character.Spells).toEqual([{ name: 'Slime Finger', level: 1 }]);
     expect(result.state.progression.experience).toEqual({ currentSeconds: 0, maxSeconds: 1279 });
-    expect(result.events).toEqual([
+    expect(eventsOf(result)).toEqual([
       { type: 'level_gained', level: 2 },
       { type: 'stat_gained', stat: 'HP Max', amount: 6 },
       { type: 'stat_gained', stat: 'MP Max', amount: 5 },
@@ -447,7 +468,7 @@ describe('advanceGame', () => {
 
     const result = advanceGame(state, 1, rng);
 
-    expect(result.events.filter((event) => event.type === 'stat_gained')).toEqual([
+    expect(eventsOf(result).filter((event) => event.type === 'stat_gained')).toEqual([
       { type: 'stat_gained', stat: 'HP Max', amount: 6 },
       { type: 'stat_gained', stat: 'MP Max', amount: 5 },
       { type: 'stat_gained', stat: 'INT', amount: 1 },
@@ -491,7 +512,7 @@ describe('advanceGame', () => {
       targetIndex: 84,
     });
     expect(result.state.character.Spells).toEqual([{ name: 'Rabbit Punch', level: 1 }]);
-    expect(result.events).toEqual([
+    expect(eventsOf(result)).toEqual([
       { type: 'quest_completed', description: 'Test quest' },
       { type: 'quest_started', description: 'Exterminate the Swamp Elves' },
       { type: 'save_requested', characterName: 'Oracle' },
@@ -521,11 +542,45 @@ describe('advanceGame', () => {
     expect(result.state.character.Gold).toBe(25);
     expect(result.state.character.Inventory).toEqual([{ name: 'old boot', qty: 2 }]);
     expect(result.state.character.Task).toMatchObject({ description: 'Selling 2 old boots...', durationMs: 1000, type: 'selling' });
-    expect(result.events).toEqual([
+    expect(eventsOf(result)).toEqual([
       { type: 'inventory_sold', gold: 15 },
       { type: 'task_started', task: result.state.character.Task },
     ]);
     expect(rng.getState()).toEqual(initialRng);
+  });
+
+  it('exposes an actual quest equipment mutation as a typed gained-equipment event', () => {
+    let matched: ReturnType<typeof advanceGame> | undefined;
+    for (let seed = 0; seed < 100 && !matched; seed += 1) {
+      const character = createNewCharacter('Quartermaster', 'Half Orc', 'Robot Monk', `quest-equipment:${seed}`);
+      character.Quest = { description: 'Complete opaque work', currentProgress: 1, maxProgress: 1, history: ['Complete opaque work'], kind: 'fetch' };
+      character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+      const result = advanceGame(stateFor(character), 1, new RandomGenerator(`quest-equipment-transition:${seed}`));
+      if (eventsOf(result).some(({ type }) => type === 'equipment_gained')) matched = result;
+    }
+
+    const event = matched?.records.find(({ event }) => event.type === 'equipment_gained')?.event;
+    expect(event).toMatchObject({ type: 'equipment_gained' });
+    if (!event || event.type !== 'equipment_gained' || !matched) throw new Error('Expected a quest equipment reward');
+    expect(matched.state.character.Equip[event.slot]).toBe(event.name);
+  });
+
+  it('marks only actual nemesis interplot openings with transient presentation metadata', () => {
+    const observed = new Set<'nemesis' | 'other'>();
+    for (let seed = 0; seed < 100 && observed.size < 2; seed += 1) {
+      const character = createNewCharacter('Cinematic Clerk', 'Half Orc', 'Robot Monk', `cinematic-role:${seed}`);
+      character.Plot = { act: 1, currentProgress: 10, maxProgress: 10 };
+      character.PendingTasks = undefined;
+      character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+      const result = advanceGame(stateFor(character), 1, new RandomGenerator(`cinematic-role-transition:${seed}`));
+      const opening = result.records.find(({ event }) => event.type === 'task_started' && event.task.type === 'cinematic');
+      if (!opening || opening.event.type !== 'task_started') continue;
+      const isNemesis = opening.event.task.description.includes('quarry is in sight');
+      expect(opening.post.interplotRole).toBe(isNemesis ? 'nemesis' : undefined);
+      observed.add(isNemesis ? 'nemesis' : 'other');
+    }
+
+    expect(observed).toEqual(new Set(['nemesis', 'other']));
   });
 
   it('applies both canonical RandomLow multipliers to an of-item stack', () => {
@@ -543,7 +598,7 @@ describe('advanceGame', () => {
 
     expect(result.state.character.Gold).toBe(70);
     expect(result.state.character.Inventory).toEqual([{ name: 'old boot', qty: 2 }]);
-    expect(result.events[0]).toEqual({ type: 'inventory_sold', gold: 60 });
+    expect(eventsOf(result)[0]).toEqual({ type: 'inventory_sold', gold: 60 });
     expect(rng.getState()).toEqual([0.581618724623695, 0.47070452058687806, 0.9086279335897416, 429329]);
   });
 
@@ -560,7 +615,7 @@ describe('advanceGame', () => {
 
     expect(result.state.character.Inventory).toEqual(character.Inventory);
     expect(result.state.character.Task).toMatchObject({ description: 'Selling 30 rat tails...', durationMs: 1000, type: 'selling' });
-    expect(result.events).toEqual([{ type: 'task_started', task: result.state.character.Task }]);
+    expect(eventsOf(result)).toEqual([{ type: 'task_started', task: result.state.character.Task }]);
     expect(rng.getState()).toEqual(initialRng);
   });
 
@@ -592,7 +647,7 @@ describe('advanceGame', () => {
     const result = advanceGame(stateFor(character), 1, new RandomGenerator('maximum-sale'));
 
     expect(result.state.character.Gold).toBe(MAX_PERSISTED_GOLD);
-    expect(result.events[0]).toEqual({ type: 'inventory_sold', gold: 0 });
+    expect(eventsOf(result)[0]).toEqual({ type: 'inventory_sold', gold: 0 });
     expect(characterSheetSchema.safeParse(result.state.character).success).toBe(true);
   });
 
@@ -610,7 +665,7 @@ describe('advanceGame', () => {
       durationMs: 4000,
       type: 'heading',
     });
-    expect(result.events[0]).toMatchObject({ type: 'equipment_purchased' });
+    expect(eventsOf(result)[0]).toMatchObject({ type: 'equipment_purchased' });
   });
 
   it('starts the first real quest without rewarding the placeholder', () => {
@@ -622,7 +677,7 @@ describe('advanceGame', () => {
     const result = advanceGame(stateFor(character), 1, new RandomGenerator('first-quest'));
 
     expect(result.state.character.Quest.history).toEqual([result.state.character.Quest.description]);
-    expect(result.events.some(({ type }) => type === 'quest_completed')).toBe(false);
+    expect(eventsOf(result).some(({ type }) => type === 'quest_completed')).toBe(false);
     expect(result.state.character.Stats).toEqual(initialSheet.Stats);
     expect(result.state.character.Equip).toEqual(initialSheet.Equip);
     expect(result.state.character.Spells).toEqual(initialSheet.Spells);
@@ -756,8 +811,8 @@ describe('advanceGame', () => {
       session: { ...result.state, rngState: rng.getState(), isPaused: false, log: [] },
     });
     expect(parsed.success, parsed.error?.issues.map(({ path, message }) => `${path.join('.')}: ${message}`).join('\n')).toBe(true);
-    expect(result.events.filter(({ type }) => type === 'level_gained' || type === 'stat_gained')).toEqual([]);
-    expect(result.events.some((event) => event.type === 'item_gained' && event.name === 'rat tail')).toBe(false);
+    expect(eventsOf(result).filter(({ type }) => type === 'level_gained' || type === 'stat_gained')).toEqual([]);
+    expect(eventsOf(result).some((event) => event.type === 'item_gained' && event.name === 'rat tail')).toBe(false);
 
     const headroomState = structuredClone(state);
     headroomState.character.Traits.Level = MAX_PERSISTED_VALUE - 1;
@@ -799,6 +854,6 @@ describe('advanceGame', () => {
 
     expect(result.state.character.Inventory).toHaveLength(MAX_PERSISTED_ITEMS);
     expect(characterSheetSchema.safeParse(result.state.character).success).toBe(true);
-    expect(result.events.some(({ type }) => type === 'item_gained')).toBe(false);
+    expect(eventsOf(result).some(({ type }) => type === 'item_gained')).toBe(false);
   });
 });

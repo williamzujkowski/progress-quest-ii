@@ -168,6 +168,7 @@ export function generateQuest(rng: RandomGenerator, level: number) {
 
 export type QuestRewardKind = 'spell' | 'equipment' | 'stat' | 'item';
 export type QuestRewardEffect =
+  | { type: 'equipment'; slot: EquipSlot; name: string }
   | { type: 'stat'; stat: StatName; amount: number }
   | { type: 'item'; name: string; quantity: number }
   | { type: 'gold'; amount: number };
@@ -265,6 +266,7 @@ export function applyQuestReward(rng: RandomGenerator, character: CharacterSheet
     return {
       kind,
       character: { ...character, Equip: { ...character.Equip, [upgrade.slot]: upgrade.name } },
+      effect: { type: 'equipment', ...upgrade },
     };
   }
   if (kind === 'stat') {

@@ -642,6 +642,57 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(tagFor('Executing a passing pigeon...')).toHaveText('Combat');
   });
 
+  test('keeps derived world context bounded, quiet, and keyboard-readable', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.goto('/');
+
+    const context = page.getByRole('region', { name: 'Current world context' });
+    await expect(context).toContainText('LOOK //');
+    await expect(context).toContainText('Fictional world · derived from canonical activity');
+    await expect(context).not.toHaveAttribute('aria-live', /.+/);
+
+    await page.evaluate(async () => {
+      const { useGameStore } = await import('/src/state/gameStore.ts');
+      useGameStore.setState({
+        isPaused: true,
+        worldNotices: Array.from({ length: 40 }, (_, index) => ({
+          id: `world:${index}:0`,
+          sourceActivityId: index,
+          kind: 'arrival' as const,
+          text: `Derived notice ${index + 1} ${'x'.repeat(120)}`,
+        })),
+      });
+    });
+
+    const summary = context.getByText('World filings (40)');
+    expect((await summary.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    await summary.click();
+    const notices = page.getByRole('region', { name: 'Derived world notices' });
+    await notices.focus();
+    await expect(notices).toBeFocused();
+    expect(await notices.evaluate((element) => element.scrollHeight)).toBeGreaterThan(await notices.evaluate((element) => element.clientHeight));
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => document.documentElement.clientWidth));
+  });
+
+  test('reflows open world filings at a 400 percent equivalent viewport', async ({ page }) => {
+    // 320 CSS pixels is the WCAG reflow equivalent of a 1280px viewport at 400% browser zoom.
+    await page.setViewportSize({ width: 320, height: 225 });
+    await page.goto('/');
+    const context = page.getByRole('region', { name: 'Current world context' });
+    const summary = context.getByText('World filings');
+    await summary.focus();
+    await page.keyboard.press('Enter');
+
+    const notices = page.getByRole('region', { name: 'Derived world notices' });
+    await expect(notices).toBeVisible();
+    const overflow = await page.evaluate(() => ({
+      page: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      context: document.querySelector<HTMLElement>('.world-context')!.scrollWidth - document.querySelector<HTMLElement>('.world-context')!.clientWidth,
+      notices: document.querySelector<HTMLElement>('.world-context-notices')!.scrollWidth - document.querySelector<HTMLElement>('.world-context-notices')!.clientWidth,
+    }));
+    expect(overflow).toEqual({ page: 0, context: 0, notices: 0 });
+  });
+
   test('retains activity row identity and exposes only the newest event to status at 50 to 51', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
@@ -810,6 +861,19 @@ test.describe('Progress Quest II terminal dashboard', () => {
     expect(spellBox).not.toBeNull();
     expect(spellBox!.height).toBeGreaterThan(0);
     expect(spellBox!.y + spellBox!.height).toBeLessThanOrEqual(characterBox!.y + characterBox!.height);
+
+    const activity = page.locator('.activity-card');
+    const worldContext = page.getByRole('region', { name: 'Current world context' });
+    const log = page.getByRole('region', { name: 'Activity Event Log' });
+    const activityBox = await activity.boundingBox();
+    const contextBox = await worldContext.boundingBox();
+    expect(activityBox).not.toBeNull();
+    expect(contextBox).not.toBeNull();
+    expect(activityBox!.y + activityBox!.height).toBeLessThanOrEqual(760);
+    expect(contextBox!.y + contextBox!.height).toBeLessThanOrEqual(activityBox!.y + activityBox!.height);
+    // Two compact event rows plus feed padding remain visible while longer history scrolls.
+    expect(await log.evaluate((element) => element.clientHeight)).toBeGreaterThanOrEqual(72);
+    expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(760);
   });
 
   test('keeps the compact equipment grid on wide, short screens', async ({ page }) => {
@@ -868,6 +932,15 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await page.goto('/');
 
     await expect(page.getByRole('combobox', { name: 'Visual theme' })).toBeVisible();
+    const summary = page.getByRole('region', { name: 'Current world context' }).getByText('World filings');
+    await summary.focus();
+    await expect(summary).toBeFocused();
+    expect(await summary.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('none');
+    await page.keyboard.press('Enter');
+    const notices = page.getByRole('region', { name: 'Derived world notices' });
+    await notices.focus();
+    await expect(notices).toBeFocused();
+    expect(await notices.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('none');
     expect(await page.locator('.progress-bar-fill').first().evaluate((element) => parseFloat(getComputedStyle(element).animationDuration))).toBeLessThan(0.001);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     const results = await new AxeBuilder({ page })

@@ -17,6 +17,13 @@ export function definite(value: string, quantity = 1): string {
   return `the ${quantity === 1 ? value : plural(value)}`;
 }
 
+export function stableIndex(key: string, length: number): number {
+  if (!Number.isSafeInteger(length) || length <= 0) throw new RangeError('Stable index requires a positive safe length');
+  let hash = 7;
+  for (const character of key) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  return hash % length;
+}
+
 const SCIENTIFIC_NOTATION_THRESHOLD = 1_000_000;
 const MAX_ORDINARY_CHARACTERS = 6;
 const MAX_SPOKEN_CHARACTERS = 40;

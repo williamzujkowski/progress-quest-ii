@@ -4,7 +4,7 @@ import { MAX_PENDING_TASKS, MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../d
 import { calculateEncumbranceMax, generateName, levelUpTime } from './math';
 import type { RandomGenerator } from './prng';
 import { formatGameNumber, indefinite, plural } from './text';
-import type { CharacterSheet, EquipSlot, NemesisSequenceCursor, PendingSequenceEntry, ProgressionState, ProgressTask, SequenceTask, StatName } from './types';
+import type { CharacterSheet, EquipSlot, NemesisSequenceCursor, PendingSequenceEntry, ProgressionState, ProgressTask, QuestKind, QuestState, SequenceTask, SpellItem, StatName } from './types';
 
 export interface GameTransitionState {
   character: CharacterSheet;
@@ -25,9 +25,49 @@ export type GameTransitionEvent =
   | { type: 'act_completed'; act: number }
   | { type: 'task_started'; task: ProgressTask };
 
+export interface QuestIdentity {
+  readonly kind?: QuestKind;
+  readonly target?: string;
+  readonly targetIndex?: number;
+}
+
+export interface GamePresentationSnapshot {
+  readonly hero: {
+    readonly name: string;
+    readonly race: string;
+    readonly className: string;
+    readonly level: number;
+  };
+  readonly act: number;
+  readonly completedTask: ProgressTask['type'];
+  readonly nextTask: ProgressTask['type'];
+  readonly completedTasks: number;
+  readonly elapsedSeconds: number;
+  readonly activeQuest?: QuestIdentity;
+  readonly completedQuest?: QuestIdentity;
+  readonly spellRewards?: readonly SpellRewardPresentation[];
+  readonly interplotRole?: 'nemesis';
+  readonly marketSale?: {
+    readonly name: string;
+    readonly quantity: number;
+    readonly gold: number;
+  };
+}
+
+export interface SpellRewardPresentation {
+  readonly name: string;
+  readonly level: number;
+  readonly source: 'level' | 'quest';
+}
+
+export interface GameTransitionRecord {
+  readonly event: GameTransitionEvent;
+  readonly post: GamePresentationSnapshot;
+}
+
 export interface GameTransitionResult {
   state: GameTransitionState;
-  events: GameTransitionEvent[];
+  records: GameTransitionRecord[];
   remainingElapsedMs: number;
 }
 
@@ -170,20 +210,38 @@ function leaveMarketTask(gold: number, level: number): ProgressTask {
     : { description: 'Heading to the killing fields...', durationMs: 4000, elapsedMs: 0, type: 'heading' };
 }
 
+function questIdentity(quest: QuestState): QuestIdentity | undefined {
+  if (quest.kind === undefined && quest.target === undefined && quest.targetIndex === undefined) return undefined;
+  return {
+    ...(quest.kind === undefined ? {} : { kind: quest.kind }),
+    ...(quest.target === undefined ? {} : { target: quest.target }),
+    ...(quest.targetIndex === undefined ? {} : { targetIndex: quest.targetIndex }),
+  };
+}
+
+function gainedSpell(previous: readonly SpellItem[], next: readonly SpellItem[]): SpellItem | undefined {
+  return next.find((spell) => spell.level > (previous.find(({ name }) => name === spell.name)?.level ?? 0));
+}
+
 export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: RandomGenerator): GameTransitionResult {
-  if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return { state, events: [], remainingElapsedMs: 0 };
+  if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return { state, records: [], remainingElapsedMs: 0 };
 
   let current = state;
   let remainingElapsedMs = elapsedMs;
   const events: GameTransitionEvent[] = [];
+  const records: GameTransitionRecord[] = [];
 
   for (let completedTasks = 0; completedTasks < MAX_CATCH_UP_TASKS; completedTasks += 1) {
     const { character, progression } = current;
+    const firstEventIndex = events.length;
+    const completedTask = character.Task.type;
+    let completedQuestIdentity: QuestIdentity | undefined;
+    const spellRewards: SpellRewardPresentation[] = [];
     const task = { ...character.Task, elapsedMs: character.Task.elapsedMs + remainingElapsedMs };
     if (task.elapsedMs < task.durationMs) {
       return {
         state: { character: { ...character, Task: task }, progression },
-        events,
+        records,
         remainingElapsedMs: 0,
       };
     }
@@ -219,7 +277,10 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
           stats[stat] = nextStat;
         }
 
+        const previousSpells = spells;
         spells = applySpellReward(rng, traits.Level, stats.WIS, spells);
+        const spell = gainedSpell(previousSpells, spells);
+        if (spell) spellRewards.push({ name: spell.name, level: spell.level, source: 'level' });
         experience = { currentSeconds: 0, maxSeconds: levelUpTime(traits.Level) };
         events.push({ type: 'save_requested', characterName: traits.Name });
       }
@@ -236,6 +297,7 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
     let equip = { ...character.Equip };
     let pendingTasks = [...(character.PendingTasks ?? [])];
     let cinematicOpening: CinematicOpening | undefined;
+    let marketSale: GamePresentationSnapshot['marketSale'];
 
     if (task.type === 'kill') {
       const questHistory = quest.history ?? [];
@@ -243,11 +305,13 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
       if (!questWasComplete) {
         quest.currentProgress = Math.min(quest.maxProgress, quest.currentProgress + progressDelta);
       } else {
-        const completedQuest = quest.description;
+        const completedQuestDescription = quest.description;
         quest.currentProgress = 0;
         quest.maxProgress = 50 + rng.random(100);
         if (questHistory.length > 0) {
-          events.push({ type: 'quest_completed', description: completedQuest });
+          completedQuestIdentity = questIdentity(quest);
+          events.push({ type: 'quest_completed', description: completedQuestDescription });
+          const previousSpells = spells;
           const reward = applyQuestReward(rng, {
             ...character,
             Traits: traits,
@@ -265,9 +329,12 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
           spells = reward.character.Spells;
           inventory = reward.character.Inventory;
           gold = reward.character.Gold;
+          const spell = gainedSpell(previousSpells, spells);
+          if (spell) spellRewards.push({ name: spell.name, level: spell.level, source: 'quest' });
           if (reward.effect?.type === 'stat') events.push({ type: 'stat_gained', stat: reward.effect.stat, amount: reward.effect.amount });
           else if (reward.effect?.type === 'item') events.push({ type: 'item_gained', name: reward.effect.name, quantity: reward.effect.quantity });
           else if (reward.effect?.type === 'gold') events.push({ type: 'gold_received', amount: reward.effect.amount });
+          else if (reward.effect?.type === 'equipment') events.push({ type: 'equipment_gained', slot: reward.effect.slot, name: reward.effect.name });
         }
 
         const generatedQuest = generateQuest(rng, traits.Level);
@@ -317,7 +384,9 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
       inventory = remainingInventory;
       const previousGold = gold;
       gold = Math.min(MAX_PERSISTED_GOLD, gold + earned);
-      events.push({ type: 'inventory_sold', gold: gold - previousGold });
+      const receivedGold = gold - previousGold;
+      if (soldItem) marketSale = { name: soldItem.name, quantity: soldItem.qty, gold: receivedGold };
+      events.push({ type: 'inventory_sold', gold: receivedGold });
     } else if (task.type === 'buying') {
       const price = equipPrice(traits.Level);
       if (gold >= price) {
@@ -401,8 +470,29 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
     events.push({ type: 'task_started', task: structuredClone(nextTask) });
     current = { character: { ...transitionedCharacter, Task: nextTask }, progression: nextProgression };
 
-    if (remainingElapsedMs === 0) return { state: current, events, remainingElapsedMs: 0 };
+    const activeQuest = questIdentity(current.character.Quest);
+    const post: GamePresentationSnapshot = {
+      hero: {
+        name: current.character.Traits.Name,
+        race: current.character.Traits.Race,
+        className: current.character.Traits.Class,
+        level: current.character.Traits.Level,
+      },
+      act: current.character.Plot.act,
+      completedTask,
+      nextTask: current.character.Task.type,
+      completedTasks: current.progression.completedTasks,
+      elapsedSeconds: current.progression.elapsedSeconds,
+      ...(activeQuest ? { activeQuest } : {}),
+      ...(completedQuestIdentity ? { completedQuest: completedQuestIdentity } : {}),
+      ...(spellRewards.length > 0 ? { spellRewards } : {}),
+      ...(cinematicOpening?.branch === 1 ? { interplotRole: 'nemesis' as const } : {}),
+      ...(marketSale ? { marketSale } : {}),
+    };
+    records.push(...events.slice(firstEventIndex).map((event) => ({ event, post })));
+
+    if (remainingElapsedMs === 0) return { state: current, records, remainingElapsedMs: 0 };
   }
 
-  return { state: current, events, remainingElapsedMs };
+  return { state: current, records, remainingElapsedMs };
 }

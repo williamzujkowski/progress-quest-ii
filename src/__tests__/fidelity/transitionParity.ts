@@ -187,7 +187,7 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
     equipment: EQUIP_SLOTS.map((slot) => [slot, transitioned.Equip[slot]]),
     spells: transitioned.Spells.map(({ name, level }) => [name, level]),
     nextTask: { caption: transitioned.Task.description, durationMs: transitioned.Task.durationMs, type: transitioned.Task.type, loot: transitioned.Task.loot },
-    events: result.events
+    events: result.records.map(({ event }) => event)
       .filter(({ type }) => type !== 'act_completed' && type !== 'equipment_gained' && type !== 'equipment_purchased')
       .map(describeGameEvent),
     rng: [...rng.getState()],

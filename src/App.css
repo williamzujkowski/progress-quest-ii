@@ -436,7 +436,38 @@
   .quest-column {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
+    gap: var(--space-2);
   }
+
+  .quest-card,
+  .activity-card {
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .quest-card .card-header,
+  .activity-card .card-header { padding-bottom: var(--space-1); }
+
+  .quest-card .progress-container { margin-top: 0 !important; }
+
+  .world-context {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .world-context-truth {
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+  }
+
+  .world-context-line {
+    gap: var(--space-1);
+    font-size: 0.68rem;
+  }
+
+  .world-context-truth,
+  .world-context-line:first-of-type { grid-column: 1 / -1; }
+
+  .world-context-details { justify-self: end; }
 }
 
 @media (prefers-reduced-motion: reduce) {
