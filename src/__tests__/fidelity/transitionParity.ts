@@ -195,7 +195,7 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
       counters: { completedTasks: progression.completedTasks, elapsedSeconds: progression.elapsedSeconds },
       experience: structuredClone(progression.experience),
       encumbrance: {
-        currentCubits: calculateEncumbrance(transitioned.Inventory),
+        currentCubits: Math.min(calculateEncumbrance(transitioned.Inventory), calculateEncumbranceMax(transitioned.Stats.STR)),
         maxCubits: calculateEncumbranceMax(transitioned.Stats.STR),
       },
       quest: {
