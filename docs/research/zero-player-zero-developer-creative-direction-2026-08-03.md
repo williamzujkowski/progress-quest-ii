@@ -114,7 +114,9 @@ human-authored Progress Quest baseline, and link provenance/licensing details.
 - **Specificity:** one correct MMO noun is better than a paragraph of generic
   fantasy parody.
 - **Negative space:** the absent player, developer, guild, and audience are never
-  replaced by noisy fake people.
+  concealed by deceptive presence or an unbounded wall of fake chatter. The
+  bounded, explicitly fictional event projection in #153 may dramatize that
+  absence; it must not pretend to fill it with humans.
 
 ## Ten ranked ideas
 
@@ -314,9 +316,12 @@ These are engineering/editorial safeguards, not legal advice.
 
 - Add deterministic callbacks or additional MMO texture only if long-session
   browser review shows the chronicle remains useful and nonrepetitive.
-- Do not add prestige, manual choices, chatbots, fake online users, procedural AI
-  calls, lore databases, or new simulation resources. They weaken the zero-player
-  premise and are not needed to land the joke.
+- Do not add prestige, manual choices, deceptive human presence, runtime chat
+  agents, procedural AI calls, lore databases, or a second simulation loop. The
+  later world-loop decision permits bounded, clearly labeled fictional social
+  scenes—including automatic hero replies—as a pure projection of canonical
+  events; [#153](https://github.com/williamzujkowski/progress-quest-ii/issues/153)
+  owns that deliberately narrow exception.
 
 ## Bottom line
 
