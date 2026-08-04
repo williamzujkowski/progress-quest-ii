@@ -327,7 +327,7 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
     }
 
     let transitionedCharacter: CharacterSheet = { ...character, Traits: traits, Stats: stats, Equip: equip, Spells: spells, Inventory: inventory, Gold: gold, Quest: quest, Plot: plot, Task: task, PendingTasks: pendingTasks };
-    let nextTask: ProgressTask;
+    let nextTask: ProgressTask | undefined;
     if (pendingTasks.length > 0) {
       let queuedTask = pendingTasks[0];
       if (!queuedTask) throw new Error('Pending task queue became empty while dequeuing');
@@ -385,6 +385,7 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
       const nextTaskInfo = generateTaskDescription(rng, transitionedCharacter);
       nextTask = { ...nextTaskInfo, elapsedMs: 0 };
     }
+    if (!nextTask) throw new Error('Sequence transition did not produce a task');
     transitionedCharacter = { ...transitionedCharacter, Equip: equip, Inventory: inventory, Gold: gold, Plot: plot, PendingTasks: pendingTasks };
     if (pendingTasks.length === 0) delete transitionedCharacter.PendingTasks;
     events.push({ type: 'task_started', task: structuredClone(nextTask) });
