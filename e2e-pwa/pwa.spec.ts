@@ -9,6 +9,9 @@ test('publishes the Progress Quest II install contract at its Pages scope', asyn
 
   await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', './favicon.svg');
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', './manifest.webmanifest');
+  await expect(page.getByRole('link', { name: 'Credits & notices' })).toHaveAttribute('href', './THIRD_PARTY_NOTICES.txt');
+  const notices = await page.evaluate(async () => (await fetch('./THIRD_PARTY_NOTICES.txt')).text());
+  expect(notices).toContain('SIL OPEN FONT LICENSE Version 1.1');
   const manifest = await page.evaluate(async () => {
     const response = await fetch('./manifest.webmanifest');
     return response.json() as Promise<Record<string, unknown>>;
@@ -50,6 +53,8 @@ test('loads the Pages-scoped app offline after one successful visit', async ({ p
 
   await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest II' })).toBeVisible();
   await expect(page.getByText('The sequel nobody had to play.')).toBeVisible();
+  const offlineNotices = await page.evaluate(async () => (await fetch('./THIRD_PARTY_NOTICES.txt')).text());
+  expect(offlineNotices).toContain('Johannes Baagøe');
 });
 
 test('keeps questing when service-worker registration fails', async ({ page, request }) => {

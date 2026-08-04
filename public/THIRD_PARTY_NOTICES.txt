@@ -1,0 +1,251 @@
+PROGRESS QUEST II — THIRD-PARTY NOTICES
+Last updated: 2026-08-04
+
+This file ships with the PWA. It records direct production inputs; it does not
+change their licenses or resolve the legacy-web-source ambiguity documented at
+https://github.com/williamzujkowski/progress-quest-ii/blob/main/docs/content-provenance.md.
+
+PROGRESS QUEST
+
+Progress Quest and the separately retained web reference implementation are
+the work of Eric Fredricksen. The official site publishes this license text at
+https://progressquest.com/license.txt:
+
+Progress Quest
+Copyright (c) 2002-2004 Eric Fredricksen
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+The pq-web-src submodule also contains later "all rights reserved" source
+headers and no repository-level license grant. This project records both facts
+and does not claim to resolve their scope.
+
+DIRECT RUNTIME SOFTWARE
+
+- @williamzujkowski/oklch-terminal-themes 0.7.0 — MIT
+  Copyright (c) 2026 William Zujkowski
+- React and React DOM 19.2.8 — MIT
+  Copyright (c) Meta Platforms, Inc. and affiliates.
+- Scheduler 0.27.0 — MIT
+  Copyright (c) Meta Platforms, Inc. and affiliates.
+- Zod 4.4.3 — MIT
+  Copyright (c) 2025 Colin McDonnell
+- Zustand 5.0.14 — MIT
+  Copyright (c) 2019 Paul Henschel
+
+The MIT permission and warranty text for these packages is the same form
+reproduced above. Their npm packages include unmodified license files and
+source metadata; package-lock.json records exact versions, tarball URLs, and
+integrity.
+
+The imported terminal themes retain attribution as follows:
+
+- iTerm2-Color-Schemes at commit
+  97e244cf98a0eb2ce4339d2069ec1bba6c81f141 — MIT
+  Copyright (c) 2011 to Present Mark Badolato
+  The collection license notes that each individual theme's copyright and
+  license remains with its author. Those individual terms have not yet been
+  established for these two records; local issue #180 tracks proof or
+  replacement.
+- Remarque Light and Remarque Dark — native oklch-terminal-themes material,
+  MIT, William Zujkowski.
+
+Exact source URLs and pinned upstream revisions are recorded by the package's
+NOTICE and per-theme metadata:
+https://github.com/williamzujkowski/oklch-terminal-themes
+
+The package currently installs APCA/color tooling that is not present in this
+application's audited production bundle. Package-boundary cleanup is tracked
+at https://github.com/williamzujkowski/oklch-terminal-themes/issues/169.
+
+The installed theme dependency graph also contains Culori 4.0.2 (MIT,
+Copyright (c) 2018 Dan Burzo). No Culori, apca-w3, or colorparsley code was
+identified in the audited application bundle; #169 and the local #178 track a
+durable package boundary instead of treating one tree-shaking result as proof.
+
+ALEA PSEUDORANDOM NUMBER GENERATOR
+
+The Alea/Mash algorithm adapted in src/engine/prng.ts is MIT licensed:
+
+Copyright (C) 2010 by Johannes Baagøe <baagoe@baagoe.org>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+VITE STARTER ASSETS (PENDING REPLACEMENT UNDER #177)
+
+The favicon is a byte-identical Vite starter asset. The PWA PNGs visibly use
+the same Vite mark, but their generator is not recorded.
+The unused Vite starter hero and social sprite remain in the source tree until
+#177 removes them.
+
+Copyright (c) 2019-present, VoidZero Inc. and Vite contributors
+
+These assets are provided under the MIT permission and warranty text
+reproduced above. That code/template license does not grant or waive trademark
+rights in the Vite mark or the social-service marks in the unused sprite; #177
+tracks removal and original replacement.
+
+LUCIDE REACT 1.28.0
+
+ISC License
+
+Copyright (c) 2026 Lucide Icons and Contributors
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+Lucide identifies some icons as derived from the Feather project under MIT:
+
+Copyright (c) 2013-present Cole Bemis
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+BUNDLED FONTS
+
+Inter via @fontsource-variable/inter 5.3.0
+Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
+
+JetBrains Mono via @fontsource-variable/jetbrains-mono 5.3.0
+Copyright 2020 The JetBrains Mono Project Authors
+(https://github.com/JetBrains/JetBrainsMono)
+
+Both font packages declare SIL Open Font License 1.1:
+
+-----------------------------------------------------------
+SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
+-----------------------------------------------------------
+
+PREAMBLE
+The goals of the Open Font License (OFL) are to stimulate worldwide
+development of collaborative font projects, to support the font creation
+efforts of academic and linguistic communities, and to provide a free and
+open framework in which fonts may be shared and improved in partnership
+with others.
+
+The OFL allows the licensed fonts to be used, studied, modified and
+redistributed freely as long as they are not sold by themselves. The fonts,
+including any derivative works, can be bundled, embedded, redistributed
+and/or sold with any software provided that any reserved names are not used
+by derivative works. The fonts and derivatives, however, cannot be released
+under any other type of license. The requirement for fonts to remain under
+this license does not apply to any document created using the fonts or their
+derivatives.
+
+DEFINITIONS
+"Font Software" refers to the set of files released by the Copyright
+Holder(s) under this license and clearly marked as such. This may include
+source files, build scripts and documentation.
+
+"Reserved Font Name" refers to any names specified as such after the
+copyright statement(s).
+
+"Original Version" refers to the collection of Font Software components as
+distributed by the Copyright Holder(s).
+
+"Modified Version" refers to any derivative made by adding to, deleting,
+or substituting -- in part or in whole -- any of the components of the
+Original Version, by changing formats or by porting the Font Software to a
+new environment.
+
+"Author" refers to any designer, engineer, programmer, technical writer or
+other person who contributed to the Font Software.
+
+PERMISSION & CONDITIONS
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of the Font Software, to use, study, copy, merge, embed, modify, redistribute,
+and sell modified and unmodified copies of the Font Software, subject to the
+following conditions:
+
+1) Neither the Font Software nor any of its individual components, in
+Original or Modified Versions, may be sold by itself.
+
+2) Original or Modified Versions of the Font Software may be bundled,
+redistributed and/or sold with any software, provided that each copy contains
+the above copyright notice and this license. These can be included either as
+stand-alone text files, human-readable headers or in the appropriate
+machine-readable metadata fields within text or binary files as long as those
+fields can be easily viewed by the user.
+
+3) No Modified Version of the Font Software may use the Reserved Font Name(s)
+unless explicit written permission is granted by the corresponding Copyright
+Holder. This restriction only applies to the primary font name as presented
+to the users.
+
+4) The name(s) of the Copyright Holder(s) or the Author(s) shall not be used
+to promote, endorse or advertise any Modified Version, except to acknowledge
+their contribution(s) or with explicit written permission.
+
+5) The Font Software, modified or unmodified, in part or in whole, must be
+distributed entirely under this license, and must not be distributed under
+any other license. The requirement for fonts to remain under this license
+does not apply to any document created using the fonts or their derivatives.
+
+TERMINATION
+This license becomes null and void if any of the above conditions are not met.
+
+DISCLAIMER
+THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF COPYRIGHT, PATENT,
+TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR
+ANY CLAIM, DAMAGES OR OTHER LIABILITY, INCLUDING ANY GENERAL, SPECIAL,
+INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, WHETHER IN AN ACTION OF
+CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF THE USE OR INABILITY TO USE
+THE FONT SOFTWARE OR FROM OTHER DEALINGS IN THE FONT SOFTWARE.

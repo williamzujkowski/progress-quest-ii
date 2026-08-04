@@ -180,6 +180,14 @@
   text-transform: uppercase;
 }
 
+.brand-tagline a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.brand-tagline a:hover { color: var(--text-main); }
+
 .nav-actions {
   flex: 1 1 34rem;
   flex-wrap: wrap;
