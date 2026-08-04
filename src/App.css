@@ -452,6 +452,10 @@
 
   .world-context {
     grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'truth truth'
+      'location location'
+      'meta filings';
   }
 
   .world-context-truth {
@@ -464,10 +468,10 @@
     font-size: 0.68rem;
   }
 
-  .world-context-truth,
-  .world-context-line:first-of-type { grid-column: 1 / -1; }
-
-  .world-context-details { justify-self: end; }
+  .world-context-truth { grid-area: truth; }
+  .world-context > .world-context-line:first-of-type { grid-area: location; }
+  .world-context-meta { grid-area: meta; }
+  .world-context-details { grid-area: filings; justify-self: end; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -6,6 +6,11 @@ import { returningSessionStorageState } from './fixtures/returningSession';
 
 const returningStorageState = returningSessionStorageState('http://localhost:5173');
 
+const openActivityTab = async (page: Page) => {
+  const tab = page.getByRole('tab', { name: 'Activity' });
+  if (await tab.getAttribute('aria-selected') !== 'true') await tab.click();
+};
+
 const loadDenseDashboard = async (page: Page) => {
   // ponytail: seed through Zustand's exported API; a production-only fixture route would add more test machinery.
   await page.evaluate(async () => {
@@ -627,6 +632,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
         nextActivityId: messages.length,
       });
     });
+    await openActivityTab(page);
 
     const log = page.getByRole('region', { name: 'Activity Event Log' });
     const tagFor = (message: string) => log.locator('.log-entry', { hasText: message }).locator('.log-tag');
@@ -648,7 +654,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
 
     const context = page.getByRole('region', { name: 'Current world context' });
     await expect(context).toContainText('LOOK //');
-    await expect(context).toContainText('Fictional world · derived from canonical activity');
+    await expect(context).toContainText('Fictional world · activity-derived');
     await expect(context).not.toHaveAttribute('aria-live', /.+/);
 
     await page.evaluate(async () => {
@@ -711,7 +717,14 @@ test.describe('Progress Quest II terminal dashboard', () => {
           sourceActivityId: index,
           sourceEventType: 'quest_started' as const,
           channel: 'guild' as const,
-          speaker: { id: `fixture-${index}`, kind: 'cast' as const, displayName: `Clerk ${index}`, role: 'Quest clerk', fictional: true as const, automaticHero: false },
+          speaker: {
+            id: `fixture-${index}`,
+            kind: 'cast' as const,
+            displayName: index === 0 ? 'موظف السجلات المستحيلة 12345' : `Clerk ${index}`,
+            role: 'Quest clerk',
+            fictional: true as const,
+            automaticHero: false,
+          },
           text: `Fictional filing ${index + 1} ${'x'.repeat(80)}`,
         })),
       });
@@ -719,14 +732,17 @@ test.describe('Progress Quest II terminal dashboard', () => {
 
     const networkRequests: string[] = [];
     page.on('request', (request) => networkRequests.push(request.url()));
-    const summary = page.getByText('Automated chatter · zero online · messages unsent (48)');
-    await expect(summary.locator('..')).not.toHaveAttribute('open', '');
-    await summary.focus();
-    await page.keyboard.press('Enter');
-
+    const chatterTab = page.getByRole('tab', { name: 'Chatter' });
+    const activityTab = page.getByRole('tab', { name: 'Activity' });
     const chatter = page.getByRole('region', { name: 'Simulated chatter' });
     const messages = page.getByRole('region', { name: 'Fictional chatter messages' });
-    const activity = page.getByRole('region', { name: 'Activity Event Log' });
+    const activity = page.getByRole('region', { name: 'Activity Event Log', includeHidden: true });
+    await expect(chatterTab).toHaveAttribute('aria-selected', 'true');
+    await expect(chatterTab).toHaveAttribute('tabindex', '0');
+    await expect(activityTab).toHaveAttribute('aria-selected', 'false');
+    await expect(activityTab).toHaveAttribute('tabindex', '-1');
+    await expect(chatter).toBeVisible();
+    await expect(activity).toBeHidden();
     await expect(chatter).toContainText('No people are online. Every message is fictional, generated locally, and sent nowhere.');
     await expect(messages).toHaveAttribute('aria-live', 'off');
     await expect(page.getByRole('status', { name: 'Latest activity' })).toHaveCount(1);
@@ -749,20 +765,72 @@ test.describe('Progress Quest II terminal dashboard', () => {
     const cardBox = await page.locator('.activity-card').boundingBox();
     expect(cardBox).not.toBeNull();
     expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(760);
-    await summary.click();
+    const authoritativeBefore = await page.evaluate(async () => {
+      const [{ useGameStore }, { captureActiveSession }] = await Promise.all([
+        import('/src/state/gameStore.ts'),
+        import('/src/state/sessionCheckpoint.ts'),
+      ]);
+      return { session: captureActiveSession(), generation: useGameStore.getState().sessionGeneration };
+    });
+    await chatterTab.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(activityTab).toBeFocused();
+    await expect(activityTab).toHaveAttribute('aria-selected', 'true');
     await expect(activity).toBeVisible();
     expect(await activity.evaluate((element) => element.clientHeight)).toBeGreaterThanOrEqual(72);
     await expect(activity.locator('.log-entry')).toHaveCount(50);
     await expect(activity.locator('.log-entry').last()).toContainText('Event 51');
+    await activity.evaluate((element) => {
+      element.scrollTop = 40;
+      element.dispatchEvent(new Event('scroll'));
+    });
+    await activityTab.focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(chatterTab).toBeFocused();
+    await expect(chatterTab).toHaveAttribute('aria-selected', 'true');
+    const authoritativeAfter = await page.evaluate(async () => {
+      const [{ useGameStore }, { captureActiveSession }] = await Promise.all([
+        import('/src/state/gameStore.ts'),
+        import('/src/state/sessionCheckpoint.ts'),
+      ]);
+      return { session: captureActiveSession(), generation: useGameStore.getState().sessionGeneration };
+    });
+    expect(authoritativeAfter).toEqual(authoritativeBefore);
 
-    for (const width of [768, 641]) {
+    await page.evaluate(async () => {
+      const { useGameStore } = await import('/src/state/gameStore.ts');
+      const state = useGameStore.getState();
+      useGameStore.setState({
+        log: [{ id: state.nextActivityId, message: 'Event 52' }, ...state.log].slice(0, 50),
+        nextActivityId: state.nextActivityId + 1,
+      });
+    });
+    await expect(status).toHaveText('Event 52');
+    await activityTab.click();
+    expect(await activity.evaluate((element) => element.scrollTop + element.clientHeight < element.scrollHeight - 2)).toBe(true);
+    const jump = page.getByRole('button', { name: 'Jump to latest activity' });
+    await expect(jump).toBeVisible();
+    await jump.click();
+    await expect(activity).toBeFocused();
+    expect(await activity.evaluate((element) => element.scrollHeight - element.scrollTop - element.clientHeight)).toBeLessThanOrEqual(2);
+    await chatterTab.click();
+
+    for (const width of [768, 641, 320]) {
       await page.setViewportSize({ width, height: 900 });
-      expect(await summary.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
-      expect(await summary.locator('..').evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      expect(await page.locator('.console-tabs').evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     }
+    await page.setViewportSize({ width: 667, height: 375 });
+    const bidiSpeaker = page.locator('bdi[data-speaker-name][dir="auto"]', { hasText: 'موظف السجلات المستحيلة 12345' });
+    await expect(bidiSpeaker).toBeVisible();
+    expect(await messages.evaluate((element) => element.scrollHeight)).toBeGreaterThan(await messages.evaluate((element) => element.clientHeight));
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    await activityTab.click();
+    await expect(activity).toBeVisible();
+    expect(await activity.evaluate((element) => element.scrollHeight)).toBeGreaterThan(await activity.evaluate((element) => element.clientHeight));
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    await chatterTab.click();
     await page.setViewportSize({ width: 1025, height: 760 });
-    await summary.click();
 
     await page.getByRole('combobox', { name: 'Chatter channel' }).selectOption('world');
     await expect(messages).toContainText('No fictional messages on this channel');
@@ -778,7 +846,22 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await filter.focus();
     await expect(filter).toBeFocused();
     expect(await filter.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('none');
-    for (const control of [filter, page.getByRole('button', { name: 'Unmute fictional chatter' })]) {
+    const selectedColors = await chatterTab.evaluate((element) => ({
+      tab: getComputedStyle(element).color,
+      label: getComputedStyle(element.querySelector('span')!).color,
+      truth: getComputedStyle(element.querySelector('small')!).color,
+    }));
+    expect(selectedColors.label).toBe(selectedColors.tab);
+    expect(selectedColors.truth).toBe(selectedColors.tab);
+    await chatterTab.focus();
+    await page.keyboard.press('End');
+    await expect(activityTab).toBeFocused();
+    await expect(activityTab).toHaveAttribute('aria-selected', 'true');
+    expect(await activityTab.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('none');
+    await page.keyboard.press('Home');
+    await expect(chatterTab).toBeFocused();
+    await expect(chatterTab).toHaveAttribute('aria-selected', 'true');
+    for (const control of [chatterTab, activityTab, filter, page.getByRole('button', { name: 'Unmute fictional chatter' })]) {
       expect((await control.boundingBox())?.height).toBeGreaterThanOrEqual(44);
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
@@ -791,6 +874,10 @@ test.describe('Progress Quest II terminal dashboard', () => {
     }));
     expect(overflow).toEqual({ page: 0, chatter: 0, messages: 0 });
     expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()).violations).toEqual([]);
+
+    await activityTab.click();
+    await page.reload();
+    await expect(page.getByRole('tab', { name: 'Chatter' })).toHaveAttribute('aria-selected', 'true');
   });
 
   test('opens and mutes automated chatter by touch', async ({ browser }) => {
@@ -798,8 +885,11 @@ test.describe('Progress Quest II terminal dashboard', () => {
     const page = await context.newPage();
     await page.goto('/');
 
-    const summary = page.getByText(/Automated chatter · zero online · messages unsent/);
-    await summary.tap();
+    const activityTab = page.getByRole('tab', { name: 'Activity' });
+    const chatterTab = page.getByRole('tab', { name: 'Chatter' });
+    await activityTab.tap();
+    await expect(page.getByRole('region', { name: 'Activity Event Log' })).toBeVisible();
+    await chatterTab.tap();
     await expect(page.getByRole('region', { name: 'Simulated chatter' })).toBeVisible();
     await page.getByRole('button', { name: 'Mute fictional chatter' }).tap();
     await expect(page.getByRole('region', { name: 'Fictional chatter messages' })).toContainText('Fictional chatter is muted');
@@ -811,6 +901,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
     await loadDenseDashboard(page);
+    await openActivityTab(page);
 
     const activityCard = page.locator('.activity-card');
     const log = activityCard.getByRole('region', { name: 'Activity Event Log' });
@@ -850,6 +941,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
     await loadDenseDashboard(page);
+    await openActivityTab(page);
 
     const log = page.getByRole('region', { name: 'Activity Event Log' });
     await log.focus();
@@ -886,6 +978,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
     await loadDenseDashboard(page);
+    await openActivityTab(page);
 
     const log = page.getByRole('region', { name: 'Activity Event Log' });
     const inventory = page.getByRole('region', { name: 'Inventory items' });
@@ -965,6 +1058,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await page.setViewportSize({ width: 1025, height: 760 });
     await page.goto('/');
     await loadDenseDashboard(page);
+    await openActivityTab(page);
 
     const character = page.getByRole('region', { name: 'Character Loadout' });
     const spellBook = page.getByRole('region', { name: 'Spell Book' });
@@ -1004,6 +1098,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto('/');
       await loadDenseDashboard(page);
+      await openActivityTab(page);
 
       const log = page.getByRole('region', { name: 'Activity Event Log' });
       const inventory = page.getByRole('region', { name: 'Inventory items' });
@@ -1155,6 +1250,8 @@ test.describe('Progress Quest II terminal dashboard', () => {
 
     await expect(page.getByRole('dialog', { name: /Character Roster/i })).not.toBeVisible();
     await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Chatter' })).toHaveAttribute('aria-selected', 'true');
+    await openActivityTab(page);
     await expect(page.getByRole('region', { name: 'Activity Event Log' })).toContainText(
       'Loaded character Krg from roster.',
     );
@@ -1176,6 +1273,8 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await page.getByRole('button', { name: 'Load Character' }).click();
 
     await expect(page.getByRole('dialog', { name: /Character Roster/i })).not.toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Chatter' })).toHaveAttribute('aria-selected', 'true');
+    await openActivityTab(page);
     await expect(page.getByRole('region', { name: 'Activity Event Log' })).toContainText(
       'Loaded character Krg from save data.',
     );

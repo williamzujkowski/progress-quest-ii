@@ -494,42 +494,58 @@ input[type='radio'] {
 
 .world-context-notices p + p { border-top: 1px dotted var(--panel-border); }
 
-.chatter-disclosure {
-  min-width: 0;
+.console-tabs {
+  display: grid;
   flex: 0 0 auto;
-  overflow: hidden;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-1);
   font-family: var(--font-mono);
 }
 
-.chatter-disclosure[open] { max-height: none; }
-
-/* ponytail: until #159 adds real tabs, opening the native disclosure is the
-   smallest one-screen view switch that keeps either transcript usable. */
-.activity-card:has(.chatter-disclosure[open]) .world-context,
-.activity-card:has(.chatter-disclosure[open]) .log-feed { display: none; }
-
-.activity-card:has(.chatter-disclosure[open]) .card-header { flex-wrap: wrap; }
-.chatter-disclosure[open] { flex-basis: 100%; width: 100%; }
-
-.chatter-disclosure > summary {
-  min-height: 1rem;
-  cursor: pointer;
-  align-content: center;
-  color: var(--accent-primary);
-  font-size: 0.6rem;
-  font-weight: 700;
-  overflow-wrap: anywhere;
-  white-space: nowrap;
+.console-tabs [role='tab'] {
+  display: flex;
+  min-width: 0;
+  min-height: 2.5rem;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid var(--panel-border);
+  border-radius: 0.35rem 0.35rem 0 0;
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+  padding: var(--space-1) var(--space-2);
+  text-align: left;
 }
 
-.chatter-panel {
+.console-tabs [role='tab'] > span { color: var(--text-main); font-size: 0.76rem; font-weight: 800; }
+.console-tabs [role='tab'] > small { color: var(--text-main); overflow-wrap: anywhere; font-size: 0.58rem; line-height: 1.2; }
+.console-tabs [role='tab'][aria-selected='true'] {
+  border-color: var(--accent-primary);
+  background: color-mix(in oklch, var(--accent-primary) 12%, var(--surface-subtle));
+  color: var(--text-main);
+  box-shadow: inset 0 -3px 0 var(--accent-primary);
+}
+
+.console-panel {
   display: flex;
   min-width: 0;
   min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.console-panel[hidden] { display: none; }
+.activity-console-panel { flex-direction: column; gap: var(--space-1); }
+.activity-console-panel .log-feed { flex: 1; height: 12rem; min-height: 0; max-height: 12rem; }
+
+.chatter-panel {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
   flex-direction: column;
   gap: var(--space-1);
-  border-top: 1px dashed var(--panel-border);
-  padding-top: var(--space-1);
 }
 
 .chatter-header {
@@ -558,13 +574,14 @@ input[type='radio'] {
 
 .chatter-control select,
 .chatter-mute,
-.chatter-jump { min-height: 2rem; font-size: 0.68rem; }
+.chatter-jump,
+.activity-jump { min-height: 2rem; font-size: 0.68rem; }
 
 .chatter-messages {
   min-width: 0;
-  height: calc(4rem + 2px);
-  min-height: calc(4rem + 2px);
-  max-height: calc(4rem + 2px);
+  height: 12rem;
+  min-height: 0;
+  max-height: 12rem;
   overflow-y: auto;
   border: 1px solid var(--panel-border);
   border-radius: 0.35rem;
@@ -712,9 +729,8 @@ textarea.form-control { resize: vertical; }
 
 @media (max-width: 1024px) {
   .main-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .activity-card .card-header { flex-wrap: wrap; }
-  .activity-card .chatter-disclosure { flex-basis: 100%; width: 100%; }
-  .chatter-disclosure > summary { white-space: normal; }
+  .chatter-header { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+  .chatter-control { align-items: stretch; flex-direction: column; }
 }
 
 @media (min-width: 1025px) and (min-height: 760px) {
@@ -745,7 +761,8 @@ textarea.form-control { resize: vertical; }
     overflow: hidden;
   }
 
-  .log-feed,
+  .activity-console-panel .log-feed,
+  .chatter-messages,
   .inventory-list {
     flex: 1;
     height: auto;
@@ -753,6 +770,31 @@ textarea.form-control { resize: vertical; }
     max-height: none;
     overflow-y: auto;
   }
+
+  .activity-console-panel .log-feed,
+  .chatter-messages { min-height: calc(4.5rem + 2px); }
+
+  /* The tabs already carry the visible truth label; retain the fuller copy for
+     assistive descriptions without spending a third transcript header row. */
+  .chatter-heading-copy {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .chatter-header {
+    grid-template-columns: auto auto;
+    justify-content: end;
+  }
+
+  .console-tabs [role='tab'] { min-height: 2.25rem; }
+  .console-tabs [role='tab'] > small { font-size: 0.52rem; white-space: nowrap; }
 }
 
 @media (max-width: 640px) {
@@ -762,19 +804,29 @@ textarea.form-control { resize: vertical; }
   .world-context-line { align-items: flex-start; flex-direction: column; }
   .world-context-line > span { text-align: left; }
   .world-context-details summary { min-height: 44px; }
-  .chatter-disclosure > summary { min-height: 44px; }
-  .chatter-header { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
-  .chatter-control { align-items: stretch; flex-direction: column; }
   .chatter-control select,
   .chatter-mute,
-  .chatter-jump { min-width: 0; min-height: 44px; width: 100%; }
-  .chatter-messages { height: 12rem; max-height: 12rem; }
+  .chatter-jump,
+  .activity-jump { min-width: 0; min-height: 44px; width: 100%; }
 }
 
 @media (pointer: coarse) {
   .world-context-details summary { min-height: 44px; }
-  .chatter-disclosure > summary,
+  .console-tabs [role='tab'],
   .chatter-control select,
   .chatter-mute,
-  .chatter-jump { min-height: 44px; }
+  .chatter-jump,
+  .activity-jump { min-height: 44px; }
+}
+
+@media (forced-colors: active) {
+  .console-tabs [role='tab'][aria-selected='true'] {
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+    box-shadow: inset 0 -3px 0 HighlightText;
+  }
+
+  .console-tabs [role='tab'][aria-selected='true'] > span,
+  .console-tabs [role='tab'][aria-selected='true'] > small { color: inherit; }
 }
