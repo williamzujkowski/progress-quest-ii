@@ -42,12 +42,12 @@ export function Alea(...initialArgs: PRNGSeed[]): PRNG {
   s1 = mash(' ');
   s2 = mash(' ');
 
-  for (let i = 0; i < args.length; i++) {
-    s0 -= mash(args[i]);
+  for (const arg of args) {
+    s0 -= mash(arg);
     if (s0 < 0) s0 += 1;
-    s1 -= mash(args[i]);
+    s1 -= mash(arg);
     if (s1 < 0) s1 += 1;
-    s2 -= mash(args[i]);
+    s2 -= mash(arg);
     if (s2 < 0) s2 += 1;
   }
   mash = null;
@@ -86,8 +86,10 @@ export class RandomGenerator {
     return Math.floor(this.prng.uint32() % n);
   }
 
-  public pick<T>(arr: T[]): T {
-    return arr[this.random(arr.length)];
+  public pick<T>(arr: readonly T[]): T {
+    const selected = arr[this.random(arr.length)];
+    if (selected === undefined) throw new RangeError('Cannot pick from an empty collection');
+    return selected;
   }
 
   public getState(): PRNGState {

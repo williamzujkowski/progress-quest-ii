@@ -173,7 +173,7 @@ export type QuestRewardEffect =
   | { type: 'gold'; amount: number };
 
 export function selectQuestReward(rng: RandomGenerator): QuestRewardKind {
-  return (['spell', 'equipment', 'stat', 'item'] as const)[rng.random(4)];
+  return rng.pick(['spell', 'equipment', 'stat', 'item'] as const);
 }
 
 export function generateSpellReward(rng: RandomGenerator, level: number, wisdom: number): string | undefined {

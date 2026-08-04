@@ -550,7 +550,7 @@ describe('Save Manager & Serialization', () => {
     expect(loaded.ok).toBe(true);
     if (!loaded.ok) return;
     expect(Object.hasOwn(loaded.value, '__proto__')).toBe(true);
-    expect(loaded.value['__proto__'].Traits.Name).toBe('__proto__');
+    expect(loaded.value['__proto__']?.Traits.Name).toBe('__proto__');
   });
 
   it('round-trips and removes constructor as an ordinary own roster key', () => {
@@ -563,7 +563,7 @@ describe('Save Manager & Serialization', () => {
     expect(loaded.ok).toBe(true);
     if (!loaded.ok) return;
     expect(Object.getPrototypeOf(loaded.value)).toBeNull();
-    expect(loaded.value['constructor'].Traits.Name).toBe('constructor');
+    expect(loaded.value['constructor']?.Traits.Name).toBe('constructor');
 
     expect(removeFromRoster('constructor')).toMatchObject({ ok: true, value: {} });
     expect(Object.hasOwn(JSON.parse(localStorage.getItem('progquest_roster_v1') ?? '{}'), 'constructor')).toBe(false);

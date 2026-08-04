@@ -24,8 +24,8 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
   const dialogRef = useModalDialog(isOpen, dismiss);
 
   const [name, setName] = useState(generateRandomName());
-  const [race, setRace] = useState(RACES[0].name);
-  const [klass, setKlass] = useState(KLASSES[0].name);
+  const [race, setRace] = useState(RACES.at(0)?.name ?? '');
+  const [klass, setKlass] = useState(KLASSES.at(0)?.name ?? '');
 
   // Stat Rolling state
   const [seedHistory, setSeedHistory] = useState<number[]>([]);
@@ -52,7 +52,8 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
 
   const handleUnroll = () => {
     if (seedHistory.length === 0) return;
-    const prevSeed = seedHistory[seedHistory.length - 1];
+    const prevSeed = seedHistory.at(-1);
+    if (prevSeed === undefined) return;
     setSeedHistory((prev) => prev.slice(0, -1));
     setCurrentSeed(prevSeed);
     setStats(generateInitialStats(new RandomGenerator(prevSeed), race, klass));

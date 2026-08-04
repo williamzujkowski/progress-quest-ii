@@ -6,6 +6,7 @@
     "module": "esnext",
     "types": ["vite/client"],
     "strict": true,
+    "noUncheckedIndexedAccess": true,
     "allowArbitraryExtensions": true,
     "skipLibCheck": true,
 

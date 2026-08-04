@@ -14,7 +14,7 @@ const stableIndex = (key: string, length: number): number => {
   return hash % length;
 };
 
-const choose = (options: readonly string[], key: string): string => options[stableIndex(key, options.length)];
+const choose = (options: readonly string[], key: string): string => options[stableIndex(key, options.length)] ?? key;
 const signedGameNumber = (value: number): string => `${value >= 0 ? '+' : ''}${formatGameNumber(value)}`;
 
 const boundedLabel = (name: string, fallback: string, limit = 60): string => {
