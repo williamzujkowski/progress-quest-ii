@@ -6,8 +6,9 @@ import { createNewCharacter } from '../engine/sim';
 import { levelUpTime } from '../engine/math';
 import { advanceGame, type GameTransitionEvent } from '../engine/transition';
 import type { CharacterSheet, ProgressionState, StatsMap } from '../engine/types';
-import { MAX_PENDING_ELAPSED_MS, MAX_WORLD_NOTICES } from '../data/limits';
+import { MAX_PENDING_ELAPSED_MS, MAX_SOCIAL_ENTRIES, MAX_WORLD_NOTICES } from '../data/limits';
 import { projectWorld, type WorldNotice } from './worldContext';
+import { projectSocialBatch, type SocialEntry } from './socialProjection';
 
 type StartSessionRequest =
   | { source: 'creation'; name: string; race: string; klass: string; seed: PRNGSeed; stats?: StatsMap }
@@ -17,6 +18,7 @@ export interface GameStore {
   character: CharacterSheet;
   log: ActivityEntry[];
   worldNotices: WorldNotice[];
+  socialEntries: SocialEntry[];
   nextActivityId: number;
   isPaused: boolean;
   rng: RandomGenerator;
@@ -61,6 +63,19 @@ function playEventSound(event: GameTransitionEvent): void {
   else if (cue === 'market') void soundFX.playSellLoot();
 }
 
+function retainWholeSocialScenes(entries: readonly SocialEntry[]): SocialEntry[] {
+  const retained: SocialEntry[] = [];
+  for (let start = 0; start < entries.length;) {
+    const sceneId = entries[start]?.sceneId;
+    let end = start + 1;
+    while (end < entries.length && entries[end]?.sceneId === sceneId) end += 1;
+    if (retained.length + end - start > MAX_SOCIAL_ENTRIES) break;
+    retained.push(...entries.slice(start, end));
+    start = end;
+  }
+  return retained;
+}
+
 export const useGameStore = create<GameStore>((set, get) => {
   const initialRng = new RandomGenerator('default-seed');
   const initialChar = createNewCharacter('Krg', 'Hob-Hobbit', 'Robot Monk', initialRng);
@@ -69,6 +84,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     character: initialChar,
     log: createActivityEntries([`Welcome to Progress Quest II! ${initialChar.Traits.Name} the ${initialChar.Traits.Race} ${initialChar.Traits.Class} sets out on an adventure.`], 0),
     worldNotices: [],
+    socialEntries: [],
     nextActivityId: 1,
     isPaused: false,
     rng: initialRng,
@@ -99,6 +115,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         rng,
         log: createActivityEntries([message], nextActivityId),
         worldNotices: [],
+        socialEntries: [],
         nextActivityId: nextActivityId + 1,
         isPaused: false,
         progression: createProgression(character.Traits.Level),
@@ -117,6 +134,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         isPaused: session.isPaused,
         log: createActivityEntries(session.log.toReversed(), nextActivityId).reverse(),
         worldNotices: [],
+        socialEntries: [],
         nextActivityId: nextActivityId + session.log.length,
         pendingElapsedMs: session.pendingElapsedMs,
       });
@@ -124,7 +142,7 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     tick: (elapsedMs: number) => {
       if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return;
-      const { character, isPaused, rng, log, worldNotices, nextActivityId, progression, pendingElapsedMs } = get();
+      const { character, isPaused, rng, log, worldNotices, socialEntries, nextActivityId, progression, pendingElapsedMs } = get();
       if (isPaused) return;
       const elapsedBudgetMs = Math.min(MAX_PENDING_ELAPSED_MS, pendingElapsedMs + elapsedMs);
       const result = advanceGame({ character, progression }, elapsedBudgetMs, rng);
@@ -132,11 +150,13 @@ export const useGameStore = create<GameStore>((set, get) => {
       for (const { record } of sources) playEventSound(record.event);
       const activity = sources.map(({ activityId: id, record }) => ({ id, message: describeGameEvent(record.event) })).reverse();
       const projectedWorldNotices = sources.flatMap((source) => projectWorld({ kind: 'transition', source }).notices).toReversed();
+      const projectedSocialEntries = projectSocialBatch(sources).toReversed();
       set({
         ...result.state,
         pendingElapsedMs: result.remainingElapsedMs,
         log: [...activity, ...log].slice(0, 50),
         worldNotices: [...projectedWorldNotices, ...worldNotices].slice(0, MAX_WORLD_NOTICES),
+        socialEntries: retainWholeSocialScenes([...projectedSocialEntries, ...socialEntries]),
         nextActivityId: nextActivityId + activity.length,
       });
     },

@@ -387,8 +387,8 @@ test.describe('Progress Quest II terminal dashboard', () => {
     // Check questing card
     await expect(page.getByText('Questing & Progression')).toBeVisible();
 
-    // Check activity log
-    await expect(page.getByText('Activity Log')).toBeVisible();
+    // Check the shared world console
+    await expect(page.getByRole('heading', { name: 'Console' })).toBeVisible();
 
     // Check inventory card
     await expect(page.getByText('Inventory & Loot')).toBeVisible();
@@ -691,6 +691,120 @@ test.describe('Progress Quest II terminal dashboard', () => {
       notices: document.querySelector<HTMLElement>('.world-context-notices')!.scrollWidth - document.querySelector<HTMLElement>('.world-context-notices')!.clientWidth,
     }));
     expect(overflow).toEqual({ page: 0, context: 0, notices: 0 });
+  });
+
+  test('keeps simulated chatter quiet, bounded, responsive, and entirely local', async ({ page }) => {
+    const externalRequests: string[] = [];
+    page.on('request', (request) => {
+      if (new URL(request.url()).origin !== 'http://localhost:5173') externalRequests.push(request.url());
+    });
+    await page.setViewportSize({ width: 1025, height: 760 });
+    await page.goto('/');
+    await loadDenseDashboard(page);
+    await page.evaluate(async () => {
+      const { useGameStore } = await import('/src/state/gameStore.ts');
+      useGameStore.setState({
+        socialEntries: Array.from({ length: 48 }, (_, index) => ({
+          id: `fixture:${index}`,
+          sceneId: `fixture:${Math.floor(index / 3)}`,
+          sceneKind: 'quest' as const,
+          sourceActivityId: index,
+          sourceEventType: 'quest_started' as const,
+          channel: 'guild' as const,
+          speaker: { id: `fixture-${index}`, kind: 'cast' as const, displayName: `Clerk ${index}`, role: 'Quest clerk', fictional: true as const, automaticHero: false },
+          text: `Fictional filing ${index + 1} ${'x'.repeat(80)}`,
+        })),
+      });
+    });
+
+    const networkRequests: string[] = [];
+    page.on('request', (request) => networkRequests.push(request.url()));
+    const summary = page.getByText('Automated chatter · zero online · messages unsent (48)');
+    await expect(summary.locator('..')).not.toHaveAttribute('open', '');
+    await summary.focus();
+    await page.keyboard.press('Enter');
+
+    const chatter = page.getByRole('region', { name: 'Simulated chatter' });
+    const messages = page.getByRole('region', { name: 'Fictional chatter messages' });
+    const activity = page.getByRole('region', { name: 'Activity Event Log' });
+    await expect(chatter).toContainText('No people are online. Every message is fictional, generated locally, and sent nowhere.');
+    await expect(messages).toHaveAttribute('aria-live', 'off');
+    await expect(page.getByRole('status', { name: 'Latest activity' })).toHaveCount(1);
+    expect(await messages.evaluate((element) => element.scrollHeight)).toBeGreaterThan(await messages.evaluate((element) => element.clientHeight));
+    expect(await messages.evaluate((element) => element.clientHeight)).toBeGreaterThanOrEqual(64);
+    expect(await messages.evaluate((element) => element.scrollHeight - element.scrollTop - element.clientHeight)).toBeLessThanOrEqual(2);
+    await expect(activity).toBeHidden();
+    const status = page.getByRole('status', { name: 'Latest activity' });
+    await expect(status).toHaveText('Event 50');
+    await page.evaluate(async () => {
+      const { useGameStore } = await import('/src/state/gameStore.ts');
+      const state = useGameStore.getState();
+      useGameStore.setState({
+        log: [{ id: state.nextActivityId, message: 'Event 51' }, ...state.log].slice(0, 50),
+        nextActivityId: state.nextActivityId + 1,
+      });
+    });
+    await expect(status).toHaveText('Event 51');
+    await expect(activity).toBeHidden();
+    const cardBox = await page.locator('.activity-card').boundingBox();
+    expect(cardBox).not.toBeNull();
+    expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(760);
+    await summary.click();
+    await expect(activity).toBeVisible();
+    expect(await activity.evaluate((element) => element.clientHeight)).toBeGreaterThanOrEqual(72);
+    await expect(activity.locator('.log-entry')).toHaveCount(50);
+    await expect(activity.locator('.log-entry').last()).toContainText('Event 51');
+
+    for (const width of [768, 641]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(await summary.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      expect(await summary.locator('..').evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    }
+    await page.setViewportSize({ width: 1025, height: 760 });
+    await summary.click();
+
+    await page.getByRole('combobox', { name: 'Chatter channel' }).selectOption('world');
+    await expect(messages).toContainText('No fictional messages on this channel');
+    await page.getByRole('combobox', { name: 'Chatter channel' }).selectOption('all');
+    await page.getByRole('button', { name: 'Mute fictional chatter' }).click();
+    await expect(messages).toContainText('Fictional chatter is muted');
+    expect(networkRequests).toEqual([]);
+    expect(externalRequests).toEqual([]);
+
+    await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 320, height: 900 });
+    const filter = page.getByRole('combobox', { name: 'Chatter channel' });
+    await filter.focus();
+    await expect(filter).toBeFocused();
+    expect(await filter.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('none');
+    for (const control of [filter, page.getByRole('button', { name: 'Unmute fictional chatter' })]) {
+      expect((await control.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+
+    await page.setViewportSize({ width: 320, height: 225 });
+    const overflow = await page.evaluate(() => ({
+      page: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      chatter: document.querySelector<HTMLElement>('.chatter-panel')!.scrollWidth - document.querySelector<HTMLElement>('.chatter-panel')!.clientWidth,
+      messages: document.querySelector<HTMLElement>('.chatter-messages')!.scrollWidth - document.querySelector<HTMLElement>('.chatter-messages')!.clientWidth,
+    }));
+    expect(overflow).toEqual({ page: 0, chatter: 0, messages: 0 });
+    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()).violations).toEqual([]);
+  });
+
+  test('opens and mutes automated chatter by touch', async ({ browser }) => {
+    const context = await browser.newContext({ ...devices['iPhone 13'], baseURL: 'http://localhost:5173', storageState: returningStorageState });
+    const page = await context.newPage();
+    await page.goto('/');
+
+    const summary = page.getByText(/Automated chatter · zero online · messages unsent/);
+    await summary.tap();
+    await expect(page.getByRole('region', { name: 'Simulated chatter' })).toBeVisible();
+    await page.getByRole('button', { name: 'Mute fictional chatter' }).tap();
+    await expect(page.getByRole('region', { name: 'Fictional chatter messages' })).toContainText('Fictional chatter is muted');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    await context.close();
   });
 
   test('retains activity row identity and exposes only the newest event to status at 50 to 51', async ({ page }) => {

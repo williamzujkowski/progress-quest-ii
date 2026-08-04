@@ -55,6 +55,11 @@ test('loads the Pages-scoped app offline after one successful visit', async ({ p
 
   await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest II' })).toBeVisible();
   await expect(page.getByText('Zero players. Zero developers. Progress continues regardless.')).toBeVisible();
+  await page.getByText(/Automated chatter · zero online · messages unsent/).click();
+  await expect(page.getByRole('region', { name: 'Simulated chatter' })).toBeVisible();
+  await page.getByRole('combobox', { name: 'Chatter channel' }).selectOption('hero');
+  await page.getByRole('button', { name: 'Mute fictional chatter' }).click();
+  await expect(page.getByRole('region', { name: 'Fictional chatter messages' })).toContainText('Fictional chatter is muted');
   const offlineNotices = await page.evaluate(async () => (await fetch('./THIRD_PARTY_NOTICES.txt')).text());
   expect(offlineNotices).toContain('Johannes Baagøe');
   expect(offlineNotices).toContain('directed and reviewed by William Zujkowski');
