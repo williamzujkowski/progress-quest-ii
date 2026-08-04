@@ -1,18 +1,12 @@
 import { ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, WEAPONS } from './traits';
 import { analyzeItemMechanics } from '../engine/itemMechanics';
-import { formatGameNumber } from '../engine/text';
+import { formatGameNumber, stableIndex } from '../engine/text';
 import type { EquipSlot } from '../engine/types';
 
 export interface ItemDetails {
   description: string;
   effect: string;
 }
-
-const stableIndex = (key: string, length: number): number => {
-  let hash = 7;
-  for (const character of key) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
-  return hash % length;
-};
 
 const choose = (options: readonly string[], key: string): string => options[stableIndex(key, options.length)] ?? key;
 const signedGameNumber = (value: number): string => `${value >= 0 ? '+' : ''}${formatGameNumber(value)}`;

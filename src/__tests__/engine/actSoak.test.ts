@@ -49,15 +49,16 @@ function runActs({ resumeAt }: { resumeAt?: number } = {}) {
     const expectedEquipment = generateEquipUpgrade(expectedRng, ready.character.Traits.Level);
 
     const result = advanceGame(ready, 1, rng);
-    const rewardEvents = result.events.filter(({ type }) => type === 'item_gained' || type === 'gold_received');
-    const equipmentEvents = result.events.filter(({ type }) => type === 'equipment_gained');
+    const events = result.records.map(({ event }) => event);
+    const rewardEvents = events.filter(({ type }) => type === 'item_gained' || type === 'gold_received');
+    const equipmentEvents = events.filter(({ type }) => type === 'equipment_gained');
 
     expect(result.state.character.Plot).toEqual({
       act: completedAct + 1,
       currentProgress: 0,
       maxProgress: Math.min(MAX_PERSISTED_VALUE, 3600 * (1 + 5 * (completedAct + 1))),
     });
-    expect(result.events).toContainEqual({ type: 'act_completed', act: completedAct });
+    expect(events).toContainEqual({ type: 'act_completed', act: completedAct });
     expect(rewardEvents).toEqual([expectedItem === 'Gold'
       ? { type: 'gold_received', amount: 1 }
       : { type: 'item_gained', name: expectedItem, quantity: 1 }]);
@@ -103,8 +104,9 @@ describe('indefinite Act progression', () => {
 
     expect(result.state.character.Plot).toEqual({ act: nextAct, currentProgress: 0, maxProgress: expectedDuration });
     expect(result.state.character.Task.description).toBe(label);
-    expect(result.events.filter(({ type }) => type === 'item_gained' || type === 'gold_received')).toHaveLength(1);
-    expect(result.events.filter(({ type }) => type === 'equipment_gained')).toHaveLength(1);
+    const events = result.records.map(({ event }) => event);
+    expect(events.filter(({ type }) => type === 'item_gained' || type === 'gold_received')).toHaveLength(1);
+    expect(events.filter(({ type }) => type === 'equipment_gained')).toHaveLength(1);
     expect(activeCheckpointV1Schema.safeParse(checkpoint(result.state, rng)).success).toBe(true);
   });
 });

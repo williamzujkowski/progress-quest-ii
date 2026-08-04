@@ -4,6 +4,7 @@ import { levelUpTime } from '../../engine/math';
 import { createNewCharacter } from '../../engine/sim';
 import type { StatsMap } from '../../engine/types';
 import { createActivityEntries, useGameStore } from '../../state/gameStore';
+import { MAX_WORLD_NOTICES } from '../../data/limits';
 
 function fixedKillCharacter() {
   const character = structuredClone(useGameStore.getState().character);
@@ -78,6 +79,32 @@ describe('Game Store State Machine', () => {
     expect(updated.log.find(({ id }) => id === retained?.id)).toBe(retained);
     expect(updated.log.some(({ id }) => id === existing.at(-1)?.id)).toBe(false);
     expect(new Set(updated.log.map(({ id }) => id)).size).toBe(50);
+  });
+
+  it('retains bounded world notices separately from authoritative activity', () => {
+    const character = fixedKillCharacter();
+    const progression = {
+      experience: { currentSeconds: 1, maxSeconds: 1 },
+      completedTasks: 0,
+      elapsedSeconds: 0,
+    };
+    useGameStore.setState({
+      character,
+      progression,
+      log: [],
+      worldNotices: [],
+      nextActivityId: 0,
+      rng: new RandomGenerator('world-notice-transition'),
+    });
+
+    useGameStore.getState().tick(1);
+
+    const updated = useGameStore.getState();
+    const levelActivity = updated.log.find(({ message }) => message === 'Gained a Level');
+    expect(levelActivity).toBeDefined();
+    expect(updated.worldNotices.map(({ kind }) => kind)).toEqual(['training', 'arrival', 'departure']);
+    expect(updated.worldNotices.every(({ sourceActivityId }) => sourceActivityId === levelActivity?.id)).toBe(true);
+    expect(updated.worldNotices).toHaveLength(Math.min(3, MAX_WORLD_NOTICES));
   });
 
   it('drains bounded catch-up remainder on a later scheduler tick', () => {

@@ -36,7 +36,7 @@ describe('legacy quest reward dispatcher', () => {
       kind: 'equipment',
       state: [0.6359334820881486, 0.37374331383034587, 0.28759220940992236, 1],
       reset: 85,
-      expected: { equipment: ['Vambraces', 'Patched Dented Flannel'] },
+      expected: { equipment: ['Vambraces', 'Patched Dented Flannel'], effect: { type: 'equipment', slot: 'Vambraces', name: 'Patched Dented Flannel' } },
       rng: [0.062331163324415684, 0.7646989999338984, 0.471838767407462, 276700],
     },
     {

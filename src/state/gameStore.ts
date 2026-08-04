@@ -6,7 +6,8 @@ import { createNewCharacter } from '../engine/sim';
 import { levelUpTime } from '../engine/math';
 import { advanceGame, type GameTransitionEvent } from '../engine/transition';
 import type { CharacterSheet, ProgressionState, StatsMap } from '../engine/types';
-import { MAX_PENDING_ELAPSED_MS } from '../data/limits';
+import { MAX_PENDING_ELAPSED_MS, MAX_WORLD_NOTICES } from '../data/limits';
+import { projectWorld, type WorldNotice } from './worldContext';
 
 type StartSessionRequest =
   | { source: 'creation'; name: string; race: string; klass: string; seed: PRNGSeed; stats?: StatsMap }
@@ -15,6 +16,7 @@ type StartSessionRequest =
 export interface GameStore {
   character: CharacterSheet;
   log: ActivityEntry[];
+  worldNotices: WorldNotice[];
   nextActivityId: number;
   isPaused: boolean;
   rng: RandomGenerator;
@@ -66,6 +68,7 @@ export const useGameStore = create<GameStore>((set, get) => {
   return {
     character: initialChar,
     log: createActivityEntries([`Welcome to Progress Quest II! ${initialChar.Traits.Name} the ${initialChar.Traits.Race} ${initialChar.Traits.Class} sets out on an adventure.`], 0),
+    worldNotices: [],
     nextActivityId: 1,
     isPaused: false,
     rng: initialRng,
@@ -95,6 +98,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         character,
         rng,
         log: createActivityEntries([message], nextActivityId),
+        worldNotices: [],
         nextActivityId: nextActivityId + 1,
         isPaused: false,
         progression: createProgression(character.Traits.Level),
@@ -112,6 +116,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         progression: structuredClone(session.progression),
         isPaused: session.isPaused,
         log: createActivityEntries(session.log.toReversed(), nextActivityId).reverse(),
+        worldNotices: [],
         nextActivityId: nextActivityId + session.log.length,
         pendingElapsedMs: session.pendingElapsedMs,
       });
@@ -119,16 +124,19 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     tick: (elapsedMs: number) => {
       if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return;
-      const { character, isPaused, rng, log, nextActivityId, progression, pendingElapsedMs } = get();
+      const { character, isPaused, rng, log, worldNotices, nextActivityId, progression, pendingElapsedMs } = get();
       if (isPaused) return;
       const elapsedBudgetMs = Math.min(MAX_PENDING_ELAPSED_MS, pendingElapsedMs + elapsedMs);
       const result = advanceGame({ character, progression }, elapsedBudgetMs, rng);
-      for (const event of result.events) playEventSound(event);
-      const activity = createActivityEntries(result.events.map(describeGameEvent), nextActivityId).reverse();
+      const sources = result.records.map((record, index) => ({ activityId: nextActivityId + index, record }));
+      for (const { record } of sources) playEventSound(record.event);
+      const activity = sources.map(({ activityId: id, record }) => ({ id, message: describeGameEvent(record.event) })).reverse();
+      const projectedWorldNotices = sources.flatMap((source) => projectWorld({ kind: 'transition', source }).notices).toReversed();
       set({
         ...result.state,
         pendingElapsedMs: result.remainingElapsedMs,
         log: [...activity, ...log].slice(0, 50),
+        worldNotices: [...projectedWorldNotices, ...worldNotices].slice(0, MAX_WORLD_NOTICES),
         nextActivityId: nextActivityId + activity.length,
       });
     },
