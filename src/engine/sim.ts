@@ -270,10 +270,11 @@ export function applyQuestReward(rng: RandomGenerator, character: CharacterSheet
   if (kind === 'stat') {
     const stat = generateStatReward(rng, character.Stats);
     const value = Math.min(MAX_PERSISTED_VALUE, Math.trunc(character.Stats[stat]) + 1);
+    const effect = value !== character.Stats[stat] ? { type: 'stat' as const, stat, amount: value - character.Stats[stat] } : undefined;
     return {
       kind,
       character: { ...character, Stats: { ...character.Stats, [stat]: value } },
-      effect: value !== character.Stats[stat] ? { type: 'stat', stat, amount: value - character.Stats[stat] } : undefined,
+      ...(effect ? { effect } : {}),
     };
   }
 
@@ -283,17 +284,19 @@ export function applyQuestReward(rng: RandomGenerator, character: CharacterSheet
   ]);
   if (itemName === 'Gold') {
     const gold = Math.min(MAX_PERSISTED_GOLD, character.Gold + 1);
+    const effect = gold > character.Gold ? { type: 'gold' as const, amount: gold - character.Gold } : undefined;
     return {
       kind,
       character: { ...character, Gold: gold },
-      effect: gold > character.Gold ? { type: 'gold', amount: gold - character.Gold } : undefined,
+      ...(effect ? { effect } : {}),
     };
   }
   const { inventory, added } = addInventoryItem(character.Inventory, itemName);
+  const effect = added ? { type: 'item' as const, name: itemName, quantity: 1 } : undefined;
   return {
     kind,
     character: { ...character, Inventory: inventory },
-    effect: added ? { type: 'item', name: itemName, quantity: 1 } : undefined,
+    ...(effect ? { effect } : {}),
   };
 }
 

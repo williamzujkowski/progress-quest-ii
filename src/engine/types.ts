@@ -41,7 +41,7 @@ export interface ProgressTask {
   durationMs: number;
   elapsedMs: number;
   type: 'kill' | 'buying' | 'selling' | 'quest' | 'plot' | 'loading' | 'prologue' | 'cinematic' | 'act_marker' | 'heading_to_market' | 'heading';
-  loot?: { type: 'fixed'; item: string } | { type: 'random' };
+  loot?: { type: 'fixed'; item: string } | { type: 'random' } | undefined;
 }
 
 export type SequenceTask = Omit<ProgressTask, 'elapsedMs' | 'loot' | 'type'> & {
@@ -65,10 +65,10 @@ export interface QuestState {
   description: string;
   currentProgress: number;
   maxProgress: number;
-  history?: string[];
-  kind?: QuestKind;
-  target?: string;
-  targetIndex?: number;
+  history?: string[] | undefined;
+  kind?: QuestKind | undefined;
+  target?: string | undefined;
+  targetIndex?: number | undefined;
 }
 
 export type QuestKind = 'exterminate' | 'seek' | 'deliver' | 'fetch' | 'placate';
@@ -96,6 +96,6 @@ export interface CharacterSheet {
   };
   Quest: QuestState;
   Task: ProgressTask;
-  PendingTasks?: PendingSequenceEntry[];
+  PendingTasks?: PendingSequenceEntry[] | undefined;
 }
 import type { PRNGState } from './prng';
