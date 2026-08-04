@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RandomGenerator } from '../../engine/prng';
 import { createNewCharacter } from '../../engine/sim';
 import { advanceGame } from '../../engine/transition';
+import { MAX_PENDING_ELAPSED_MS } from '../../data/limits';
 import { useGameStore } from '../../state/gameStore';
+import { activeCheckpointV1Schema } from '../../state/schemas';
 import { diagnostics } from '../../state/diagnostics';
 import { saveToRoster } from '../../state/saveManager';
 import {
@@ -104,6 +106,19 @@ describe('active session checkpoint boundary', () => {
     expect(restored.isPaused).toBe(true);
     expect(restored.log).toEqual(['Newest event', 'Older event']);
     expect(restored.progression).toEqual({ experience: { currentSeconds: 7, maxSeconds: 11 }, completedTasks: 9, elapsedSeconds: 42 });
+  });
+
+  it('normalizes legacy remainder absence and rejects hostile scheduler debt', () => {
+    const checkpoint = captureActiveSession();
+    const { pendingElapsedMs: _pendingElapsedMs, ...legacySession } = checkpoint.session;
+
+    expect(activeCheckpointV1Schema.parse({ ...checkpoint, session: legacySession }).session.pendingElapsedMs).toBe(0);
+    for (const pendingElapsedMs of [-1, Number.NaN, Number.POSITIVE_INFINITY, MAX_PENDING_ELAPSED_MS + 1]) {
+      expect(activeCheckpointV1Schema.safeParse({
+        ...checkpoint,
+        session: { ...checkpoint.session, pendingElapsedMs },
+      }).success).toBe(false);
+    }
   });
 
   it('recovers a valid last-known-good checkpoint without replacing corrupt primary bytes', () => {
@@ -327,6 +342,28 @@ describe('active session checkpoint boundary', () => {
     useGameStore.getState().tick(25);
 
     expect(captureActiveSession()).toEqual(uninterrupted);
+  });
+
+  it('preserves bounded catch-up remainder across pause and restore', () => {
+    useGameStore.getState().startSession({ source: 'creation', name: 'Patient Continuation', race: 'Half Orc', klass: 'Robot Monk', seed: 714 });
+    useGameStore.getState().tick(Number.MAX_VALUE);
+    expect(useGameStore.getState().progression.completedTasks).toBe(100);
+    useGameStore.getState().togglePause();
+    const checkpoint = captureActiveSession();
+
+    expect(checkpoint.session.pendingElapsedMs).toBeGreaterThan(0);
+    expect(checkpoint.session.pendingElapsedMs).toBeLessThanOrEqual(MAX_PENDING_ELAPSED_MS);
+    expect(checkpoint.session.log).toHaveLength(50);
+    useGameStore.getState().togglePause();
+    useGameStore.getState().tick(1);
+    const uninterrupted = captureActiveSession();
+
+    restoreActiveSession(checkpoint);
+    useGameStore.getState().togglePause();
+    useGameStore.getState().tick(1);
+
+    expect(captureActiveSession()).toEqual(uninterrupted);
+    expect(uninterrupted.session.progression.completedTasks).toBe(200);
   });
 
   it('resumes a mid-prologue checkpoint with identical queued work and RNG', () => {

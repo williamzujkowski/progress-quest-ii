@@ -6,6 +6,7 @@ import { createNewCharacter } from '../engine/sim';
 import { levelUpTime } from '../engine/math';
 import { advanceGame, type GameTransitionEvent } from '../engine/transition';
 import type { CharacterSheet, ProgressionState, StatsMap } from '../engine/types';
+import { MAX_PENDING_ELAPSED_MS } from '../data/limits';
 
 type StartSessionRequest =
   | { source: 'creation'; name: string; race: string; klass: string; seed: PRNGSeed; stats?: StatsMap }
@@ -17,6 +18,7 @@ export interface GameStore {
   isPaused: boolean;
   rng: RandomGenerator;
   progression: ProgressionState;
+  pendingElapsedMs: number;
   
   // Actions
   tick: (elapsedMs: number) => void;
@@ -26,6 +28,7 @@ export interface GameStore {
     character: CharacterSheet;
     rngState: [number, number, number, number];
     progression: ProgressionState;
+    pendingElapsedMs: number;
     isPaused: boolean;
     log: string[];
   }) => void;
@@ -49,7 +52,6 @@ function playEventSound(event: GameTransitionEvent): void {
 export const useGameStore = create<GameStore>((set, get) => {
   const initialRng = new RandomGenerator('default-seed');
   const initialChar = createNewCharacter('Krg', 'Hob-Hobbit', 'Robot Monk', initialRng);
-  let pendingElapsedMs = 0;
 
   return {
     character: initialChar,
@@ -57,11 +59,11 @@ export const useGameStore = create<GameStore>((set, get) => {
     isPaused: false,
     rng: initialRng,
     progression: createProgression(initialChar.Traits.Level),
+    pendingElapsedMs: 0,
 
     togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
 
     startSession: (request: StartSessionRequest) => {
-      pendingElapsedMs = 0;
       let character: CharacterSheet;
       let rng: RandomGenerator;
       let message: string;
@@ -83,11 +85,11 @@ export const useGameStore = create<GameStore>((set, get) => {
         log: [message],
         isPaused: false,
         progression: createProgression(character.Traits.Level),
+        pendingElapsedMs: 0,
       });
     },
 
     restoreSession: (session) => {
-      pendingElapsedMs = 0;
       const rng = new RandomGenerator('restored-session');
       rng.setState([...session.rngState]);
       set({
@@ -96,18 +98,19 @@ export const useGameStore = create<GameStore>((set, get) => {
         progression: structuredClone(session.progression),
         isPaused: session.isPaused,
         log: [...session.log],
+        pendingElapsedMs: session.pendingElapsedMs,
       });
     },
 
     tick: (elapsedMs: number) => {
       if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return;
-      const { character, isPaused, rng, log, progression } = get();
+      const { character, isPaused, rng, log, progression, pendingElapsedMs } = get();
       if (isPaused) return;
-      const result = advanceGame({ character, progression }, pendingElapsedMs + elapsedMs, rng);
-      pendingElapsedMs = result.remainingElapsedMs;
+      const elapsedBudgetMs = Math.min(MAX_PENDING_ELAPSED_MS, pendingElapsedMs + elapsedMs);
+      const result = advanceGame({ character, progression }, elapsedBudgetMs, rng);
       for (const event of result.events) playEventSound(event);
       const activity = result.events.map(describeGameEvent).reverse();
-      set({ ...result.state, log: [...activity, ...log].slice(0, 50) });
+      set({ ...result.state, pendingElapsedMs: result.remainingElapsedMs, log: [...activity, ...log].slice(0, 50) });
     },
   };
 });

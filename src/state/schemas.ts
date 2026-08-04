@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MAX_PENDING_TASKS, MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../data/limits';
+import { MAX_PENDING_ELAPSED_MS, MAX_PENDING_TASKS, MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../data/limits';
 
 export { MAX_PERSISTED_ITEMS } from '../data/limits';
 export const MAX_CHARACTER_NAME_LENGTH = 120;
@@ -179,6 +179,7 @@ export const activeCheckpointV1Schema = z.object({
       completedTasks: boundedInteger,
       elapsedSeconds: boundedInteger,
     }).strict(),
+    pendingElapsedMs: z.number().finite().min(0).max(MAX_PENDING_ELAPSED_MS).default(0),
     isPaused: z.boolean(),
     log: z.array(description).max(50),
   }).strict(),
