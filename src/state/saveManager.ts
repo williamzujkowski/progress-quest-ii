@@ -178,9 +178,9 @@ export function loadMostRecentRosterCharacter(storage?: Storage): SaveResult<Cha
   if (!loaded.ok) return loaded;
   const recency = readRosterRecency(availableStorage.value, loaded.value);
   if (!recency.ok) return recency;
-  for (let index = recency.value.length - 1; index >= 0; index -= 1) {
-    const name = recency.value[index];
-    if (Object.hasOwn(loaded.value, name)) return { ok: true, value: loaded.value[name] };
+  for (const name of recency.value.toReversed()) {
+    const character = loaded.value[name];
+    if (Object.hasOwn(loaded.value, name) && character) return { ok: true, value: character };
   }
   return { ok: true, value: Object.values(loaded.value).at(-1) ?? null };
 }

@@ -6,14 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/generate-service-worker.mjs && node scripts/verify-production-build.mjs",
-    "lint": "oxlint",
+    "lint": "oxlint --deny-warnings",
     "lint:legacy": "oxlint --no-ignore -c .oxlintrc.legacy.json pq-web-src",
     "preview": "vite preview",
     "test": "vitest run && node --test scripts/test-legacy-oracle.mjs",
     "test:fidelity": "vitest run src/__tests__/fidelity && node --test scripts/test-legacy-oracle.mjs",
     "test:e2e": "playwright test",
     "test:pwa": "npm run build && playwright test --config playwright.pwa.config.ts",
-    "agents:verify": "nexus-agents verify"
+    "typecheck": "tsc -b",
+    "audit": "npm audit --audit-level=high",
+    "agents:verify": "nexus-agents verify",
+    "quality": "npm run agents:verify && npm run lint && npm run typecheck && npm test && npm run audit && npm run test:e2e && npm run test:pwa"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

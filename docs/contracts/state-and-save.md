@@ -96,7 +96,14 @@ Owner: `src/engine/prng.ts`
 
 ## Quality gates
 
-CI and deployment gates: dependency install, full Nexus installation verification, lint, typecheck, unit/contract tests, production build, Playwright E2E, and high-severity dependency audit. The Nexus verifier treats missing hosted-runner CLI authentication as a warning while still failing hard installation/configuration errors.
+After dependencies and Chromium are installed, `npm run quality` is the canonical
+local, CI, and deployment gate. It runs full Nexus installation verification,
+warning-clean modern lint, typecheck, unit and legacy-oracle tests, production
+build, high-severity dependency audit, Playwright E2E, and production PWA tests.
+The Nexus verifier treats missing hosted-runner CLI authentication as a warning
+while still failing hard installation/configuration errors. Nexus's generic
+quality tool remains bypassed until upstream issue #4355 stops assuming ESLint
+and pnpm instead of repository-declared scripts.
 
 Run the deterministic legacy data and isolated transition-oracle contracts separately with `npm run test:fidelity`.
 

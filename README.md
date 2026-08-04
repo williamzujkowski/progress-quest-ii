@@ -54,22 +54,17 @@ Then open the local URL printed by Vite. The local app is the same game, only wi
 Run the same checks used by CI before opening a pull request:
 
 ```sh
-npm test
-npm run lint
-npx tsc -b
-npm run build
-npm run test:e2e
-npm run test:pwa
-npm audit --audit-level=high
+npx playwright install chromium
+npm run quality
 ```
 
-The deterministic Nexus installation check is also available:
+The quality command fails on modern-code lint warnings and runs Nexus installation
+verification, lint, typecheck, unit and legacy-oracle tests, production build,
+high-severity dependency audit, browser E2E, and production PWA tests. The
+read-only `pq-web-src/` behavior oracle is excluded from modern lint and remains
+available separately through `npm run lint:legacy`.
 
-```sh
-npm run agents:verify
-```
-
-Adapter-backed Nexus review, routing, and voting are temporarily bypassed because exhausted providers can produce zero-token heuristic results. Codex subagents and the repository review skills are the interim review path; see upstream [#4350](https://github.com/nexus-substrate/nexus-agents/issues/4350) and [#4351](https://github.com/nexus-substrate/nexus-agents/issues/4351).
+Adapter-backed Nexus review, routing, and voting are temporarily bypassed because exhausted providers can produce zero-token heuristic results. Codex subagents and the repository review skills are the interim review path; see upstream [#4350](https://github.com/nexus-substrate/nexus-agents/issues/4350) and [#4351](https://github.com/nexus-substrate/nexus-agents/issues/4351). Nexus's generic quality tool also assumes ESLint and pnpm instead of repository scripts; the canonical local and CI gate is `npm run quality` until upstream [#4355](https://github.com/nexus-substrate/nexus-agents/issues/4355) is fixed.
 
 ## Architecture at a glance
 

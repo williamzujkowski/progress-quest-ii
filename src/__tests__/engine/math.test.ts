@@ -56,6 +56,10 @@ describe('Progress Quest Engine Math', () => {
     expect(roll1).toBe(roll2);
   });
 
+  it('rejects an empty random selection instead of returning an untyped undefined', () => {
+    expect(() => new RandomGenerator(42).pick([])).toThrow(RangeError);
+  });
+
   it('generates an exterminate quest with exactly four deterministic monster picks', () => {
     const firstRng = new RandomGenerator('quest-seed');
     const secondRng = new RandomGenerator('quest-seed');

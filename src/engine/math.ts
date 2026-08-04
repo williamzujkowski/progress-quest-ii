@@ -52,12 +52,12 @@ const KPARTS = [
   ['br', 'cr', 'dr', 'fr', 'gr', 'j', 'kr', 'l', 'm', 'n', 'pr', '', '', '', 'r', 'sh', 'tr', 'v', 'wh', 'x', 'y', 'z'],
   ['a', 'a', 'e', 'e', 'i', 'i', 'o', 'o', 'u', 'u', 'ae', 'ie', 'oo', 'ou'],
   ['b', 'ck', 'd', 'g', 'k', 'm', 'n', 'p', 't', 'v', 'x', 'z'],
-];
+] as const;
 
 export function generateName(rng: RandomGenerator): string {
   let result = '';
   for (let i = 0; i <= 5; ++i) {
-    result += rng.pick(KPARTS[i % 3]);
+    result += rng.pick(KPARTS[i % KPARTS.length] ?? KPARTS[0]);
   }
   return result.charAt(0).toUpperCase() + result.slice(1);
 }

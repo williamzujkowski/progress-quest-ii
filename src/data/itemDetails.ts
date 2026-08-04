@@ -14,7 +14,7 @@ const stableIndex = (key: string, length: number): number => {
   return hash % length;
 };
 
-const choose = (options: readonly string[], key: string): string => options[stableIndex(key, options.length)];
+const choose = (options: readonly string[], key: string): string => options[stableIndex(key, options.length)] ?? key;
 const signedGameNumber = (value: number): string => `${value >= 0 ? '+' : ''}${formatGameNumber(value)}`;
 
 const boundedLabel = (name: string, fallback: string, limit = 60): string => {
@@ -271,7 +271,7 @@ function specialItemParts(name: string): { attribute: string; object: string; co
   const object = SPECIALS.find((candidate) => remainder === candidate || remainder.startsWith(`${candidate} of `));
   if (!object) return undefined;
   const concept = ITEM_OFS.find((candidate) => remainder === `${object} of ${candidate}`);
-  return { attribute, object, concept };
+  return { attribute, object, ...(concept ? { concept } : {}) };
 }
 
 function monsterLootParts(name: string): { monster: string; drop: string } | undefined {
