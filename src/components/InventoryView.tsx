@@ -25,7 +25,7 @@ export const InventoryView: React.FC = () => {
       <div className="equip-list inventory-list" role="region" tabIndex={0} aria-label="Inventory items">
         {nonGoldItems.length === 0 ? (
           <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontStyle: 'italic', padding: '0.5rem 0' }}>
-            Inventory is empty. Head into battle to collect loot!
+            No loot has been retained. Combat supplies it automatically; procurement awaits a monster with transferable assets.
           </div>
         ) : (
           nonGoldItems.map((item, index) => (

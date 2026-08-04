@@ -5,11 +5,20 @@ This file ships with the PWA. It records direct production inputs; it does not
 change their licenses or resolve the legacy-web-source ambiguity documented at
 https://github.com/williamzujkowski/progress-quest-ii/blob/main/docs/content-provenance.md.
 
+PROJECT CREDIT
+
+This unofficial modernization is directed and reviewed by William Zujkowski
+with AI-assisted research, implementation, and testing. Eric Fredricksen is the
+original creator of Progress Quest and principal author of the retained web
+reference implementation; its contributors and third-party material remain
+attributed below and in the content provenance inventory. "Zero developers" is
+an editorial joke, not an authorship or provenance claim.
+
 PROGRESS QUEST
 
-Progress Quest and the separately retained web reference implementation are
-the work of Eric Fredricksen. The official site publishes this license text at
-https://progressquest.com/license.txt:
+Progress Quest was created by Eric Fredricksen, principal author of the
+separately retained web reference implementation. The official site publishes
+this license text at https://progressquest.com/license.txt:
 
 Progress Quest
 Copyright (c) 2002-2004 Eric Fredricksen

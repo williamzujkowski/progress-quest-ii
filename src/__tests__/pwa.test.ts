@@ -41,6 +41,14 @@ describe('PWA update activation', () => {
     vi.restoreAllMocks();
   });
 
+  it('announces a waiting update without obscuring the required action', async () => {
+    const { dispose, update } = await mockWaitingUpdate();
+
+    expect(update.message).toBe('A new edition is ready. The bureaucracy requests a reload.');
+    expect(update.apply).toBeTypeOf('function');
+    dispose();
+  });
+
   it('records one redacted failure when an approved activation stalls', async () => {
     const { dispose, notices, update, worker } = await mockWaitingUpdate();
     const failuresBefore = diagnostics.snapshot().filter(({ code }) => code === 'pwa_update_failed').length;

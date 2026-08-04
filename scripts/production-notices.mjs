@@ -1,5 +1,7 @@
 const REQUIRED_NOTICES = [
   'Eric Fredricksen',
+  'directed and reviewed by William Zujkowski',
+  'AI-assisted research, implementation, and testing',
   'Johannes Baagøe',
   'Lucide Icons and Contributors',
   'SIL OPEN FONT LICENSE Version 1.1',
