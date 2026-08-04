@@ -2,6 +2,14 @@
 
 These are the deliberately small, executable contracts at module seams. TypeScript remains the contract inside trusted engine code; Zod is reserved for untrusted browser storage and imported save text.
 
+## Engine/UI dependency direction
+
+`src/engine/` is the pure game-rules module. It may depend on typed tables in `src/data/` and sibling engine modules, but never on React, Zustand, UI modules, state/browser adapters, PWA wiring, browser globals, or timers. The transition seam accepts elapsed time and `RandomGenerator` explicitly, then returns state plus events instead of performing browser effects. Standalone name and character helpers retain the documented optional clock defaults for callers that do not request replay.
+
+`src/state/` supplies the browser adapters for the engine/UI seam: the store invokes transitions, persistence validates untrusted bytes, and audio/diagnostics translate returned events. `src/components/` depends inward on that seam and may call pure engine queries; dependency in the opposite direction is forbidden.
+
+Verified by: the engine-specific Oxlint overrides in `.oxlintrc.json` and the ordinary lint gate.
+
 ## Persisted character
 
 Owner: `src/state/schemas.ts`

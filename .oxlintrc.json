@@ -5,5 +5,60 @@
   "rules": {
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/engine/**/*.ts", "src/engine/**/*.tsx"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "react",
+                  "react/**",
+                  "react-dom",
+                  "react-dom/**",
+                  "zustand",
+                  "zustand/**",
+                  "lucide-react",
+                  "lucide-react/**",
+                  "@fontsource-variable/**",
+                  "@williamzujkowski/oklch-terminal-themes",
+                  "@williamzujkowski/oklch-terminal-themes/**",
+                  "vite",
+                  "vite/**",
+                  "@vitejs/**",
+                  "**/components",
+                  "**/components/**",
+                  "**/state",
+                  "**/state/**",
+                  "**/assets",
+                  "**/assets/**",
+                  "**/*.css",
+                  "**/App",
+                  "**/App.*",
+                  "**/main",
+                  "**/main.*",
+                  "**/pwa",
+                  "**/pwa.*",
+                  "**/theme",
+                  "**/theme.*"
+                ],
+                "message": "Engine modules must remain independent of UI and browser adapters."
+              }
+            ]
+          }
+        ],
+        "no-restricted-globals": [
+          "error",
+          {
+            "globals": ["window", "document", "localStorage", "sessionStorage", "navigator", "Audio", "setInterval", "setTimeout", "requestAnimationFrame", "cancelAnimationFrame"],
+            "checkGlobalObject": true
+          }
+        ]
+      }
+    }
+  ]
 }
