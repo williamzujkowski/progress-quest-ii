@@ -124,9 +124,14 @@ Progress Quest, Guild, World, Party, Raid, Whisper, System, and Hero are typed
 labels over one bounded collection. They do not each retain a separate log, timer,
 or state machine.
 
-On mobile, show the newest scene summary and use native progressive disclosure for
-the exchange. Chatter remains `aria-live="off"`; #48 announces only important
-canonical facts. Channel and speaker meaning cannot rely on color alone.
+Present the projection in the shared World Console specified by #159: Chatter is
+the default tab, while Activity remains the always-available authoritative record.
+The two streams stay structurally separate, retain independent reading positions,
+and scroll inside the dashboard rather than growing the page. Following the newest
+entry is conditional on the reader already being at the latest edge. Chatter
+remains `aria-live="off"`; #48 announces only important canonical facts, including
+while Activity is inactive. Channel, speaker, fictional status, and authoritative
+status cannot rely on color alone.
 
 ### 7. The hero is also simulated
 
@@ -190,6 +195,8 @@ unbounded lines, and mechanical claims unsupported by the engine.
   offscreen progression, or social memory, including visibility and recovery.
 - **#143:** record Erenshor as all-rights-reserved inspiration with no code or
   content reuse authorization identified.
+- **#159:** prototype one bounded World Console with default Chatter and a distinct
+  authoritative Activity tab before #153 claims permanent dashboard space.
 - **#157:** treat Erenshor as one focused case study inside the broader post-2002
   MMO and game-design survey; do not let it dominate the comparison set.
 
