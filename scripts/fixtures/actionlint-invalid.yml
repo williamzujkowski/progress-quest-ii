@@ -1,0 +1,14 @@
+name: Invalid workflow fixture
+
+on: push
+
+jobs:
+  invalid:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./scripts/fixtures/actionlint-action
+        with:
+          definitely-not-an-input: yes
+      - run: echo "${{ github.event.issue.title }}"
+      - run: echo "${{ github.event. }}"
+        Shell: bash

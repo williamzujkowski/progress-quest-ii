@@ -1,0 +1,11 @@
+name: Workflow lint fixture action
+description: Declares one input so the negative workflow can prove local action-input validation.
+inputs:
+  expected-input:
+    description: The only accepted fixture input.
+    required: false
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: echo fixture

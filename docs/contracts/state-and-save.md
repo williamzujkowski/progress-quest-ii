@@ -100,6 +100,11 @@ After dependencies and Chromium are installed, `npm run quality` is the canonica
 local, CI, and deployment gate. It runs full Nexus installation verification,
 warning-clean modern lint, typecheck, unit and legacy-oracle tests, production
 build, high-severity dependency audit, Playwright E2E, and production PWA tests.
+GitHub Actions workflows additionally pass checksum-pinned actionlint v1.7.12;
+its negative contract covers syntax, expressions, local action inputs, and
+unsafe untrusted interpolation without optional ShellCheck or Pyflakes. The
+launcher requires the standard `tar` executable included on supported developer
+systems and GitHub-hosted runners.
 The Nexus verifier treats missing hosted-runner CLI authentication as a warning
 while still failing hard installation/configuration errors. Nexus's generic
 quality tool remains bypassed until upstream issue #4355 stops assuming ESLint
