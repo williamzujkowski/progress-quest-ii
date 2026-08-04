@@ -10,6 +10,8 @@ import marketExitPriceFixtureJson from '../fixtures/legacy/market-exit-price.jso
 import marketExitPricePlusOneFixtureJson from '../fixtures/legacy/market-exit-price-plus-one.json';
 import purchaseExitPriceFixtureJson from '../fixtures/legacy/purchase-exit-price.json';
 import purchaseExitPricePlusOneFixtureJson from '../fixtures/legacy/purchase-exit-price-plus-one.json';
+import randomStarDuplicateFixtureJson from '../fixtures/legacy/random-star-duplicate.json';
+import randomStarSpecialFixtureJson from '../fixtures/legacy/random-star-special.json';
 import { observeLegacyEncounterTransition, observeModernEncounterTransition, type LegacyTransitionFixture } from './transitionParity';
 
 const npcTransitionFixture = structuredClone(oneKillFixtureJson) as unknown as LegacyTransitionFixture;
@@ -39,6 +41,8 @@ describe('modern encounter-output fidelity', () => {
     ['market exit above equipment price', marketExitPricePlusOneFixtureJson],
     ['purchase exit at exact equipment price', purchaseExitPriceFixtureJson],
     ['purchase exit above equipment price', purchaseExitPricePlusOneFixtureJson],
+    ['random-star duplicate item', randomStarDuplicateFixtureJson],
+    ['random-star special item', randomStarSpecialFixtureJson],
   ])('matches the legacy %s transition on the shared observable surface', (_name, fixtureJson) => {
     const fixture = fixtureJson as unknown as LegacyTransitionFixture;
 
