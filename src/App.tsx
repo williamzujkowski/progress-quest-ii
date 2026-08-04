@@ -9,6 +9,8 @@ import { Navbar } from './components/Navbar';
 import { PwaStatus } from './components/PwaStatus';
 import { QuestLog } from './components/QuestLog';
 import { SaveModal } from './components/SaveModal';
+import { ChroniclePrototypeSwitcher, WorldChroniclePrototype } from './components/WorldChroniclePrototype';
+import { readChronicleVariant } from './components/worldChroniclePrototypeVariant';
 import { useGameStore } from './state/gameStore';
 import { startGameClock } from './state/gameClock';
 import { diagnostics } from './state/diagnostics';
@@ -40,6 +42,7 @@ const SessionCheckpointStatus: React.FC<{ controller: SessionCheckpointControlle
 };
 
 export const App: React.FC<AppProps> = ({ sessionCheckpoints }) => {
+  const chronicleVariant = readChronicleVariant();
   const initialThemeReadError = useRef<unknown>(undefined);
   const [themeSelection, setThemeSelection] = useState<ThemeSelection>(() => {
     const storedTheme = readThemePreference();
@@ -120,11 +123,13 @@ export const App: React.FC<AppProps> = ({ sessionCheckpoints }) => {
 
       <HeroBanner />
 
+      {chronicleVariant === 'gazette' ? null : <WorldChroniclePrototype variant={chronicleVariant} />}
+
       <main className="main-grid" id="game-dashboard">
         <CharacterSheetView />
         <div className="quest-column">
           <QuestLog />
-          <LogFeed />
+          {chronicleVariant === 'gazette' ? <WorldChroniclePrototype variant={chronicleVariant} /> : <LogFeed />}
         </div>
         <InventoryView />
       </main>
@@ -143,6 +148,8 @@ export const App: React.FC<AppProps> = ({ sessionCheckpoints }) => {
           setIsCharacterCreatorOpen(false);
         }}
       />
+
+      <ChroniclePrototypeSwitcher active={chronicleVariant} />
     </div>
   );
 };
