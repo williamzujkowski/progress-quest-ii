@@ -61,8 +61,11 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await creator.getByRole('button', { name: /Sold! Start Questing/i }).click();
     await expect(creator).toBeHidden();
     await expect(page.locator('.hero-name > span:not(.badge)')).toHaveText('First Bureaucrat');
+    await expect(page.locator('.hero-sub')).toContainText('Prologue');
+    await expect(page.locator('.quest-card .badge')).toHaveText('Prologue');
     await expect.poll(() => page.evaluate(() => localStorage.getItem('progquest_active_session_v1'))).not.toBeNull();
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('progquest_active_session_v1') ?? '').session.character.Traits.Name)).toBe('First Bureaucrat');
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('progquest_active_session_v1') ?? '').session.character.PendingTasks.length)).toBe(5);
     await context.close();
   });
 
