@@ -4,6 +4,7 @@ import type { CharacterSheet } from '../engine/types';
 import { diagnostics } from '../state/diagnostics';
 import { useGameStore } from '../state/gameStore';
 import { decodePQWSave, encodePQWSave, loadRoster, removeFromRoster, saveToRoster } from '../state/saveManager';
+import { GameNumber } from './GameNumber';
 import { useModalDialog } from './useModalDialog';
 
 interface SaveModalProps {
@@ -213,7 +214,7 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
                   <div>
                     <strong style={{ fontSize: '0.875rem' }}>{char.Traits.Name}</strong>
                     <div className="roster-meta">
-                      Lvl {char.Traits.Level} {char.Traits.Race} {char.Traits.Class}
+                      Lvl{' '}<GameNumber value={char.Traits.Level} />{' '}{char.Traits.Race} {char.Traits.Class}
                     </div>
                   </div>
                   <div className="roster-actions">

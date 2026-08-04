@@ -1,6 +1,6 @@
 import React from 'react';
 import { useGameStore } from '../state/gameStore';
-import { describeAct } from '../state/gameEventAdapter';
+import { ActLabel, GameNumber } from './GameNumber';
 
 export const QuestLog: React.FC = () => {
   const { character } = useGameStore();
@@ -13,7 +13,7 @@ export const QuestLog: React.FC = () => {
     <section className="card quest-card" aria-labelledby="quest-log-heading">
       <div className="card-header">
         <h2 id="quest-log-heading">Questing & Progression</h2>
-        <span className="badge badge-warning">{describeAct(character.Plot.act)}</span>
+        <span className="badge badge-warning"><ActLabel act={character.Plot.act} /></span>
       </div>
 
       <div className="progress-container progress-task">
@@ -37,7 +37,7 @@ export const QuestLog: React.FC = () => {
         <div className="progress-label">
           <span>Quest: {character.Quest.description}</span>
           <span>
-            {character.Quest.currentProgress} / {character.Quest.maxProgress}
+            <GameNumber value={character.Quest.currentProgress} /> / <GameNumber value={character.Quest.maxProgress} />
           </span>
         </div>
         <div
@@ -56,7 +56,7 @@ export const QuestLog: React.FC = () => {
         <div className="progress-label">
           <span>Plot Progress</span>
           <span>
-            {character.Plot.currentProgress} / {character.Plot.maxProgress}
+            <GameNumber value={character.Plot.currentProgress} /> / <GameNumber value={character.Plot.maxProgress} />
           </span>
         </div>
         <div

@@ -3,7 +3,7 @@ import { BORING_ITEMS, IMPRESSIVE_TITLES, MONSTERS, RACES } from '../data/traits
 import { MAX_PENDING_TASKS, MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../data/limits';
 import { calculateEncumbranceMax, generateName, levelUpTime } from './math';
 import type { RandomGenerator } from './prng';
-import { plural } from './text';
+import { formatGameNumber, plural } from './text';
 import type { CharacterSheet, EquipSlot, NemesisSequenceCursor, PendingSequenceEntry, ProgressionState, ProgressTask, SequenceTask, StatName } from './types';
 
 export interface GameTransitionState {
@@ -160,8 +160,8 @@ function toRoman(value: number): string {
 }
 
 function actLabel(act: number): string {
-  // ponytail: legacy Roman output is unbounded; decimal keeps accepted synthetic Acts within save limits.
-  return act > 10_000 ? String(act) : toRoman(act);
+  // ponytail: retire unbounded Roman output before it becomes the dominant save format.
+  return act > 10_000 ? formatGameNumber(act) : toRoman(act);
 }
 
 export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: RandomGenerator): GameTransitionResult {
