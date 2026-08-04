@@ -377,16 +377,16 @@ export function generateTaskDescription(rng: RandomGenerator, character: Charact
   if (encum >= maxEncum) {
     return {
       description: 'Heading to market to sell loot...',
-      type: 'selling',
-      durationMs: 3000,
+      type: 'heading_to_market',
+      durationMs: 4000,
     };
   }
 
-  if (character.Gold >= price) {
+  if (character.Gold > price) {
     return {
       description: 'Negotiating purchase of better equipment...',
       type: 'buying',
-      durationMs: 3000,
+      durationMs: 5000,
     };
   }
 

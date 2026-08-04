@@ -21,7 +21,7 @@ function describeUnboundedGameEvent(event: GameTransitionEvent): string {
     case 'save_requested': return `Saving game: ${event.characterName}`;
     case 'item_gained': return gained(event.name, event.quantity);
     case 'gold_received': return `Got paid ${indefinite('gold piece', event.amount)}`;
-    case 'inventory_sold': return `Sold loot at market for ${formatGameNumber(event.gold)} gold!`;
+    case 'inventory_sold': return `Got paid ${indefinite('gold piece', event.gold)}`;
     case 'equipment_purchased': return `Negotiated purchase: Equipped ${event.name} in ${event.slot} slot!`;
     case 'equipment_gained': return `Gained ${event.name} for the ${event.slot} slot`;
     case 'act_completed': return `Completed ${describeAct(event.act)}`;

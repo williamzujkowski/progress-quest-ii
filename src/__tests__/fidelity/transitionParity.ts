@@ -58,7 +58,7 @@ export interface EncounterTransitionObservation {
   inventory: Pair<number>[];
   equipment: Pair<string>[];
   spells: Pair<number>[];
-  nextTask: { caption: string; durationMs: number; loot: ProgressTask['loot'] };
+  nextTask: { caption: string; durationMs: number; type: ProgressTask['type']; loot: ProgressTask['loot'] };
   events: string[];
   rng: AleaState;
   progression: {
@@ -71,7 +71,7 @@ export interface EncounterTransitionObservation {
 }
 
 function assertCompletedTask(sheet: LegacySheet): void {
-  if (sheet.task !== '' && !sheet.task.startsWith('kill|')) throw new RangeError(`Unsupported legacy task tag: ${sheet.task}`);
+  if (sheet.task !== '' && sheet.task !== 'sell' && sheet.task !== 'buying' && !sheet.task.startsWith('kill|')) throw new RangeError(`Unsupported legacy task tag: ${sheet.task}`);
   if (sheet.TaskBar.position !== sheet.TaskBar.max) throw new TypeError('Legacy fixture TaskBar must start at exactly one completed task');
   if (sheet.seed.length !== 4 || !sheet.seed.every(Number.isFinite)) throw new TypeError('Legacy fixture seed must be a finite Alea tuple');
 }
@@ -96,6 +96,14 @@ function lootFromLegacyTask(taskTag: string): ProgressTask['loot'] {
     : { type: 'fixed', item: `${monsterName} ${monsterDrop}`.toLowerCase() };
 }
 
+function typeFromLegacyTask(task: LegacyExpected['task']): ProgressTask['type'] {
+  if (task.tag.startsWith('kill|')) return 'kill';
+  if (task.tag === 'sell') return 'selling';
+  if (task.tag === 'buying' || task.tag === 'heading') return task.tag;
+  if (task.tag === 'market') return 'heading_to_market';
+  return task.caption.startsWith('Loading Act ') ? 'act_marker' : 'cinematic';
+}
+
 export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixture): EncounterTransitionObservation {
   assertCompletedTask(fixture.input.sheet);
   const { expected } = fixture;
@@ -105,8 +113,8 @@ export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixtur
     inventory: structuredClone(expected.inventory),
     equipment: structuredClone(expected.equipment),
     spells: expected.spells.map(([name, , level]) => [name, level]),
-    nextTask: { caption: expected.task.caption, durationMs: expected.task.maxMs, loot: lootFromLegacyTask(expected.task.tag) },
-    events: [...expected.log],
+    nextTask: { caption: expected.task.caption, durationMs: expected.task.maxMs, type: typeFromLegacyTask(expected.task), loot: lootFromLegacyTask(expected.task.tag) },
+    events: expected.log.filter((line) => !line.startsWith('Spent ')),
     rng: [...expected.rng],
     progression: {
       counters: { completedTasks: expected.counters.tasks, elapsedSeconds: expected.counters.elapsedSeconds },
@@ -151,7 +159,7 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
       description: sheet.kill,
       durationMs: sheet.TaskBar.max,
       elapsedMs: 0,
-      type: sheet.task.startsWith('kill|') ? 'kill' : 'cinematic',
+      type: sheet.task.startsWith('kill|') ? 'kill' : sheet.task === 'sell' ? 'selling' : sheet.task === 'buying' ? 'buying' : 'cinematic',
       loot: lootFromLegacyTask(sheet.task),
     },
     PendingTasks: pendingTasks,
@@ -178,9 +186,9 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
     inventory: [['Gold', transitioned.Gold], ...transitioned.Inventory.map(({ name, qty }) => [name, qty] as Pair<number>)],
     equipment: EQUIP_SLOTS.map((slot) => [slot, transitioned.Equip[slot]]),
     spells: transitioned.Spells.map(({ name, level }) => [name, level]),
-    nextTask: { caption: transitioned.Task.description, durationMs: transitioned.Task.durationMs, loot: transitioned.Task.loot },
+    nextTask: { caption: transitioned.Task.description, durationMs: transitioned.Task.durationMs, type: transitioned.Task.type, loot: transitioned.Task.loot },
     events: result.events
-      .filter(({ type }) => type !== 'act_completed' && type !== 'equipment_gained')
+      .filter(({ type }) => type !== 'act_completed' && type !== 'equipment_gained' && type !== 'equipment_purchased')
       .map(describeGameEvent),
     rng: [...rng.getState()],
     progression: {

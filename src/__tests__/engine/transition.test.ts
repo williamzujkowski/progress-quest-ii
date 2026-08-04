@@ -501,11 +501,12 @@ describe('advanceGame', () => {
     expect(rng.getState()).toEqual(questFixture.expected.rng);
   });
 
-  it('sells inventory before choosing the next task', () => {
+  it('sells one ordinary stack at level value before scheduling the next stack', () => {
     const character = createNewCharacter('Merchant', 'Half Orc', 'Robot Monk', 802);
-    character.Gold = 0;
-    character.Inventory = [{ name: 'Ancient Widget', qty: 4 }];
-    character.Task = { description: 'Selling loot...', durationMs: 1, elapsedMs: 0, type: 'selling' };
+    character.Traits.Level = 5;
+    character.Gold = 10;
+    character.Inventory = [{ name: 'rat tail', qty: 3 }, { name: 'old boot', qty: 2 }];
+    character.Task = { description: 'Selling 3 rat tails...', durationMs: 1000, elapsedMs: 0, type: 'selling' };
     character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
     character.PendingTasks = undefined;
     const state = {
@@ -513,21 +514,76 @@ describe('advanceGame', () => {
       progression: { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 },
     };
 
-    const result = advanceGame(state, 1, new RandomGenerator('sale-transition'));
+    const rng = new RandomGenerator('sale-transition');
+    const initialRng = rng.getState();
+    const result = advanceGame(state, 1000, rng);
 
-    expect(result.state.character.Gold).toBeGreaterThanOrEqual(35);
-    expect(result.state.character.Inventory).toEqual([]);
-    expect(result.state.character.Task.type).toBe('buying');
+    expect(result.state.character.Gold).toBe(25);
+    expect(result.state.character.Inventory).toEqual([{ name: 'old boot', qty: 2 }]);
+    expect(result.state.character.Task).toMatchObject({ description: 'Selling 2 old boots...', durationMs: 1000, type: 'selling' });
     expect(result.events).toEqual([
-      { type: 'inventory_sold', gold: result.state.character.Gold },
+      { type: 'inventory_sold', gold: 15 },
       { type: 'task_started', task: result.state.character.Task },
     ]);
+    expect(rng.getState()).toEqual(initialRng);
+  });
+
+  it('applies both canonical RandomLow multipliers to an of-item stack', () => {
+    const character = createNewCharacter('Merchant', 'Half Orc', 'Robot Monk', 802);
+    character.Traits.Level = 5;
+    character.Gold = 10;
+    character.Inventory = [{ name: 'Diadem of Foreboding', qty: 2 }, { name: 'old boot', qty: 2 }];
+    character.Task = { description: 'Selling 2 Diadems of Foreboding...', durationMs: 1000, elapsedMs: 0, type: 'selling' };
+    character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
+    character.PendingTasks = undefined;
+    const rng = new RandomGenerator('sale-transition');
+    rng.setState([0.34067121776752174, 0.28646080009639263, 0.8245062702335417, 1]);
+
+    const result = advanceGame(stateFor(character), 1000, rng);
+
+    expect(result.state.character.Gold).toBe(70);
+    expect(result.state.character.Inventory).toEqual([{ name: 'old boot', qty: 2 }]);
+    expect(result.events[0]).toEqual({ type: 'inventory_sold', gold: 60 });
+    expect(rng.getState()).toEqual([0.581618724623695, 0.47070452058687806, 0.9086279335897416, 429329]);
+  });
+
+  it('starts the first one-second sale after reaching the market', () => {
+    const character = createNewCharacter('Merchant', 'Half Orc', 'Robot Monk', 802);
+    character.Inventory = [{ name: 'rat tail', qty: 30 }, { name: 'old boot', qty: 2 }];
+    character.Task = { description: 'Heading to market to sell loot...', durationMs: 4000, elapsedMs: 0, type: 'heading_to_market' };
+    character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
+    character.PendingTasks = undefined;
+    const rng = new RandomGenerator('market-arrival');
+    const initialRng = rng.getState();
+
+    const result = advanceGame(stateFor(character), 4000, rng);
+
+    expect(result.state.character.Inventory).toEqual(character.Inventory);
+    expect(result.state.character.Task).toMatchObject({ description: 'Selling 30 rat tails...', durationMs: 1000, type: 'selling' });
+    expect(result.events).toEqual([{ type: 'task_started', task: result.state.character.Task }]);
+    expect(rng.getState()).toEqual(initialRng);
+  });
+
+  it('heads to market for four seconds when completed-task loot reaches encumbrance', () => {
+    const character = createNewCharacter('Merchant', 'Half Orc', 'Robot Monk', 802);
+    character.Stats.STR = 10;
+    character.Inventory = [{ name: 'old boot', qty: 19 }];
+    character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
+    character.Plot = { act: 1, currentProgress: 0, maxProgress: 100 };
+    character.Task = { description: 'Executing a Rat...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.PendingTasks = undefined;
+
+    const result = advanceGame(stateFor(character), 1000, new RandomGenerator('market-threshold'));
+
+    expect(result.state.character.Inventory).toEqual([{ name: 'old boot', qty: 19 }, { name: 'rat tail', qty: 1 }]);
+    expect(result.state.character.Task).toMatchObject({ description: 'Heading to market to sell loot...', durationMs: 4000, type: 'heading_to_market' });
   });
 
   it('keeps an accepted maximum gold balance valid when selling inventory', () => {
     const character = createNewCharacter('Treasurer', 'Half Orc', 'Robot Monk', 810);
+    character.Traits.Level = MAX_PERSISTED_VALUE;
     character.Gold = MAX_PERSISTED_GOLD;
-    character.Inventory = [{ name: 'Auditor bait', qty: MAX_PERSISTED_VALUE }];
+    character.Inventory = [{ name: 'Auditor bait of Excess', qty: MAX_PERSISTED_VALUE }];
     character.Task = { description: 'Selling loot...', durationMs: 1, elapsedMs: 0, type: 'selling' };
     character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
     character.PendingTasks = undefined;
@@ -540,7 +596,7 @@ describe('advanceGame', () => {
     expect(characterSheetSchema.safeParse(result.state.character).success).toBe(true);
   });
 
-  it('buys equipment before choosing the next task', () => {
+  it('buys equipment before taking the four-second route out of town', () => {
     const character = createNewCharacter('Buyer', 'Half Orc', 'Robot Monk', 803);
     character.Gold = 35;
     character.Inventory = [];
@@ -549,7 +605,11 @@ describe('advanceGame', () => {
     const result = advanceGame(stateFor(character), 1, new RandomGenerator('purchase-transition'));
 
     expect(result.state.character.Gold).toBe(0);
-    expect(result.state.character.Task.type).toBe('kill');
+    expect(result.state.character.Task).toMatchObject({
+      description: 'Heading to the killing fields...',
+      durationMs: 4000,
+      type: 'heading',
+    });
     expect(result.events[0]).toMatchObject({ type: 'equipment_purchased' });
   });
 

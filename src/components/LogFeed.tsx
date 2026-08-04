@@ -14,7 +14,7 @@ export const LogFeed: React.FC = () => {
     if (entry.startsWith('Defeated monster and looted ') || entry.startsWith('Item ')) return <span className="log-tag tag-loot">Loot</span>;
     if (entry.startsWith('Quest completed:')) return <span className="log-tag tag-quest">Quest</span>;
     if (entry.startsWith('LEVEL UP!') || entry.startsWith('Act ')) return <span className="log-tag tag-levelup">Level</span>;
-    if (entry.startsWith('Sold loot at market ') || entry.startsWith('Negotiated purchase:')) return <span className="log-tag tag-market">Market</span>;
+    if (entry.startsWith('Negotiated purchase:')) return <span className="log-tag tag-market">Market</span>;
     if (entry.startsWith('Defeated ') || entry.startsWith('Executing ')) return <span className="log-tag tag-combat">Combat</span>;
     return null;
   };

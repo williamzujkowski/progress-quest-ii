@@ -64,8 +64,11 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(page.locator('.hero-sub')).toContainText('Prologue');
     await expect(page.locator('.quest-card .badge')).toHaveText('Prologue');
     await expect.poll(() => page.evaluate(() => localStorage.getItem('progquest_active_session_v1'))).not.toBeNull();
-    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('progquest_active_session_v1') ?? '').session.character.Traits.Name)).toBe('First Bureaucrat');
-    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('progquest_active_session_v1') ?? '').session.character.PendingTasks.length)).toBe(5);
+    expect(await page.evaluate(async () => {
+      const { activeCheckpointV1Schema } = await import('/src/state/schemas.ts');
+      const checkpoint = activeCheckpointV1Schema.parse(JSON.parse(localStorage.getItem('progquest_active_session_v1') ?? ''));
+      return { schemaVersion: checkpoint.schemaVersion, name: checkpoint.session.character.Traits.Name };
+    })).toEqual({ schemaVersion: 1, name: 'First Bureaucrat' });
     await context.close();
   });
 
@@ -605,7 +608,8 @@ test.describe('Progress Quest II terminal dashboard', () => {
           'LEVEL UP! Advanced to level 2!',
           'Quest completed: Find the lost stapler',
           'Defeated monster and looted a bent fork.',
-          'Sold loot at market for 10 gold!',
+          'Got paid 10 gold pieces',
+          'Negotiated purchase: Equipped Tax Hat in Helm slot!',
           'Executing a passing pigeon...',
         ],
       });
@@ -620,7 +624,8 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(tagFor('LEVEL UP! Advanced to level 2!')).toHaveText('Level');
     await expect(tagFor('Quest completed: Find the lost stapler')).toHaveText('Quest');
     await expect(tagFor('Defeated monster and looted a bent fork.')).toHaveText('Loot');
-    await expect(tagFor('Sold loot at market for 10 gold!')).toHaveText('Market');
+    await expect(tagFor('Got paid 10 gold pieces')).toHaveCount(0);
+    await expect(tagFor('Negotiated purchase: Equipped Tax Hat in Helm slot!')).toHaveText('Market');
     await expect(tagFor('Executing a passing pigeon...')).toHaveText('Combat');
   });
 
