@@ -397,7 +397,8 @@ test.describe('Progress Quest II terminal dashboard', () => {
     const weapon = page.locator('.tooltip-trigger', { hasText: 'Venomed Shortsword' });
     await weapon.focus();
     const tooltip = page.getByRole('tooltip');
-    await expect(tooltip).toContainText('Attack rating: 9');
+    await expect(tooltip).toContainText('Generation quality: 9 (Shortsword 5 + Venomed +4)');
+    await expect(tooltip).toContainText('Combat contribution: none');
     expect(await tooltip.evaluate((element) => element.parentElement === document.body)).toBe(true);
     const tooltipBox = await tooltip.boundingBox();
     expect(tooltipBox).not.toBeNull();
@@ -405,11 +406,11 @@ test.describe('Progress Quest II terminal dashboard', () => {
     expect(tooltipBox?.y).toBeGreaterThanOrEqual(0);
     expect(tooltipBox?.x + (tooltipBox?.width ?? 0)).toBeLessThanOrEqual(1280);
     await page.locator('.tooltip-trigger', { hasText: 'Golden Orb of Fortune' }).focus();
-    await expect(page.getByRole('tooltip')).toContainText('Quantity carried: 3');
+    await expect(page.getByRole('tooltip')).toContainText('Encumbrance: +3 cubits');
     await page.locator('.tooltip-trigger', { hasText: 'Rabbit Punch' }).focus();
-    await expect(page.getByRole('tooltip')).toContainText('Spell level: 2');
+    await expect(page.getByRole('tooltip')).toContainText('Spell rank: 2');
     await page.locator('.inventory-card').getByRole('button', { name: '42 GP' }).focus();
-    await expect(page.getByRole('tooltip')).toContainText('Gold is weightless currency');
+    await expect(page.getByRole('tooltip')).toContainText('Encumbrance: +0 cubits');
   });
 
   test('keeps a tooltip open under the pointer and dismisses it with Escape', async ({ page }) => {

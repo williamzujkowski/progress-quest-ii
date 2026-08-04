@@ -21,21 +21,22 @@ const withoutIdentityToken = (description: string, ...tokens: string[]): string 
   tokens.reduce((result, token) => result.replaceAll(token, '<identity>'), description);
 
 describe('item tooltip details', () => {
-  it('reports equipment slot power without inventing combat damage', () => {
+  it('reports generated equipment quality without inventing combat damage', () => {
     const details = describeEquipment('Venomed Shortsword', 'Weapon');
 
     expect(details.description).toContain('Venomed');
     expect(details.description).toContain('Shortsword');
-    expect(details.effect).toContain('Attack rating: 9');
-    expect(details.effect).toContain('damage and mitigation remain abstract');
+    expect(details.effect).toBe(
+      'Generation quality: 9 (Shortsword 5 + Venomed +4). Combat contribution: none; classic encounter time ignores equipment.',
+    );
   });
 
-  it('keeps an explicit equipment rating mark in the item story', () => {
+  it('keeps an explicit equipment quality mark in the item story', () => {
     const details = describeEquipment('-3 Burlap', 'Hauberk');
 
     expect(details.description).toContain('-3');
     expect(details.description).toContain('Burlap');
-    expect(details.effect).toContain('Defense rating: 0');
+    expect(details.effect).toContain('Generation quality: 0');
   });
 
   it('includes every canonical modifier in an accepted equipment name', () => {
@@ -43,7 +44,15 @@ describe('item tooltip details', () => {
 
     expect(details.description).toContain('Venomed');
     expect(details.description).toContain('Vicious');
-    expect(details.effect).toContain('Attack rating: 7');
+    expect(details.effect).toContain('Generation quality: 7');
+  });
+
+  it('preserves canonical modifier order in an equipment micro-story', () => {
+    const originalOrder = describeEquipment('Venomed Vicious Stick', 'Weapon');
+    const alternateOrder = describeEquipment('Vicious Venomed Stick', 'Weapon');
+
+    expect(originalOrder.description).toBe(alternateOrder.description);
+    expect(originalOrder.effect).toBe(alternateOrder.effect);
   });
 
   it('keeps the equipped slot meaningful for the same armor', () => {
@@ -64,11 +73,11 @@ describe('item tooltip details', () => {
     ['unsafe integer', '9'.repeat(194)],
     ['oversized zero', '0'.repeat(194)],
     ['leading zeros', `${'0'.repeat(193)}1`],
-  ])('does not treat an imported %s prefix as an equipment rating', (_case, mark) => {
+  ])('does not treat an imported %s prefix as an equipment quality mark', (_case, mark) => {
     const details = describeEquipment(`${mark} Stick`, 'Weapon');
 
     expect([...details.description].length).toBeLessThanOrEqual(220);
-    expect(details.effect).toContain('Attack rating: 0.');
+    expect(details.effect).toContain('Generation quality: 0 (Stick 0).');
     expect(details.effect).not.toMatch(/Infinity|NaN|e\+/);
   });
 
@@ -153,7 +162,9 @@ describe('item tooltip details', () => {
 
     expect(details.description).toContain('customary envelope');
     expect(describeSpell('Rabbit Punch', 7).description).toBe(details.description);
-    expect(details.effect).toBe('Spell level: 2. The simulation does not expose a spell-specific combat effect.');
+    expect(details.effect).toBe(
+      'Spell rank: 2. Combat contribution: none; classic encounter time ignores spells.',
+    );
   });
 
   it('gives every canonical spell a distinct bounded description', () => {
@@ -174,8 +185,9 @@ describe('item tooltip details', () => {
     expect(details.description).toContain('Orb');
     expect(details.description).toContain('Fortune');
     expect(details.description.length).toBeLessThanOrEqual(220);
-    expect(details.effect).toContain('Quantity carried: 3');
-    expect(details.effect).toContain('no direct combat effect');
+    expect(details.effect).toBe(
+      'Quantity: 3. Encumbrance: +3 cubits. Combat contribution: none; loot is sold when the pack fills.',
+    );
   });
 
   it('reports Gold as weightless currency', () => {
@@ -183,7 +195,7 @@ describe('item tooltip details', () => {
 
     expect(details.description).toContain('Gold');
     expect(details.effect).toBe(
-      'Quantity carried: 42. Gold is weightless currency; it does not contribute to encumbrance or combat.',
+      'Quantity: 42. Encumbrance: +0 cubits. Funds equipment purchases; combat contribution: none.',
     );
   });
 
