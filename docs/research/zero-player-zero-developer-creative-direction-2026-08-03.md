@@ -93,7 +93,7 @@ human-authored Progress Quest baseline, and link provenance/licensing details.
 | 3 | **Prototype a Department of Autonomous Progress chronicle.** Derive location, act/calendar classification, opponent dossier, journey counts, and notices from existing events only. | Gives the zero-player run a legible story while preserving exact mechanics. | Existing [#144](https://github.com/williamzujkowski/progress-quest-ii/issues/144). |
 | 4 | **Use milestone-gated observer disclosure.** The chronicle begins as one status line; market, guild, raid, and cross-shard classifications appear only after relevant canonical events. Never hide core stats or controls. | Applies Universal Paperclips' strongest UI lesson without turning Progress Quest into an incremental-game clone. | Add to #144's prototype, not a parallel feature. |
 | 5 | **Create the Guild of Zero as empty-world texture.** Show 0/0 raid attendance, full quorum, one automated officer, and a roster whose only hero is marked AFK while progressing. Keep it obviously fictional and local. | Authentic MMO social form makes the absence of people more vivid than generic AI jokes. | Explore inside #144; delete if it competes with real dashboard information. |
-| 6 | **Curate feedback into the Bureau of Complaints.** Transform resolved complaint themes into original patch notes, guild regulations, loading notices, or incident reports without automatically ingesting or republishing user text. | Lets the community leave a mark while making the institution—not the reporter—the target of the joke. | [#148](https://github.com/williamzujkowski/progress-quest-ii/issues/148). |
+| 6 | **Curate playerbase-wide gripes into the Bureau of Complaints.** Transform resolved, recurring community themes into original patch notes, guild regulations, loading notices, or incident reports without automatically ingesting or republishing user text. Individual complaints never become comedy material. | Lets the community leave a mark while making the institution—not any player—the target of the joke. | [#148](https://github.com/williamzujkowski/progress-quest-ii/issues/148). |
 | 7 | **Treat releases as automated change-control theatre.** PWA update notices and release notes can mention a change advisory board of zero, automatic approval, rollback seniority, and a machine-filed postmortem while retaining exact version/commit facts. | Makes AI authorship visible at a natural moment and improves deployed-build confidence. | [#46](https://github.com/williamzujkowski/progress-quest-ii/issues/46) and editorial rules in #146. |
 | 8 | **Resolve the numeral collision as part of the premise.** Prefer *Progress Quest III: The Search for Progress Quest II* or another approved title, then pair it with the numeral-independent master tagline. | The missing sequel becomes evidence of autonomous version management instead of an embarrassing correction. | [#140](https://github.com/williamzujkowski/progress-quest-ii/issues/140). |
 | 9 | **Build deterministic callbacks on stable event identities, not more random jokes.** A repeated market trip, quest completion, or named NPC encounter can acquire one new administrative classification based on saved/derivable counts, while assistive technology announces only the new event. | One domain improvement supports continuity, accessibility, and comedy without a second event system. | [#48](https://github.com/williamzujkowski/progress-quest-ii/issues/48) owns event identity; #144 owns any chronicle callback prototype. |
@@ -130,37 +130,46 @@ creator, the human project owner, reviewers, dependency authors, or other
 contributors. The funny version is stronger because the factual disclosure is
 nearby and unembarrassed.
 
-## Curating feedback into the game
+## Curating playerbase-wide gripes into the game
 
-User complaints can be excellent evidence and comic raw material, but they are
-not a content feed. **Do not automatically ingest, scrape, summarize, transform,
-or publish issue, discussion, email, diagnostic, or security-report text.** There
-should be no runtime GitHub connection and no unattended pipeline from feedback
-to game copy.
+Recurring playerbase grievances can be excellent product evidence and comic raw
+material, but individual complaints are not. This lane is only for broad themes
+independently observed across multiple players, reports, or periods. A one-off
+report remains ordinary backlog input even when it is public, memorable, or easy
+to joke about.
+
+Feedback is not a content feed. **Do not automatically ingest, scrape, summarize,
+transform, count, or publish issue, discussion, email, diagnostic, or
+security-report text.** There should be no runtime GitHub connection and no
+unattended pipeline from feedback to game copy.
 
 The safe workflow is deliberately manual:
 
-1. A human selects a resolved, public *theme* that would improve the product.
-2. Strip the reporter's wording, identity, circumstances, and unnecessary detail;
-   retain only the underlying product fact.
+1. A human verifies a resolved, recurring *playerbase theme* from multiple
+   independent observations over time. Duplicate reports, coordinated campaigns,
+   and raw reaction counts do not establish a community-wide grievance.
+2. Strip every player's wording, identity, circumstances, and unnecessary detail;
+   retain only the aggregate product fact.
 3. Write new expression in the project's editorial registers. The automated
-   institution is the target; the reporter is not.
+   institution is the target; no player or subgroup is.
 4. Review the line for truth, privacy, moderation, originality, accessibility,
    and whether the underlying complaint was actually resolved.
 5. Land it through an ordinary reviewed content change. Remove it if it needs the
-   reporter's context to be funny.
+   player context or an individual incident to be funny.
 
 ### Safe, curated forms
 
-- **Patch notes:** transform a fixed overflow complaint into an institutional
-  statement about the page's continental ambitions, followed by the literal fix.
+- **Patch notes:** transform a recurring, fixed overflow grievance into an
+  institutional statement about the page's continental ambitions, followed by
+  the literal fix.
 - **Guild regulations:** turn a recurring usability theme into a fictional rule
-  imposed on the Guild of Zero; never identify or caricature the requester.
+  imposed on the Guild of Zero; never identify or caricature any requester.
 - **Loading/update notices:** use a broad category such as delayed deployment or
   unavailable audio, not a recognizable complaint or quotation.
-- **Incident reports:** after resolution, describe what the machine did, the real
-  user impact, and the correction. The absurdity belongs in the administrative
-  classification, not the technical facts.
+- **Incident reports:** after a recurring class of incidents is resolved, describe
+  what the machine did, the aggregate user impact, and the correction. The
+  absurdity belongs in the administrative classification, not the technical
+  facts or any person's experience.
 
 ### Privacy, moderation, security, and originality guardrails
 
