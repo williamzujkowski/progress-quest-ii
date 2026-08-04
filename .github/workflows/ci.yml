@@ -33,29 +33,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify Nexus installation
-        run: npm run agents:verify
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npx tsc -b
-
-      - name: Unit and contract tests
-        run: npm test
-
-      - name: Build
-        run: npm run build
-
-      - name: Dependency audit
-        run: npm audit --audit-level=high
-
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
-      - name: End-to-end tests
-        run: npm run test:e2e
-
-      - name: PWA production tests
-        run: npm run test:pwa
+      - name: Quality gate
+        run: npm run quality
