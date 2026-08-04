@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { LogFeed } from '../../components/LogFeed';
 import { useGameStore } from '../../state/gameStore';
@@ -12,13 +12,74 @@ afterEach(() => {
 });
 
 describe('Activity Log accessibility', () => {
-  it('discloses simulated chatter separately from authoritative activity', () => {
+  it('defaults to automated Chatter while retaining a distinct authoritative Activity panel', () => {
     render(<LogFeed />);
 
-    expect(screen.getByRole('heading', { name: 'Console' })).not.toBeNull();
-    const disclosure = screen.getByText(/Automated chatter · zero online · messages unsent/).closest('details');
-    expect(disclosure?.hasAttribute('open')).toBe(false);
-    expect(screen.getByRole('region', { name: 'Activity Event Log' })).not.toBeNull();
+    expect(screen.getByRole('heading', { name: 'World Console' })).not.toBeNull();
+    expect(screen.getByRole('tablist', { name: 'World Console views' })).not.toBeNull();
+    const chatterTab = screen.getByRole('tab', { name: 'Chatter' });
+    const activityTab = screen.getByRole('tab', { name: 'Activity' });
+    expect(chatterTab.getAttribute('aria-selected')).toBe('true');
+    expect(chatterTab.getAttribute('tabindex')).toBe('0');
+    expect(activityTab.getAttribute('aria-selected')).toBe('false');
+    expect(activityTab.getAttribute('tabindex')).toBe('-1');
+    expect(document.getElementById(chatterTab.getAttribute('aria-describedby') ?? '')?.textContent).toContain('Fictional');
+    expect(document.getElementById(activityTab.getAttribute('aria-describedby') ?? '')?.textContent).toContain('Authoritative');
+    expect(screen.getByRole('tabpanel', { name: 'Chatter' }).hasAttribute('hidden')).toBe(false);
+    const activityPanel = document.getElementById(activityTab.getAttribute('aria-controls') ?? '');
+    expect(activityPanel?.getAttribute('aria-labelledby')).toBe(activityTab.id);
+    expect(activityPanel?.hasAttribute('hidden')).toBe(true);
+    expect(screen.getByText('Fictional · automated · zero online')).not.toBeNull();
+    expect(screen.getByRole('region', { name: 'Activity Event Log', hidden: true })).not.toBeNull();
+  });
+
+  it('uses automatic arrow, Home, and End tab activation with one tab stop', () => {
+    render(<LogFeed />);
+    const chatterTab = screen.getByRole('tab', { name: 'Chatter' });
+    const activityTab = screen.getByRole('tab', { name: 'Activity' });
+    chatterTab.focus();
+
+    fireEvent.keyDown(chatterTab, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(activityTab);
+    expect(activityTab.getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tabpanel', { name: 'Activity' })).not.toBeNull();
+
+    fireEvent.keyDown(activityTab, { key: 'Home' });
+    expect(document.activeElement).toBe(chatterTab);
+    expect(chatterTab.getAttribute('aria-selected')).toBe('true');
+
+    fireEvent.keyDown(chatterTab, { key: 'End' });
+    expect(document.activeElement).toBe(activityTab);
+    expect(activityTab.getAttribute('aria-selected')).toBe('true');
+
+    fireEvent.keyDown(activityTab, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(chatterTab);
+    expect(chatterTab.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('returns to Chatter after a fresh session and repairs only focus owned by Activity', () => {
+    render(<><button type="button">Outside console</button><LogFeed /></>);
+    const chatterTab = screen.getByRole('tab', { name: 'Chatter' });
+    const activityTab = screen.getByRole('tab', { name: 'Activity' });
+    fireEvent.click(activityTab);
+    activityTab.focus();
+
+    act(() => useGameStore.getState().startSession({ source: 'creation', name: 'Fresh Tab Oracle', race: 'Double Hobbit', klass: 'Ur-Paladin', seed: 'fresh-tab' }));
+    expect(chatterTab.getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).toBe(chatterTab);
+
+    fireEvent.click(activityTab);
+    const activity = screen.getByRole('region', { name: 'Activity Event Log' });
+    activity.focus();
+    act(() => useGameStore.getState().startSession({ source: 'creation', name: 'Newer Tab Oracle', race: 'Double Hobbit', klass: 'Ur-Paladin', seed: 'newer-tab' }));
+    expect(document.activeElement).toBe(chatterTab);
+
+    fireEvent.click(activityTab);
+    const outside = screen.getByRole('button', { name: 'Outside console' });
+    outside.focus();
+    act(() => useGameStore.getState().startSession({ source: 'creation', name: 'External Focus Oracle', race: 'Double Hobbit', klass: 'Ur-Paladin', seed: 'external-focus' }));
+    expect(chatterTab.getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).toBe(outside);
   });
 
   it('presents compact derived world context without turning it into live activity', () => {
@@ -46,7 +107,7 @@ describe('Activity Log accessibility', () => {
     expect(context.textContent).toContain('Act 2');
     expect(context.textContent).toContain('1:01:11 adventure elapsed');
     expect(context.getAttribute('aria-live')).toBeNull();
-    expect(screen.getByText('Fictional world · derived from canonical activity')).not.toBeNull();
+    expect(screen.getByText('Fictional world · activity-derived')).not.toBeNull();
     expect(context.querySelector('.world-context-line > span > .sr-only')?.textContent).toContain('1 hour, 1 minute, 11 seconds adventure elapsed');
     expect(context.querySelector('strong .sr-only')?.textContent).toContain('Look:');
     expect(screen.getByText('Arrived under reviewed paperwork.')).not.toBeNull();
@@ -64,6 +125,7 @@ describe('Activity Log accessibility', () => {
     }));
     useGameStore.setState({ isPaused: true, log: initialLog, nextActivityId: 50 });
     render(<LogFeed />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
 
     const feed = screen.getByRole('region', { name: 'Activity Event Log' });
     const status = screen.getByRole('status', { name: 'Latest activity' });
@@ -83,6 +145,39 @@ describe('Activity Log accessibility', () => {
     expect(screen.getByText('Event 25').closest('.log-entry')).toBe(retainedRow);
     expect(screen.getAllByText(/^Event \d+$/).filter((element) => element.closest('.log-entry'))).toHaveLength(50);
     expect(status.textContent).toBe('Event 51');
+  });
+
+  it('keeps canonical announcements and a scrolled-back Activity position while Chatter is selected', () => {
+    const initialLog = Array.from({ length: 10 }, (_, index) => ({ id: 9 - index, message: `Event ${10 - index}` }));
+    useGameStore.setState({ isPaused: true, log: initialLog, nextActivityId: 10 });
+    render(<LogFeed />);
+    const activity = screen.getByRole('region', { name: 'Activity Event Log', hidden: true });
+    Object.defineProperties(activity, {
+      scrollHeight: { configurable: true, value: 300 },
+      clientHeight: { configurable: true, value: 100 },
+      scrollTop: { configurable: true, value: 0, writable: true },
+    });
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
+    expect(activity.scrollTop).toBe(300);
+    activity.scrollTop = 40;
+    fireEvent.scroll(activity);
+    fireEvent.click(screen.getByRole('tab', { name: 'Chatter' }));
+    screen.getByRole('tab', { name: 'Chatter' }).focus();
+    activity.scrollTop = 200;
+    fireEvent.scroll(activity);
+    activity.scrollTop = 40;
+
+    act(() => useGameStore.setState({ log: [{ id: 10, message: 'Event 11' }, ...initialLog], nextActivityId: 11 }));
+
+    expect(screen.getByRole('status', { name: 'Latest activity' }).textContent).toBe('Event 11');
+    expect(document.activeElement).toBe(screen.getByRole('tab', { name: 'Chatter' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
+    expect(activity.scrollTop).toBe(40);
+    const jump = screen.getByRole('button', { name: 'Jump to latest activity' });
+    fireEvent.click(jump);
+    expect(activity.scrollTop).toBe(300);
+    expect(document.activeElement).toBe(activity);
   });
 
   it('announces Act zero as the Prologue', () => {

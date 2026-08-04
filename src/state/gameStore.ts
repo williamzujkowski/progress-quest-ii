@@ -20,6 +20,7 @@ export interface GameStore {
   worldNotices: WorldNotice[];
   socialEntries: SocialEntry[];
   nextActivityId: number;
+  sessionGeneration: number;
   isPaused: boolean;
   rng: RandomGenerator;
   progression: ProgressionState;
@@ -86,6 +87,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     worldNotices: [],
     socialEntries: [],
     nextActivityId: 1,
+    sessionGeneration: 0,
     isPaused: false,
     rng: initialRng,
     progression: createProgression(initialChar.Traits.Level),
@@ -94,7 +96,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
 
     startSession: (request: StartSessionRequest) => {
-      const { nextActivityId } = get();
+      const { nextActivityId, sessionGeneration } = get();
       let character: CharacterSheet;
       let rng: RandomGenerator;
       let message: string;
@@ -117,6 +119,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         worldNotices: [],
         socialEntries: [],
         nextActivityId: nextActivityId + 1,
+        sessionGeneration: sessionGeneration + 1,
         isPaused: false,
         progression: createProgression(character.Traits.Level),
         pendingElapsedMs: 0,
@@ -124,7 +127,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     },
 
     restoreSession: (session) => {
-      const { nextActivityId } = get();
+      const { nextActivityId, sessionGeneration } = get();
       const rng = new RandomGenerator('restored-session');
       rng.setState([...session.rngState]);
       set({
@@ -136,6 +139,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         worldNotices: [],
         socialEntries: [],
         nextActivityId: nextActivityId + session.log.length,
+        sessionGeneration: sessionGeneration + 1,
         pendingElapsedMs: session.pendingElapsedMs,
       });
     },

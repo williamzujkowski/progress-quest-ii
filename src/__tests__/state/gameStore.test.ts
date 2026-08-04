@@ -176,6 +176,7 @@ describe('Game Store State Machine', () => {
   it('loads a character through a complete fresh game session', () => {
     const loaded = createNewCharacter('ImportedHero', 'Half Halfling', 'Ur-Paladin', new RandomGenerator('saved-character'));
     const previousRng = useGameStore.getState().rng;
+    const previousSessionGeneration = useGameStore.getState().sessionGeneration;
     useGameStore.getState().togglePause();
 
     useGameStore.getState().startSession({ source: 'import', character: loaded });
@@ -184,6 +185,7 @@ describe('Game Store State Machine', () => {
     expect(session.character).toEqual(loaded);
     expect(session.character).not.toBe(loaded);
     expect(session.rng).not.toBe(previousRng);
+    expect(session.sessionGeneration).toBe(previousSessionGeneration + 1);
     expect(session.isPaused).toBe(false);
     expect(session.log.map(({ message }) => message)).toEqual(['Loaded character ImportedHero from save data.']);
     expect(session.socialEntries).toEqual([]);
@@ -203,6 +205,7 @@ describe('Game Store State Machine', () => {
     rng.random(100);
     const rngState = rng.getState();
     const progression = { experience: { currentSeconds: 4, maxSeconds: 9 }, completedTasks: 3, elapsedSeconds: 12 };
+    const previousSessionGeneration = useGameStore.getState().sessionGeneration;
 
     useGameStore.getState().restoreSession({ character, rngState, progression, pendingElapsedMs: 37, isPaused: true, log: ['Restored event'] });
     const restored = useGameStore.getState();
@@ -210,6 +213,7 @@ describe('Game Store State Machine', () => {
     expect(restored.character).toEqual(character);
     expect(restored.character).not.toBe(character);
     expect(restored.rng.getState()).toEqual(rngState);
+    expect(restored.sessionGeneration).toBe(previousSessionGeneration + 1);
     expect(restored.progression).toEqual(progression);
     expect(restored.pendingElapsedMs).toBe(37);
     expect(restored.isPaused).toBe(true);

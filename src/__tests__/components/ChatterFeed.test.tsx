@@ -87,7 +87,33 @@ describe('simulated chatter accessibility', () => {
     const jump = screen.getByRole('button', { name: 'Jump to latest chatter' });
     fireEvent.click(jump);
     expect(messages.scrollTop).toBe(300);
+    expect(document.activeElement).toBe(messages);
     expect(screen.queryByRole('button', { name: 'Jump to latest chatter' })).toBeNull();
+  });
+
+  it('auto-follows without stealing focus and ignores hidden scroll geometry', () => {
+    useGameStore.setState({ socialEntries: [entry(1, 'guild')] });
+    const { rerender } = render(<><button type="button">Outside chatter</button><ChatterFeed /></>);
+    const outside = screen.getByRole('button', { name: 'Outside chatter' });
+    const messages = screen.getByRole('region', { name: 'Fictional chatter messages' });
+    Object.defineProperties(messages, {
+      scrollHeight: { configurable: true, value: 300 },
+      clientHeight: { configurable: true, value: 100 },
+      scrollTop: { configurable: true, value: 40, writable: true },
+    });
+    fireEvent.scroll(messages);
+    rerender(<><button type="button">Outside chatter</button><ChatterFeed active={false} /></>);
+    messages.scrollTop = 200;
+    fireEvent.scroll(messages);
+    messages.scrollTop = 40;
+    outside.focus();
+
+    act(() => useGameStore.setState({ socialEntries: [entry(2, 'world'), entry(1, 'guild')] }));
+    rerender(<><button type="button">Outside chatter</button><ChatterFeed active /></>);
+
+    expect(messages.scrollTop).toBe(40);
+    expect(screen.getByRole('button', { name: 'Jump to latest chatter' })).not.toBeNull();
+    expect(document.activeElement).toBe(outside);
   });
 
   it('follows the latest retained row when its hidden container becomes active', () => {

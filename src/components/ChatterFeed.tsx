@@ -21,7 +21,10 @@ export const ChatterFeed: React.FC<{ readonly active?: boolean }> = ({ active = 
 
   const jumpToLatest = () => {
     const messages = messagesRef.current;
-    if (messages) messages.scrollTop = messages.scrollHeight;
+    if (messages) {
+      messages.scrollTop = messages.scrollHeight;
+      messages.focus();
+    }
     followingLatest.current = true;
     setShowJump(false);
   };
@@ -33,7 +36,10 @@ export const ChatterFeed: React.FC<{ readonly active?: boolean }> = ({ active = 
       return;
     }
     if (!active || muted) return;
-    if (followingLatest.current) jumpToLatest();
+    if (followingLatest.current) {
+      if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+      setShowJump(false);
+    }
     else if (latestVisibleId) setShowJump(true);
   }, [active, channel, latestVisibleId, muted]);
 
@@ -77,6 +83,7 @@ export const ChatterFeed: React.FC<{ readonly active?: boolean }> = ({ active = 
         aria-describedby={disclosureId}
         aria-live="off"
         onScroll={(event) => {
+          if (!active) return;
           const messages = event.currentTarget;
           followingLatest.current = messages.scrollHeight - messages.scrollTop - messages.clientHeight <= 2;
           setShowJump(!followingLatest.current);
