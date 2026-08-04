@@ -1,5 +1,6 @@
 import { ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, WEAPONS } from './traits';
 import { analyzeItemMechanics } from '../engine/itemMechanics';
+import { formatGameNumber } from '../engine/text';
 import type { EquipSlot } from '../engine/types';
 
 export interface ItemDetails {
@@ -14,6 +15,7 @@ const stableIndex = (key: string, length: number): number => {
 };
 
 const choose = (options: readonly string[], key: string): string => options[stableIndex(key, options.length)];
+const signedGameNumber = (value: number): string => `${value >= 0 ? '+' : ''}${formatGameNumber(value)}`;
 
 const boundedLabel = (name: string, fallback: string, limit = 60): string => {
   const characters = Array.from(name);
@@ -177,22 +179,21 @@ export function describeEquipment(name: string, slot: EquipSlot): ItemDetails {
   const base = basePart?.name ?? boundedLabel(name, 'unnamed equipment');
   const modifier = modifiers.map(({ name: modifierName }) => modifierName).join(' and ');
   const modifierTotal = modifiers.reduce((sum, part) => sum + part.value, 0);
-  const explicitLabel = mark?.label;
+  const explicitLabel = mark ? signedGameNumber(mark.value) : undefined;
   const opening = equipmentOpening(base, slot);
   const story = modifier
     ? `${opening} ${equipmentAssessment(modifier, modifierTotal, slot, explicitLabel)}`
     : `${opening} It carries ${explicitLabel ? `a ${explicitLabel} assessor’s mark and no` : 'no'} named modifier, which procurement calls restraint.`;
   const description = boundEquipmentStory(story, base, modifier, slot, explicitLabel);
-  const signed = (value: number): string => `${value >= 0 ? '+' : ''}${value}`;
   const qualityParts = [
-    basePart ? `${basePart.name} ${basePart.value}` : 'uncatalogued base 0',
-    ...modifiers.map((part) => `${part.name} ${signed(part.value)}`),
-    ...(mark ? [`mark ${mark.label}`] : []),
+    basePart ? `${basePart.name} ${formatGameNumber(basePart.value)}` : 'uncatalogued base 0',
+    ...modifiers.map((part) => `${part.name} ${signedGameNumber(part.value)}`),
+    ...(mark ? [`mark ${signedGameNumber(mark.value)}`] : []),
   ];
 
   return {
     description,
-    effect: `Generation quality: ${total} (${qualityParts.join(' + ')}). Combat contribution: ${mechanics.combatContribution}; classic encounter time ignores equipment.`,
+    effect: `Generation quality: ${formatGameNumber(total)} (${qualityParts.join(' + ')}). Combat contribution: ${mechanics.combatContribution}; classic encounter time ignores equipment.`,
   };
 }
 
@@ -259,7 +260,7 @@ export function describeSpell(name: string, level: number): ItemDetails {
   const mechanics = analyzeItemMechanics({ kind: 'spell', level });
   return {
     description: `${premise} ${choose(SPELL_CLOSERS, `${name}:closer`)}`,
-    effect: `Spell rank: ${mechanics.rank}. Combat contribution: ${mechanics.combatContribution}; classic encounter time ignores spells.`,
+    effect: `Spell rank: ${formatGameNumber(mechanics.rank)}. Combat contribution: ${mechanics.combatContribution}; classic encounter time ignores spells.`,
   };
 }
 
@@ -398,7 +399,7 @@ export function describeInventoryItem(name: string, quantity: number): ItemDetai
   return {
     description,
     effect: name === 'Gold'
-      ? `Quantity: ${mechanics.quantity}. Encumbrance: +${mechanics.encumbranceCubits} cubits. Funds equipment purchases; combat contribution: ${mechanics.combatContribution}.`
-      : `Quantity: ${mechanics.quantity}. Encumbrance: +${mechanics.encumbranceCubits} cubits. Combat contribution: ${mechanics.combatContribution}; loot is sold when the pack fills.`,
+      ? `Quantity: ${formatGameNumber(mechanics.quantity)}. Encumbrance: +${formatGameNumber(mechanics.encumbranceCubits)} cubits. Funds equipment purchases; combat contribution: ${mechanics.combatContribution}.`
+      : `Quantity: ${formatGameNumber(mechanics.quantity)}. Encumbrance: +${formatGameNumber(mechanics.encumbranceCubits)} cubits. Combat contribution: ${mechanics.combatContribution}; loot is sold when the pack fills.`,
   };
 }

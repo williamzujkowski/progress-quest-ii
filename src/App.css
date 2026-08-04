@@ -276,6 +276,7 @@
 .tooltip-trigger {
   position: relative;
   display: inline-flex;
+  column-gap: 0.25em;
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
@@ -401,6 +402,10 @@
   .card-header { align-items: flex-start; flex-wrap: wrap; }
   .progress-label { align-items: flex-start; }
   .modal-content { width: calc(100% - 1rem); padding: 1rem; }
+}
+
+@media (max-width: 360px) {
+  .hero-stat { align-items: flex-start; flex-direction: column; gap: 0; }
 }
 
 @media (min-width: 1025px) {

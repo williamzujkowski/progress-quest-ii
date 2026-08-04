@@ -1,0 +1,40 @@
+import { describe, expect, it } from 'vitest';
+import { describeGameNumber, formatGameNumber } from '../../engine/text';
+
+describe('large game-number presentation', () => {
+  it.each([
+    [0, '0'],
+    [0.004, '4.00e-3'],
+    [-0.004, '-4.00e-3'],
+    [Number.MIN_VALUE, '5.00e-324'],
+    [0.5, '0.5'],
+    [1_234.5, '1234.5'],
+    [999_999, '999999'],
+    [999_999.999_999_999_9, '1.00e6'],
+    [1_000_000, '1.00e6'],
+    [1_000_001, '1.00e6'],
+    [1_234_567, '1.23e6'],
+    [-1_000_000, '-1.00e6'],
+    [1_000_000_000, '1.00e9'],
+    [1_000_000_000_000, '1.00e12'],
+  ])('formats %s without changing ordinary-scale values', (value, expected) => {
+    expect(formatGameNumber(value)).toBe(expected);
+  });
+
+  it.each([
+    [0.004, '0.004'],
+    [-0.004, '-0.004'],
+    [Number.MIN_VALUE, '5.00 times 10 to the negative 324'],
+    [1_000_000, '1 million'],
+    [999_999.999_999_999_9, '1 million'],
+    [1_234_567, '1.23 million'],
+    [1_000_000_000_000, '1 trillion'],
+  ])('provides an understandable spoken label for %s', (value, expected) => {
+    expect(describeGameNumber(value)).toBe(expected);
+  });
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])('fails safely for %s', (value) => {
+    expect(formatGameNumber(value)).toBe('—');
+    expect(describeGameNumber(value)).toBe('unavailable');
+  });
+});

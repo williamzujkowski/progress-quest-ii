@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_PERSISTED_DESCRIPTION_LENGTH } from '../../data/limits';
 import type { GameTransitionEvent } from '../../engine/transition';
-import { describeGameEvent, soundCueForGameEvent } from '../../state/gameEventAdapter';
+import { describeAct, describeGameEvent, soundCueForGameEvent } from '../../state/gameEventAdapter';
 
 describe('game event presentation adapter', () => {
+  it('keeps familiar Act labels and compacts absurd ones', () => {
+    expect(describeAct(0)).toBe('Prologue');
+    expect(describeAct(42)).toBe('Act 42');
+    expect(describeAct(1_000_000)).toBe('Act 1.00e6');
+  });
+
   it.each([
     [{ type: 'level_gained', level: 2 }, 'Gained a Level', 'level_up'],
     [{ type: 'stat_gained', stat: 'HP Max', amount: 6 }, 'Gained 6 HP Maxes', undefined],

@@ -3,7 +3,7 @@ import React from 'react';
 import { calculateEncumbranceMax } from '../engine/math';
 import { calculateEncumbrance } from '../engine/sim';
 import { useGameStore } from '../state/gameStore';
-import { describeAct } from '../state/gameEventAdapter';
+import { ActLabel, GameNumber } from './GameNumber';
 
 const PRIME_STATS = ['STR', 'CON', 'DEX', 'INT', 'WIS', 'CHA'] as const;
 
@@ -18,10 +18,10 @@ export const HeroBanner: React.FC = () => {
       <div className="hero-identity">
         <div className="hero-name">
           <span>{character.Traits.Name}</span>
-          <span className="badge" title="Character Level">Lvl {character.Traits.Level}</span>
+          <span className="badge" title="Character Level">Lvl{' '}<GameNumber value={character.Traits.Level} /></span>
         </div>
         <div className="hero-sub">
-          {character.Traits.Race} {character.Traits.Class} • {describeAct(character.Plot.act)}
+          {character.Traits.Race} {character.Traits.Class} • <ActLabel act={character.Plot.act} />
         </div>
       </div>
 
@@ -31,7 +31,7 @@ export const HeroBanner: React.FC = () => {
             <span className="inline-icon meter-health">
               <Heart size={12} /> HP Max
             </span>
-            <strong>{character.Stats['HP Max']}</strong>
+            <strong><GameNumber value={character.Stats['HP Max']} /></strong>
           </div>
         </div>
 
@@ -40,7 +40,7 @@ export const HeroBanner: React.FC = () => {
             <span className="inline-icon meter-magic">
               <Sparkles size={12} /> MP Max
             </span>
-            <strong>{character.Stats['MP Max']}</strong>
+            <strong><GameNumber value={character.Stats['MP Max']} /></strong>
           </div>
         </div>
       </div>
@@ -49,7 +49,7 @@ export const HeroBanner: React.FC = () => {
         {PRIME_STATS.map((stat) => (
           <div className="hero-stat" key={stat}>
             <span>{stat}</span>
-            <strong>{character.Stats[stat]}</strong>
+            <strong><GameNumber value={character.Stats[stat]} /></strong>
           </div>
         ))}
       </div>
@@ -57,12 +57,12 @@ export const HeroBanner: React.FC = () => {
       <div className="hero-stats-quick">
         <div className="stat-pill gold-pill" title="Gold GP Balance">
           <Coins size={16} />
-          <span>{character.Gold} GP</span>
+          <span><GameNumber value={character.Gold} />{' '}GP</span>
         </div>
 
         <div className="stat-pill" title="Inventory Encumbrance Capacity">
           <Package size={16} />
-          <span>{encum} / {maxEncum}</span>
+          <span><GameNumber value={encum} /> / <GameNumber value={maxEncum} /></span>
         </div>
       </div>
     </div>

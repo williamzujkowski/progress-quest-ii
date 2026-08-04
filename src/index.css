@@ -231,6 +231,7 @@ input[type='radio'] {
 .badge {
   display: inline-flex;
   align-items: center;
+  column-gap: 0.25em;
   border-radius: 999px;
   border: 1px solid color-mix(in oklch, currentColor 40%, var(--panel-border));
   background: var(--surface-subtle);

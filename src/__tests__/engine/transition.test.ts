@@ -293,6 +293,17 @@ describe('advanceGame', () => {
     expect(characterSheetSchema.safeParse(actThree.state.character).success).toBe(true);
   });
 
+  it('retires giant decimal Act markers for scientific notation', () => {
+    const character = createNewCharacter('Exponent Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    character.Plot = { act: 999_999, currentProgress: 1, maxProgress: 1 };
+    character.Task = { description: 'The decimals grow restless...', durationMs: 1000, elapsedMs: 0, type: 'cinematic' };
+    character.PendingTasks = [{ description: 'Loading', durationMs: 1000, elapsedMs: 0, type: 'act_marker' }];
+
+    const result = advanceGame(stateFor(character), 1000, new RandomGenerator('scientific-act-marker'));
+
+    expect(result.state.character.Task.description).toBe('Loading Act 1.00e6...');
+  });
+
   it('advances an incomplete task without mutating the previous state', () => {
     const character = createNewCharacter('Seam Tester', 'Dung Elf', 'Vermineer', 801);
     const state = {

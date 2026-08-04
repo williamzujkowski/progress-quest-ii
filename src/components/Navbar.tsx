@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { soundFX } from '../state/audio';
 import { useGameStore } from '../state/gameStore';
 import { THEME_OPTIONS, type ThemeId } from '../theme';
+import { GameNumber } from './GameNumber';
 
 interface NavbarProps {
   theme: ThemeId;
@@ -40,7 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({ theme, themeStatus, onThemeChang
           <p className="brand-tagline">The sequel nobody had to play.</p>
         </div>
         <span className="badge" title="Character Level">
-          Lvl {character.Traits.Level}
+          Lvl{' '}<GameNumber value={character.Traits.Level} />
         </span>
       </div>
 
