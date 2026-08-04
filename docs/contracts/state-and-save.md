@@ -6,8 +6,10 @@ These are the deliberately small, executable contracts at module seams. TypeScri
 
 Owner: `src/state/schemas.ts`
 
-- The existing JSON character-sheet shape remains unchanged.
-- That exact unversioned modern shape is the frozen **PQW v0** compatibility profile. Every object boundary is strict, so unknown fields and unrecognized version markers fail closed instead of being silently discarded.
+- The unversioned modern character-sheet shape is the **PQW v0** compatibility profile. Every object boundary is strict, so unknown fields and unrecognized version markers fail closed instead of being silently discarded.
+- PQW v0 may include an optional, narrow pending Sequence queue so a prologue or cinematic can resume through PQW, roster, and checkpoint boundaries. Absence remains valid and means no pending sequence; the field is omitted when empty.
+- Pending entries permit only prologue, cinematic, and final Act-marker tasks. They have zero elapsed time, no loot or ordinary gameplay task type, at most 100 entries, and at most one final marker. An active queue requires an active sequence task.
+- This additive reader change is backward-compatible with existing saves but older strict builds cannot read a newer save captured mid-sequence. The unanimous #150 serialization vote accepted that one-way compatibility window to avoid silently discarding continuation state.
 - Imported and roster data is parsed as `unknown` and must satisfy `characterSheetSchema` before state mutation.
 - Strings, collections, quantities, currency, levels, and progress values have explicit upper bounds.
 - Prime stats are positive integers; HP/MP maxima are positive numbers. Quest/plot progress may equal but never exceed its positive maximum, and task elapsed time may equal but never exceed its duration.
@@ -16,7 +18,7 @@ Owner: `src/state/schemas.ts`
 - A roster is rejected and preserved in full if any record is invalid; partial recovery must never make the next write destructive.
 - Character names contain 1–120 UTF-16 code units. Exact names are case-sensitive roster identities, and a later explicit save replaces the prior entry with that identity.
 - Prototype-like character names remain ordinary own keys. Existing object-shaped roster JSON is rehydrated into a null-prototype record without changing the persisted shape.
-- A future format must use a versioned envelope and retain a PQW v0 reader. Classic tuple-shaped PQW migration remains tracked by #2; it must not be parsed as modern v0.
+- Any further format expansion must use a versioned envelope and retain a PQW v0 reader. Classic tuple-shaped PQW migration remains tracked by #2; it must not be parsed as modern v0.
 
 Verified by: `src/__tests__/state/saveManager.test.ts`.
 

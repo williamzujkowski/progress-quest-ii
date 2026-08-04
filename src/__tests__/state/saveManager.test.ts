@@ -45,6 +45,7 @@ describe('Save Manager & Serialization', () => {
     expect(decoded.value.Stats.STR).toBe(originalChar.Stats.STR);
     expect(decoded.value.Quest).toEqual(originalChar.Quest);
     expect(decoded.value.Plot).toEqual(originalChar.Plot);
+    expect(decoded.value.PendingTasks).toEqual(originalChar.PendingTasks);
   });
 
   it('preserves Unicode character names with the standards-based UTF-8 codec', () => {
@@ -120,6 +121,7 @@ describe('Save Manager & Serialization', () => {
       { ...character, Task: { ...character.Task, overtime: true } },
       { ...character, Task: { ...character.Task, loot: { ...character.Task.loot, cursed: true } } },
       { ...character, Task: { ...character.Task, loot: { type: 'random', audited: false } } },
+      { ...character, PendingTasks: [{ ...character.PendingTasks?.[0], improvised: true }] },
     ];
 
     for (const candidate of candidates) {
@@ -236,6 +238,34 @@ describe('Save Manager & Serialization', () => {
   it('keeps generated character output compatible with the save contract', () => {
     const character = createNewCharacter('ContractHero', 'Half Orc', 'Robot Monk', 404);
     expect(characterSheetSchema.safeParse(character).success).toBe(true);
+  });
+
+  it('accepts old sheets without a queue and rejects malformed pending sequences', () => {
+    const character = createNewCharacter('SequenceContractHero', 'Half Orc', 'Robot Monk', 408);
+    const { PendingTasks: _pendingTasks, ...oldSheet } = character;
+    const step = character.PendingTasks?.[0];
+    if (!step) throw new Error('Expected the canonical prologue queue');
+
+    expect(characterSheetSchema.safeParse(oldSheet).success).toBe(true);
+    for (const PendingTasks of [
+      [],
+      [{ ...step, elapsedMs: 1 }],
+      [{ ...step, type: 'kill' }],
+      [{ ...step, loot: { type: 'random' } }],
+      Array.from({ length: 101 }, () => step),
+      [
+        { description: 'Loading', durationMs: 1000, elapsedMs: 0, type: 'act_marker' },
+        step,
+      ],
+      [
+        step,
+        { description: 'Loading', durationMs: 1000, elapsedMs: 0, type: 'act_marker' },
+        { description: 'Loading again', durationMs: 1000, elapsedMs: 0, type: 'act_marker' },
+      ],
+    ]) {
+      expect(characterSheetSchema.safeParse({ ...character, PendingTasks }).success).toBe(false);
+    }
+    expect(characterSheetSchema.safeParse({ ...character, Task: { ...character.Task, type: 'kill' } }).success).toBe(false);
   });
 
   it('validates explicit fixed and random task loot without accepting blank items', () => {

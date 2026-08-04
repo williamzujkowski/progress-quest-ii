@@ -10,13 +10,200 @@ import levelUpFixture from '../fixtures/legacy/xp-level-up.json';
 import questFixture from '../fixtures/legacy/quest-completion.json';
 
 function stateFor(character: CharacterSheet) {
+  const isSequence = character.Task.type === 'loading' || character.Task.type === 'prologue' || character.Task.type === 'cinematic' || character.Task.type === 'act_marker';
+  const sessionCharacter = isSequence || character.Plot.act !== 0
+    ? character
+    : { ...character, Plot: { act: 1, currentProgress: 0, maxProgress: 10 }, PendingTasks: undefined };
   return {
-    character,
+    character: sessionCharacter,
     progression: { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 },
   };
 }
 
 describe('advanceGame', () => {
+  it('creates a new session at the canonical Act 0 prologue', () => {
+    const character = createNewCharacter('Prologue Oracle', 'Half Orc', 'Ur-Paladin', 800);
+
+    expect(character).toMatchObject({
+      Plot: { act: 0, currentProgress: 0, maxProgress: 26 },
+      Quest: { description: 'Heading to the killing fields...', currentProgress: 0, maxProgress: 1 },
+      Task: { description: 'Loading....', durationMs: 2000, elapsedMs: 0 },
+      PendingTasks: [
+        { description: 'Experiencing an enigmatic and foreboding night vision', durationMs: 10_000 },
+        { description: "Much is revealed about that wise old bastard you'd underestimated", durationMs: 6000 },
+        { description: 'A shocking series of events leaves you alone and bewildered, but resolute', durationMs: 6000 },
+        { description: 'Drawing upon an unrealized reserve of determination, you set out on a long and dangerous journey', durationMs: 4000 },
+        { description: 'Loading', durationMs: 2000, type: 'act_marker' },
+      ],
+    });
+  });
+
+  it('starts the first prologue step without advancing plot during initial loading', () => {
+    const character = createNewCharacter('Prologue Oracle', 'Half Orc', 'Ur-Paladin', 800);
+
+    const result = advanceGame(stateFor(character), 2000, new RandomGenerator('unused-prologue-rng'));
+
+    expect(result.state.character.Plot).toEqual({ act: 0, currentProgress: 0, maxProgress: 26 });
+    expect(result.state.character.Task).toMatchObject({
+      description: 'Experiencing an enigmatic and foreboding night vision...',
+      durationMs: 10_000,
+      elapsedMs: 0,
+      type: 'prologue',
+    });
+    expect(result.state.character.PendingTasks).toHaveLength(4);
+  });
+
+  it('runs the complete prologue through the Act I marker without consuming RNG', () => {
+    const character = createNewCharacter('Prologue Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    const rng = new RandomGenerator('prologue-continuation');
+    const initialRng = rng.getState();
+
+    const atMarker = advanceGame(stateFor(character), 28_000, rng);
+
+    expect(atMarker.state.progression).toMatchObject({ completedTasks: 5, elapsedSeconds: 28 });
+    expect(atMarker.state.character.Plot).toEqual({ act: 1, currentProgress: 0, maxProgress: 21_600 });
+    expect(atMarker.state.character.Task).toMatchObject({ description: 'Loading Act I...', durationMs: 2000, type: 'act_marker' });
+    expect(atMarker.state.character.PendingTasks).toBeUndefined();
+    expect(atMarker.events).toContainEqual({ type: 'act_completed', act: 0 });
+    expect(rng.getState()).toEqual(initialRng);
+
+    const afterMarker = advanceGame(atMarker.state, 2000, rng);
+
+    expect(afterMarker.state.progression).toMatchObject({ completedTasks: 6, elapsedSeconds: 30 });
+    expect(afterMarker.state.character.Task).toMatchObject({ description: 'Heading to the killing fields...', durationMs: 4000, type: 'heading' });
+    expect(rng.getState()).toEqual(initialRng);
+  });
+
+  it('waits for the next kill after plot progress first reaches its maximum', () => {
+    const character = createNewCharacter('Patient Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    character.Plot = { act: 1, currentProgress: 4, maxProgress: 5 };
+    character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
+    character.Task = { description: 'Executing a Rat...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.PendingTasks = undefined;
+    const rng = new RandomGenerator('plot-edge');
+
+    const result = advanceGame(stateFor(character), 1000, rng);
+
+    expect(result.state.character.Plot.currentProgress).toBe(5);
+    expect(result.state.character.Task.type).toBe('kill');
+    expect(result.state.character.PendingTasks).toBeUndefined();
+  });
+
+  it.each([
+    {
+      branch: 'oasis',
+      rngState: [0.719665847485885, 0.8004722977057099, 0.017481706803664565, 1] as [number, number, number, number],
+      first: 'Exhausted, you arrive at a friendly oasis in a hostile land...',
+      pending: [
+        'You greet old friends and meet new allies',
+        'You are privy to a council of powerful do-gooders',
+        'There is much to be done. You are chosen!',
+        'Loading',
+      ],
+      finalRng: [0.8004722977057099, 0.017481706803664565, 0.15356952929869294, 1505281],
+    },
+    {
+      branch: 'nemesis',
+      rngState: [0.8487152096349746, 0.6674839127808809, 0.22826107195578516, 1] as [number, number, number, number],
+      first: 'Your quarry is in sight, but a mighty enemy bars your path!...',
+      pending: [
+        'A desperate struggle commences with Oomuz the Hell Hound',
+        'Oomuz the Hell Hound seems to have the upper hand',
+        'Victory! Oomuz the Hell Hound is slain! Exhausted, you lose consciousness',
+        'You awake in a friendly place, but the road awaits',
+        'Loading',
+      ],
+      finalRng: [0.6513712389860302, 0.47102646343410015, 0.3233566232956946, 1335114],
+    },
+    {
+      branch: 'double-dealer',
+      rngState: [0.6487525827251375, 0.627493878826499, 0.8949407478794456, 1] as [number, number, number, number],
+      first: "Oh sweet relief! You've reached the kind protection of King Frudem of Krabgrout...",
+      pending: [
+        'There is rejoicing, and an unnerving encounter with King Frudem of Krabgrout in private',
+        'You forget your toothpick and go back to get it',
+        "What's this!? You overhear something shocking!",
+        'Could King Frudem of Krabgrout be a dirty double-dealer?',
+        'Who can possibly be trusted with this news!? -- Oh yes, of course',
+        'Loading',
+      ],
+      finalRng: [0.8845338865648955, 0.3499606167897582, 0.9144386406987906, 1343975],
+    },
+  ])('starts the canonical $branch interplot branch with legacy RNG order', ({ rngState, first, pending, finalRng }) => {
+    const character = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    character.Plot = { act: 1, currentProgress: 10, maxProgress: 10 };
+    character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
+    character.Task = { description: 'Executing a Rat...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.PendingTasks = [];
+    const rng = new RandomGenerator('interplot-oracle');
+    rng.setState(rngState);
+
+    const result = advanceGame(stateFor(character), 1000, rng);
+
+    expect(result.state.character.Task).toMatchObject({ description: first, type: 'cinematic' });
+    expect(result.state.character.PendingTasks?.map(({ description }) => description)).toEqual(pending);
+    expect(rng.getState()).toEqual(finalRng);
+  });
+
+  it('awards random-star loot before generating the remaining nemesis cinematic', () => {
+    const character = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    character.Plot = { act: 1, currentProgress: 10, maxProgress: 10 };
+    character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
+    character.Task = { description: 'Executing a Black Dragon...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'random' } };
+    character.PendingTasks = undefined;
+    const rng = new RandomGenerator('random-star-cinematic');
+    rng.setState([0.8487152096349746, 0.6674839127808809, 0.22826107195578516, 1]);
+
+    const result = advanceGame(stateFor(character), 1000, rng);
+
+    expect(result.state.character.Inventory).toContainEqual({ name: 'Proverbial Tome of Guile', qty: 1 });
+    expect(result.state.character.PendingTasks?.map(({ description }) => description)).toEqual([
+      'A desperate struggle commences with Zouvjaen the Wraith',
+      'Zouvjaen the Wraith seems to have the upper hand',
+      'Locked in grim combat with Zouvjaen the Wraith',
+      'Victory! Zouvjaen the Wraith is slain! Exhausted, you lose consciousness',
+      'You awake in a friendly place, but the road awaits',
+      'Loading',
+    ]);
+    expect(rng.getState()).toEqual([0.03230942226946354, 0.7913503504823893, 0.7409795469138771, 678575]);
+  });
+
+  it('completes Act I with typed reward events in canonical RNG order', () => {
+    const character = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    character.Plot = { act: 1, currentProgress: 1000, maxProgress: 1000 };
+    character.Task = { description: 'There is much to be done. You are chosen!...', durationMs: 1000, elapsedMs: 0, type: 'cinematic' };
+    character.PendingTasks = [{ description: 'Loading', durationMs: 1000, elapsedMs: 0, type: 'act_marker' }];
+    character.Inventory = [];
+    const rng = new RandomGenerator('act-reward-oracle');
+    rng.setState([0.34067121776752174, 0.28646080009639263, 0.8245062702335417, 1]);
+
+    const result = advanceGame(stateFor(character), 1000, rng);
+
+    expect(result.state.character.Plot).toEqual({ act: 2, currentProgress: 0, maxProgress: 39_600 });
+    expect(result.state.character.Inventory).toContainEqual({ name: 'Unearthly Candelabra of Silence', qty: 1 });
+    expect(result.state.character.Equip.Helm).toBe('Lace');
+    expect(result.events).toEqual([
+      { type: 'act_completed', act: 1 },
+      { type: 'item_gained', name: 'Unearthly Candelabra of Silence', quantity: 1 },
+      { type: 'equipment_gained', slot: 'Helm', name: 'Lace' },
+      { type: 'save_requested', characterName: 'Oracle' },
+      { type: 'task_started', task: result.state.character.Task },
+    ]);
+    expect(rng.getState()).toEqual([0.06199767650105059, 0.7019953967537731, 0.5525467498227954, 439734]);
+
+    const actTwo = structuredClone(result.state.character);
+    actTwo.Plot.currentProgress = actTwo.Plot.maxProgress;
+    actTwo.Task = { description: 'The sequel continues despite precedent...', durationMs: 1000, elapsedMs: 0, type: 'cinematic' };
+    actTwo.PendingTasks = [{ description: 'Loading', durationMs: 1000, elapsedMs: 0, type: 'act_marker' }];
+    const actThree = advanceGame({ character: actTwo, progression: result.state.progression }, 1000, rng);
+
+    expect(actThree.state.character.Plot).toEqual({ act: 3, currentProgress: 0, maxProgress: 57_600 });
+    expect(actThree.events).toContainEqual({ type: 'act_completed', act: 2 });
+    expect(actThree.events.filter(({ type }) => type === 'item_gained' || type === 'gold_received')).toHaveLength(1);
+    expect(actThree.events.filter(({ type }) => type === 'equipment_gained')).toHaveLength(1);
+    expect(characterSheetSchema.safeParse(actThree.state.character).success).toBe(true);
+  });
+
   it('advances an incomplete task without mutating the previous state', () => {
     const character = createNewCharacter('Seam Tester', 'Dung Elf', 'Vermineer', 801);
     const state = {
@@ -219,6 +406,8 @@ describe('advanceGame', () => {
     character.Gold = 0;
     character.Inventory = [{ name: 'Ancient Widget', qty: 4 }];
     character.Task = { description: 'Selling loot...', durationMs: 1, elapsedMs: 0, type: 'selling' };
+    character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
+    character.PendingTasks = undefined;
     const state = {
       character,
       progression: { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 },
@@ -240,6 +429,8 @@ describe('advanceGame', () => {
     character.Gold = MAX_PERSISTED_GOLD;
     character.Inventory = [{ name: 'Auditor bait', qty: MAX_PERSISTED_VALUE }];
     character.Task = { description: 'Selling loot...', durationMs: 1, elapsedMs: 0, type: 'selling' };
+    character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
+    character.PendingTasks = undefined;
     expect(characterSheetSchema.safeParse(character).success).toBe(true);
 
     const result = advanceGame(stateFor(character), 1, new RandomGenerator('maximum-sale'));
@@ -343,6 +534,8 @@ describe('advanceGame', () => {
     const character = createNewCharacter('Boundary Hero', 'Half Orc', 'Robot Monk', 807);
     character.Stats = { STR: 1, CON: 1, DEX: 1, INT: 1, WIS: 1, CHA: 1, 'HP Max': 0.5, 'MP Max': 1.5 };
     character.Task = { description: 'Executing boundary monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'boundary receipt' } };
+    character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
+    character.PendingTasks = undefined;
     const state = stateFor(character);
     state.progression.experience = { currentSeconds: 1, maxSeconds: 1 };
     expect(characterSheetSchema.safeParse(character).success).toBe(true);
@@ -379,6 +572,7 @@ describe('advanceGame', () => {
       history: ['Remain numerically respectable'],
     };
     character.Plot = { act: MAX_PERSISTED_VALUE, currentProgress: MAX_PERSISTED_VALUE, maxProgress: MAX_PERSISTED_VALUE };
+    character.PendingTasks = undefined;
     character.Task = { description: 'Executing a boundary condition...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
     const state = {
       character,
@@ -437,6 +631,8 @@ describe('advanceGame', () => {
     const character = createNewCharacter('Collector', 'Half Orc', 'Robot Monk', 811);
     character.Inventory = Array.from({ length: MAX_PERSISTED_ITEMS }, (_, index) => ({ name: `Item ${index}`, qty: 1 }));
     character.Task = { description: 'Executing test monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'one item too many' } };
+    character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
+    character.PendingTasks = undefined;
     expect(characterSheetSchema.safeParse(character).success).toBe(true);
 
     const result = advanceGame(stateFor(character), 1, new RandomGenerator('full-inventory'));

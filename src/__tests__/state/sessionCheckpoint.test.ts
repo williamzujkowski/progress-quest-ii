@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RandomGenerator } from '../../engine/prng';
 import { createNewCharacter } from '../../engine/sim';
+import { advanceGame } from '../../engine/transition';
 import { useGameStore } from '../../state/gameStore';
 import { diagnostics } from '../../state/diagnostics';
 import { saveToRoster } from '../../state/saveManager';
@@ -313,7 +314,9 @@ describe('active session checkpoint boundary', () => {
   it('continues with the exact same next transition and Alea state after restore', () => {
     const character = createNewCharacter('Continuation', 'Half Orc', 'Robot Monk', 703);
     character.Quest.history = [character.Quest.description];
+    character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
     character.Task = { description: 'Executing rat...', durationMs: 100, elapsedMs: 75, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.PendingTasks = undefined;
     const rng = new RandomGenerator('continuation-rng');
     useGameStore.setState({ character, rng, isPaused: false, log: ['Before'], progression: { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 } });
     const checkpoint = captureActiveSession();
@@ -324,6 +327,26 @@ describe('active session checkpoint boundary', () => {
     useGameStore.getState().tick(25);
 
     expect(captureActiveSession()).toEqual(uninterrupted);
+  });
+
+  it('resumes a mid-prologue checkpoint with identical queued work and RNG', () => {
+    const character = createNewCharacter('Prologue Continuation', 'Half Orc', 'Robot Monk', 709);
+    const rng = new RandomGenerator('prologue-checkpoint-rng');
+    const midPrologue = advanceGame({
+      character,
+      progression: { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 },
+    }, 7000, rng);
+    useGameStore.setState({ ...midPrologue.state, rng, isPaused: false, log: ['Before prologue checkpoint'] });
+    const checkpoint = captureActiveSession();
+
+    useGameStore.getState().tick(23_000);
+    const uninterrupted = captureActiveSession();
+    restoreActiveSession(checkpoint);
+    useGameStore.getState().tick(23_000);
+
+    expect(captureActiveSession()).toEqual(uninterrupted);
+    expect(uninterrupted.session.character.Task).toMatchObject({ description: 'Heading to the killing fields...', type: 'heading' });
+    expect(uninterrupted.session.character.PendingTasks).toBeUndefined();
   });
 
   it('coalesces continuous changes and flushes the latest snapshot when hidden', () => {

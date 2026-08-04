@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../data/limits';
+import { MAX_PENDING_TASKS, MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../data/limits';
 
 export { MAX_PERSISTED_ITEMS } from '../data/limits';
 export const MAX_CHARACTER_NAME_LENGTH = 120;
@@ -69,7 +69,7 @@ export const questStateSchema = z.object({
 });
 
 export const plotStateSchema = z.object({
-  act: z.number().int().min(1).max(MAX_PERSISTED_VALUE),
+  act: z.number().int().min(0).max(MAX_PERSISTED_VALUE),
   currentProgress: boundedNumber,
   maxProgress: positiveBoundedNumber,
 }).strict().refine(({ currentProgress, maxProgress }) => currentProgress <= maxProgress, {
@@ -81,7 +81,7 @@ export const progressTaskSchema = z.object({
   description,
   durationMs: z.number().min(1).max(86_400_000),
   elapsedMs: z.number().min(0).max(86_400_000),
-  type: z.enum(['kill', 'buying', 'selling', 'quest', 'plot', 'heading_to_market', 'heading']),
+  type: z.enum(['kill', 'buying', 'selling', 'quest', 'plot', 'loading', 'prologue', 'cinematic', 'act_marker', 'heading_to_market', 'heading']),
   loot: z.discriminatedUnion('type', [
     z.object({ type: z.literal('fixed'), item: z.string().min(1).max(200) }).strict(),
     z.object({ type: z.literal('random') }).strict(),
@@ -89,6 +89,21 @@ export const progressTaskSchema = z.object({
 }).strict().refine(({ durationMs, elapsedMs }) => elapsedMs <= durationMs, {
   message: 'Task elapsed time cannot exceed its duration.',
   path: ['elapsedMs'],
+});
+
+const sequenceTaskSchema = z.object({
+  description,
+  durationMs: z.number().int().min(1).max(86_400_000),
+  elapsedMs: z.literal(0),
+  type: z.enum(['prologue', 'cinematic', 'act_marker']),
+}).strict();
+
+const pendingTasksSchema = z.array(sequenceTaskSchema).min(1).max(MAX_PENDING_TASKS).superRefine((tasks, context) => {
+  const markerIndexes = tasks.flatMap((task, index) => task.type === 'act_marker' ? [index] : []);
+  if (markerIndexes.length > 1) context.addIssue({ code: 'custom', message: 'Pending tasks may contain at most one Act marker.' });
+  if (markerIndexes[0] !== undefined && markerIndexes[0] !== tasks.length - 1) {
+    context.addIssue({ code: 'custom', message: 'The Act marker must be the final pending task.' });
+  }
 });
 
 /** The exact, recursively strict, unversioned modern PQW v0 compatibility profile. */
@@ -102,9 +117,14 @@ export const characterSheetSchema = z.object({
   Plot: plotStateSchema,
   Quest: questStateSchema,
   Task: progressTaskSchema,
+  PendingTasks: pendingTasksSchema.optional(),
 }).strict().refine(({ Inventory }) => new Set(Inventory.map(({ name }) => name)).size === Inventory.length, {
   message: 'Inventory item names must be unique.',
   path: ['Inventory'],
+}).superRefine(({ PendingTasks, Task }, context) => {
+  if (PendingTasks && Task.type !== 'loading' && Task.type !== 'prologue' && Task.type !== 'cinematic') {
+    context.addIssue({ code: 'custom', message: 'Pending sequence tasks require an active sequence task.', path: ['PendingTasks'] });
+  }
 });
 
 export type PersistedCharacterSheet = z.infer<typeof characterSheetSchema>;

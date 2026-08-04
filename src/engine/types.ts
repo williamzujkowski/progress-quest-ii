@@ -40,9 +40,14 @@ export interface ProgressTask {
   description: string;
   durationMs: number;
   elapsedMs: number;
-  type: 'kill' | 'buying' | 'selling' | 'quest' | 'plot' | 'heading_to_market' | 'heading';
+  type: 'kill' | 'buying' | 'selling' | 'quest' | 'plot' | 'loading' | 'prologue' | 'cinematic' | 'act_marker' | 'heading_to_market' | 'heading';
   loot?: { type: 'fixed'; item: string } | { type: 'random' };
 }
+
+export type SequenceTask = Omit<ProgressTask, 'elapsedMs' | 'loot' | 'type'> & {
+  elapsedMs: 0;
+  type: 'prologue' | 'cinematic' | 'act_marker';
+};
 
 export interface QuestState {
   description: string;
@@ -79,4 +84,5 @@ export interface CharacterSheet {
   };
   Quest: QuestState;
   Task: ProgressTask;
+  PendingTasks?: SequenceTask[];
 }

@@ -50,21 +50,28 @@ export function createNewCharacter(name: string, race: string, klass: string, se
     Spells: [],
     Gold: 0,
     Plot: {
-      act: 1,
+      act: 0,
       currentProgress: 0,
-      maxProgress: 10,
+      maxProgress: 26,
     },
     Quest: {
       description: 'Heading to the killing fields...',
       currentProgress: 0,
-      maxProgress: 5,
+      maxProgress: 1,
     },
     Task: {
-      description: 'Experiencing an enigmatic and foreboding night vision',
+      description: 'Loading....',
       durationMs: 2000,
       elapsedMs: 0,
-      type: 'heading',
+      type: 'loading',
     },
+    PendingTasks: [
+      { description: 'Experiencing an enigmatic and foreboding night vision', durationMs: 10_000, elapsedMs: 0, type: 'prologue' },
+      { description: "Much is revealed about that wise old bastard you'd underestimated", durationMs: 6000, elapsedMs: 0, type: 'prologue' },
+      { description: 'A shocking series of events leaves you alone and bewildered, but resolute', durationMs: 6000, elapsedMs: 0, type: 'prologue' },
+      { description: 'Drawing upon an unrealized reserve of determination, you set out on a long and dangerous journey', durationMs: 4000, elapsedMs: 0, type: 'prologue' },
+      { description: 'Loading', durationMs: 2000, elapsedMs: 0, type: 'act_marker' },
+    ],
   };
 }
 

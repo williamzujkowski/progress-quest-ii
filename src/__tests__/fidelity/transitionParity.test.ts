@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import oneKillFixtureJson from '../fixtures/legacy/one-kill.json';
+import actTransitionFixtureJson from '../fixtures/legacy/act-transition.json';
 import npcPassingFixtureJson from '../fixtures/legacy/monster-tasks/npc-passing.json';
 import xpLevelUpFixtureJson from '../fixtures/legacy/xp-level-up.json';
 import questCompletionFixtureJson from '../fixtures/legacy/quest-completion.json';
@@ -25,6 +26,7 @@ describe('modern encounter-output fidelity', () => {
     ['passing named NPC', npcTransitionFixture],
     ['XP level boundary', xpLevelUpFixtureJson],
     ['quest completion', questCompletionFixtureJson],
+    ['Act completion', actTransitionFixtureJson],
   ])('matches the legacy %s transition on the shared observable surface', (_name, fixtureJson) => {
     const fixture = fixtureJson as unknown as LegacyTransitionFixture;
 

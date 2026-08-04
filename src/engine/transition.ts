@@ -1,8 +1,10 @@
-import { applyQuestReward, applySpellReward, equipPrice, generateEquipUpgrade, generateLootItem, generateQuest, generateStatReward, generateTaskDescription } from './sim';
-import { MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../data/limits';
-import { levelUpTime } from './math';
+import { applyQuestReward, applySpellReward, equipPrice, generateEquipUpgrade, generateItemReward, generateLootItem, generateQuest, generateStatReward, generateTaskDescription } from './sim';
+import { BORING_ITEMS, IMPRESSIVE_TITLES, MONSTERS, RACES } from '../data/traits';
+import { MAX_PENDING_TASKS, MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../data/limits';
+import { generateName, levelUpTime } from './math';
 import type { RandomGenerator } from './prng';
-import type { CharacterSheet, EquipSlot, ProgressionState, ProgressTask, StatName } from './types';
+import { plural } from './text';
+import type { CharacterSheet, EquipSlot, ProgressionState, ProgressTask, SequenceTask, StatName } from './types';
 
 export interface GameTransitionState {
   character: CharacterSheet;
@@ -19,6 +21,8 @@ export type GameTransitionEvent =
   | { type: 'gold_received'; amount: number }
   | { type: 'inventory_sold'; gold: number }
   | { type: 'equipment_purchased'; slot: EquipSlot; name: string }
+  | { type: 'equipment_gained'; slot: EquipSlot; name: string }
+  | { type: 'act_completed'; act: number }
   | { type: 'task_started'; task: ProgressTask };
 
 export interface GameTransitionResult {
@@ -28,6 +32,101 @@ export interface GameTransitionResult {
 }
 
 const MAX_CATCH_UP_TASKS = 100;
+
+type CinematicOpening =
+  | { branch: 0; first: SequenceTask }
+  | { branch: 1; first: SequenceTask }
+  | { branch: 2; first: SequenceTask; patron: string };
+
+function sequenceTask(description: string, durationSeconds: number, type: SequenceTask['type'] = 'cinematic'): SequenceTask {
+  return { description, durationMs: durationSeconds * 1000, elapsedMs: 0, type };
+}
+
+function activeSequenceTask(task: SequenceTask): ProgressTask {
+  return { ...task, description: `${task.description}...` };
+}
+
+function impressiveGuy(rng: RandomGenerator): string {
+  if (rng.random(2)) return `the ${rng.pick(IMPRESSIVE_TITLES)} of the ${plural(rng.pick(RACES).name)}`;
+  return `${rng.pick(IMPRESSIVE_TITLES)} ${generateName(rng)} of ${generateName(rng)}`;
+}
+
+function beginInterplotCinematic(rng: RandomGenerator): CinematicOpening {
+  switch (rng.random(3)) {
+    case 0: return { branch: 0, first: sequenceTask('Exhausted, you arrive at a friendly oasis in a hostile land', 1) };
+    case 1: return { branch: 1, first: sequenceTask('Your quarry is in sight, but a mighty enemy bars your path!', 1) };
+    case 2: {
+      const patron = impressiveGuy(rng);
+      return { branch: 2, patron, first: sequenceTask(`Oh sweet relief! You've reached the kind protection of ${patron}`, 2) };
+    }
+    default: throw new RangeError('Interplot branch is outside the legacy table');
+  }
+}
+
+function namedMonster(rng: RandomGenerator, level: number): string {
+  let best = rng.pick(MONSTERS);
+  for (let attempt = 1; attempt < 5; attempt += 1) {
+    const candidate = rng.pick(MONSTERS);
+    if (Math.abs(level - candidate.level) < Math.abs(level - best.level)) best = candidate;
+  }
+  return `${generateName(rng)} the ${best.name}`;
+}
+
+function finishInterplotCinematic(rng: RandomGenerator, act: number, level: number, opening: CinematicOpening): SequenceTask[] {
+  if (opening.branch === 0) {
+    return [
+      sequenceTask('You greet old friends and meet new allies', 2),
+      sequenceTask('You are privy to a council of powerful do-gooders', 2),
+      sequenceTask('There is much to be done. You are chosen!', 1),
+      sequenceTask('Loading', 1, 'act_marker'),
+    ];
+  }
+  if (opening.branch === 1) {
+    const nemesis = namedMonster(rng, level + 3);
+    let advantage = rng.random(3);
+    // ponytail: cap the persisted queue and RNG work for synthetically huge accepted Act values.
+    const maxRounds = MAX_PENDING_TASKS - 4;
+    const tasks = [sequenceTask(`A desperate struggle commences with ${nemesis}`, 4)];
+    for (let round = 1; round <= maxRounds && round <= rng.random(1 + act + 1); round += 1) {
+      advantage += 1 + rng.random(2);
+      if (advantage % 3 === 0) tasks.push(sequenceTask(`Locked in grim combat with ${nemesis}`, 2));
+      else if (advantage % 3 === 1) tasks.push(sequenceTask(`${nemesis} seems to have the upper hand`, 2));
+      else tasks.push(sequenceTask(`You seem to gain the advantage over ${nemesis}`, 2));
+    }
+    tasks.push(
+      sequenceTask(`Victory! ${nemesis} is slain! Exhausted, you lose consciousness`, 3),
+      sequenceTask('You awake in a friendly place, but the road awaits', 2),
+      sequenceTask('Loading', 1, 'act_marker'),
+    );
+    return tasks;
+  }
+  return [
+    sequenceTask(`There is rejoicing, and an unnerving encounter with ${opening.patron} in private`, 3),
+    sequenceTask(`You forget your ${rng.pick(BORING_ITEMS)} and go back to get it`, 2),
+    sequenceTask("What's this!? You overhear something shocking!", 2),
+    sequenceTask(`Could ${opening.patron} be a dirty double-dealer?`, 2),
+    sequenceTask('Who can possibly be trusted with this news!? -- Oh yes, of course', 3),
+    sequenceTask('Loading', 1, 'act_marker'),
+  ];
+}
+
+function toRoman(value: number): string {
+  const numerals: Array<[number, string]> = [[10_000, 'T'], [9000, 'MT'], [5000, 'A'], [4000, 'MA'], [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
+  let remaining = value;
+  let result = '';
+  for (const [amount, numeral] of numerals) {
+    while (remaining >= amount) {
+      remaining -= amount;
+      result += numeral;
+    }
+  }
+  return result || 'N';
+}
+
+function actLabel(act: number): string {
+  // ponytail: legacy Roman output is unbounded; decimal keeps accepted synthetic Acts within save limits.
+  return act > 10_000 ? String(act) : toRoman(act);
+}
 
 export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: RandomGenerator): GameTransitionResult {
   if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return { state, events: [], remainingElapsedMs: 0 };
@@ -93,6 +192,8 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
     let inventory = character.Inventory;
     let gold = character.Gold;
     let equip = { ...character.Equip };
+    let pendingTasks = [...(character.PendingTasks ?? [])];
+    let cinematicOpening: CinematicOpening | undefined;
 
     if (task.type === 'kill') {
       const questHistory = quest.history ?? [];
@@ -143,7 +244,12 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
         events.push({ type: 'quest_started', description: generatedQuest.description });
         events.push({ type: 'save_requested', characterName: traits.Name });
       }
-      if (plot.currentProgress < plot.maxProgress) plot.currentProgress = Math.min(plot.maxProgress, plot.currentProgress + progressDelta);
+      if (plot.currentProgress >= plot.maxProgress) {
+        cinematicOpening = beginInterplotCinematic(rng);
+        pendingTasks.push(cinematicOpening.first);
+      } else {
+        plot.currentProgress = Math.min(plot.maxProgress, plot.currentProgress + progressDelta);
+      }
 
       const itemName = task.loot?.type === 'fixed' ? task.loot.item : generateLootItem(rng);
       const existingIndex = inventory.findIndex((item) => item.name === itemName);
@@ -157,6 +263,7 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
         itemGained = true;
       }
       if (itemGained) events.push({ type: 'item_gained', name: itemName, quantity: 1 });
+      if (cinematicOpening) pendingTasks.push(...finishInterplotCinematic(rng, plot.act, traits.Level, cinematicOpening));
     } else if (task.type === 'selling') {
       let earned = 0;
       inventory = inventory.filter((item) => {
@@ -178,10 +285,60 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
         events.push({ type: 'equipment_purchased', slot: upgrade.slot, name: upgrade.name });
       }
     }
+    if (task.type === 'prologue' && plot.act === 0 && plot.currentProgress < plot.maxProgress) {
+      plot.currentProgress = Math.min(plot.maxProgress, plot.currentProgress + progressDelta);
+    }
 
-    const transitionedCharacter: CharacterSheet = { ...character, Traits: traits, Stats: stats, Equip: equip, Spells: spells, Inventory: inventory, Gold: gold, Quest: quest, Plot: plot, Task: task };
-    const nextTaskInfo = generateTaskDescription(rng, transitionedCharacter);
-    const nextTask: ProgressTask = { ...nextTaskInfo, elapsedMs: 0 };
+    let transitionedCharacter: CharacterSheet = { ...character, Traits: traits, Stats: stats, Equip: equip, Spells: spells, Inventory: inventory, Gold: gold, Quest: quest, Plot: plot, Task: task, PendingTasks: pendingTasks };
+    let nextTask: ProgressTask;
+    if (pendingTasks.length > 0) {
+      const queuedTask = pendingTasks[0];
+      if (!queuedTask) throw new Error('Pending task queue became empty while dequeuing');
+      pendingTasks = pendingTasks.slice(1);
+      if (queuedTask.type === 'act_marker') {
+        const completedAct = plot.act;
+        const nextAct = Math.min(MAX_PERSISTED_VALUE, plot.act + 1);
+        plot = {
+          act: nextAct,
+          currentProgress: 0,
+          maxProgress: Math.min(MAX_PERSISTED_VALUE, 60 * 60 * (1 + 5 * nextAct)),
+        };
+        events.push({ type: 'act_completed', act: completedAct });
+        if (nextAct > 1) {
+          const itemName = generateItemReward(rng, ['Gold', ...inventory.map(({ name }) => name)]);
+          if (itemName === 'Gold') {
+            if (gold < MAX_PERSISTED_GOLD) {
+              gold += 1;
+              events.push({ type: 'gold_received', amount: 1 });
+            }
+          } else {
+            const existingIndex = inventory.findIndex(({ name }) => name === itemName);
+            const existing = inventory[existingIndex];
+            if (existing && existing.qty < MAX_PERSISTED_VALUE) {
+              inventory = inventory.map((item, index) => index === existingIndex ? { ...item, qty: item.qty + 1 } : item);
+              events.push({ type: 'item_gained', name: itemName, quantity: 1 });
+            } else if (existingIndex < 0 && inventory.length < MAX_PERSISTED_ITEMS) {
+              inventory = [...inventory, { name: itemName, qty: 1 }];
+              events.push({ type: 'item_gained', name: itemName, quantity: 1 });
+            }
+          }
+          const upgrade = generateEquipUpgrade(rng, traits.Level);
+          equip = { ...equip, [upgrade.slot]: upgrade.name };
+          events.push({ type: 'equipment_gained', slot: upgrade.slot, name: upgrade.name });
+        }
+        events.push({ type: 'save_requested', characterName: traits.Name });
+        nextTask = { ...queuedTask, description: `Loading Act ${actLabel(nextAct)}...` };
+      } else {
+        nextTask = activeSequenceTask(queuedTask);
+      }
+    } else if (task.type === 'act_marker') {
+      nextTask = { description: 'Heading to the killing fields...', durationMs: 4000, elapsedMs: 0, type: 'heading' };
+    } else {
+      const nextTaskInfo = generateTaskDescription(rng, transitionedCharacter);
+      nextTask = { ...nextTaskInfo, elapsedMs: 0 };
+    }
+    transitionedCharacter = { ...transitionedCharacter, Equip: equip, Inventory: inventory, Gold: gold, Plot: plot, PendingTasks: pendingTasks };
+    if (pendingTasks.length === 0) delete transitionedCharacter.PendingTasks;
     events.push({ type: 'task_started', task: structuredClone(nextTask) });
     current = { character: { ...transitionedCharacter, Task: nextTask }, progression: nextProgression };
 

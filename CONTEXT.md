@@ -34,6 +34,14 @@ _Avoid_: Task completion
 Timed work whose duration and current position are measured in milliseconds.
 _Avoid_: Action, job
 
+**Sequence task**:
+A bounded prologue or cinematic Task that advances authored plot presentation without granting ordinary combat or market effects.
+_Avoid_: Dialogue line, cutscene state
+
+**Act marker**:
+The final Sequence task whose start completes the prior Act and resets the Plot track.
+_Avoid_: Plot reward, Act task
+
 **Progress delta**:
 A completed task's duration converted to seconds for progression tracks. Adventure elapsed separately records only whole seconds.
 
@@ -89,7 +97,7 @@ _Avoid_: Wall-clock time
 The current quest monster's identity and canonical table position.
 
 **Pending queue**:
-Ordered cinematic and plot tasks waiting to become active.
+Ordered Sequence tasks waiting to become active; absence means no pending sequence.
 
 **RNG continuation**:
 The exact live Alea state needed to resume deterministic progression.
