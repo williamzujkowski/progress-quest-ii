@@ -1,4 +1,5 @@
 import { ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, WEAPONS } from './traits';
+import { analyzeItemMechanics } from '../engine/itemMechanics';
 import type { EquipSlot } from '../engine/types';
 
 export interface ItemDetails {
@@ -35,23 +36,6 @@ const dossierBeat = (index: number, fallbackKey: string, salt = 0): string => {
   const catalogIndex = index >= 0 ? index : stableIndex(fallbackKey, DOSSIER_ACTIONS.length * DOSSIER_CONDITIONS.length);
   const position = (catalogIndex + salt) % (DOSSIER_ACTIONS.length * DOSSIER_CONDITIONS.length);
   return `${DOSSIER_ACTIONS[position % DOSSIER_ACTIONS.length]} ${DOSSIER_CONDITIONS[Math.floor(position / DOSSIER_ACTIONS.length)]}`;
-};
-
-const valueOf = (name: string, table: readonly (readonly [string, number])[]): number =>
-  table.find(([label]) => name.includes(label))?.[1] ?? 0;
-
-const labelOf = (name: string, table: readonly (readonly [string, number])[]): string | undefined =>
-  table.find(([label]) => name.includes(label))?.[0];
-
-const valuesOf = (name: string, table: readonly (readonly [string, number])[]): number =>
-  table.reduce((total, [label, value]) => total + (name.includes(label) ? value : 0), 0);
-
-const labelsOf = (name: string, table: readonly (readonly [string, number])[]): string[] =>
-  table.flatMap(([label]) => name.includes(label) ? [label] : []);
-
-const baseValue = (name: string, slot: EquipSlot): number => {
-  const table = slot === 'Weapon' ? WEAPONS : slot === 'Shield' ? SHIELDS : ARMORS;
-  return valueOf(name, table);
 };
 
 // ponytail: lexical families cover the finite legacy catalog; add per-item exceptions only when the copy needs them.
@@ -184,36 +168,31 @@ const boundEquipmentStory = (
 };
 
 export function describeEquipment(name: string, slot: EquipSlot): ItemDetails {
-  if (!name || name === '—') {
+  const mechanics = analyzeItemMechanics({ kind: 'equipment', name, slot });
+  if (!mechanics.quality) {
     return { description: 'An empty slot. The void remains undefeated.', effect: 'No combat effect.' };
   }
 
-  const assessorMark = name.match(/^[+-]?\d+/)?.[0];
-  const parsedMark = Number(assessorMark ?? 0);
-  const modifiers = slot === 'Weapon'
-    ? valuesOf(name, [...OFFENSE_ATTRIB, ...OFFENSE_BAD])
-    : valuesOf(name, [...DEFENSE_ATTRIB, ...DEFENSE_BAD]);
-  const baseRating = baseValue(name, slot);
-  const acceptedAssessorMark = assessorMark !== undefined
-    && assessorMark.length <= 17
-    && Number.isSafeInteger(parsedMark)
-    && Number.isSafeInteger(baseRating + modifiers + parsedMark);
-  const explicit = acceptedAssessorMark ? parsedMark : 0;
-  const explicitLabel = acceptedAssessorMark ? `${assessorMark.startsWith('+') ? '+' : ''}${parsedMark}` : undefined;
-  const rating = baseRating + explicit + modifiers;
-  const verb = slot === 'Weapon' ? 'attack' : 'defense';
-  const base = labelOf(name, slot === 'Weapon' ? WEAPONS : slot === 'Shield' ? SHIELDS : ARMORS)
-    ?? boundedLabel(name, 'unnamed equipment');
-  const modifier = labelsOf(name, slot === 'Weapon' ? [...OFFENSE_ATTRIB, ...OFFENSE_BAD] : [...DEFENSE_ATTRIB, ...DEFENSE_BAD]).join(' and ');
+  const { base: basePart, mark, modifiers, total } = mechanics.quality;
+  const base = basePart?.name ?? boundedLabel(name, 'unnamed equipment');
+  const modifier = modifiers.map(({ name: modifierName }) => modifierName).join(' and ');
+  const modifierTotal = modifiers.reduce((sum, part) => sum + part.value, 0);
+  const explicitLabel = mark?.label;
   const opening = equipmentOpening(base, slot);
   const story = modifier
-    ? `${opening} ${equipmentAssessment(modifier, modifiers, slot, explicitLabel)}`
+    ? `${opening} ${equipmentAssessment(modifier, modifierTotal, slot, explicitLabel)}`
     : `${opening} It carries ${explicitLabel ? `a ${explicitLabel} assessor’s mark and no` : 'no'} named modifier, which procurement calls restraint.`;
   const description = boundEquipmentStory(story, base, modifier, slot, explicitLabel);
+  const signed = (value: number): string => `${value >= 0 ? '+' : ''}${value}`;
+  const qualityParts = [
+    basePart ? `${basePart.name} ${basePart.value}` : 'uncatalogued base 0',
+    ...modifiers.map((part) => `${part.name} ${signed(part.value)}`),
+    ...(mark ? [`mark ${mark.label}`] : []),
+  ];
 
   return {
     description,
-    effect: `${verb[0].toUpperCase()}${verb.slice(1)} rating: ${rating}. The simulation applies this as equipment quality; damage and mitigation remain abstract.`
+    effect: `Generation quality: ${total} (${qualityParts.join(' + ')}). Combat contribution: ${mechanics.combatContribution}; classic encounter time ignores equipment.`,
   };
 }
 
@@ -277,9 +256,10 @@ const SPELL_CLOSERS = [
 export function describeSpell(name: string, level: number): ItemDetails {
   const premise = SPELL_FLAVOR[name]
     ?? `The incantation “${boundedLabel(name, 'unnamed spell')}” arrived without syllabus, sponsor, or declared learning outcome.`;
+  const mechanics = analyzeItemMechanics({ kind: 'spell', level });
   return {
     description: `${premise} ${choose(SPELL_CLOSERS, `${name}:closer`)}`,
-    effect: `Spell level: ${level}. The simulation does not expose a spell-specific combat effect.`,
+    effect: `Spell rank: ${mechanics.rank}. Combat contribution: ${mechanics.combatContribution}; classic encounter time ignores spells.`,
   };
 }
 
@@ -390,6 +370,7 @@ const mundaneLootStory = (name: string): string => {
 };
 
 export function describeInventoryItem(name: string, quantity: number): ItemDetails {
+  const mechanics = analyzeItemMechanics({ kind: 'inventory', name, quantity });
   const special = specialItemParts(name);
   const monsterLoot = monsterLootParts(name);
   const label = boundedLabel(name, 'unnamed object');
@@ -417,7 +398,7 @@ export function describeInventoryItem(name: string, quantity: number): ItemDetai
   return {
     description,
     effect: name === 'Gold'
-      ? `Quantity carried: ${quantity}. Gold is weightless currency; it does not contribute to encumbrance or combat.`
-      : `Quantity carried: ${quantity}. Loot contributes to encumbrance; it has no direct combat effect until the market daemon gets involved.`,
+      ? `Quantity: ${mechanics.quantity}. Encumbrance: +${mechanics.encumbranceCubits} cubits. Funds equipment purchases; combat contribution: ${mechanics.combatContribution}.`
+      : `Quantity: ${mechanics.quantity}. Encumbrance: +${mechanics.encumbranceCubits} cubits. Combat contribution: ${mechanics.combatContribution}; loot is sold when the pack fills.`,
   };
 }

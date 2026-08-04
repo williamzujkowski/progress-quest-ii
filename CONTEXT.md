@@ -66,6 +66,18 @@ _Avoid_: Random description, item effect
 The mechanically authoritative facts exposed for an item, kept separate from its micro-story.
 _Avoid_: Flavor text
 
+**Equipment generation quality**:
+The sum of an equipment base, its named quality modifiers, and any residual numeric mark. It governs the prestige of newly awarded equipment near a character's level, but contributes no attack or mitigation because classic combat has neither calculation.
+_Avoid_: Attack rating, armor rating, damage
+
+**Spell rank**:
+The number of times a spell has been learned. It is prestige recorded for legacy brag metadata, not spell damage or combat priority.
+_Avoid_: Spell power, caster level
+
+**Combat contribution**:
+Whether an item changes encounter time. Equipment, spells, loot, and Gold have none; classic encounter time depends on opponent puissance and character level.
+_Avoid_: Hidden effect, abstract damage
+
 **Task count**:
 The number of completed tasks in a session.
 
