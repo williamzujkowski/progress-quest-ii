@@ -3,12 +3,14 @@ import React, { useLayoutEffect, useRef } from 'react';
 import { useGameStore } from '../state/gameStore';
 
 export const LogFeed: React.FC = () => {
-  const { log } = useGameStore();
+  const log = useGameStore((state) => state.log);
   const feedRef = useRef<HTMLDivElement>(null);
+  const latest = log[0];
+  const initialLatestId = useRef(latest?.id);
 
   useLayoutEffect(() => {
     if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight;
-  }, [log]);
+  }, [latest?.id]);
 
   const getLogTag = (entry: string) => {
     if (entry.startsWith('Defeated monster and looted ') || entry.startsWith('Item ')) return <span className="log-tag tag-loot">Loot</span>;
@@ -28,18 +30,21 @@ export const LogFeed: React.FC = () => {
         </div>
       </div>
 
+      <div className="sr-only" role="status" aria-label="Latest activity" aria-live="polite" aria-atomic="true">
+        {latest?.id === initialLatestId.current ? '' : latest?.message}
+      </div>
+
       <div
         ref={feedRef}
         className="log-feed"
         role="region"
         tabIndex={0}
         aria-label="Activity Event Log"
-        aria-live="polite"
       >
-        {log.toReversed().map((entry, idx) => (
-          <div className="log-entry log-entry-animated" key={idx}>
-            {getLogTag(entry)}
-            <span>{entry}</span>
+        {log.toReversed().map((entry) => (
+          <div className="log-entry log-entry-animated" key={entry.id} data-activity-id={entry.id}>
+            {getLogTag(entry.message)}
+            <span>{entry.message}</span>
           </div>
         ))}
       </div>

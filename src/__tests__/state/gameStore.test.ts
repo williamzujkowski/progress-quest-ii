@@ -3,7 +3,21 @@ import { RandomGenerator } from '../../engine/prng';
 import { levelUpTime } from '../../engine/math';
 import { createNewCharacter } from '../../engine/sim';
 import type { StatsMap } from '../../engine/types';
-import { useGameStore } from '../../state/gameStore';
+import { createActivityEntries, useGameStore } from '../../state/gameStore';
+
+function fixedKillCharacter() {
+  const character = structuredClone(useGameStore.getState().character);
+  character.Inventory = [];
+  character.Quest = { ...character.Quest, currentProgress: 0, maxProgress: 99, history: [character.Quest.description] };
+  character.Task = {
+    description: 'Executing test monster...',
+    durationMs: 1,
+    elapsedMs: 0,
+    type: 'kill',
+    loot: { type: 'fixed', item: 'rat tail' },
+  };
+  return character;
+}
 
 describe('Game Store State Machine', () => {
   beforeEach(() => {
@@ -31,16 +45,7 @@ describe('Game Store State Machine', () => {
   });
 
   it('installs one transition atomically and presents events newest first', () => {
-    const character = structuredClone(useGameStore.getState().character);
-    character.Inventory = [];
-    character.Quest = { ...character.Quest, currentProgress: 0, maxProgress: 99, history: [character.Quest.description] };
-    character.Task = {
-      description: 'Executing test monster...',
-      durationMs: 1,
-      elapsedMs: 0,
-      type: 'kill',
-      loot: { type: 'fixed', item: 'rat tail' },
-    };
+    const character = fixedKillCharacter();
     useGameStore.setState({ character, log: [], rng: new RandomGenerator('atomic-transition') });
     let notifications = 0;
     const unsubscribe = useGameStore.subscribe(() => { notifications += 1; });
@@ -51,8 +56,28 @@ describe('Game Store State Machine', () => {
     const updated = useGameStore.getState();
     expect(notifications).toBe(1);
     expect(updated.character.Inventory).toEqual([{ name: 'rat tail', qty: 1 }]);
-    expect(updated.log[0]).toBe(updated.character.Task.description);
-    expect(updated.log[1]).toBe('Gained a rat tail');
+    expect(updated.log[0]?.message).toBe(updated.character.Task.description);
+    expect(updated.log[1]?.message).toBe('Gained a rat tail');
+    expect(new Set(updated.log.map(({ id }) => id)).size).toBe(updated.log.length);
+  });
+
+  it('preserves retained activity identities when the 50-entry cap shifts', () => {
+    const character = fixedKillCharacter();
+    const existing = createActivityEntries(
+      Array.from({ length: 50 }, (_, index) => `Existing ${index + 1}`),
+      0,
+    ).reverse();
+    const retained = existing[25];
+    useGameStore.setState({ character, log: existing, nextActivityId: 50, rng: new RandomGenerator('stable-activity') });
+
+    useGameStore.getState().tick(1);
+
+    const updated = useGameStore.getState();
+    expect(updated.log).toHaveLength(50);
+    expect(updated.log.slice(0, 2).map(({ id }) => id)).toEqual([51, 50]);
+    expect(updated.log.find(({ id }) => id === retained?.id)).toBe(retained);
+    expect(updated.log.some(({ id }) => id === existing.at(-1)?.id)).toBe(false);
+    expect(new Set(updated.log.map(({ id }) => id)).size).toBe(50);
   });
 
   it('drains bounded catch-up remainder on a later scheduler tick', () => {
@@ -97,7 +122,7 @@ describe('Game Store State Machine', () => {
     expect(session.character).not.toBe(loaded);
     expect(session.rng).not.toBe(previousRng);
     expect(session.isPaused).toBe(false);
-    expect(session.log).toEqual(['Loaded character ImportedHero from save data.']);
+    expect(session.log.map(({ message }) => message)).toEqual(['Loaded character ImportedHero from save data.']);
     expect(session.progression).toEqual({
       experience: { currentSeconds: 0, maxSeconds: levelUpTime(loaded.Traits.Level) },
       completedTasks: 0,
@@ -124,6 +149,6 @@ describe('Game Store State Machine', () => {
     expect(restored.progression).toEqual(progression);
     expect(restored.pendingElapsedMs).toBe(37);
     expect(restored.isPaused).toBe(true);
-    expect(restored.log).toEqual(['Restored event']);
+    expect(restored.log.map(({ message }) => message)).toEqual(['Restored event']);
   });
 });
