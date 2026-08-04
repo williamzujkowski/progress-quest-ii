@@ -1,9 +1,10 @@
 import { Scroll } from 'lucide-react';
-import React, { useLayoutEffect, useRef } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { describeGameNumber, formatGameNumber } from '../engine/text';
 import { useGameStore } from '../state/gameStore';
 import { projectWorld } from '../state/worldContext';
 import { ActLabel } from './GameNumber';
+import { ChatterFeed } from './ChatterFeed';
 
 function formatElapsed(totalSeconds: number): string {
   if (totalSeconds >= 1_000_000) return `${formatGameNumber(totalSeconds)}s`;
@@ -28,12 +29,14 @@ function formatElapsedForSpeech(totalSeconds: number): string {
 export const LogFeed: React.FC = () => {
   const log = useGameStore((state) => state.log);
   const worldNotices = useGameStore((state) => state.worldNotices);
+  const socialEntries = useGameStore((state) => state.socialEntries);
   const character = useGameStore((state) => state.character);
   const progression = useGameStore((state) => state.progression);
   const world = projectWorld({ kind: 'current', state: { character, progression } }).context;
   const feedRef = useRef<HTMLDivElement>(null);
   const latest = log[0];
   const initialLatestId = useRef(latest?.id);
+  const [chatterOpen, setChatterOpen] = useState(false);
 
   useLayoutEffect(() => {
     if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight;
@@ -53,8 +56,12 @@ export const LogFeed: React.FC = () => {
       <div className="card-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Scroll size={18} />
-          <h2 id="log-heading">Activity Log</h2>
+          <h2 id="log-heading">Console</h2>
         </div>
+        <details className="chatter-disclosure" onToggle={(event) => setChatterOpen(event.currentTarget.open)}>
+          <summary>Automated chatter · zero online · messages unsent{socialEntries.length > 0 ? ` (${socialEntries.length})` : ''}</summary>
+          <ChatterFeed active={chatterOpen} />
+        </details>
       </div>
 
       <div className="sr-only" role="status" aria-label="Latest activity" aria-live="polite" aria-atomic="true">

@@ -12,6 +12,15 @@ afterEach(() => {
 });
 
 describe('Activity Log accessibility', () => {
+  it('discloses simulated chatter separately from authoritative activity', () => {
+    render(<LogFeed />);
+
+    expect(screen.getByRole('heading', { name: 'Console' })).not.toBeNull();
+    const disclosure = screen.getByText(/Automated chatter · zero online · messages unsent/).closest('details');
+    expect(disclosure?.hasAttribute('open')).toBe(false);
+    expect(screen.getByRole('region', { name: 'Activity Event Log' })).not.toBeNull();
+  });
+
   it('presents compact derived world context without turning it into live activity', () => {
     const state = useGameStore.getState();
     useGameStore.setState({

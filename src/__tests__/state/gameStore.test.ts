@@ -4,7 +4,7 @@ import { levelUpTime } from '../../engine/math';
 import { createNewCharacter } from '../../engine/sim';
 import type { StatsMap } from '../../engine/types';
 import { createActivityEntries, useGameStore } from '../../state/gameStore';
-import { MAX_WORLD_NOTICES } from '../../data/limits';
+import { MAX_SOCIAL_ENTRIES, MAX_WORLD_NOTICES } from '../../data/limits';
 
 function fixedKillCharacter() {
   const character = structuredClone(useGameStore.getState().character);
@@ -38,11 +38,13 @@ describe('Game Store State Machine', () => {
     const store = useGameStore.getState();
     store.togglePause();
     const initialElapsed = store.character.Task.elapsedMs;
+    const initialSocialEntries = store.socialEntries;
 
     store.tick(500);
 
     const updatedChar = useGameStore.getState().character;
     expect(updatedChar.Task.elapsedMs).toBe(initialElapsed);
+    expect(useGameStore.getState().socialEntries).toBe(initialSocialEntries);
   });
 
   it('installs one transition atomically and presents events newest first', () => {
@@ -105,6 +107,40 @@ describe('Game Store State Machine', () => {
     expect(updated.worldNotices.map(({ kind }) => kind)).toEqual(['training', 'arrival', 'departure']);
     expect(updated.worldNotices.every(({ sourceActivityId }) => sourceActivityId === levelActivity?.id)).toBe(true);
     expect(updated.worldNotices).toHaveLength(Math.min(3, MAX_WORLD_NOTICES));
+    expect(updated.socialEntries).toHaveLength(3);
+    expect(updated.socialEntries.every(({ sceneKind }) => sceneKind === 'level')).toBe(true);
+  });
+
+  it('retains newest-first social entries without cutting a scene at the cap', () => {
+    const character = fixedKillCharacter();
+    const existing = Array.from({ length: MAX_SOCIAL_ENTRIES / 3 }, (_, scene) => Array.from({ length: 3 }, (_, line) => ({
+      id: `existing:${scene}:${line}`,
+      sceneId: `existing:${scene}`,
+      sceneKind: 'quest' as const,
+      sourceActivityId: scene,
+      sourceEventType: 'quest_started' as const,
+      channel: 'guild' as const,
+      speaker: { id: 'fixture', kind: 'cast' as const, displayName: 'Fixture', role: 'Fixture', fictional: true as const, automaticHero: false },
+      text: `Existing ${scene}:${line}`,
+    })).toReversed()).flat();
+    useGameStore.setState({
+      character,
+      progression: { experience: { currentSeconds: 1, maxSeconds: 1 }, completedTasks: 0, elapsedSeconds: 0 },
+      log: [],
+      worldNotices: [],
+      socialEntries: existing,
+      nextActivityId: 500,
+      rng: new RandomGenerator('social-cap-transition'),
+    });
+
+    useGameStore.getState().tick(1);
+
+    const retained = useGameStore.getState().socialEntries;
+    expect(retained.length).toBeLessThanOrEqual(MAX_SOCIAL_ENTRIES);
+    expect(retained[0]?.sceneKind).toBe('level');
+    for (const sceneId of new Set(retained.map(({ sceneId }) => sceneId))) {
+      expect(retained.filter((entry) => entry.sceneId === sceneId)).toHaveLength(3);
+    }
   });
 
   it('drains bounded catch-up remainder on a later scheduler tick', () => {
@@ -150,6 +186,7 @@ describe('Game Store State Machine', () => {
     expect(session.rng).not.toBe(previousRng);
     expect(session.isPaused).toBe(false);
     expect(session.log.map(({ message }) => message)).toEqual(['Loaded character ImportedHero from save data.']);
+    expect(session.socialEntries).toEqual([]);
     expect(session.progression).toEqual({
       experience: { currentSeconds: 0, maxSeconds: levelUpTime(loaded.Traits.Level) },
       completedTasks: 0,
@@ -177,5 +214,6 @@ describe('Game Store State Machine', () => {
     expect(restored.pendingElapsedMs).toBe(37);
     expect(restored.isPaused).toBe(true);
     expect(restored.log.map(({ message }) => message)).toEqual(['Restored event']);
+    expect(restored.socialEntries).toEqual([]);
   });
 });

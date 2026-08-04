@@ -1,0 +1,269 @@
+import { describe, expect, it, vi } from 'vitest';
+import { SOCIAL_PERSONAS } from '../../data/socialCatalog';
+import { RandomGenerator } from '../../engine/prng';
+import { createNewCharacter } from '../../engine/sim';
+import { advanceGame } from '../../engine/transition';
+import type { GamePresentationSnapshot, GameTransitionEvent } from '../../engine/transition';
+import { activeCheckpointV1Schema } from '../../state/schemas';
+import { encodePQWSave } from '../../state/saveManager';
+import { projectSocialBatch } from '../../state/socialProjection';
+import type { IdentifiedGameTransitionRecord } from '../../state/worldContext';
+
+const snapshot = (overrides: Partial<GamePresentationSnapshot> = {}): GamePresentationSnapshot => ({
+  hero: { name: 'Krg', race: 'Hob-Hobbit', className: 'Robot Monk', level: 7 },
+  act: 2,
+  completedTask: 'kill',
+  nextTask: 'kill',
+  completedTasks: 42,
+  elapsedSeconds: 3671,
+  activeQuest: { kind: 'exterminate', target: 'Rat|1|tail', targetIndex: 0 },
+  ...overrides,
+});
+
+const source = (
+  activityId: number,
+  event: GameTransitionEvent,
+  post = snapshot(),
+): IdentifiedGameTransitionRecord => ({ activityId, record: { event, post } });
+
+const task = (type: 'heading' | 'selling' | 'kill' | 'cinematic') => ({
+  type: 'task_started' as const,
+  task: { description: 'Opaque canonical activity', durationMs: 1, elapsedMs: 0, type },
+});
+
+describe('project-owned simulated cast', () => {
+  it('defines eight safe original personas in four interchangeable seats', () => {
+    expect(SOCIAL_PERSONAS).toHaveLength(8);
+    expect(new Set(SOCIAL_PERSONAS.map(({ id }) => id)).size).toBe(8);
+    expect(new Set(SOCIAL_PERSONAS.map(({ seat }) => seat))).toEqual(new Set(['official', 'logistics', 'field', 'support']));
+    for (const seat of ['official', 'logistics', 'field', 'support'] as const) {
+      expect(SOCIAL_PERSONAS.filter((persona) => persona.seat === seat)).toHaveLength(2);
+    }
+    expect(SOCIAL_PERSONAS.every(({ voice }) => voice.register.length > 0 && voice.maxWords >= 12 && voice.maxWords <= 30)).toBe(true);
+    expect(SOCIAL_PERSONAS.every(({ displayName }) => Array.from(displayName).length <= 48)).toBe(true);
+
+    const serialized = JSON.stringify(SOCIAL_PERSONAS).toLowerCase();
+    for (const forbidden of [
+      'erenshor', 'simplayer', 'everquest', 'world of warcraft', 'ultima online',
+      'kingdom of loathing', 'universal paperclips', 'zombo.com', 'douglas adams',
+      'monty python', 'terry gilliam', 'mel brooks', 'http://', 'https://',
+    ]) expect(serialized).not.toContain(forbidden);
+    expect(serialized).not.toMatch(/[<>\u202a-\u202e\u2066-\u2069]/u);
+    expect(Array.from(serialized).some((character) => {
+      const codePoint = character.codePointAt(0) ?? 0;
+      return codePoint < 0x20 || (codePoint >= 0x7f && codePoint <= 0x9f);
+    })).toBe(false);
+  });
+});
+
+describe('deterministic social batch projection', () => {
+  it('is byte-stable, does not mutate input, and uses no clock or random source', () => {
+    const input = [source(40, { type: 'level_gained', level: 7 })];
+    const before = JSON.stringify(input);
+    const random = vi.spyOn(Math, 'random').mockImplementation(() => { throw new Error('random forbidden'); });
+    const now = vi.spyOn(Date, 'now').mockImplementation(() => { throw new Error('clock forbidden'); });
+
+    const first = projectSocialBatch(input);
+    const replay = projectSocialBatch(input);
+
+    expect(JSON.stringify(replay)).toBe(JSON.stringify(first));
+    expect(JSON.stringify(input)).toBe(before);
+    expect(random).not.toHaveBeenCalled();
+    expect(now).not.toHaveBeenCalled();
+    random.mockRestore();
+    now.mockRestore();
+  });
+
+  it('coalesces one completed task into one scene using explicit event priority', () => {
+    const post = snapshot({ completedTasks: 90 });
+    const entries = projectSocialBatch([
+      source(100, { type: 'equipment_gained', slot: 'Weapon', name: 'Thing' }, post),
+      source(101, { type: 'quest_completed', description: 'Opaque' }, post),
+      source(102, { type: 'level_gained', level: 7 }, post),
+      source(103, task('kill'), post),
+    ]);
+
+    expect(new Set(entries.map(({ sceneId }) => sceneId)).size).toBe(1);
+    expect(entries.every(({ sceneKind, sourceActivityId }) => sceneKind === 'level' && sourceActivityId === 102)).toBe(true);
+    expect(entries).toHaveLength(3);
+  });
+
+  it('selects a stable four-person cast from hero facts across reload-equivalent batches', () => {
+    const makeBatch = (firstId: number, completedTasks: number) => [
+      source(firstId, { type: 'level_gained', level: 7 }, snapshot({ completedTasks })),
+      source(firstId + 1, { type: 'quest_started', description: 'Opaque' }, snapshot({ completedTasks: completedTasks + 1, activeQuest: { kind: 'deliver' } })),
+      source(firstId + 2, { type: 'inventory_sold', gold: 11 }, snapshot({ completedTasks: completedTasks + 2, marketSale: { name: 'Hostile item', quantity: 2, gold: 11 } })),
+      source(firstId + 3, task('heading'), snapshot({ completedTasks: completedTasks + 3, completedTask: 'selling', nextTask: 'heading' })),
+    ];
+    const castIds = (batch: readonly IdentifiedGameTransitionRecord[]) => new Set(
+      projectSocialBatch(batch).filter(({ speaker }) => speaker.kind === 'cast').map(({ speaker }) => speaker.id),
+    );
+
+    expect(castIds(makeBatch(1, 10))).toEqual(castIds(makeBatch(100, 1000)));
+    expect(castIds(makeBatch(1, 10)).size).toBe(4);
+  });
+
+  it('keeps only the newest three complete scenes and one truthful catch-up row', () => {
+    const input = Array.from({ length: 7 }, (_, index) => source(
+      200 + index,
+      { type: 'quest_started', description: `Untrusted ${index}` },
+      snapshot({ completedTasks: index, activeQuest: { kind: 'seek' } }),
+    ));
+
+    const entries = projectSocialBatch(input);
+    const scenes = [...new Set(entries.map(({ sceneId }) => sceneId))];
+
+    expect(scenes).toHaveLength(4);
+    expect(entries[0]).toMatchObject({ sceneKind: 'catch_up', channel: 'system', sourceActivityId: 204 });
+    expect(entries[0]?.text).toContain('4 routine social scenes');
+    expect(entries.slice(1)).toHaveLength(9);
+    for (const sceneId of scenes.slice(1)) expect(entries.filter((entry) => entry.sceneId === sceneId)).toHaveLength(3);
+    expect(entries.at(-1)?.sourceActivityId).toBe(206);
+  });
+
+  it('reports only typed level, quest scope, sale, equipment, location, and raid facts', () => {
+    const hostile = '<b>Sir Untrusted</b>\u202e claimed 999 damage in Erenshor';
+    const entries = projectSocialBatch([
+      source(300, { type: 'level_gained', level: 1_000_000_000 }, snapshot({ completedTasks: 1, hero: { name: hostile, race: 'x', className: 'y', level: 1_000_000_000 } })),
+      source(301, { type: 'quest_started', description: hostile }, snapshot({ completedTasks: 2, activeQuest: { kind: 'deliver', target: hostile } })),
+      source(302, { type: 'inventory_sold', gold: 17 }, snapshot({ completedTasks: 3, marketSale: { name: hostile, quantity: 3, gold: 17 } })),
+      source(303, { type: 'equipment_gained', slot: 'Weapon', name: hostile }, snapshot({ completedTasks: 4 })),
+      source(304, task('cinematic'), snapshot({ completedTasks: 5, act: 10, nextTask: 'cinematic', interplotRole: 'nemesis' })),
+    ]);
+    const text = entries.map((entry) => entry.text).join(' ');
+
+    expect(text).not.toContain(hostile);
+    expect(text).not.toContain('Erenshor');
+    expect(text).toContain('3');
+    expect(text).toContain('17');
+    expect(text).toContain('raid');
+    expect(entries.every((entry) => Array.from(entry.text).length <= 180)).toBe(true);
+    expect(entries.every(({ speaker }) => speaker.fictional)).toBe(true);
+    expect(entries.filter(({ speaker }) => speaker.kind === 'hero').every(({ speaker }) => speaker.automaticHero)).toBe(true);
+    expect(entries.filter(({ speaker }) => speaker.kind !== 'hero').every(({ speaker }) => !speaker.automaticHero)).toBe(true);
+  });
+
+  it('uses completed quest scope, source-neutral loot quantity, and the typed raid threshold', () => {
+    const quest = projectSocialBatch([source(500, { type: 'quest_completed', description: 'Opaque' }, snapshot({
+      completedQuest: { kind: 'deliver' },
+      activeQuest: { kind: 'seek' },
+    }))]);
+    const loot = projectSocialBatch([source(501, { type: 'item_gained', name: '<b>Untrusted trophy</b>', quantity: 4 }, snapshot({ completedTasks: 43 }))]);
+    const dungeon = projectSocialBatch([source(502, task('cinematic'), snapshot({ completedTasks: 44, act: 9, nextTask: 'cinematic', interplotRole: 'nemesis' }))]);
+    const raid = projectSocialBatch([source(503, task('cinematic'), snapshot({ completedTasks: 45, act: 10, nextTask: 'cinematic', interplotRole: 'nemesis' }))]);
+
+    expect(quest.map(({ text }) => text).join(' ')).toContain('travel');
+    expect(quest.map(({ text }) => text).join(' ')).not.toContain('dungeon assignment');
+    expect(loot.map(({ text }) => text).join(' ')).toContain('4');
+    expect(loot.map(({ text }) => text).join(' ')).not.toContain('Untrusted trophy');
+    expect(loot.every(({ sceneKind }) => sceneKind === 'loot')).toBe(true);
+    expect(dungeon.map(({ text }) => text).join(' ')).toContain('dungeon');
+    expect(dungeon.map(({ text }) => text).join(' ')).not.toContain('raid-class');
+    expect(raid.map(({ text }) => text).join(' ')).toContain('raid-class');
+  });
+
+  it('distinguishes typed road departures from actual zone arrivals', () => {
+    const departure = projectSocialBatch([source(504, task('heading'), snapshot({ completedTasks: 46, completedTask: 'selling', nextTask: 'heading' }))]);
+    const arrival = projectSocialBatch([source(505, task('kill'), snapshot({ completedTasks: 47, completedTask: 'heading', nextTask: 'kill' }))]);
+    const castText = (entries: readonly ReturnType<typeof projectSocialBatch>[number][]) => entries
+      .filter(({ speaker }) => speaker.kind === 'cast')
+      .map(({ text }) => text)
+      .join(' ');
+
+    expect(castText(departure)).not.toMatch(/\b(arrived|reached|located)\b/iu);
+    expect(castText(departure)).toMatch(/\b(route|travel|road)\b/iu);
+    expect(castText(arrival)).toMatch(/\b(arrived|reached|located)\b/iu);
+  });
+
+  it('keeps every reviewed variant plain, bounded, original, and mechanically conservative', () => {
+    const variants = Array.from({ length: 40 }, (_, index) => [
+      source(index * 10, { type: 'level_gained', level: index + 2 }, snapshot({ completedTasks: index * 10 })),
+      source(index * 10 + 1, { type: 'quest_started', description: 'Opaque' }, snapshot({ completedTasks: index * 10 + 1, activeQuest: { kind: 'seek' } })),
+      source(index * 10 + 2, { type: 'equipment_gained', slot: 'Weapon', name: 'Opaque' }, snapshot({ completedTasks: index * 10 + 2 })),
+      source(index * 10 + 3, { type: 'inventory_sold', gold: 9 }, snapshot({ completedTasks: index * 10 + 3, marketSale: { name: 'Opaque', quantity: 2, gold: 9 } })),
+      source(index * 10 + 4, { type: 'item_gained', name: 'Opaque', quantity: 2 }, snapshot({ completedTasks: index * 10 + 4 })),
+      source(index * 10 + 5, task('cinematic'), snapshot({ completedTasks: index * 10 + 5, act: 10, nextTask: 'cinematic', interplotRole: 'nemesis' })),
+    ].flatMap((record) => projectSocialBatch([record]))).flat();
+    const text = variants.map((entry) => entry.text).join('\n').toLowerCase();
+
+    for (const forbidden of [
+      'erenshor', 'simplayer', 'everquest', 'world of warcraft', 'ultima online',
+      'kingdom of loathing', 'universal paperclips', 'zombo.com', 'douglas adams',
+      'monty python', 'terry gilliam', 'mel brooks', 'http://', 'https://',
+    ]) expect(text).not.toContain(forbidden);
+    expect(text).not.toMatch(/[<>\u202a-\u202e\u2066-\u2069]/u);
+    expect(variants.every(({ text: utterance }) => Array.from(utterance).length <= 180)).toBe(true);
+    expect(variants.every(({ text: utterance }) => !Array.from(utterance).some((character) => {
+      const codePoint = character.codePointAt(0) ?? 0;
+      return codePoint < 0x20 || (codePoint >= 0x7f && codePoint <= 0x9f);
+    }))).toBe(true);
+    expect(text).not.toMatch(/\b(dealt|damage|dps|healed|corpse|experience loss|player joined|server connected)\b/u);
+    for (const entry of variants.filter(({ speaker }) => speaker.kind === 'cast')) {
+      const persona = SOCIAL_PERSONAS.find(({ id }) => id === entry.speaker.id);
+      expect(persona).toBeDefined();
+      expect(entry.text.trim().split(/\s+/u).length).toBeLessThanOrEqual(persona?.voice.maxWords ?? 0);
+    }
+  });
+
+  it('leaves authoritative state, records, saves, and gameplay RNG byte-identical', () => {
+    const run = (enabled: boolean) => {
+      const character = createNewCharacter('Social Parity Oracle', 'Half Orc', 'Robot Monk', 'social-parity-character');
+      character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+      character.Inventory = [{ name: 'rat tail', qty: 100 }];
+      const rng = new RandomGenerator('social-parity-transition');
+      const result = advanceGame({
+        character,
+        progression: { experience: { currentSeconds: 1, maxSeconds: 1 }, completedTasks: 0, elapsedSeconds: 0 },
+      }, 120_000, rng);
+      if (enabled) projectSocialBatch(result.records.map((record, activityId) => ({ activityId, record })));
+      const checkpoint = activeCheckpointV1Schema.parse({
+        schemaVersion: 1,
+        session: {
+          ...result.state,
+          rngState: rng.getState(),
+          pendingElapsedMs: result.remainingElapsedMs,
+          isPaused: false,
+          log: result.records.slice(-50).map(({ event }) => event.type),
+        },
+      });
+      return {
+        state: result.state,
+        records: result.records,
+        remainingElapsedMs: result.remainingElapsedMs,
+        rng: rng.getState(),
+        checkpoint: JSON.stringify(checkpoint),
+        pqw: encodePQWSave(result.state.character),
+      };
+    };
+
+    expect(run(true)).toEqual(run(false));
+  });
+
+  it('summarizes a real bounded engine catch-up burst', () => {
+    const character = createNewCharacter('Catch-up Oracle', 'Half Orc', 'Robot Monk', 'social-catch-up-character');
+    character.Plot = { act: 1, currentProgress: 1, maxProgress: 1 };
+    character.Quest = { description: 'Typed assignment', currentProgress: 1, maxProgress: 1, history: ['Typed assignment'], kind: 'deliver' };
+    character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.PendingTasks = undefined;
+    character.Inventory = [{ name: 'rat tail', qty: 50 }, { name: 'old boot', qty: 50 }];
+    character.Gold = 1_000_000;
+    const result = advanceGame({
+      character,
+      progression: { experience: { currentSeconds: 1, maxSeconds: 1 }, completedTasks: 0, elapsedSeconds: 0 },
+    }, 120_000, new RandomGenerator('social-catch-up-transition'));
+
+    const entries = projectSocialBatch(result.records.map((record, activityId) => ({ activityId, record })));
+
+    expect(result.records.length).toBeGreaterThan(10);
+    expect(entries[0]?.sceneKind).toBe('catch_up');
+    expect(entries).toHaveLength(10);
+    expect(new Set(entries.slice(1).map(({ sceneId }) => sceneId))).toHaveLength(3);
+  });
+
+  it('returns nothing for routine records with no approved social scene', () => {
+    expect(projectSocialBatch([
+      source(400, { type: 'save_requested', characterName: 'Untrusted' }),
+      source(401, { type: 'stat_gained', stat: 'STR', amount: 1 }, snapshot({ completedTasks: 43 })),
+    ])).toEqual([]);
+  });
+});
