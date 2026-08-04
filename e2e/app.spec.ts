@@ -605,7 +605,8 @@ test.describe('Progress Quest II terminal dashboard', () => {
           'LEVEL UP! Advanced to level 2!',
           'Quest completed: Find the lost stapler',
           'Defeated monster and looted a bent fork.',
-          'Sold loot at market for 10 gold!',
+          'Got paid 10 gold pieces',
+          'Negotiated purchase: Equipped Tax Hat in Helm slot!',
           'Executing a passing pigeon...',
         ],
       });
@@ -620,7 +621,8 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(tagFor('LEVEL UP! Advanced to level 2!')).toHaveText('Level');
     await expect(tagFor('Quest completed: Find the lost stapler')).toHaveText('Quest');
     await expect(tagFor('Defeated monster and looted a bent fork.')).toHaveText('Loot');
-    await expect(tagFor('Sold loot at market for 10 gold!')).toHaveText('Market');
+    await expect(tagFor('Got paid 10 gold pieces')).toHaveCount(0);
+    await expect(tagFor('Negotiated purchase: Equipped Tax Hat in Helm slot!')).toHaveText('Market');
     await expect(tagFor('Executing a passing pigeon...')).toHaveText('Combat');
   });
 

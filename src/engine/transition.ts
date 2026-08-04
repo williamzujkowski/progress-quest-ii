@@ -3,7 +3,7 @@ import { BORING_ITEMS, IMPRESSIVE_TITLES, MONSTERS, RACES } from '../data/traits
 import { MAX_PENDING_TASKS, MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../data/limits';
 import { calculateEncumbranceMax, generateName, levelUpTime } from './math';
 import type { RandomGenerator } from './prng';
-import { formatGameNumber, plural } from './text';
+import { formatGameNumber, indefinite, plural } from './text';
 import type { CharacterSheet, EquipSlot, NemesisSequenceCursor, PendingSequenceEntry, ProgressionState, ProgressTask, SequenceTask, StatName } from './types';
 
 export interface GameTransitionState {
@@ -164,6 +164,12 @@ function actLabel(act: number): string {
   return act > 10_000 ? formatGameNumber(act) : toRoman(act);
 }
 
+function leaveMarketTask(gold: number, level: number): ProgressTask {
+  return gold > equipPrice(level)
+    ? { description: 'Negotiating purchase of better equipment...', durationMs: 5000, elapsedMs: 0, type: 'buying' }
+    : { description: 'Heading to the killing fields...', durationMs: 4000, elapsedMs: 0, type: 'heading' };
+}
+
 export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: RandomGenerator): GameTransitionResult {
   if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return { state, events: [], remainingElapsedMs: 0 };
 
@@ -302,14 +308,13 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
       }
       if (cinematicOpening) pendingTasks.push(...finishInterplotCinematic(rng, plot.act, traits.Level, cinematicOpening));
     } else if (task.type === 'selling') {
-      let earned = 0;
-      inventory = inventory.filter((item) => {
-        if (item.name !== 'Gold') {
-          earned += item.qty * (10 + rng.random(20));
-          return false;
-        }
-        return true;
-      });
+      const [soldItem, ...remainingInventory] = inventory;
+      let earned = soldItem ? soldItem.qty * traits.Level : 0;
+      if (soldItem?.name.includes(' of ')) {
+        earned *= (1 + Math.min(rng.random(10), rng.random(10)))
+          * (1 + Math.min(rng.random(traits.Level), rng.random(traits.Level)));
+      }
+      inventory = remainingInventory;
       const previousGold = gold;
       gold = Math.min(MAX_PERSISTED_GOLD, gold + earned);
       events.push({ type: 'inventory_sold', gold: gold - previousGold });
@@ -376,11 +381,16 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
     } else if (task.type === 'act_marker') {
       if (calculateEncumbrance(inventory) >= calculateEncumbranceMax(stats.STR)) {
         nextTask = { description: 'Heading to market to sell loot...', durationMs: 4000, elapsedMs: 0, type: 'heading_to_market' };
-      } else if (gold > equipPrice(traits.Level)) {
-        nextTask = { description: 'Negotiating purchase of better equipment...', durationMs: 5000, elapsedMs: 0, type: 'buying' };
       } else {
-        nextTask = { description: 'Heading to the killing fields...', durationMs: 4000, elapsedMs: 0, type: 'heading' };
+        nextTask = leaveMarketTask(gold, traits.Level);
       }
+    } else if (task.type === 'selling' || task.type === 'heading_to_market') {
+      const nextItem = inventory[0];
+      nextTask = nextItem
+        ? { description: `Selling ${indefinite(nextItem.name, nextItem.qty)}...`, durationMs: 1000, elapsedMs: 0, type: 'selling' }
+        : leaveMarketTask(gold, traits.Level);
+    } else if (task.type === 'buying') {
+      nextTask = leaveMarketTask(gold, traits.Level);
     } else {
       const nextTaskInfo = generateTaskDescription(rng, transitionedCharacter);
       nextTask = { ...nextTaskInfo, elapsedMs: 0 };

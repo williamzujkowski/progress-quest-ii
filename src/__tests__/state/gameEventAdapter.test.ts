@@ -19,7 +19,7 @@ describe('game event presentation adapter', () => {
     [{ type: 'item_gained', name: 'rat tail', quantity: 1 }, 'Gained a rat tail', undefined],
     [{ type: 'gold_received', amount: 1 }, 'Got paid a gold piece', undefined],
     [{ type: 'gold_received', amount: 0.5 }, 'Got paid 0.5 gold pieces', undefined],
-    [{ type: 'inventory_sold', gold: 47 }, 'Sold loot at market for 47 gold!', 'market'],
+    [{ type: 'inventory_sold', gold: 47 }, 'Got paid 47 gold pieces', 'market'],
     [{ type: 'equipment_purchased', slot: 'Helm', name: 'Tax Hat' }, 'Negotiated purchase: Equipped Tax Hat in Helm slot!', 'market'],
     [{ type: 'task_started', task: { description: 'Waiting heroically...', durationMs: 1, elapsedMs: 0, type: 'heading' } }, 'Waiting heroically...', undefined],
   ] as const)('presents %o as legacy activity with its sound cue', (event, message, cue) => {
