@@ -1,5 +1,6 @@
 import React from 'react';
 import { useGameStore } from '../state/gameStore';
+import { describeAct } from '../state/gameEventAdapter';
 
 export const QuestLog: React.FC = () => {
   const { character } = useGameStore();
@@ -12,7 +13,7 @@ export const QuestLog: React.FC = () => {
     <section className="card quest-card" aria-labelledby="quest-log-heading">
       <div className="card-header">
         <h2 id="quest-log-heading">Questing & Progression</h2>
-        <span className="badge badge-warning">Act {character.Plot.act}</span>
+        <span className="badge badge-warning">{describeAct(character.Plot.act)}</span>
       </div>
 
       <div className="progress-container progress-task">

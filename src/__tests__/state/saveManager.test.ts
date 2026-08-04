@@ -2,7 +2,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PRIME_STATS } from '../../data/traits';
 import { MAX_FINITE_CHARACTER_LEVEL } from '../../engine/math';
+import { RandomGenerator } from '../../engine/prng';
 import { createNewCharacter } from '../../engine/sim';
+import { advanceGame } from '../../engine/transition';
 import {
   MAX_PQW_INPUT_LENGTH,
   MAX_ROSTER_ENTRIES,
@@ -45,6 +47,31 @@ describe('Save Manager & Serialization', () => {
     expect(decoded.value.Stats.STR).toBe(originalChar.Stats.STR);
     expect(decoded.value.Quest).toEqual(originalChar.Quest);
     expect(decoded.value.Plot).toEqual(originalChar.Plot);
+    expect(decoded.value.PendingTasks).toEqual(originalChar.PendingTasks);
+  });
+
+  it('preserves and resumes a partly consumed prologue through PQW and roster storage', () => {
+    const character = createNewCharacter('MidpointHero', 'Demicanadian', 'Bastard Lunatic', 9_997);
+    const progression = { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 };
+    const midpoint = advanceGame({ character, progression }, 7000, new RandomGenerator('unused-prologue-rng')).state;
+    expect(midpoint.character.Task).toMatchObject({ type: 'prologue', elapsedMs: 5000 });
+
+    const decoded = decodePQWSave(encodePQWSave(midpoint.character));
+    expect(decoded.ok).toBe(true);
+    if (!decoded.ok) return;
+    saveToRoster(midpoint.character);
+    const roster = loadRoster();
+    expect(roster.ok).toBe(true);
+    if (!roster.ok) return;
+    const rosterCharacter = roster.value.MidpointHero;
+    expect(rosterCharacter).toEqual(midpoint.character);
+
+    const expected = advanceGame(midpoint, 23_000, new RandomGenerator('same-prologue-continuation'));
+    for (const restored of [decoded.value, rosterCharacter]) {
+      if (!restored) throw new Error('Expected the midpoint character in the roster');
+      const resumed = advanceGame({ character: restored, progression: midpoint.progression }, 23_000, new RandomGenerator('same-prologue-continuation'));
+      expect(resumed).toEqual(expected);
+    }
   });
 
   it('preserves Unicode character names with the standards-based UTF-8 codec', () => {
@@ -120,6 +147,7 @@ describe('Save Manager & Serialization', () => {
       { ...character, Task: { ...character.Task, overtime: true } },
       { ...character, Task: { ...character.Task, loot: { ...character.Task.loot, cursed: true } } },
       { ...character, Task: { ...character.Task, loot: { type: 'random', audited: false } } },
+      { ...character, PendingTasks: [{ ...character.PendingTasks?.[0], improvised: true }] },
     ];
 
     for (const candidate of candidates) {
@@ -236,6 +264,39 @@ describe('Save Manager & Serialization', () => {
   it('keeps generated character output compatible with the save contract', () => {
     const character = createNewCharacter('ContractHero', 'Half Orc', 'Robot Monk', 404);
     expect(characterSheetSchema.safeParse(character).success).toBe(true);
+  });
+
+  it('accepts old sheets without a queue and rejects malformed pending sequences', () => {
+    const character = createNewCharacter('SequenceContractHero', 'Half Orc', 'Robot Monk', 408);
+    const { PendingTasks: _pendingTasks, ...oldSheet } = character;
+    const step = character.PendingTasks?.[0];
+    if (!step) throw new Error('Expected the canonical prologue queue');
+
+    expect(characterSheetSchema.safeParse(oldSheet).success).toBe(true);
+    for (const PendingTasks of [
+      [],
+      [step],
+      [{ ...step, elapsedMs: 1 }],
+      [{ ...step, type: 'kill' }],
+      [{ ...step, loot: { type: 'random' } }],
+      Array.from({ length: 101 }, () => step),
+      [
+        { description: 'Loading', durationMs: 1000, elapsedMs: 0, type: 'act_marker' },
+        step,
+      ],
+      [
+        step,
+        { description: 'Loading', durationMs: 1000, elapsedMs: 0, type: 'act_marker' },
+        { description: 'Loading again', durationMs: 1000, elapsedMs: 0, type: 'act_marker' },
+      ],
+      [
+        { ...step, type: 'cinematic' },
+        { description: 'Loading', durationMs: 1000, elapsedMs: 0, type: 'act_marker' },
+      ],
+    ]) {
+      expect(characterSheetSchema.safeParse({ ...character, PendingTasks }).success).toBe(false);
+    }
+    expect(characterSheetSchema.safeParse({ ...character, Task: { ...character.Task, type: 'kill' } }).success).toBe(false);
   });
 
   it('validates explicit fixed and random task loot without accepting blank items', () => {

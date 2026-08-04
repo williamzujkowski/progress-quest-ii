@@ -3,6 +3,7 @@ import React from 'react';
 import { calculateEncumbranceMax } from '../engine/math';
 import { calculateEncumbrance } from '../engine/sim';
 import { useGameStore } from '../state/gameStore';
+import { describeAct } from '../state/gameEventAdapter';
 
 const PRIME_STATS = ['STR', 'CON', 'DEX', 'INT', 'WIS', 'CHA'] as const;
 
@@ -20,7 +21,7 @@ export const HeroBanner: React.FC = () => {
           <span className="badge" title="Character Level">Lvl {character.Traits.Level}</span>
         </div>
         <div className="hero-sub">
-          {character.Traits.Race} {character.Traits.Class} • Act {character.Plot.act}
+          {character.Traits.Race} {character.Traits.Class} • {describeAct(character.Plot.act)}
         </div>
       </div>
 

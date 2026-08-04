@@ -1,4 +1,5 @@
 export type PRNGSeed = string | number;
+export type PRNGState = [number, number, number, number];
 
 export function Mash() {
   let n = 0xefc8249d;
@@ -26,7 +27,7 @@ export interface PRNG {
   uint32: () => number;
   fract53: () => number;
   args: PRNGSeed[];
-  state: (newState?: [number, number, number, number]) => [number, number, number, number];
+  state: (newState?: PRNGState) => PRNGState;
 }
 
 export function Alea(...initialArgs: PRNGSeed[]): PRNG {
@@ -89,11 +90,11 @@ export class RandomGenerator {
     return arr[this.random(arr.length)];
   }
 
-  public getState(): [number, number, number, number] {
+  public getState(): PRNGState {
     return this.prng.state();
   }
 
-  public setState(state: [number, number, number, number]): void {
+  public setState(state: PRNGState): void {
     this.prng.state(state);
   }
 }

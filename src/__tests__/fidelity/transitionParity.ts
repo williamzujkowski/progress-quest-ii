@@ -20,6 +20,7 @@ interface LegacySheet {
   bestplot: string;
   bestquest: string;
   task: string;
+  queue: string[];
   tasks: number;
   elapsed: number;
   kill: string;
@@ -69,8 +70,8 @@ export interface EncounterTransitionObservation {
   };
 }
 
-function assertCompletedKill(sheet: LegacySheet): void {
-  if (!sheet.task.startsWith('kill|')) throw new RangeError(`Unsupported legacy task tag: ${sheet.task}`);
+function assertCompletedTask(sheet: LegacySheet): void {
+  if (sheet.task !== '' && !sheet.task.startsWith('kill|')) throw new RangeError(`Unsupported legacy task tag: ${sheet.task}`);
   if (sheet.TaskBar.position !== sheet.TaskBar.max) throw new TypeError('Legacy fixture TaskBar must start at exactly one completed task');
   if (sheet.seed.length !== 4 || !sheet.seed.every(Number.isFinite)) throw new TypeError('Legacy fixture seed must be a finite Alea tuple');
 }
@@ -86,7 +87,8 @@ function romanToNumber(value: string): number {
   return total;
 }
 
-function lootFromLegacyKill(taskTag: string): NonNullable<ProgressTask['loot']> {
+function lootFromLegacyTask(taskTag: string): ProgressTask['loot'] {
+  if (!taskTag.startsWith('kill|')) return undefined;
   const [, monsterName, , monsterDrop] = taskTag.split('|');
   if (!monsterName || !monsterDrop) throw new TypeError('Legacy fixture kill task must contain a monster and drop');
   return monsterDrop === '*'
@@ -95,7 +97,7 @@ function lootFromLegacyKill(taskTag: string): NonNullable<ProgressTask['loot']> 
 }
 
 export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixture): EncounterTransitionObservation {
-  assertCompletedKill(fixture.input.sheet);
+  assertCompletedTask(fixture.input.sheet);
   const { expected } = fixture;
   return {
     traits: structuredClone(expected.character.traits),
@@ -103,7 +105,7 @@ export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixtur
     inventory: structuredClone(expected.inventory),
     equipment: structuredClone(expected.equipment),
     spells: expected.spells.map(([name, , level]) => [name, level]),
-    nextTask: { caption: expected.task.caption, durationMs: expected.task.maxMs, loot: lootFromLegacyKill(expected.task.tag) },
+    nextTask: { caption: expected.task.caption, durationMs: expected.task.maxMs, loot: lootFromLegacyTask(expected.task.tag) },
     events: [...expected.log],
     rng: [...expected.rng],
     progression: {
@@ -125,14 +127,18 @@ export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixtur
 
 export function observeModernEncounterTransition(fixture: LegacyTransitionFixture): EncounterTransitionObservation {
   const sheet = fixture.input.sheet;
-  assertCompletedKill(sheet);
+  assertCompletedTask(sheet);
   const fixtureSnapshot = JSON.stringify(fixture);
   const rng = new RandomGenerator('legacy-fixture');
   rng.setState([...sheet.seed]);
   const gold = sheet.Inventory.find(([name]) => name === 'Gold')?.[1];
   if (gold === undefined) throw new TypeError('Legacy fixture Inventory must contain Gold');
 
-  const character: CharacterSheet = {
+  const pendingTasks = sheet.queue.map((entry) => {
+    const [type, durationSeconds, description] = entry.split('|');
+    return { description, durationMs: Number(durationSeconds) * 1000, elapsedMs: 0, type: type === 'plot' ? 'act_marker' : 'cinematic' };
+  });
+  const character = {
     Traits: structuredClone(sheet.Traits),
     Stats: structuredClone(sheet.Stats),
     Equip: structuredClone(sheet.Equips),
@@ -145,10 +151,11 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
       description: sheet.kill,
       durationMs: sheet.TaskBar.max,
       elapsedMs: 0,
-      type: 'kill',
-      loot: lootFromLegacyKill(sheet.task),
+      type: sheet.task.startsWith('kill|') ? 'kill' : 'cinematic',
+      loot: lootFromLegacyTask(sheet.task),
     },
-  };
+    PendingTasks: pendingTasks,
+  } as CharacterSheet;
 
   const input = {
     character,
@@ -172,7 +179,9 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
     equipment: EQUIP_SLOTS.map((slot) => [slot, transitioned.Equip[slot]]),
     spells: transitioned.Spells.map(({ name, level }) => [name, level]),
     nextTask: { caption: transitioned.Task.description, durationMs: transitioned.Task.durationMs, loot: transitioned.Task.loot },
-    events: result.events.map(describeGameEvent),
+    events: result.events
+      .filter(({ type }) => type !== 'act_completed' && type !== 'equipment_gained')
+      .map(describeGameEvent),
     rng: [...rng.getState()],
     progression: {
       counters: { completedTasks: progression.completedTasks, elapsedSeconds: progression.elapsedSeconds },

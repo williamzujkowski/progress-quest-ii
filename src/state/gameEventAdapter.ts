@@ -4,6 +4,10 @@ import type { GameTransitionEvent } from '../engine/transition';
 
 export type GameSoundCue = 'level_up' | 'quest_complete' | 'market';
 
+export function describeAct(act: number): string {
+  return act === 0 ? 'Prologue' : `Act ${act}`;
+}
+
 function gained(value: string, quantity = 1): string {
   return `Gained ${indefinite(value, quantity)}`;
 }
@@ -19,6 +23,8 @@ function describeUnboundedGameEvent(event: GameTransitionEvent): string {
     case 'gold_received': return `Got paid ${indefinite('gold piece', event.amount)}`;
     case 'inventory_sold': return `Sold loot at market for ${event.gold} gold!`;
     case 'equipment_purchased': return `Negotiated purchase: Equipped ${event.name} in ${event.slot} slot!`;
+    case 'equipment_gained': return `Gained ${event.name} for the ${event.slot} slot`;
+    case 'act_completed': return `Completed ${describeAct(event.act)}`;
     case 'task_started': return event.task.description;
   }
 }

@@ -50,21 +50,28 @@ export function createNewCharacter(name: string, race: string, klass: string, se
     Spells: [],
     Gold: 0,
     Plot: {
-      act: 1,
+      act: 0,
       currentProgress: 0,
-      maxProgress: 10,
+      maxProgress: 26,
     },
     Quest: {
       description: 'Heading to the killing fields...',
       currentProgress: 0,
-      maxProgress: 5,
+      maxProgress: 1,
     },
     Task: {
-      description: 'Experiencing an enigmatic and foreboding night vision',
+      description: 'Loading....',
       durationMs: 2000,
       elapsedMs: 0,
-      type: 'heading',
+      type: 'loading',
     },
+    PendingTasks: [
+      { description: 'Experiencing an enigmatic and foreboding night vision', durationMs: 10_000, elapsedMs: 0, type: 'prologue' },
+      { description: "Much is revealed about that wise old bastard you'd underestimated", durationMs: 6000, elapsedMs: 0, type: 'prologue' },
+      { description: 'A shocking series of events leaves you alone and bewildered, but resolute', durationMs: 6000, elapsedMs: 0, type: 'prologue' },
+      { description: 'Drawing upon an unrealized reserve of determination, you set out on a long and dangerous journey', durationMs: 4000, elapsedMs: 0, type: 'prologue' },
+      { description: 'Loading', durationMs: 2000, elapsedMs: 0, type: 'act_marker' },
+    ],
   };
 }
 
@@ -76,6 +83,20 @@ export function calculateEncumbrance(inventory: InventoryItem[]): number {
     }
   }
   return count;
+}
+
+export function addInventoryItem(inventory: InventoryItem[], name: string): { inventory: InventoryItem[]; added: boolean } {
+  const existingIndex = inventory.findIndex((item) => item.name === name);
+  const existing = inventory[existingIndex];
+  if (existing) {
+    if (existing.qty >= MAX_PERSISTED_VALUE) return { inventory, added: false };
+    return {
+      inventory: inventory.map((item, index) => index === existingIndex ? { ...item, qty: item.qty + 1 } : item),
+      added: true,
+    };
+  }
+  if (inventory.length >= MAX_PERSISTED_ITEMS) return { inventory, added: false };
+  return { inventory: [...inventory, { name, qty: 1 }], added: true };
 }
 
 export function getRandomMonster(rng: RandomGenerator, level: number) {
@@ -189,16 +210,6 @@ export function generateItemReward(rng: RandomGenerator, inventoryNames: readonl
   return `${rng.pick(ITEM_ATTRIB)} ${rng.pick(SPECIALS)} of ${rng.pick(ITEM_OFS)}`;
 }
 
-export function generateLootItem(rng: RandomGenerator, monsterName?: string): string {
-  if (monsterName && rng.random(2) === 0) {
-    return `${monsterName} item`;
-  }
-  if (rng.random(2) === 0) {
-    return `${rng.pick(ITEM_ATTRIB)} ${rng.pick(SPECIALS)}`;
-  }
-  return `${rng.pick(ITEM_ATTRIB)} ${rng.pick(SPECIALS)} of ${rng.pick(ITEM_OFS)}`;
-}
-
 export function generateEquipUpgrade(rng: RandomGenerator, level: number): { slot: EquipSlot; name: string } {
   const slot = rng.pick(EQUIP_SLOTS);
   let stuff: [string, number][];
@@ -278,15 +289,11 @@ export function applyQuestReward(rng: RandomGenerator, character: CharacterSheet
       effect: gold > character.Gold ? { type: 'gold', amount: gold - character.Gold } : undefined,
     };
   }
-  const existing = character.Inventory.find(({ name }) => name === itemName);
-  const inventory = existing
-    ? character.Inventory.map((item) => item.name === itemName ? { ...item, qty: Math.min(MAX_PERSISTED_VALUE, item.qty + 1) } : item)
-    : character.Inventory.length < MAX_PERSISTED_ITEMS ? [...character.Inventory, { name: itemName, qty: 1 }] : character.Inventory;
-  const itemGained = existing ? existing.qty < MAX_PERSISTED_VALUE : inventory !== character.Inventory;
+  const { inventory, added } = addInventoryItem(character.Inventory, itemName);
   return {
     kind,
     character: { ...character, Inventory: inventory },
-    effect: itemGained ? { type: 'item', name: itemName, quantity: 1 } : undefined,
+    effect: added ? { type: 'item', name: itemName, quantity: 1 } : undefined,
   };
 }
 
