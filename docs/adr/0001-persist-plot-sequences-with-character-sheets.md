@@ -2,8 +2,8 @@
 
 Store the bounded pending prologue or cinematic Sequence queue as an optional,
 strictly validated part of the character sheet. Exceptionally long nemesis loops
-use a compact replay cursor containing their remaining round count and isolated
-replay/continuation entropy, so high Acts retain canonical narration without an
+use a compact replay cursor containing their next round and replay entropy, so
+high Acts retain canonical narration without unbounded synchronous preparation or an
 unbounded saved array. This keeps PQW, roster, and active
 checkpoint resumes internally consistent; checkpoint-only storage would preserve
 the current Task while silently discarding its continuation, and embedding the

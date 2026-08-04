@@ -180,26 +180,42 @@ describe('advanceGame', () => {
     character.PendingTasks = undefined;
     const rng = new RandomGenerator('endless-cinematic-oracle');
     rng.setState([0.8487152096349746, 0.6674839127808809, 0.22826107195578516, 1]);
+    const random = vi.spyOn(rng, 'random');
 
     const opened = advanceGame(stateFor(character), 1000, rng);
     const cursor = opened.state.character.PendingTasks?.find(({ type }) => type === 'nemesis_cursor');
-    expect(cursor).toMatchObject({ type: 'nemesis_cursor', rollLimit: MAX_PERSISTED_VALUE + 2 });
+    expect(cursor).toMatchObject({ type: 'nemesis_cursor', round: 96, rollLimit: MAX_PERSISTED_VALUE + 2 });
     if (!cursor || cursor.type !== 'nemesis_cursor') throw new Error('Expected a compact nemesis cursor');
-    expect(cursor.remainingRounds).toBeGreaterThan(96);
-    expect(opened.state.character.PendingTasks).toHaveLength(5);
+    expect(random.mock.calls.length).toBeLessThanOrEqual(205);
+    random.mockRestore();
+    expect(opened.state.character.PendingTasks).toHaveLength(100);
     expect(characterSheetSchema.safeParse(opened.state.character).success).toBe(true);
-    const canonicalContinuation = rng.getState();
+    expect(rng.getState()).toEqual(cursor.replayRngState);
+    const checkpoint = {
+      schemaVersion: 1 as const,
+      session: { character: opened.state.character, rngState: rng.getState(), progression: opened.state.progression, isPaused: false, log: [] },
+    };
+    expect(activeCheckpointV1Schema.safeParse(checkpoint).success).toBe(true);
+    expect(activeCheckpointV1Schema.safeParse({
+      ...checkpoint,
+      session: { ...checkpoint.session, rngState: new RandomGenerator('wrong-cursor-continuation').getState() },
+    }).success).toBe(false);
+    expect(characterSheetSchema.safeParse({
+      ...opened.state.character,
+      PendingTasks: opened.state.character.PendingTasks?.map((entry) => entry.type === 'nemesis_cursor'
+        ? { ...entry, rollLimit: entry.rollLimit - 1 }
+        : entry),
+    }).success).toBe(false);
 
     const atStruggle = advanceGame(opened.state, 1000, rng);
-    const firstRound = advanceGame(atStruggle.state, 4000, rng);
+    const firstRound = advanceGame(atStruggle.state, 4000 + 95 * 2000, rng);
     const nextCursor = firstRound.state.character.PendingTasks?.[0];
     expect(firstRound.state.character.Task.type).toBe('cinematic');
     expect(nextCursor).toMatchObject({
       type: 'nemesis_cursor',
-      remainingRounds: cursor.remainingRounds - 1,
-      continuationRngState: canonicalContinuation,
+      round: 97,
+      replayRngState: rng.getState(),
     });
-    expect(rng.getState()).toEqual(canonicalContinuation);
     expect(characterSheetSchema.safeParse(firstRound.state.character).success).toBe(true);
   });
 

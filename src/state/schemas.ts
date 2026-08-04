@@ -111,12 +111,14 @@ const nemesisSequenceCursorSchema = z.object({
   description,
   type: z.literal('nemesis_cursor'),
   nemesis: shortText,
-  remainingRounds: z.number().int().positive().max(MAX_PERSISTED_VALUE + 1),
+  round: z.number().int().min(MAX_PENDING_TASKS - 4).max(MAX_PERSISTED_VALUE + 2),
   advantageMod3: z.number().int().min(0).max(2),
   rollLimit: z.number().int().min(2).max(MAX_PERSISTED_VALUE + 2),
   replayRngState: rngStateSchema,
-  continuationRngState: rngStateSchema,
-}).strict();
+}).strict().refine(({ round, rollLimit }) => round <= rollLimit, {
+  message: 'A nemesis cursor round cannot exceed its roll limit.',
+  path: ['round'],
+});
 
 const pendingTasksSchema = z.array(z.union([sequenceTaskSchema, nemesisSequenceCursorSchema])).min(1).max(MAX_PENDING_TASKS).superRefine((tasks, context) => {
   const markerIndexes = tasks.flatMap((task, index) => task.type === 'act_marker' ? [index] : []);
@@ -153,6 +155,10 @@ export const characterSheetSchema = z.object({
   if (!validPrologue && !validCinematic) {
     context.addIssue({ code: 'custom', message: 'Pending tasks must match the active Act phase.', path: ['PendingTasks'] });
   }
+  const cursor = PendingTasks.find(({ type }) => type === 'nemesis_cursor');
+  if (cursor?.type === 'nemesis_cursor' && cursor.rollLimit !== Plot.act + 2) {
+    context.addIssue({ code: 'custom', message: 'A nemesis cursor roll limit must match its Act.', path: ['PendingTasks'] });
+  }
 });
 
 export type PersistedCharacterSheet = z.infer<typeof characterSheetSchema>;
@@ -176,6 +182,11 @@ export const activeCheckpointV1Schema = z.object({
     isPaused: z.boolean(),
     log: z.array(description).max(50),
   }).strict(),
-}).strict();
+}).strict().superRefine(({ session }, context) => {
+  const cursor = session.character.PendingTasks?.find(({ type }) => type === 'nemesis_cursor');
+  if (cursor?.type === 'nemesis_cursor' && cursor.replayRngState.some((value, index) => value !== session.rngState[index])) {
+    context.addIssue({ code: 'custom', message: 'A nemesis cursor must match the checkpoint RNG continuation.', path: ['session', 'rngState'] });
+  }
+});
 
 export type ActiveCheckpointV1 = z.infer<typeof activeCheckpointV1Schema>;

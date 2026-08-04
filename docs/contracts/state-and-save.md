@@ -9,7 +9,7 @@ Owner: `src/state/schemas.ts`
 - The unversioned modern character-sheet shape is the **PQW v0** compatibility profile. Every object boundary is strict, so unknown fields and unrecognized version markers fail closed instead of being silently discarded.
 - PQW v0 may include an optional, narrow pending Sequence queue so a prologue or cinematic can resume through PQW, roster, and checkpoint boundaries. Absence remains valid and means no pending sequence; the field is omitted when empty.
 - Pending entries permit only prologue, cinematic, compact nemesis replay cursors, and final Act-marker tasks. Display tasks have zero elapsed time and no loot; every nonempty queue has exactly one final marker, matches its active Act phase, and contains at most 100 entries.
-- Nemesis cursors retain the canonical round count, narration state, replay entropy, and post-cinematic entropy in constant queue space. Ordinary sequences remain materialized; exceptionally long high-Act struggles replay one task at a time without truncating mechanics or making saves grow with Act number.
+- Nemesis cursors retain the canonical next-round index, narration state, and replay entropy in constant queue space. The first 95 rounds remain materialized; exceptionally long high-Act struggles then evaluate one canonical round per completed task without truncating mechanics, unbounded synchronous preparation, or saves that grow with Act number.
 - This additive reader change is backward-compatible with existing saves but older strict builds cannot read a newer save captured mid-sequence. The unanimous #150 serialization vote accepted that one-way compatibility window to avoid silently discarding continuation state.
 - Imported and roster data is parsed as `unknown` and must satisfy `characterSheetSchema` before state mutation.
 - Strings, collections, quantities, currency, levels, and progress values have explicit upper bounds.
@@ -33,7 +33,7 @@ Owner: `src/engine/transition.ts`; shared limits: `src/data/limits.ts`
 - Inventory and spell collections do not append beyond the existing 5,000-row limit. Existing rows may still advance until their value ceiling.
 - Saturation consumes the same RNG calls as the corresponding ordinary transition. A gain event or reward effect is emitted only when persisted state actually changes.
 - Monster-task perturbation retains the exact legacy roll count through the last level with a finite progression interval, then reuses that bounded roll budget for higher accepted levels.
-- Inter-Act nemesis loops consume the canonical RNG sequence up front. Loops that would exceed the pending-task bound persist a compact replay cursor, keeping every later narration step and the canonical continuation while allowing Acts to scale to the persistence ceiling.
+- Inter-Act nemesis loops consume at most the 95 materialized-round budget synchronously. Longer loops persist a compact replay cursor tied to the current Act and checkpoint RNG state, keeping every later narration step and canonical post-loop continuation while allowing Acts to scale to the persistence ceiling.
 - Sale events report the Gold actually credited after saturation, not discarded gross proceeds.
 
 Verified by: `src/__tests__/engine/transition.test.ts`, `src/__tests__/engine/reward.test.ts`, and `src/__tests__/fidelity/transitionParity.test.ts`.

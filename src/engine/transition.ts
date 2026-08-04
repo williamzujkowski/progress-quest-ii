@@ -2,7 +2,7 @@ import { addInventoryItem, applyQuestReward, applySpellReward, calculateEncumbra
 import { BORING_ITEMS, IMPRESSIVE_TITLES, MONSTERS, RACES } from '../data/traits';
 import { MAX_PENDING_TASKS, MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../data/limits';
 import { calculateEncumbranceMax, generateName, levelUpTime } from './math';
-import { RandomGenerator } from './prng';
+import type { RandomGenerator } from './prng';
 import { plural } from './text';
 import type { CharacterSheet, EquipSlot, NemesisSequenceCursor, PendingSequenceEntry, ProgressionState, ProgressTask, SequenceTask, StatName } from './types';
 
@@ -78,21 +78,18 @@ function nemesisRoundTask(nemesis: string, advantageMod3: number): SequenceTask 
   return sequenceTask(`You seem to gain the advantage over ${nemesis}`, 2);
 }
 
-function replayNemesisRound(cursor: NemesisSequenceCursor, rng: RandomGenerator): { task: SequenceTask; cursor?: NemesisSequenceCursor } {
-  rng.setState(cursor.continuationRngState);
-  const replayRng = new RandomGenerator('nemesis-replay');
-  replayRng.setState(cursor.replayRngState);
-  replayRng.random(cursor.rollLimit);
-  const advantageMod3 = (cursor.advantageMod3 + 1 + replayRng.random(2)) % 3;
-  const remainingRounds = cursor.remainingRounds - 1;
+function replayNemesisRound(cursor: NemesisSequenceCursor, rng: RandomGenerator): { task?: SequenceTask; cursor?: NemesisSequenceCursor } {
+  rng.setState(cursor.replayRngState);
+  if (cursor.round > rng.random(cursor.rollLimit)) return {};
+  const advantageMod3 = (cursor.advantageMod3 + 1 + rng.random(2)) % 3;
   return {
     task: nemesisRoundTask(cursor.nemesis, advantageMod3),
-    cursor: remainingRounds > 0 ? {
+    cursor: {
       ...cursor,
-      remainingRounds,
+      round: cursor.round + 1,
       advantageMod3,
-      replayRngState: replayRng.getState(),
-    } : undefined,
+      replayRngState: rng.getState(),
+    },
   };
 }
 
@@ -108,15 +105,20 @@ function finishInterplotCinematic(rng: RandomGenerator, act: number, level: numb
   if (opening.branch === 1) {
     const nemesis = namedMonster(rng, level + 3);
     let advantageMod3 = rng.random(3);
-    const startingAdvantageMod3 = advantageMod3;
-    const replayRngState = rng.getState();
     const materializedRounds: SequenceTask[] = [];
-    let rounds = 0;
     const maxRounds = MAX_PENDING_TASKS - 4;
-    for (let round = 1; round <= rng.random(act + 2); round += 1) {
+    for (let round = 1; round < maxRounds; round += 1) {
+      if (round > rng.random(act + 2)) {
+        return [
+          sequenceTask(`A desperate struggle commences with ${nemesis}`, 4),
+          ...materializedRounds,
+          sequenceTask(`Victory! ${nemesis} is slain! Exhausted, you lose consciousness`, 3),
+          sequenceTask('You awake in a friendly place, but the road awaits', 2),
+          sequenceTask('Loading', 1, 'act_marker'),
+        ];
+      }
       advantageMod3 = (advantageMod3 + 1 + rng.random(2)) % 3;
-      rounds += 1;
-      if (rounds <= maxRounds) materializedRounds.push(nemesisRoundTask(nemesis, advantageMod3));
+      materializedRounds.push(nemesisRoundTask(nemesis, advantageMod3));
     }
     const ending = [
       sequenceTask(`Victory! ${nemesis} is slain! Exhausted, you lose consciousness`, 3),
@@ -124,16 +126,14 @@ function finishInterplotCinematic(rng: RandomGenerator, act: number, level: numb
       sequenceTask('Loading', 1, 'act_marker'),
     ];
     const openingTask = sequenceTask(`A desperate struggle commences with ${nemesis}`, 4);
-    if (rounds <= maxRounds) return [openingTask, ...materializedRounds, ...ending];
-    return [openingTask, {
+    return [openingTask, ...materializedRounds, {
       description: `Continuing the regrettably extensive struggle with ${nemesis}`,
       type: 'nemesis_cursor',
       nemesis,
-      remainingRounds: rounds,
-      advantageMod3: startingAdvantageMod3,
+      round: maxRounds,
+      advantageMod3,
       rollLimit: act + 2,
-      replayRngState,
-      continuationRngState: rng.getState(),
+      replayRngState: rng.getState(),
     }, ...ending];
   }
   return [
@@ -329,14 +329,21 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
     let transitionedCharacter: CharacterSheet = { ...character, Traits: traits, Stats: stats, Equip: equip, Spells: spells, Inventory: inventory, Gold: gold, Quest: quest, Plot: plot, Task: task, PendingTasks: pendingTasks };
     let nextTask: ProgressTask;
     if (pendingTasks.length > 0) {
-      const queuedTask = pendingTasks[0];
+      let queuedTask = pendingTasks[0];
       if (!queuedTask) throw new Error('Pending task queue became empty while dequeuing');
       pendingTasks = pendingTasks.slice(1);
-      if (queuedTask.type === 'nemesis_cursor') {
+      while (queuedTask.type === 'nemesis_cursor') {
         const replayed = replayNemesisRound(queuedTask, rng);
-        if (replayed.cursor) pendingTasks = [replayed.cursor, ...pendingTasks];
-        nextTask = activeSequenceTask(replayed.task);
-      } else if (queuedTask.type === 'act_marker') {
+        if (replayed.task && replayed.cursor) {
+          pendingTasks = [replayed.cursor, ...pendingTasks];
+          nextTask = activeSequenceTask(replayed.task);
+          break;
+        }
+        queuedTask = pendingTasks[0];
+        if (!queuedTask) throw new Error('Nemesis cursor requires a following sequence task');
+        pendingTasks = pendingTasks.slice(1);
+      }
+      if (queuedTask.type === 'act_marker') {
         const completedAct = plot.act;
         const nextAct = Math.min(MAX_PERSISTED_VALUE, plot.act + 1);
         plot = {
@@ -363,7 +370,7 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
         }
         events.push({ type: 'save_requested', characterName: traits.Name });
         nextTask = { ...queuedTask, description: `Loading Act ${actLabel(nextAct)}...` };
-      } else {
+      } else if (queuedTask.type !== 'nemesis_cursor') {
         nextTask = activeSequenceTask(queuedTask);
       }
     } else if (task.type === 'act_marker') {

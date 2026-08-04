@@ -53,11 +53,10 @@ export interface NemesisSequenceCursor {
   description: string;
   type: 'nemesis_cursor';
   nemesis: string;
-  remainingRounds: number;
+  round: number;
   advantageMod3: number;
   rollLimit: number;
   replayRngState: PRNGState;
-  continuationRngState: PRNGState;
 }
 
 export type PendingSequenceEntry = SequenceTask | NemesisSequenceCursor;
