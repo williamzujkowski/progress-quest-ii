@@ -4,6 +4,8 @@ import { describeGameNumber, formatGameNumber } from '../../engine/text';
 describe('large game-number presentation', () => {
   it.each([
     [0, '0'],
+    [0.004, '4.00e-3'],
+    [-0.004, '-4.00e-3'],
     [0.5, '0.5'],
     [1_234.5, '1234.5'],
     [999_999, '999999'],
@@ -19,6 +21,8 @@ describe('large game-number presentation', () => {
   });
 
   it.each([
+    [0.004, '0.004'],
+    [-0.004, '-0.004'],
     [1_000_000, '1 million'],
     [999_999.999_999_999_9, '1 million'],
     [1_234_567, '1.23 million'],

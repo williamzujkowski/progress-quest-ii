@@ -41,7 +41,9 @@ function ordinaryGameNumber(value: number): string {
 }
 
 function shouldUseScientificNotation(value: number, ordinary: string): boolean {
-  return Math.abs(value) >= SCIENTIFIC_NOTATION_THRESHOLD || ordinary.length > MAX_ORDINARY_CHARACTERS;
+  return (value !== 0 && Number(ordinary) === 0)
+    || Math.abs(value) >= SCIENTIFIC_NOTATION_THRESHOLD
+    || ordinary.length > MAX_ORDINARY_CHARACTERS;
 }
 
 export function formatGameNumber(value: number): string {
