@@ -5,6 +5,13 @@ This file ships with the PWA. It records direct production inputs; it does not
 change their licenses or resolve the legacy-web-source ambiguity documented at
 https://github.com/williamzujkowski/progress-quest-ii/blob/main/docs/content-provenance.md.
 
+PROJECT CREDIT
+
+This unofficial modernization is directed and reviewed by William Zujkowski
+with AI-assisted research, implementation, and testing. Progress Quest and its
+web reference implementation are the work of Eric Fredricksen. "Zero
+developers" is an editorial joke, not an authorship or provenance claim.
+
 PROGRESS QUEST
 
 Progress Quest and the separately retained web reference implementation are

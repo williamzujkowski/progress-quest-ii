@@ -1,8 +1,8 @@
 # Progress Quest II
 
-> The sequel nobody had to play.
+> **Zero players. Zero developers. Progress continues regardless.**
 
-First, humans wrote a game that played itself. Then computers helped rebuild the game. The circle is complete, the paperwork has been misplaced, and nobody has had to play anything.
+The sequel nobody had to play. First, humans wrote a game that played itself. Then computers helped rebuild the game. The circle is complete, the paperwork has been misplaced, and nobody has had to play anything.
 
 **Progress Quest II** is an unofficial modern continuation of Eric Fredricksen's classic zero-player RPG *Progress Quest*. Created by humans. Rebuilt by machines. Played by nobody.
 
@@ -87,7 +87,7 @@ See [`AGENTS.md`](./AGENTS.md) for the project’s correctness, TDD, typing, sec
 
 ## Design and standards notes
 
-The interface uses dense terminal-inspired composition, OKLCH semantic tokens, explicit overflow regions, and accessible focus states. Research notes, contracts, and the modernization backlog live in [`docs/`](./docs/).
+The interface uses dense terminal-inspired composition, OKLCH semantic tokens, explicit overflow regions, and accessible focus states. Project copy follows the [editorial voice contract](docs/contracts/editorial-voice.md); research notes, other contracts, and the modernization backlog live in [`docs/`](./docs/).
 
 The legacy baseline in `pq-web-src/` is the functional reference, not a museum exhibit to be casually “cleaned up.” Changes to progression, serialization, or compatibility require tests and explicit review.
 

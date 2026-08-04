@@ -42,7 +42,7 @@ export const CharacterSheetView: React.FC = () => {
       <div className="equip-list spell-list" role="region" tabIndex={0} aria-label="Spell Book">
         {character.Spells.length === 0 ? (
           <div className="empty-state">
-            No spells learned yet. Complete quests to learn spells!
+            No spells have been learned. The curriculum remains aggressively theoretical.
           </div>
         ) : (
           character.Spells.map((spell) => (

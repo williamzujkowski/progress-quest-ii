@@ -12,6 +12,8 @@ test('publishes the Progress Quest II install contract at its Pages scope', asyn
   await expect(page.getByRole('link', { name: 'Credits & notices' })).toHaveAttribute('href', './THIRD_PARTY_NOTICES.txt');
   const notices = await page.evaluate(async () => (await fetch('./THIRD_PARTY_NOTICES.txt')).text());
   expect(notices).toContain('SIL OPEN FONT LICENSE Version 1.1');
+  expect(notices).toContain('directed and reviewed by William Zujkowski');
+  expect(notices).toContain('AI-assisted research, implementation, and testing');
   const manifest = await page.evaluate(async () => {
     const response = await fetch('./manifest.webmanifest');
     return response.json() as Promise<Record<string, unknown>>;
@@ -52,9 +54,10 @@ test('loads the Pages-scoped app offline after one successful visit', async ({ p
   await page.reload({ waitUntil: 'domcontentloaded' });
 
   await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest II' })).toBeVisible();
-  await expect(page.getByText('The sequel nobody had to play.')).toBeVisible();
+  await expect(page.getByText('Zero players. Zero developers. Progress continues regardless.')).toBeVisible();
   const offlineNotices = await page.evaluate(async () => (await fetch('./THIRD_PARTY_NOTICES.txt')).text());
   expect(offlineNotices).toContain('Johannes Baagøe');
+  expect(offlineNotices).toContain('directed and reviewed by William Zujkowski');
 });
 
 test('keeps questing when service-worker registration fails', async ({ page, request }) => {

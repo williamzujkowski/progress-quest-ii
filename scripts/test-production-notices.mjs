@@ -4,6 +4,8 @@ import { verifyProductionNotices } from './production-notices.mjs';
 
 const completeNotices = [
   'Eric Fredricksen',
+  'directed and reviewed by William Zujkowski',
+  'AI-assisted research, implementation, and testing',
   'Johannes Baagøe',
   'Lucide Icons and Contributors',
   'SIL OPEN FONT LICENSE Version 1.1',
@@ -18,6 +20,13 @@ test('production notice verification rejects missing attribution', () => {
   assert.throws(
     () => verifyProductionNotices(completeNotices.replace('Johannes Baagøe', ''), './THIRD_PARTY_NOTICES.txt'),
     /omit Johannes Baagøe/,
+  );
+});
+
+test('production notice verification rejects missing project credit', () => {
+  assert.throws(
+    () => verifyProductionNotices(completeNotices.replace('directed and reviewed by William Zujkowski', ''), './THIRD_PARTY_NOTICES.txt'),
+    /omit directed and reviewed by William Zujkowski/,
   );
 });
 
