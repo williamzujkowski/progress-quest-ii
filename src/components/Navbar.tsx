@@ -38,7 +38,10 @@ export const Navbar: React.FC<NavbarProps> = ({ theme, themeStatus, onThemeChang
       <div className="brand">
         <div className="brand-copy">
           <h1><span aria-hidden="true">⚔</span> Progress Quest II</h1>
-          <p className="brand-tagline">The sequel nobody had to play.</p>
+          <p className="brand-tagline">
+            The sequel nobody had to play. <span aria-hidden="true">·</span>{' '}
+            <a href="./THIRD_PARTY_NOTICES.txt">Credits &amp; notices</a>
+          </p>
         </div>
         <span className="badge" title="Character Level">
           Lvl{' '}<GameNumber value={character.Traits.Level} />

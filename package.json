@@ -10,7 +10,7 @@
     "lint:workflows": "node scripts/run-actionlint.mjs",
     "lint:legacy": "oxlint --no-ignore -c .oxlintrc.legacy.json pq-web-src",
     "preview": "vite preview",
-    "test": "vitest run && node --test scripts/test-legacy-oracle.mjs scripts/test-actionlint.mjs",
+    "test": "vitest run && node --test scripts/test-legacy-oracle.mjs scripts/test-actionlint.mjs scripts/test-production-notices.mjs",
     "test:fidelity": "vitest run src/__tests__/fidelity && node --test scripts/test-legacy-oracle.mjs",
     "test:e2e": "playwright test",
     "test:pwa": "npm run build && playwright test --config playwright.pwa.config.ts",

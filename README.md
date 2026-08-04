@@ -90,3 +90,11 @@ See [`AGENTS.md`](./AGENTS.md) for the project’s correctness, TDD, typing, sec
 The interface uses dense terminal-inspired composition, OKLCH semantic tokens, explicit overflow regions, and accessible focus states. Research notes, contracts, and the modernization backlog live in [`docs/`](./docs/).
 
 The legacy baseline in `pq-web-src/` is the functional reference, not a museum exhibit to be casually “cleaned up.” Changes to progression, serialization, or compatibility require tests and explicit review.
+
+## Credits and rights
+
+*Progress Quest* and its web reference implementation are the work of Eric Fredricksen. This repository is an unofficial modernization directed and reviewed by William Zujkowski with AI-assisted research, implementation, and testing. “Zero developers” is the joke; these authorship and provenance statements are not.
+
+The root MIT license covers only material the project has authority to license under MIT. Classic implementation, names, tables, prose, the `pq-web-src/` submodule, bundled fonts, icons, and other dependencies retain their own rights and terms. The official Progress Quest site publishes a permissive license for Progress Quest, while the web-port source also contains conflicting “all rights reserved” headers; the project does not claim that this documentation resolves that ambiguity.
+
+See the [content provenance inventory](docs/content-provenance.md) and [third-party notices](public/THIRD_PARTY_NOTICES.txt) before reusing game data, legacy code, prose, or assets. No code or assets from prior unofficial sequel projects have been imported.

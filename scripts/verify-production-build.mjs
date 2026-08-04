@@ -1,6 +1,9 @@
 import { access, readdir, readFile } from 'node:fs/promises';
+import { verifyProductionNotices } from './production-notices.mjs';
 
 const assetDirectory = new URL('../dist/assets/', import.meta.url);
+const noticeUrl = new URL('../dist/THIRD_PARTY_NOTICES.txt', import.meta.url);
+const workerUrl = new URL('../dist/sw.js', import.meta.url);
 const cssFiles = (await readdir(assetDirectory)).filter((name) => name.endsWith('.css'));
 const fontUrls = [];
 
@@ -26,5 +29,9 @@ for (const name of cssFiles) {
 
 if (fontUrls.length === 0) throw new Error('Production CSS declares no font assets to verify.');
 await Promise.all(fontUrls.map((fontUrl) => access(fontUrl)));
+
+const notices = await readFile(noticeUrl, 'utf8');
+const worker = await readFile(workerUrl, 'utf8');
+verifyProductionNotices(notices, worker);
 
 console.log(`Verified ${fontUrls.length} local font asset(s) across ${cssFiles.length} production CSS asset(s).`);

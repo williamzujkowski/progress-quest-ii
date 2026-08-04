@@ -1,3 +1,5 @@
+// Alea/Mash algorithm copyright (c) 2010 Johannes Baagøe, MIT licensed.
+// This TypeScript adaptation retains the notice in THIRD_PARTY_NOTICES.txt.
 export type PRNGSeed = string | number;
 export type PRNGState = [number, number, number, number];
 
