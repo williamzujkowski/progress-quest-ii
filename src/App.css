@@ -404,6 +404,10 @@
   .modal-content { width: calc(100% - 1rem); padding: 1rem; }
 }
 
+@media (max-width: 360px) {
+  .hero-stat { align-items: flex-start; flex-direction: column; gap: 0; }
+}
+
 @media (min-width: 1025px) {
   .equipment-list {
     display: grid;

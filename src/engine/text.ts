@@ -18,6 +18,11 @@ export function definite(value: string, quantity = 1): string {
 }
 
 const SCIENTIFIC_NOTATION_THRESHOLD = 1_000_000;
+const MAX_ORDINARY_CHARACTERS = 6;
+const ordinaryFormatter = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 2,
+  useGrouping: false,
+});
 const scientificFormatter = new Intl.NumberFormat('en-US', {
   notation: 'scientific',
   minimumFractionDigits: 2,
@@ -30,13 +35,24 @@ const spokenFormatter = new Intl.NumberFormat('en-US', {
   maximumSignificantDigits: 3,
 });
 
+function ordinaryGameNumber(value: number): string {
+  const formatted = ordinaryFormatter.format(value);
+  return formatted === '-0' ? '0' : formatted;
+}
+
+function shouldUseScientificNotation(value: number, ordinary: string): boolean {
+  return Math.abs(value) >= SCIENTIFIC_NOTATION_THRESHOLD || ordinary.length > MAX_ORDINARY_CHARACTERS;
+}
+
 export function formatGameNumber(value: number): string {
   if (!Number.isFinite(value)) return '—';
-  if (Math.abs(value) < SCIENTIFIC_NOTATION_THRESHOLD) return String(value);
+  const ordinary = ordinaryGameNumber(value);
+  if (!shouldUseScientificNotation(value, ordinary)) return ordinary;
   return scientificFormatter.format(value).replace('E', 'e');
 }
 
 export function describeGameNumber(value: number): string {
   if (!Number.isFinite(value)) return 'unavailable';
-  return Math.abs(value) < SCIENTIFIC_NOTATION_THRESHOLD ? String(value) : spokenFormatter.format(value);
+  const ordinary = ordinaryGameNumber(value);
+  return shouldUseScientificNotation(value, ordinary) ? spokenFormatter.format(value) : ordinary;
 }

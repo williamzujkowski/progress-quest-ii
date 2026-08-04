@@ -682,7 +682,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
         character: {
           ...character,
           Traits: { ...character.Traits, Level: 1_000_000 },
-          Stats: Object.fromEntries(Object.keys(character.Stats).map((stat) => [stat, 1_000_000])) as typeof character.Stats,
+          Stats: Object.fromEntries(Object.keys(character.Stats).map((stat) => [stat, 999_999.999_999_999_9])) as typeof character.Stats,
           Gold: 1_000_000_000_000,
           Plot: { act: 1_000_000_000, currentProgress: 500_000_000, maxProgress: 1_000_000_000 },
           Quest: { ...character.Quest, currentProgress: 1_000_000, maxProgress: 2_000_000 },
@@ -694,6 +694,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
 
     await expect(page.locator('.hero-name .badge [aria-hidden="true"]')).toHaveText('1.00e6');
     await expect(page.locator('.hero-name .badge .sr-only')).toHaveText('1 million');
+    await expect(page.locator('.hero-prime-stats .hero-stat span[aria-hidden="true"]')).toHaveText(Array(6).fill('1.00e6'));
     await expect(page.locator('.hero-sub [aria-hidden="true"]')).toHaveText('1.00e9');
     await expect(page.locator('.gold-pill span[aria-hidden="true"]')).toHaveText('1.00e12');
     await expect(page.locator('.inventory-list .equip-item span[aria-hidden="true"]')).toHaveText('1.00e9');
@@ -705,8 +706,11 @@ test.describe('Progress Quest II terminal dashboard', () => {
       const dimensions = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
+        statTilesFit: [...document.querySelectorAll<HTMLElement>('.hero-stat')]
+          .every((tile) => tile.scrollWidth <= tile.clientWidth),
       }));
       expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+      expect(dimensions.statTilesFit).toBe(true);
     }
   });
 

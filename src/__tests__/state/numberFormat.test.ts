@@ -4,8 +4,12 @@ import { describeGameNumber, formatGameNumber } from '../../engine/text';
 describe('large game-number presentation', () => {
   it.each([
     [0, '0'],
+    [0.5, '0.5'],
+    [1_234.5, '1234.5'],
     [999_999, '999999'],
+    [999_999.999_999_999_9, '1.00e6'],
     [1_000_000, '1.00e6'],
+    [1_000_001, '1.00e6'],
     [1_234_567, '1.23e6'],
     [-1_000_000, '-1.00e6'],
     [1_000_000_000, '1.00e9'],
@@ -16,6 +20,7 @@ describe('large game-number presentation', () => {
 
   it.each([
     [1_000_000, '1 million'],
+    [999_999.999_999_999_9, '1 million'],
     [1_234_567, '1.23 million'],
     [1_000_000_000_000, '1 trillion'],
   ])('provides an understandable spoken label for %s', (value, expected) => {
