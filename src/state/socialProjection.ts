@@ -1,5 +1,5 @@
 import { SOCIAL_PERSONAS, type SocialPersona, type SocialSeat } from '../data/socialCatalog';
-import { formatGameNumber, stableIndex } from '../engine/text';
+import { boundCodePoints, MAX_TEXT_CODE_POINTS, formatGameNumber, stableIndex } from '../engine/text';
 import type { GameTransitionEvent } from '../engine/transition';
 import { projectWorld, type IdentifiedGameTransitionRecord } from './worldContext';
 
@@ -39,7 +39,6 @@ interface SceneLine {
 }
 
 const MAX_DETAILED_SCENES = 3;
-const MAX_TEXT_CODE_POINTS = 180;
 
 const HERO_SPEAKER: SocialSpeaker = {
   id: 'hero', kind: 'hero', displayName: 'Hero', role: 'Automatic hero reply', fictional: true, automaticHero: true,
@@ -48,9 +47,7 @@ const SYSTEM_SPEAKER: SocialSpeaker = {
   id: 'simulated-system', kind: 'system', displayName: 'System', role: 'Fictional system notice', fictional: true, automaticHero: false,
 };
 
-function bound(text: string): string {
-  return Array.from(text).slice(0, MAX_TEXT_CODE_POINTS).join('');
-}
+const bound = (text: string): string => boundCodePoints(text, MAX_TEXT_CODE_POINTS);
 
 function castFor(source: IdentifiedGameTransitionRecord): Readonly<Record<SocialSeat, SocialPersona>> {
   const { hero } = source.record.post;

@@ -74,3 +74,11 @@ export function describeGameNumber(value: number): string {
   const spoken = spokenFormatter.format(value);
   return spoken.length <= MAX_SPOKEN_CHARACTERS ? spoken : describeScientificGameNumber(value);
 }
+
+// ponytail: shared by the social and world projections, which both truncate by code
+// point so a surrogate pair is never split in half, at the same shared limit.
+export const MAX_TEXT_CODE_POINTS = 180;
+
+export function boundCodePoints(text: string, limit: number): string {
+  return Array.from(text).slice(0, limit).join('');
+}

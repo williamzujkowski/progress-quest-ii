@@ -175,7 +175,11 @@ JetBrains Mono via @fontsource-variable/jetbrains-mono 5.3.0
 Copyright 2020 The JetBrains Mono Project Authors
 (https://github.com/JetBrains/JetBrainsMono)
 
-Both font packages declare SIL Open Font License 1.1:
+Newsreader via @fontsource-variable/newsreader 5.3.0
+Copyright 2016-2024 The Newsreader Project Authors
+(https://github.com/productiontype/Newsreader)
+
+All three font packages declare SIL Open Font License 1.1:
 
 -----------------------------------------------------------
 SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007

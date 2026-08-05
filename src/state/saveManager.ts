@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { CharacterSheet } from '../engine/types';
+import { isDOMExceptionNamed } from './diagnostics';
 import { characterNameSchema, characterSheetSchema, type PersistedCharacterSheet } from './schemas';
 
 const ROSTER_STORAGE_KEY = 'progquest_roster_v1';
@@ -124,23 +125,15 @@ function readRoster(storage: Storage): SaveResult<Record<string, CharacterSheet>
 }
 
 function writeFailure(error: unknown, action: string): SaveResult<never> {
-  try {
-    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-      return saveFailure('storage_full', `Browser storage is full, so it could not ${action}. Nothing was changed.`);
-    }
-  } catch {
-    // ponytail: hostile platform errors fall through to the generic safe result.
+  if (isDOMExceptionNamed(error, 'QuotaExceededError')) {
+    return saveFailure('storage_full', `Browser storage is full, so it could not ${action}. Nothing was changed.`);
   }
   return saveFailure('storage_failed', `Browser storage could not ${action}. Nothing was changed.`);
 }
 
 function recencyWriteFailure(error: unknown, action: string): SaveResult<never> {
-  try {
-    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-      return saveFailure('storage_full', `The character was ${action}, but browser storage is full and could not update roster recency. Try again after freeing space.`);
-    }
-  } catch {
-    // ponytail: hostile platform errors fall through to the generic partial-write result.
+  if (isDOMExceptionNamed(error, 'QuotaExceededError')) {
+    return saveFailure('storage_full', `The character was ${action}, but browser storage is full and could not update roster recency. Try again after freeing space.`);
   }
   return saveFailure('storage_failed', `The character was ${action}, but browser storage could not update roster recency. Try again.`);
 }

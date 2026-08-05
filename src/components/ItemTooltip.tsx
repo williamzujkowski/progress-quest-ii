@@ -116,7 +116,7 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
       onClick={toggleFromPointer}
       onKeyDown={toggleFromKeyboard}
     >
-      {props.children ?? props.name}
+      <span className="tooltip-trigger-label">{props.children ?? props.name}</span>
       </button>
       {tooltip}
     </>

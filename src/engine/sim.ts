@@ -99,7 +99,7 @@ export function addInventoryItem(inventory: InventoryItem[], name: string): { in
   return { inventory: [...inventory, { name, qty: 1 }], added: true };
 }
 
-export function getRandomMonster(rng: RandomGenerator, level: number) {
+function getRandomMonster(rng: RandomGenerator, level: number) {
   let result = rng.pick(MONSTERS);
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const candidate = rng.pick(MONSTERS);

@@ -1,7 +1,7 @@
 import { Copy, Save as SaveIcon, Trash2, Upload, X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import type { CharacterSheet } from '../engine/types';
-import { diagnostics } from '../state/diagnostics';
+import { diagnostics, isDOMExceptionNamed } from '../state/diagnostics';
 import { useGameStore } from '../state/gameStore';
 import { decodePQWSave, encodePQWSave, loadRoster, removeFromRoster, saveToRoster } from '../state/saveManager';
 import { GameNumber } from './GameNumber';
@@ -16,13 +16,7 @@ function recordRosterFailure(code: 'roster_read_failed' | 'roster_write_failed' 
   diagnostics.record({ code, severity: 'warning', subsystem: 'storage', operation, outcome: 'failed', source: 'save-modal' });
 }
 
-function isClipboardDenied(error: unknown): boolean {
-  try {
-    return error instanceof DOMException && error.name === 'NotAllowedError';
-  } catch {
-    return false;
-  }
-}
+const isClipboardDenied = (error: unknown): boolean => isDOMExceptionNamed(error, 'NotAllowedError');
 
 export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
   const dialogRef = useModalDialog(isOpen, onClose);
