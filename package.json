@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && node scripts/generate-service-worker.mjs && node scripts/verify-production-build.mjs",
+    "build": "tsc -b && NODE_ENV=production vite build && node scripts/generate-service-worker.mjs && node scripts/verify-production-build.mjs",
     "lint": "oxlint --deny-warnings",
     "lint:workflows": "node scripts/run-actionlint.mjs",
     "lint:legacy": "oxlint --no-ignore -c .oxlintrc.legacy.json pq-web-src",

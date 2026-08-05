@@ -113,4 +113,4 @@ and pnpm instead of repository-declared scripts.
 
 Run the deterministic legacy data and isolated transition-oracle contracts separately with `npm run test:fidelity`.
 
-PR handoff gates: independent Codex standards/spec/security review through `.agents/skills/code-review` and `git diff --check`. Adapter-backed Nexus review and voting remain bypassed until upstream issues #4350 and #4351 are fixed and verified locally.
+PR handoff gates: independent Claude standards/spec/security review through `.agents/skills/code-review` and `git diff --check`. Adapter-backed Nexus review remains bypassed until upstream issues #4350 and #4351 are fixed and verified locally; `consensus_vote` is exempt while it routes to Claude, per the adapter status note in AGENTS.md.

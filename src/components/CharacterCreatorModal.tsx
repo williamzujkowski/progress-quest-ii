@@ -17,7 +17,10 @@ interface CharacterCreatorModalProps {
 }
 
 export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ isOpen, isRequired = false, onClose, onCreated = onClose }) => {
-  const { startSession } = useGameStore();
+  // Selecting the action alone, the way SaveModal does. A bare useGameStore() subscribes to
+  // every store mutation, so this modal re-rendered on all 20 of 20 measured game ticks while
+  // closed and returning null; SaveModal's narrow select rendered 0 of 20.
+  const startSession = useGameStore((state) => state.startSession);
   const dismiss = () => {
     if (!isRequired) onClose();
   };

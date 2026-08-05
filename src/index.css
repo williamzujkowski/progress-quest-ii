@@ -54,6 +54,9 @@
      rather than tracking the palette. */
   --overlay: oklch(0 0 0 / 0.68);
   --shadow-color: color-mix(in oklch, var(--color-bg) 72%, transparent);
+  /* Buttons sit at page-background level by default. A theme that repaints panels away from
+     the page background needs to move them too, or their labels lose contrast. */
+  --btn-bg: var(--color-bg);
   --progress-bg: var(--color-bg);
   --progress-fill: var(--color-accent);
   --progress-quest: var(--color-success);
@@ -86,6 +89,11 @@
   --panel-bg: oklch(0.82 0.01 185);
   --panel-raised: oklch(0.88 0.008 185);
   --panel-border: oklch(0.5 0.01 185);
+  /* This theme paints its panels far lighter than its page background, so buttons follow the
+     panels. Left on the page teal, the near-black label measured 4.43:1 and the primary
+     button's label — which resolves to that same teal — sat on navy at 2.95:1. */
+  --btn-bg: var(--panel-raised);
+  --text-on-accent: oklch(0.98 0.005 185);
   --progress-bg: oklch(0.98 0 0);
   --shadow-color: oklch(0.18 0.01 185 / 0.28);
   --font-family: 'Inter Variable', 'Inter', 'MS Sans Serif', Tahoma, sans-serif;
@@ -260,7 +268,7 @@ input[type='radio'] {
   min-height: 44px;
   border: 1px solid var(--panel-border);
   border-radius: 0.35rem;
-  background: var(--bg-color);
+  background: var(--btn-bg);
   color: var(--text-main);
   font-size: 0.82rem;
   font-weight: 650;
