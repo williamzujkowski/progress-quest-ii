@@ -180,6 +180,11 @@ export const activeCheckpointV1Schema = z.object({
       elapsedSeconds: boundedInteger,
     }).strict(),
     pendingElapsedMs: z.number().finite().min(0).max(MAX_PENDING_ELAPSED_MS).default(0),
+    // Wall-clock, written when the checkpoint is saved, so a reopened app can credit the time
+    // it was closed. Optional: checkpoints written before this existed simply credit nothing,
+    // which is the behaviour they already had. It is never read by the engine - only at the
+    // load boundary, converted once into elapsed milliseconds.
+    savedAtMs: z.number().finite().min(0).optional(),
     isPaused: z.boolean(),
     log: z.array(description).max(50),
   }).strict(),
