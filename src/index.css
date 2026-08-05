@@ -201,6 +201,22 @@ input[type='radio'] {
 /* Carried weight, read the way an EverQuest inventory window reads it: a quiet
    ratio that only raises its voice at capacity, where it becomes the reason loot
    stopped being picked up. */
+/* A footnote to one entry, not a second entry. Quiet enough to ignore, reachable enough to use. */
+.log-reason {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: var(--text-micro);
+}
+
+.log-reason summary {
+  cursor: pointer;
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-caps);
+  min-height: 1.5rem;
+}
+
+.log-reason > span { display: block; margin-top: 0.15rem; }
+
 /* Records are history, not live state: quieter than the numbers that are still moving. */
 .commendation-list .equip-slot { color: var(--text-muted); }
 

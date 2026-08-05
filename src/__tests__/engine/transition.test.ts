@@ -452,7 +452,9 @@ describe('advanceGame', () => {
     expect(result.state.character.Spells).toEqual([{ name: 'Slime Finger', level: 1 }]);
     expect(result.state.progression.experience).toEqual({ currentSeconds: 0, maxSeconds: 1279 });
     expect(eventsOf(result)).toEqual([
-      { type: 'level_gained', level: 2 },
+      // The level carries the experience track that filled to cause it — the same figure the
+      // fixture's ExpBar maximum states, asserted rather than stripped.
+      { type: 'level_gained', level: 2, reason: { experienceSeconds: sheet.ExpBar.max } },
       { type: 'stat_gained', stat: 'HP Max', amount: 6 },
       { type: 'stat_gained', stat: 'MP Max', amount: 5 },
       { type: 'stat_gained', stat: 'INT', amount: 1 },

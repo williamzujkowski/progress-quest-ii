@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { soundFX } from './audio';
-import { describeGameEvent, soundCueForGameEvent } from './gameEventAdapter';
+import { describeDecisionReason, describeGameEvent, soundCueForGameEvent } from './gameEventAdapter';
 import { RandomGenerator, type PRNGSeed } from '../engine/prng';
 import { createNewCharacter } from '../engine/sim';
 import { levelUpTime } from '../engine/math';
@@ -51,6 +51,8 @@ export interface GameStore {
 export interface ActivityEntry {
   readonly id: number;
   readonly message: string;
+  /** Optional and supplemental: the chronological line stands on its own without it. */
+  readonly reason?: string;
 }
 
 export function createActivityEntries(messages: readonly string[], firstId: number): ActivityEntry[] {
@@ -163,7 +165,12 @@ export const useGameStore = create<GameStore>((set, get) => {
       const result = advanceGame({ character, progression }, elapsedBudgetMs, rng);
       const sources = result.records.map((record, index) => ({ activityId: nextActivityId + index, record }));
       for (const { record } of sources) playEventSound(record.event);
-      const activity = sources.map(({ activityId: id, record }) => ({ id, message: describeGameEvent(record.event) })).reverse();
+      const activity = sources.map(({ activityId: id, record }) => {
+        const reason = describeDecisionReason(record.event);
+        return reason === undefined
+          ? { id, message: describeGameEvent(record.event) }
+          : { id, message: describeGameEvent(record.event), reason };
+      }).reverse();
       // One projection per record, used for both the world notices and the exhibit case, rather
       // than classifying the same equipment twice.
       const projections = sources.map((source) => ({ source, projection: projectWorld({ kind: 'transition', source }) }));
