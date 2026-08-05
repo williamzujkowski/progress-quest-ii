@@ -2,7 +2,7 @@
 
 Standalone guidance for AI coding agents (OpenCode, Codex CLI, Cursor, Aider, Cline, Continue, Goose, Claude Code) working in this repository. Self-contained — single source of truth for agent guidance in this project.
 
-**About this project:** `progress-quest-ii` is an unofficial modern continuation of Eric Fredricksen's classic zero-player RPG *Progress Quest* (web edition). The goal of this project is to modernize the legacy 2000s JavaScript / jQuery codebase into a clean, modular, responsive, high-performance web application while retaining 100% of the original game's iconic mechanics, flavor text, humor, and deterministic progression logic.
+**About this project:** `progress-quest-ii` is an unofficial spiritual successor to Eric Fredricksen's classic zero-player RPG *Progress Quest* (web edition) — a game for people who want to play games without playing them and watch numbers go up. It is inspired by the original rather than a port of it. It keeps the humour, the flavour, and the deterministic, hands-off progression; it is free to extend or refine the mechanics where that serves the goal, and it has already done so. See [ADR 0003](docs/adr/0003-spiritual-successor-not-a-port.md) for what that means in practice and which divergences are deliberate.
 
 ---
 
@@ -10,7 +10,7 @@ Standalone guidance for AI coding agents (OpenCode, Codex CLI, Cursor, Aider, Cl
 
 Build and maintain a modern, fully-typed, responsive, and tested web application for **Progress Quest II**.
 
-- **Reference Baseline:** `pq-web-src/` contains the legacy JavaScript/HTML source (`main.js`, `config.js`, `newguy.js`, `roster.js`, `sim.js`, `cheat.js`, `clock.js`, `main.css`, `progros.css`). It serves as the authoritative functional reference.
+- **Reference Baseline:** `pq-web-src/` contains the legacy JavaScript/HTML source (`main.js`, `config.js`, `newguy.js`, `roster.js`, `sim.js`, `cheat.js`, `clock.js`, `main.css`, `progros.css`). It is the behavioural reference for anything this project has not deliberately changed, and the oracle harness exists to catch *unintended* drift. A parity failure is a question — did we mean this? — not an automatic bug. An unexplained divergence is still far likelier to be a mistake than a choice, so treat it as one until someone explains it.
 - **Modernization Goals:**
   1. **Strict TypeScript & Modular Engine:** Decouple core game simulation logic (`src/engine/`) from UI rendering (`src/components/`). Zero UI dependencies in engine code.
   2. **Modern Web UI & Design System:** Implement a responsive visual design system (supporting retro ProgrOS / Windows classic themes alongside sleek modern dark/light modes) with smooth animations and progress bars.
