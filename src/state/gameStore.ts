@@ -9,6 +9,13 @@ import type { CharacterSheet, ProgressionState, StatsMap } from '../engine/types
 import { MAX_PENDING_ELAPSED_MS, MAX_SOCIAL_ENTRIES, MAX_WORLD_NOTICES } from '../data/limits';
 import { projectWorld, type WorldNotice } from './worldContext';
 import { projectSocialBatch, type SocialEntry } from './socialProjection';
+import { EMPTY_COMMENDATIONS, mergeEvents, readCommendations, writeCommendations, type Commendations } from './commendations';
+
+// Read once at module load, the same way the roster is read: a ledger that cannot be read is
+// simply an empty one, never a reason for the game not to start.
+const initialCommendations = readCommendations(
+  typeof window === 'undefined' ? undefined : (() => { try { return window.localStorage; } catch { return undefined; } })(),
+);
 
 type StartSessionRequest =
   | { source: 'creation'; name: string; race: string; klass: string; seed: PRNGSeed; stats?: StatsMap }
@@ -19,6 +26,7 @@ export interface GameStore {
   log: ActivityEntry[];
   worldNotices: WorldNotice[];
   socialEntries: SocialEntry[];
+  commendations: Commendations;
   nextActivityId: number;
   sessionGeneration: number;
   isPaused: boolean;
@@ -86,6 +94,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     log: createActivityEntries([`Welcome to Progress Quest II! ${initialChar.Traits.Name} the ${initialChar.Traits.Race} ${initialChar.Traits.Class} sets out on an adventure.`], 0),
     worldNotices: [],
     socialEntries: [],
+    commendations: initialCommendations,
     nextActivityId: 1,
     sessionGeneration: 0,
     isPaused: false,
@@ -118,6 +127,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         log: createActivityEntries([message], nextActivityId),
         worldNotices: [],
         socialEntries: [],
+        commendations: get().commendations ?? EMPTY_COMMENDATIONS,
         nextActivityId: nextActivityId + 1,
         sessionGeneration: sessionGeneration + 1,
         isPaused: false,
@@ -138,6 +148,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         log: createActivityEntries(session.log.toReversed(), nextActivityId).reverse(),
         worldNotices: [],
         socialEntries: [],
+        commendations: get().commendations ?? EMPTY_COMMENDATIONS,
         nextActivityId: nextActivityId + session.log.length,
         sessionGeneration: sessionGeneration + 1,
         pendingElapsedMs: session.pendingElapsedMs,
@@ -151,6 +162,12 @@ export const useGameStore = create<GameStore>((set, get) => {
       const elapsedBudgetMs = Math.min(MAX_PENDING_ELAPSED_MS, pendingElapsedMs + elapsedMs);
       const result = advanceGame({ character, progression }, elapsedBudgetMs, rng);
       const sources = result.records.map((record, index) => ({ activityId: nextActivityId + index, record }));
+      // Records are a maximum over events, so this returns the same object on the overwhelming
+      // majority of ticks and the write below almost never runs.
+      const nextCommendations = mergeEvents(get().commendations, sources.map(({ record }) => record.event));
+      if (nextCommendations !== get().commendations) {
+        writeCommendations(typeof window === 'undefined' ? undefined : window.localStorage, nextCommendations);
+      }
       for (const { record } of sources) playEventSound(record.event);
       const activity = sources.map(({ activityId: id, record }) => ({ id, message: describeGameEvent(record.event) })).reverse();
       const projectedWorldNotices = sources.flatMap((source) => projectWorld({ kind: 'transition', source }).notices).toReversed();
@@ -162,6 +179,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         worldNotices: [...projectedWorldNotices, ...worldNotices].slice(0, MAX_WORLD_NOTICES),
         socialEntries: retainWholeSocialScenes([...projectedSocialEntries, ...socialEntries]),
         nextActivityId: nextActivityId + activity.length,
+        commendations: nextCommendations,
       });
     },
   };
