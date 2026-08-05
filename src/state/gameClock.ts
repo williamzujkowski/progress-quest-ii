@@ -5,31 +5,35 @@ export function startGameClock(
   visibilityTarget: Pick<Document, 'hidden' | 'addEventListener' | 'removeEventListener'> | undefined = typeof document === 'undefined' ? undefined : document,
 ): () => void {
   let previousTime = now();
-  let wasHidden = visibilityTarget?.hidden ?? false;
-  const resetBaseline = () => {
-    previousTime = now();
-    wasHidden = visibilityTarget?.hidden ?? false;
-  };
-  visibilityTarget?.addEventListener('visibilitychange', resetBaseline);
-  const timer = setInterval(() => {
+  let bankedMs = 0;
+
+  // Move wall-clock progress into the bank without deciding yet whether to spend it.
+  const bankElapsed = () => {
     const currentTime = now();
-    const isHidden = visibilityTarget?.hidden ?? false;
-    if (isHidden || wasHidden) {
-      previousTime = currentTime;
-      wasHidden = isHidden;
-      return;
-    }
+    bankedMs += Math.max(0, currentTime - previousTime);
+    previousTime = currentTime;
+  };
+
+  // An open-but-hidden tab keeps earning time. Banking on the transition itself means a
+  // throttled background interval cannot lose the span between its last run and the switch.
+  visibilityTarget?.addEventListener('visibilitychange', bankElapsed);
+
+  const timer = setInterval(() => {
+    bankElapsed();
+    // Hidden ticks accumulate only; the engine's bounded catch-up spends the bank on return.
+    if (visibilityTarget?.hidden ?? false) return;
+    const elapsedMs = bankedMs;
+    bankedMs = 0;
     try {
-      tick(Math.max(0, currentTime - previousTime));
+      tick(elapsedMs);
     } catch (error: unknown) {
       // Keep the interval alive so a recoverable transition failure cannot strand the session.
       onError(error);
     }
-    previousTime = currentTime;
   }, 50);
 
   return () => {
     clearInterval(timer);
-    visibilityTarget?.removeEventListener('visibilitychange', resetBaseline);
+    visibilityTarget?.removeEventListener('visibilitychange', bankElapsed);
   };
 }

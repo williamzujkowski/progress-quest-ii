@@ -38,7 +38,7 @@ describe('game clock', () => {
     stop();
   });
 
-  it('does not accrue catch-up time while the page is hidden', () => {
+  it('banks elapsed time while the page is hidden and spends it on return', () => {
     vi.useFakeTimers();
     let currentTime = 3_000;
     const tick = vi.fn();
@@ -56,11 +56,12 @@ describe('game clock', () => {
     currentTime = 30_075;
     vi.advanceTimersByTime(50);
 
-    expect(tick).toHaveBeenCalledWith(75);
+    // 27_000ms earned while hidden plus the 75ms since returning.
+    expect(tick).toHaveBeenCalledWith(27_075);
     stop();
   });
 
-  it('discards hidden time when a visible interval runs before the visibility event', () => {
+  it('banks hidden time even when a visible interval runs before the visibility event', () => {
     vi.useFakeTimers();
     let currentTime = 5_000;
     const tick = vi.fn();
@@ -72,10 +73,30 @@ describe('game clock', () => {
     visibility.hidden = false;
     vi.advanceTimersByTime(50);
 
-    expect(tick).not.toHaveBeenCalled();
-    currentTime = 50_050;
-    vi.advanceTimersByTime(50);
-    expect(tick).toHaveBeenCalledWith(50);
+    expect(tick).toHaveBeenCalledWith(45_000);
+    stop();
+  });
+
+  it('keeps banking across repeated hidden spans without losing a span', () => {
+    vi.useFakeTimers();
+    let currentTime = 0;
+    const tick = vi.fn();
+    const visibility = new EventTarget() as EventTarget & { hidden: boolean };
+    visibility.hidden = false;
+    const stop = startGameClock(tick, () => currentTime, undefined, visibility as Document);
+
+    for (const span of [10_000, 20_000]) {
+      visibility.hidden = true;
+      visibility.dispatchEvent(new Event('visibilitychange'));
+      currentTime += span;
+      vi.advanceTimersByTime(50);
+      visibility.hidden = false;
+      visibility.dispatchEvent(new Event('visibilitychange'));
+      vi.advanceTimersByTime(50);
+    }
+
+    const total = tick.mock.calls.reduce((sum, [elapsed]) => sum + elapsed, 0);
+    expect(total).toBe(30_000);
     stop();
   });
 

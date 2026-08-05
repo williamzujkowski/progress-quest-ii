@@ -60,9 +60,9 @@
 .stat-pill {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   background: var(--bg-color);
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border-radius: 9999px;
   font-size: 0.875rem;
   font-weight: 600;
@@ -77,12 +77,12 @@
 
 .log-tag {
   display: inline-block;
-  padding: var(--space-1);
+  padding: var(--space-2);
   border-radius: 0.25rem;
   font-size: 0.7rem;
   font-weight: 700;
   margin-right: 0.5rem;
-  text-transform: uppercase;
+  font-variant-caps: all-small-caps;
 }
 
 .tag-loot { background: var(--panel-bg); color: var(--accent-success); }
@@ -113,7 +113,7 @@
   left: 0.5rem;
   z-index: 200;
   transform: translateY(-160%);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border-radius: 0.35rem;
   background: var(--accent-primary);
   color: var(--text-on-accent);
@@ -162,10 +162,15 @@
 
 .brand-copy { min-width: 0; }
 
+/* The masthead is the one place the editorial voice speaks at full size: Newsreader
+   against the mono tagline underneath, the same display/machine pairing the rest of
+   the Remarque family uses. Everything else stays in the interface faces. */
 .brand h1 {
+  font-family: var(--font-display);
   font-size: clamp(1.45rem, 3vw, 2rem);
-  line-height: 1;
-  letter-spacing: -0.04em;
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-display);
+  letter-spacing: var(--tracking-display);
   white-space: nowrap;
 }
 
@@ -177,7 +182,7 @@
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-variant-caps: all-small-caps;
 }
 
 .brand-tagline a {
@@ -207,11 +212,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-3);
   border: 1px solid var(--accent-warning);
   border-radius: 0.4rem;
   background: var(--panel-bg);
-  padding: 0.55rem var(--space-2);
+  padding: 0.55rem var(--space-3);
   color: var(--text-main);
   font-family: var(--font-mono);
   font-size: 0.72rem;
@@ -246,22 +251,22 @@
 .hero-meters {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .hero-prime-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .hero-stat {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-1);
+  gap: var(--space-2);
   min-width: 0;
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--panel-border);
   border-radius: 0.35rem;
   background: var(--progress-bg);
@@ -306,7 +311,7 @@
   display: grid;
   width: min(20rem, calc(100vw - 2rem));
   gap: 0.35rem;
-  padding: var(--space-2);
+  padding: var(--space-3);
   border: 1px solid var(--accent-primary);
   border-radius: 0.35rem;
   background: var(--panel-raised);
@@ -336,7 +341,7 @@
 }
 
 .meter-group {
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border-radius: 0.35rem;
 }
 
@@ -387,10 +392,10 @@
 @media (max-width: 640px) {
   .app-container {
     width: 100%;
-    padding: max(var(--space-2), env(safe-area-inset-top)) max(var(--space-2), env(safe-area-inset-right)) max(var(--space-2), env(safe-area-inset-bottom)) max(var(--space-2), env(safe-area-inset-left));
+    padding: max(var(--space-3), env(safe-area-inset-top)) max(var(--space-3), env(safe-area-inset-right)) max(var(--space-3), env(safe-area-inset-bottom)) max(var(--space-3), env(safe-area-inset-left));
     gap: 0.75rem;
   }
-  .navbar, .hero-banner, .card { padding-left: var(--space-3); padding-right: var(--space-3); }
+  .navbar, .hero-banner, .card { padding-left: var(--space-4); padding-right: var(--space-4); }
   .brand { flex-basis: 100%; flex-wrap: wrap; }
   .brand-tagline { margin-left: 0; }
   .nav-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
@@ -403,7 +408,7 @@
   .hero-prime-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .hero-stats-quick { gap: 0.5rem; }
   .stat-pill { flex: 1 1 8rem; justify-content: center; }
-  .hero-stat { padding-inline: var(--space-1); }
+  .hero-stat { padding-inline: var(--space-2); }
   .main-grid { gap: 0.75rem; }
   .main-grid > :last-child { grid-column: auto; }
   .quest-column { gap: 0.75rem; }
@@ -422,7 +427,7 @@
     grid-auto-flow: column;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: repeat(6, minmax(0, auto));
-    column-gap: var(--space-3);
+    column-gap: var(--space-4);
   }
 }
 
@@ -436,17 +441,17 @@
   .quest-column {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    gap: var(--space-2);
+    gap: var(--space-3);
   }
 
   .quest-card,
   .activity-card {
-    gap: var(--space-1);
-    padding: var(--space-1) var(--space-2);
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
   }
 
   .quest-card .card-header,
-  .activity-card .card-header { padding-bottom: var(--space-1); }
+  .activity-card .card-header { padding-bottom: var(--space-2); }
 
   .quest-card .progress-container { margin-top: 0 !important; }
 
@@ -464,7 +469,7 @@
   }
 
   .world-context-line {
-    gap: var(--space-1);
+    gap: var(--space-2);
     font-size: 0.68rem;
   }
 
