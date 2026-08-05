@@ -1,6 +1,8 @@
 import { z } from 'zod';
-import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../data/limits';
+import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE, MAX_PERSISTED_DESCRIPTION_LENGTH } from '../data/limits';
+import { EQUIP_SLOTS } from '../data/traits';
 import type { GameTransitionEvent } from '../engine/transition';
+import type { EquipmentClassification } from './worldContext';
 
 /**
  * Personal bests, kept as the institution's own filing cabinet.
@@ -16,26 +18,66 @@ import type { GameTransitionEvent } from '../engine/transition';
 
 export const COMMENDATIONS_STORAGE_KEY = 'progquest_commendations_v1';
 
+/**
+ * The best thing ever worn in each slot, kept after it is sold — which is where equipment
+ * currently vanishes forever. `label` and `quality` are the classification worldContext already
+ * computes; they are prestige, not power, and CONTEXT.md is explicit that equipment has no
+ * combat contribution at all.
+ */
+const exhibitEntrySchema = z.object({
+  name: z.string().min(1).max(MAX_PERSISTED_DESCRIPTION_LENGTH),
+  label: z.enum(['questionable', 'serviceable', 'notable', 'legendary']),
+  quality: z.number().finite(),
+}).strict();
+
 export const commendationsSchema = z.object({
   highestLevel: z.number().int().min(0).max(MAX_PERSISTED_VALUE),
   largestSale: z.number().int().min(0).max(MAX_PERSISTED_GOLD),
   questsCompleted: z.number().int().min(0).max(MAX_PERSISTED_VALUE),
   actsCompleted: z.number().int().min(0).max(MAX_PERSISTED_VALUE),
+  // Keys are constrained to real slots so a hostile ledger cannot grow without bound, and
+  // partialRecord rather than record because zod treats an enum-keyed record as exhaustive -
+  // a plain record here would reject every ledger that has not yet filled all eleven slots,
+  // which is all of them. Defaulted so a ledger written before the exhibit existed still loads.
+  exhibit: z.partialRecord(z.enum(EQUIP_SLOTS as [string, ...string[]]), exhibitEntrySchema).default({}),
 }).strict();
 
 export type Commendations = z.infer<typeof commendationsSchema>;
+
+export type ExhibitEntry = z.infer<typeof exhibitEntrySchema>;
 
 export const EMPTY_COMMENDATIONS: Commendations = {
   highestLevel: 0,
   largestSale: 0,
   questsCompleted: 0,
   actsCompleted: 0,
+  exhibit: {},
 };
+
+/**
+ * Keeps the finer of the two. Ties keep the incumbent, so the record reflects the first time a
+ * quality was reached rather than the most recent — a record of when, not of what is worn now.
+ */
+export function mergeExhibit(
+  records: Commendations,
+  slot: string,
+  name: string,
+  classification: Pick<EquipmentClassification, 'label' | 'quality'>,
+): Commendations {
+  if (!EQUIP_SLOTS.includes(slot as never) || name.length === 0) return records;
+  const held = records.exhibit[slot];
+  if (held && held.quality >= classification.quality) return records;
+  return {
+    ...records,
+    exhibit: { ...records.exhibit, [slot]: { name, label: classification.label, quality: classification.quality } },
+  };
+}
 
 /** True when nothing has happened worth filing, so the panel can stay away rather than show zeroes. */
 export function isEmpty(records: Commendations): boolean {
   return records.highestLevel === 0 && records.largestSale === 0
-    && records.questsCompleted === 0 && records.actsCompleted === 0;
+    && records.questsCompleted === 0 && records.actsCompleted === 0
+    && Object.keys(records.exhibit).length === 0;
 }
 
 /**

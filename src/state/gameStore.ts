@@ -9,7 +9,7 @@ import type { CharacterSheet, ProgressionState, StatsMap } from '../engine/types
 import { MAX_PENDING_ELAPSED_MS, MAX_SOCIAL_ENTRIES, MAX_WORLD_NOTICES } from '../data/limits';
 import { projectWorld, type WorldNotice } from './worldContext';
 import { projectSocialBatch, type SocialEntry } from './socialProjection';
-import { EMPTY_COMMENDATIONS, mergeEvents, readCommendations, writeCommendations, type Commendations } from './commendations';
+import { EMPTY_COMMENDATIONS, mergeEvents, mergeExhibit, readCommendations, writeCommendations, type Commendations } from './commendations';
 
 // Read once at module load, the same way the roster is read: a ledger that cannot be read is
 // simply an empty one, never a reason for the game not to start.
@@ -162,15 +162,26 @@ export const useGameStore = create<GameStore>((set, get) => {
       const elapsedBudgetMs = Math.min(MAX_PENDING_ELAPSED_MS, pendingElapsedMs + elapsedMs);
       const result = advanceGame({ character, progression }, elapsedBudgetMs, rng);
       const sources = result.records.map((record, index) => ({ activityId: nextActivityId + index, record }));
+      for (const { record } of sources) playEventSound(record.event);
+      const activity = sources.map(({ activityId: id, record }) => ({ id, message: describeGameEvent(record.event) })).reverse();
+      // One projection per record, used for both the world notices and the exhibit case, rather
+      // than classifying the same equipment twice.
+      const projections = sources.map((source) => ({ source, projection: projectWorld({ kind: 'transition', source }) }));
+      const projectedWorldNotices = projections.flatMap(({ projection }) => projection.notices).toReversed();
       // Records are a maximum over events, so this returns the same object on the overwhelming
       // majority of ticks and the write below almost never runs.
-      const nextCommendations = mergeEvents(get().commendations, sources.map(({ record }) => record.event));
+      let nextCommendations = mergeEvents(get().commendations, sources.map(({ record }) => record.event));
+      for (const { source, projection } of projections) {
+        const event = source.record.event;
+        // The classification belongs to the equipment this record awarded, so pair them here
+        // rather than trying to reconstruct which item it described later.
+        if (event.type === 'equipment_gained' && projection.equipment) {
+          nextCommendations = mergeExhibit(nextCommendations, event.slot, event.name, projection.equipment);
+        }
+      }
       if (nextCommendations !== get().commendations) {
         writeCommendations(typeof window === 'undefined' ? undefined : window.localStorage, nextCommendations);
       }
-      for (const { record } of sources) playEventSound(record.event);
-      const activity = sources.map(({ activityId: id, record }) => ({ id, message: describeGameEvent(record.event) })).reverse();
-      const projectedWorldNotices = sources.flatMap((source) => projectWorld({ kind: 'transition', source }).notices).toReversed();
       const projectedSocialEntries = projectSocialBatch(sources).toReversed();
       set({
         ...result.state,
