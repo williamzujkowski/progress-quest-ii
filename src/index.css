@@ -679,10 +679,16 @@ input[type='radio'] {
   box-shadow: inset 0 -3px 0 var(--accent-primary);
 }
 
+/* The floor lives here rather than on either tab, so both size alike - which is the point:
+   the activity feed pinned itself to 12rem while chatter was flex: 1 with min-height: 0, and
+   "take what is left" resolves to nothing when the parent distributes no height. Measured at
+   20px tall at the 1025x760 breakpoint, present in the accessibility tree and unreachable in
+   practice, while the column sat at 434px of a 760px viewport with no overflow. The room was
+   already there; nothing was claiming it. */
 .console-panel {
   display: flex;
   min-width: 0;
-  min-height: 0;
+  min-height: 12rem;
   flex: 1;
   overflow: hidden;
 }
@@ -691,6 +697,11 @@ input[type='radio'] {
 .activity-console-panel { flex-direction: column; gap: var(--space-2); }
 .activity-console-panel .log-feed { flex: 1; height: 12rem; min-height: 0; max-height: 12rem; }
 
+/* The sibling activity panel pins its feed to 12rem; this one was flex: 1 with min-height: 0,
+   which reads as "take what is left" and resolves to nothing when the parent distributes no
+   height. Measured at 20px tall at the 1025x760 breakpoint - present in the accessibility tree,
+   unreachable in practice - while the column sat at 434px of a 760px viewport with no overflow.
+   A floor makes it claim the room that was already there. */
 .chatter-panel {
   display: flex;
   width: 100%;
