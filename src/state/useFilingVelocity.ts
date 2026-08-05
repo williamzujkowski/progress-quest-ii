@@ -12,7 +12,15 @@ const SAMPLE_INTERVAL_MS = 10_000;
  * nothing new to show. Reading `getState()` on an interval keeps that property: the component
  * re-renders only when the displayed figure actually changes, which is at most once per sample.
  */
-export function useFilingVelocity(nowMs: () => number = () => Date.now()): number | null {
+/**
+ * Hoisted rather than written inline as a default, because a default expression is re-evaluated
+ * per call: every render would hand the effect below a new function identity, tearing the timer
+ * down and rebuilding it on each render of the host panel. That is precisely the coupling to
+ * render cadence this hook exists to avoid.
+ */
+const systemNowMs = () => Date.now();
+
+export function useFilingVelocity(nowMs: () => number = systemNowMs): number | null {
   const samples = useRef<VelocitySample[]>([]);
   const [velocity, setVelocity] = useState<number | null>(null);
 

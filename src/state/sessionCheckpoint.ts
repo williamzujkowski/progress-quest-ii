@@ -340,6 +340,12 @@ export function startSessionCheckpoints({
       // Write straight back with a fresh timestamp. Without this, a reload before the first
       // debounced save would find the same savedAtMs still on disk and credit the same absence
       // a second time.
+      //
+      // Marked dirty by hand because the store subscription below is not attached yet, so the
+      // set() inside restoreActiveSession notified nobody and flush would otherwise decline as
+      // a no-op. The claim is true regardless of who observed it: the store now differs from
+      // what is on disk.
+      dirty = true;
       flush();
     } else if (loaded.status === 'missing') {
       const mostRecentRosterCharacter = loadMostRecentRosterCharacter(storage);

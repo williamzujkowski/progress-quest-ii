@@ -420,4 +420,25 @@ describe('active session checkpoint boundary', () => {
     expect(loadActiveCheckpoint(localStorage)).toMatchObject({ status: 'loaded', checkpoint: { session: { log: ['Pagehide latest'] } } });
     controller.dispose();
   });
+
+  it('stamps a fresh savedAtMs on restore so the absence cannot be credited twice', () => {
+    // An absence is credited by comparing now() against the savedAtMs on disk. If a restore
+    // leaves the old stamp there, every subsequent boot measures its absence from the same
+    // origin and re-credits time that has already been banked. Closing that window is the whole
+    // reason the restore writes straight back instead of waiting for the debounce — and dispose()
+    // deliberately does not flush, so a crash or a mobile tab eviction lands squarely in it.
+    useGameStore.getState().startSession({ source: 'creation', name: 'Twice Counted', race: 'Half Orc', klass: 'Robot Monk', seed: 715 });
+    useGameStore.setState({ isPaused: false, pendingElapsedMs: 0 });
+    expect(writeActiveCheckpoint(localStorage, captureActiveSession(FIXED_SAVED_AT), null).ok).toBe(true);
+
+    const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT + 5_000, storage: localStorage });
+
+    expect(useGameStore.getState().pendingElapsedMs).toBe(5_000);
+    // On disk, not just in memory: the next boot reads this and nothing else.
+    expect(loadActiveCheckpoint(localStorage)).toMatchObject({
+      status: 'loaded',
+      checkpoint: { session: { savedAtMs: FIXED_SAVED_AT + 5_000 } },
+    });
+    controller.dispose();
+  });
 });
