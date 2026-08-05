@@ -5,7 +5,9 @@ import { Gauge } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../state/gameStore';
 import { useFilingVelocity } from '../state/useFilingVelocity';
+import { usePromotionEta } from '../state/usePromotionEta';
 import { useTabTitle } from '../state/useTabTitle';
+import { formatDuration } from '../engine/text';
 import { ActLabel, GameNumber } from './GameNumber';
 import { ItemTooltip } from './ItemTooltip';
 
@@ -25,6 +27,9 @@ export const HeroBanner: React.FC = () => {
   const character = { Traits, Stats, Gold, Inventory, Plot: { act } };
   // Derived, non-authoritative, and sampled on its own timer - see useFilingVelocity.
   const velocity = useFilingVelocity();
+  // Projected from the observed rate rather than the experience track's own arithmetic, which
+  // only advances on kill tasks and so runs about a quarter short. See promotionEta.
+  const promotionSeconds = usePromotionEta();
   // The tab strip is this game's only surface while it is not the active tab.
   useTabTitle({ velocity });
   const progression = { experience };
@@ -52,6 +57,17 @@ export const HeroBanner: React.FC = () => {
         >
           <div className="progress-bar-fill" style={{ width: `${experiencePct}%` }} />
         </div>
+        {/*
+          Absent until the sampled window can support a figure, rather than showing a placeholder.
+          "Expected" and "pending review" are doing real work here: this is a projection from a
+          five-minute average, and the copy should not promise a schedule the institution has no
+          way to keep.
+        */}
+        {promotionSeconds !== null && (
+          <div className="hero-eta">
+            Next promotion expected in ~{formatDuration(promotionSeconds)}, pending administrative review.
+          </div>
+        )}
         <div className="hero-sub">
           {character.Traits.Race} {character.Traits.Class} • <ActLabel act={character.Plot.act} />
         </div>

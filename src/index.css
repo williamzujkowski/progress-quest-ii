@@ -176,6 +176,17 @@ input[type='radio'] {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
+/*
+  Sits directly under the experience bar it explains, quieter than the identity line above it —
+  it is a note about a projection, not a fact about the hero.
+*/
+.hero-eta {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
 .game-number {
   font-family: var(--font-mono);
   font-feature-settings: 'tnum' 1, 'lnum' 1;

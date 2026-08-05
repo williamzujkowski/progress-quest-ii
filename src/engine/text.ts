@@ -75,6 +75,30 @@ export function describeGameNumber(value: number): string {
   return spoken.length <= MAX_SPOKEN_CHARACTERS ? spoken : describeScientificGameNumber(value);
 }
 
+/**
+ * A duration, at the precision the figure actually supports.
+ *
+ * Coarse on purpose. These come from projections over a sampled rate, and reporting "4h 12m 37s"
+ * would dress a five-minute average up as a stopwatch reading. Two units at most, and seconds
+ * only when there is nothing larger to report.
+ */
+export function formatDuration(totalSeconds: number): string {
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return '—';
+  const seconds = Math.round(totalSeconds);
+  if (seconds < 60) return `${seconds}s`;
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+
+  const hours = Math.floor(minutes / 60);
+  const remainderMinutes = minutes % 60;
+  if (hours < 24) return remainderMinutes === 0 ? `${hours}h` : `${hours}h ${remainderMinutes}m`;
+
+  const days = Math.floor(hours / 24);
+  const remainderHours = hours % 24;
+  return remainderHours === 0 ? `${days}d` : `${days}d ${remainderHours}h`;
+}
+
 // ponytail: shared by the social and world projections, which both truncate by code
 // point so a surrogate pair is never split in half, at the same shared limit.
 export const MAX_TEXT_CODE_POINTS = 180;
