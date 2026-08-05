@@ -1138,6 +1138,39 @@ test.describe('Progress Quest II terminal dashboard', () => {
     });
   }
 
+  for (const [label, width] of [['desktop', 1280], ['mobile', 375]] as const) {
+    test(`reveals and dismisses a decision reason at ${label} width`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/');
+      await loadDenseDashboard(page);
+      await openActivityTab(page);
+
+      // Seed one entry carrying a reason. The feed renders what the store holds; the engine
+      // attaching the cause correctly is asserted separately at the transition seam.
+      await page.evaluate(async () => {
+        const { useGameStore } = await import('/src/state/gameStore.ts');
+        const state = useGameStore.getState();
+        useGameStore.setState({
+          log: [{ id: state.nextActivityId + 1, message: 'Heading to market to sell loot...', reason: 'Carrying 22 of 22 cubits. At capacity, procurement routes the hero to market.' }, ...state.log],
+          nextActivityId: state.nextActivityId + 2,
+        });
+      });
+
+      const disclosure = page.locator('.log-reason').first();
+      await expect(disclosure).toBeVisible();
+      // Closed by default: the chronological line is the feed, this is a footnote to one entry.
+      await expect(page.getByText(/At capacity, procurement routes/)).toBeHidden();
+
+      await disclosure.locator('summary').click();
+      await expect(page.getByText(/At capacity, procurement routes/)).toBeVisible();
+
+      await disclosure.locator('summary').click();
+      await expect(page.getByText(/At capacity, procurement routes/)).toBeHidden();
+
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    });
+  }
+
   test('keeps the console tabs usable when the centre column runs short', async ({ page }) => {
     // #207: the chatter panel was flex: 1 with min-height: 0, which resolves to nothing when
     // the parent distributes no height. It measured 20px tall here — present in the

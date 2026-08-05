@@ -227,6 +227,15 @@ export const LogFeed: React.FC = () => {
             <div className="log-entry log-entry-animated" key={entry.id} data-activity-id={entry.id}>
               {getLogTag(entry.message)}
               <span>{entry.message}</span>
+              {/* Native disclosure so it is keyboard-operable and screen-reader-announced without
+                  any state of its own. Subordinate to the line above it, and closed by default:
+                  the chronological record is the feed, and this is a footnote to one entry. */}
+              {entry.reason !== undefined && (
+                <details className="log-reason">
+                  <summary>Why</summary>
+                  <span>{entry.reason}</span>
+                </details>
+              )}
             </div>
           ))}
         </div>
