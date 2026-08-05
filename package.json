@@ -10,12 +10,12 @@
     "lint:workflows": "node scripts/run-actionlint.mjs",
     "lint:legacy": "oxlint --no-ignore -c .oxlintrc.legacy.json pq-web-src",
     "preview": "vite preview",
-    "test": "vitest run && node --test scripts/test-legacy-oracle.mjs scripts/test-actionlint.mjs scripts/test-production-notices.mjs scripts/test-editorial-contract.mjs",
+    "test": "vitest run --coverage && node --test scripts/test-legacy-oracle.mjs scripts/test-actionlint.mjs scripts/test-production-notices.mjs scripts/test-editorial-contract.mjs",
     "test:fidelity": "vitest run src/__tests__/fidelity && node --test scripts/test-legacy-oracle.mjs",
     "test:e2e": "playwright test",
     "test:pwa": "npm run build && playwright test --config playwright.pwa.config.ts",
     "typecheck": "tsc -b",
-    "audit": "npm audit --audit-level=high",
+    "audit": "npm audit --audit-level=moderate",
     "agents:verify": "nexus-agents verify",
     "quality": "npm run agents:verify && npm run lint && npm run lint:workflows && npm run typecheck && npm test && npm run audit && npm run test:e2e && npm run test:pwa"
   },
@@ -40,11 +40,15 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
+    "@vitest/coverage-v8": "^4.1.10",
     "jsdom": "^30.0.1",
     "nexus-agents": "^2.173.6",
     "oxlint": "^1.75.0",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "hono": "^4.12.34"
   }
 }

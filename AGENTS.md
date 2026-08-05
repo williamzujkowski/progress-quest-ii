@@ -32,7 +32,7 @@ correctness > simplicity > performance > cleverness
 - **Cleverness**: Never. Obfuscated trickery creates technical debt.
 
 ### Core Disciplines
-- **Red/Green TDD** — Write a failing test first, then the minimum code to pass, then refactor. Never write production engine code without a corresponding test.
+- **Red/Green TDD** — Write a failing test first, then the minimum code to pass, then refactor. Never write production engine code without a corresponding test. This is enforced, not merely asked for: `vite.config.ts` sets a coverage floor that `npm test` fails against, with a deliberately higher bar for `src/engine/**` (93% statements, 86% branches, 95% functions, 94% lines). The global floors are lower because coverage counts every `src` file, and components are exercised by Playwright rather than Vitest. Raise a floor when coverage rises; never lower one to make a red run pass.
 - **YAGNI (You Aren't Gonna Need It)** — Implement only what is required by a named feature or backlog issue. Avoid speculative abstractions, unused parameters, or "just in case" utility helpers.
 - **DRY (Don't Repeat Yourself)** — Every piece of game data or logic (stat tables, item generation formulas, level curves) must have a single, unambiguous, authoritative representation in `src/data/` or `src/engine/`.
 - **Zero `any` policy** — Strict TypeScript typing enforced. Use `unknown` + type guards or Zod schemas at external storage and string boundaries.
