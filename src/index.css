@@ -18,12 +18,9 @@
   --color-fg: var(--terminal-foreground, oklch(0.9 0.005 80));
   --color-bg-subtle: color-mix(in oklch, var(--color-fg) 4%, transparent);
   --color-surface: color-mix(in oklch, var(--color-bg) 94%, var(--color-fg));
-  --color-fg-muted: color-mix(in oklch, var(--color-fg) 74%, transparent);
   --color-muted: color-mix(in oklch, var(--color-fg) 62%, transparent);
   --color-border: color-mix(in oklch, var(--color-fg) 15%, transparent);
-  --color-border-bold: color-mix(in oklch, var(--color-fg) 40%, transparent);
   --color-accent: var(--terminal-accent, var(--terminal-blue, oklch(0.606 0.11 249.7)));
-  --color-accent-hover: color-mix(in oklch, var(--color-accent) 82%, var(--color-fg));
   --color-success: var(--terminal-green, oklch(0.595 0.111 145));
   --color-warning: var(--terminal-yellow, oklch(0.607 0.11 84.3));
   --color-error: var(--terminal-red, oklch(0.619 0.11 25.7));
@@ -45,7 +42,6 @@
   --accent-success: var(--color-success);
   --accent-warning: var(--color-warning);
   --accent-danger: var(--color-error);
-  --accent-magic: var(--color-magic);
   --accent-info: var(--color-info);
   --text-on-accent: var(--color-bg);
   --surface-subtle: var(--color-bg-subtle);
@@ -173,7 +169,6 @@ input[type='radio'] {
 .game-number,
 .stat-pill,
 .badge,
-.meter-value,
 .progress-label,
 .world-context-line,
 .equip-item,

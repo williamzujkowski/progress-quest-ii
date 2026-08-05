@@ -1,6 +1,6 @@
 import { DUNGEON_NAMES, FIELD_NAMES, RAID_ACT_THRESHOLD, RAID_NAMES, TOWN_NAMES } from '../data/worldContext';
 import { analyzeItemMechanics } from '../engine/itemMechanics';
-import { boundCodePoints, describeGameNumber, formatGameNumber, stableIndex } from '../engine/text';
+import { boundCodePoints, MAX_TEXT_CODE_POINTS, describeGameNumber, formatGameNumber, stableIndex } from '../engine/text';
 import type { GamePresentationSnapshot, GameTransitionEvent, GameTransitionRecord, GameTransitionState } from '../engine/transition';
 import type { ProgressTask, QuestKind } from '../engine/types';
 
@@ -152,7 +152,6 @@ function postFromState(state: GameTransitionState): GamePresentationSnapshot {
   };
 }
 
-const MAX_TEXT_CODE_POINTS = 180;
 const bound = (text: string): string => boundCodePoints(text, MAX_TEXT_CODE_POINTS);
 
 

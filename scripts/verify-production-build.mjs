@@ -50,6 +50,8 @@ await Promise.all(fontUrls.map((fontUrl) => access(fontUrl)));
 
 const notices = await readFile(noticeUrl, 'utf8');
 const worker = await readFile(workerUrl, 'utf8');
-verifyProductionNotices(notices, worker);
+const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+const fontPackages = Object.keys(manifest.dependencies ?? {}).filter((name) => name.startsWith('@fontsource'));
+verifyProductionNotices(notices, worker, fontPackages);
 
 console.log(`Verified ${fontUrls.length} local font asset(s) across ${cssFiles.length} production CSS asset(s).`);

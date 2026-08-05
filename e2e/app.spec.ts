@@ -4,7 +4,11 @@ import { readFile } from 'node:fs/promises';
 import { createNewCharacter } from '../src/engine/sim';
 import { returningSessionStorageState } from './fixtures/returningSession';
 
-const returningStorageState = returningSessionStorageState('http://localhost:5173');
+// Origin comes from playwright.config.ts, which reserves a free port per invocation so runs
+// cannot borrow each other's dev server or a stale one from another branch.
+const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:5173';
+
+const returningStorageState = returningSessionStorageState(BASE_URL);
 
 const openActivityTab = async (page: Page) => {
   const tab = page.getByRole('tab', { name: 'Activity' });
@@ -45,7 +49,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
 
   test('requires character creation on a first visit and automatically checkpoints the result', async ({ browser }) => {
     const context = await browser.newContext({
-      baseURL: 'http://localhost:5173',
+      baseURL: BASE_URL,
       viewport: { width: 320, height: 900 },
       storageState: { cookies: [], origins: [] },
     });
@@ -84,11 +88,11 @@ test.describe('Progress Quest II terminal dashboard', () => {
     const earlier = createNewCharacter('Earlier Roster', 'Half Orc', 'Robot Monk', 706);
     const latest = createNewCharacter('Latest Roster', 'Dung Elf', 'Vermineer', 707);
     const context = await browser.newContext({
-      baseURL: 'http://localhost:5173',
+      baseURL: BASE_URL,
       storageState: {
         cookies: [],
         origins: [{
-          origin: 'http://localhost:5173',
+          origin: BASE_URL,
           localStorage: [{ name: 'progquest_roster_v1', value: JSON.stringify({ 'Earlier Roster': earlier, 'Latest Roster': latest }) }],
         }],
       },
@@ -458,7 +462,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
   });
 
   test('toggles a tooltip by touch inside a narrow viewport', async ({ browser }) => {
-    const context = await browser.newContext({ ...devices['iPhone 13'], baseURL: 'http://localhost:5173', storageState: returningStorageState });
+    const context = await browser.newContext({ ...devices['iPhone 13'], baseURL: BASE_URL, storageState: returningStorageState });
     const page = await context.newPage();
     await page.goto('/');
 
@@ -705,7 +709,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
   test('keeps simulated chatter quiet, bounded, responsive, and entirely local', async ({ page }) => {
     const externalRequests: string[] = [];
     page.on('request', (request) => {
-      if (new URL(request.url()).origin !== 'http://localhost:5173') externalRequests.push(request.url());
+      if (new URL(request.url()).origin !== BASE_URL) externalRequests.push(request.url());
     });
     await page.setViewportSize({ width: 1025, height: 760 });
     await page.goto('/');
@@ -884,7 +888,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
   });
 
   test('opens and mutes automated chatter by touch', async ({ browser }) => {
-    const context = await browser.newContext({ ...devices['iPhone 13'], baseURL: 'http://localhost:5173', storageState: returningStorageState });
+    const context = await browser.newContext({ ...devices['iPhone 13'], baseURL: BASE_URL, storageState: returningStorageState });
     const page = await context.newPage();
     await page.goto('/');
 
