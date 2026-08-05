@@ -1,29 +1,26 @@
 /**
  * How long until the next promotion, projected from the rate the hero actually earns experience.
  *
- * Two wrong answers were tried before this one, and both are worth recording because both looked
- * right.
+ * Two plausible shortcuts are wrong here, and both are worth naming because both read as correct.
  *
- * The first was to treat the experience track as a clock: subtract currentSeconds from maxSeconds
+ * The first is to treat the experience track as a clock: subtract currentSeconds from maxSeconds
  * and call the difference a duration. The track is denominated in seconds and advances by exactly
- * `task.durationMs / 1000`, so this reads like an identity. It is not. `transition.ts` advances
- * the track only inside its `task.type === 'kill'` branch — heading to the killing fields, walking
- * to market, selling, buying, and every plot and cinematic task consume time and contribute
- * nothing. Driving the engine at the clock's own cadence for six simulated hours yields 17,403
- * experience-seconds across 21,600 elapsed ones: a ratio of 0.806, so the shortcut runs about 24%
- * short in a consistent direction.
+ * `task.durationMs / 1000`, so this looks like an identity. It is not. `transition.ts` advances
+ * the track only inside its `task.type === 'kill'` branch, while heading to the killing fields,
+ * walking to market, selling, buying, and every plot and cinematic task consume time and
+ * contribute nothing. The shortcut therefore runs short, always in the same direction. The ratio
+ * is pinned by test rather than quoted here, so it cannot drift out from under this note.
  *
- * The second was to measure the rate against the wall clock. That is right during ordinary play
- * and badly wrong the moment the app credits a closed absence: the catch-up drain replays hours of
- * game time in seconds of real time, and a window that catches it reports a rate an order of
- * magnitude too high. Observed in the browser on a returning session — the panel projected four
- * minutes for a level that was advancing at roughly one percent per minute, an hour's work.
+ * The second is to measure the rate against the wall clock. That is right during ordinary play and
+ * wrong by an order of magnitude the moment the app credits a closed absence: the catch-up drain
+ * replays hours of game time in seconds of real time, and any window overlapping it reports a rate
+ * that has nothing to do with how fast the player is actually progressing.
  *
  * So the denominator is `progression.elapsedSeconds`, the game's own clock, which accrues on every
  * completed task. Experience-seconds per elapsed-second is a stable property of the engine's task
- * mix, and it does not care whether those seconds arrived live, in a drain, or side by side with a
- * pause. During ordinary play a game second is a real second, which is what makes the result a
- * duration the player can read.
+ * mix, and it does not care whether those seconds arrived live, in a drain, or beside a pause.
+ * During ordinary play a game second is a real second, which is what makes the result a duration
+ * the player can read.
  */
 
 export interface PromotionSample {

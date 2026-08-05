@@ -7,21 +7,18 @@ import { settleForAudit } from './fixtures/accessibility';
  * The axe pass in app.spec.ts asserts on `results.violations` only. axe reports whole subtrees
  * as `incomplete` when it cannot determine a background — "Element's background color could not
  * be determined due to a pseudo element", which covers the navbar because those buttons contain
- * inline SVG icons. An `incomplete` is not a violation, so it reads as a pass. That is how a
- * genuine 2.98:1 primary button shipped in the progros theme.
+ * inline SVG icons. An `incomplete` is not a violation, so an unmeasurable pair reads as a pass.
+ * A failing contrast can ship through that gap unseen, which is why this file measures directly.
  *
- * Two things this file does deliberately, both learned the hard way:
+ * Two properties it depends on, both easy to lose in a refactor:
  *
- * 1. It waits for paint to settle, on every pair it measures. Themes cross-fade, and sampling
- *    mid-transition reports colours that exist on no frame the user ever sees. That artifact
- *    produced a convincing "3.2:1 primary button" across three themes which does not exist —
- *    the settled value is 6.77:1. Hand-checking the arithmetic did not catch it, because the
- *    arithmetic was right and the sample was wrong.
- *
- *    A first attempt settled on one proxy element and passed locally, then failed in CI at
- *    1.04:1 on exactly the two dark themes: buttons fade over 150ms and the body over 200ms,
- *    so waiting for one says nothing about the rest. Settling is per-pair for that reason.
- * 2. It validates its own maths against published WCAG values before trusting any DOM reading.
+ * 1. Paint is settled before every pair is sampled, per pair rather than once. Themes cross-fade,
+ *    and a mid-transition sample reports colours that exist on no frame the user ever sees — an
+ *    arithmetically correct ratio for a state that was never rendered. Different elements carry
+ *    different transition durations, so settling on one proxy element says nothing about the
+ *    rest and fails intermittently under load.
+ * 2. The maths is validated against published WCAG values before any DOM reading is trusted. A
+ *    bad sample and a bad formula are indistinguishable from the ratio alone.
  */
 
 const AA_NORMAL_TEXT = 4.5;
@@ -133,10 +130,10 @@ test.describe('theme contrast', () => {
     test(`${theme.label} meets AA for text against its real backdrop`, async ({ page }) => {
       await page.goto('/');
 
-      // Shared with the axe helper on purpose: one definition of "no animation window to
-      // sample inside". An earlier approach polled until two samples agreed, which fails on a
-      // slow runner because the values are also stable *before* the cross-fade begins — at the
-      // outgoing theme — so two matching pre-transition snapshots read as settled.
+      // Shared with the axe helper on purpose: one definition of "no animation window to sample
+      // inside". Polling until two samples agree is not sufficient on its own — the values are
+      // also stable *before* a cross-fade begins, at the outgoing theme, so two matching
+      // pre-transition snapshots read as settled while showing the wrong palette entirely.
       await settleForAudit(page);
 
       const picker = page.getByRole('combobox', { name: 'Visual theme' });

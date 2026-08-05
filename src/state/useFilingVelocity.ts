@@ -15,8 +15,8 @@ const SAMPLE_INTERVAL_MS = 10_000;
 /**
  * Hoisted rather than written inline as a default, because a default expression is re-evaluated
  * per call: every render would hand the effect below a new function identity, tearing the timer
- * down and rebuilding it on each render of the host panel. That is precisely the coupling to
- * render cadence this hook exists to avoid.
+ * down and rebuilding it on each render of the host panel — the coupling to render cadence this
+ * hook exists to avoid.
  */
 const systemNowMs = () => Date.now();
 
