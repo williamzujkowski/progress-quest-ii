@@ -419,6 +419,16 @@ input[type='radio'] {
   background: var(--surface-subtle);
 }
 
+/* --surface-subtle is a translucent wash, so a badge painting it on top of a panel that
+   already painted it composites the tint twice and lifts the backdrop. On the darkest theme
+   that was enough to drop the amber and red badge text to 4.34:1 and 4.36:1, under AA. The
+   badge keeps its border for separation and inherits the one wash beneath it. */
+.stat-item .badge,
+.surface-panel .badge,
+.roster-item .badge {
+  background: transparent;
+}
+
 .stat-item {
   display: flex;
   justify-content: space-between;
