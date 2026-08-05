@@ -7,6 +7,7 @@ import { useGameStore } from '../state/gameStore';
 import { GameNumber } from './GameNumber';
 import { ItemTooltip } from './ItemTooltip';
 import { Commendations } from './Commendations';
+import { Caseload } from './Caseload';
 
 export const CharacterSheetView: React.FC = () => {
   // Equip and Spells changed identity 3 times across a measured 400 ticks; the character
@@ -63,6 +64,7 @@ export const CharacterSheetView: React.FC = () => {
       </div>
 
       <Commendations />
+      <Caseload />
     </section>
   );
 };
