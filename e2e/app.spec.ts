@@ -1,5 +1,5 @@
 import { devices, expect, test, type Page } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
+import { expectNoViolations } from './fixtures/accessibility';
 import { readFile } from 'node:fs/promises';
 import { createNewCharacter } from '../src/engine/sim';
 import { returningSessionStorageState } from './fixtures/returningSession';
@@ -60,7 +60,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(creator).toBeVisible();
     await expect(creator).toContainText('No resumable adventurer was found');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()).violations).toEqual([]);
+    await expectNoViolations(page);
     await expect(creator.getByRole('button', { name: /Close character creator/i })).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(creator).toBeVisible();
@@ -224,22 +224,12 @@ test.describe('Progress Quest II terminal dashboard', () => {
     expect(diagnosticReport.events.some((event) => event.code === 'react_caught')).toBe(true);
     await expect(page.locator('.recovery-status[role="status"]')).toHaveText(/nothing was uploaded/i);
 
-    // Themes cross-fade over 200ms. Running axe straight after applyTheme measured colours
-    // from mid-transition - present on no frame a user sees - which surfaced as an intermittent
-    // wall of contrast violations. Killing transitions removes the window rather than timing it.
-    await page.addStyleTag({
-      content: '*, *::before, *::after { transition: none !important; animation: none !important; }',
-    });
-
     for (const theme of ['remarque-dark', 'remarque-light', 'progros'] as const) {
       await page.evaluate(async (themeId) => {
         const { applyTheme } = await import('/src/theme.ts');
         applyTheme(document.documentElement, themeId);
       }, theme);
-      const results = await new AxeBuilder({ page })
-        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-        .analyze();
-      expect(results.violations).toEqual([]);
+      await expectNoViolations(page, theme);
     }
   });
 
@@ -322,10 +312,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(page.getByRole('button', { name: 'Audio' })).toBeVisible();
     await expect(page.locator('.audio-status')).toHaveCount(0);
     expect(pageErrors).toEqual([]);
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze();
-    expect(results.violations).toEqual([]);
+    await expectNoViolations(page);
   });
 
   test('saves explicitly and recovers from clipboard denial without a write storm', async ({ page }) => {
@@ -368,10 +355,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(page.getByRole('alert')).toContainText('copy it manually');
     expect(pageErrors).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze();
-    expect(results.violations).toEqual([]);
+    await expectNoViolations(page);
   });
 
   test('renders full game interface with Hero Banner, loadout, quest log, and spell book', async ({ page }) => {
@@ -568,10 +552,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     expect(diagnosticCodes).toContain('theme_write_failed');
     expect(pageErrors).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze();
-    expect(results.violations).toEqual([]);
+    await expectNoViolations(page);
   });
 
   test('uses the system theme accessibly when preference storage rejects the read', async ({ page }) => {
@@ -889,7 +870,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
       messages: document.querySelector<HTMLElement>('.chatter-messages')!.scrollWidth - document.querySelector<HTMLElement>('.chatter-messages')!.clientWidth,
     }));
     expect(overflow).toEqual({ page: 0, chatter: 0, messages: 0 });
-    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()).violations).toEqual([]);
+    await expectNoViolations(page);
 
     await activityTab.click();
     await page.reload();
@@ -1143,11 +1124,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
       await page.locator('.tooltip-trigger').first().focus();
       await expect(page.getByRole('tooltip')).toBeVisible();
 
-      const results = await new AxeBuilder({ page })
-        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-        .analyze();
-
-      expect(results.violations).toEqual([]);
+      await expectNoViolations(page);
     });
   }
 
@@ -1207,10 +1184,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     expect(await notices.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('none');
     expect(await page.locator('.progress-bar-fill').first().evaluate((element) => parseFloat(getComputedStyle(element).animationDuration))).toBeLessThan(0.001);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze();
-    expect(results.violations).toEqual([]);
+    await expectNoViolations(page);
   });
 
   test('opens and rolls stats in Character Creator modal', async ({ page }) => {
