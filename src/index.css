@@ -195,6 +195,24 @@ input[type='radio'] {
   font-variant-caps: all-small-caps;
 }
 
+/* Carried weight, read the way an EverQuest inventory window reads it: a quiet
+   ratio that only raises its voice at capacity, where it becomes the reason loot
+   stopped being picked up. */
+.inventory-weight {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 650;
+}
+
+.inventory-weight-full {
+  color: var(--accent-danger);
+}
+
 .app-container {
   display: flex;
   flex-direction: column;

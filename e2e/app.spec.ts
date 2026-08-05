@@ -384,7 +384,10 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(page.getByText('No spells have been learned. They arrive automatically at level-up and may also be awarded for completed quests; the curriculum remains aggressively theoretical.')).toBeVisible();
     await expect(page.getByText('No loot has been retained. Combat supplies it automatically; procurement awaits a monster with transferable assets.')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Equipment List' }).locator('.tooltip-trigger')).toHaveCount(11);
-    await expect(page.locator('.inventory-card .card-header .tooltip-trigger')).toBeVisible();
+    // Carried weight sits on the inventory panel; Gold reads once, on the hero banner.
+    await expect(page.locator('.inventory-card .card-header .inventory-weight')).toBeVisible();
+    await expect(page.locator('.inventory-card .card-header')).not.toContainText('GP');
+    await expect(page.locator('.gold-pill .tooltip-trigger')).toBeVisible();
     await page.locator('.tooltip-trigger').first().focus();
     await expect(page.getByRole('tooltip')).toBeVisible();
     expect(await page.getByRole('tooltip').evaluate((element) => element.parentElement === document.body)).toBe(true);
@@ -430,7 +433,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(page.getByRole('tooltip')).toContainText('Encumbrance: +3 cubits');
     await page.locator('.tooltip-trigger', { hasText: 'Rabbit Punch' }).focus();
     await expect(page.getByRole('tooltip')).toContainText('Spell rank: 2');
-    await page.locator('.inventory-card').getByRole('button', { name: '42 GP' }).focus();
+    await page.locator('.gold-pill').getByRole('button', { name: '42 GP' }).focus();
     await expect(page.getByRole('tooltip')).toContainText('Encumbrance: +0 cubits');
   });
 

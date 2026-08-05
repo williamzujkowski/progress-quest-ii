@@ -1,5 +1,7 @@
-import { Coins, Package } from 'lucide-react';
+import { Package, Weight } from 'lucide-react';
 import React from 'react';
+import { calculateEncumbranceMax } from '../engine/math';
+import { calculateEncumbrance } from '../engine/sim';
 import { useGameStore } from '../state/gameStore';
 import { GameNumber } from './GameNumber';
 import { ItemTooltip } from './ItemTooltip';
@@ -8,6 +10,11 @@ export const InventoryView: React.FC = () => {
   const { character } = useGameStore();
 
   const nonGoldItems = character.Inventory.filter((item) => item.name !== 'Gold');
+  // Carried weight belongs on the bag, the way EverQuest and WoW put it there. Gold is
+  // reported once, on the hero banner, and carries no weight anyway.
+  const encumbrance = calculateEncumbrance(character.Inventory);
+  const encumbranceMax = calculateEncumbranceMax(character.Stats.STR);
+  const atCapacity = encumbrance >= encumbranceMax;
 
   return (
     <section className="card inventory-card" aria-labelledby="inventory-heading">
@@ -16,9 +23,14 @@ export const InventoryView: React.FC = () => {
           <Package size={18} />
           <h2 id="inventory-heading">Inventory & Loot</h2>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', color: 'var(--accent-warning)', fontWeight: 'bold' }}>
-          <Coins size={16} />
-          <ItemTooltip kind="inventory" name="Gold" quantity={character.Gold}><GameNumber value={character.Gold} />{' '}GP</ItemTooltip>
+        <div className={`inventory-weight${atCapacity ? ' inventory-weight-full' : ''}`}>
+          <Weight size={16} aria-hidden="true" />
+          <span>
+            <GameNumber value={encumbrance} /> / <GameNumber value={encumbranceMax} />
+            <span className="sr-only">
+              {' '}cubits carried of capacity{atCapacity ? ', at capacity' : ''}
+            </span>
+          </span>
         </div>
       </div>
 

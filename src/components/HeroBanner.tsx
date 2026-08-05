@@ -1,17 +1,13 @@
-import { Coins, Heart, Package, Sparkles } from 'lucide-react';
+import { Coins, Heart, Sparkles } from 'lucide-react';
 import React from 'react';
-import { calculateEncumbranceMax } from '../engine/math';
-import { calculateEncumbrance } from '../engine/sim';
 import { PRIME_STATS } from '../data/traits';
 import { useGameStore } from '../state/gameStore';
 import { ActLabel, GameNumber } from './GameNumber';
+import { ItemTooltip } from './ItemTooltip';
 
 
 export const HeroBanner: React.FC = () => {
   const { character } = useGameStore();
-
-  const encum = calculateEncumbrance(character.Inventory);
-  const maxEncum = calculateEncumbranceMax(character.Stats.STR);
 
   return (
     <div className="hero-banner" role="region" aria-label="Hero Overview Banner">
@@ -55,14 +51,13 @@ export const HeroBanner: React.FC = () => {
       </div>
 
       <div className="hero-stats-quick">
-        <div className="stat-pill gold-pill" title="Gold GP Balance">
-          <Coins size={16} />
-          <span><GameNumber value={character.Gold} />{' '}GP</span>
-        </div>
-
-        <div className="stat-pill" title="Inventory Encumbrance Capacity">
-          <Package size={16} />
-          <span><GameNumber value={encum} /> / <GameNumber value={maxEncum} /></span>
+        {/* Gold reads once, here. Carried weight lives on the inventory panel, where the
+            bag it describes is. The tooltip is what teaches that Gold weighs nothing. */}
+        <div className="stat-pill gold-pill">
+          <Coins size={16} aria-hidden="true" />
+          <ItemTooltip kind="inventory" name="Gold" quantity={character.Gold}>
+            <GameNumber value={character.Gold} />{' '}GP
+          </ItemTooltip>
         </div>
       </div>
     </div>

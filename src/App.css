@@ -301,6 +301,17 @@
   color: inherit;
   font: inherit;
   text-align: left;
+  white-space: nowrap;
+}
+
+/* The trigger is a flex container, and text-overflow does not apply to one — it needs a
+   block container to act on. Without this wrapper the ellipsis silently did nothing and
+   long item names hard-clipped mid-word, which is unfortunate in a game whose loot names
+   are the joke. */
+.tooltip-trigger-label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
