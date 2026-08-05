@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE, MAX_PERSISTED_DESCRIPTION_LENGTH } from '../data/limits';
+import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE, MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_STORED_PAYLOAD_LENGTH } from '../data/limits';
 import { EQUIP_SLOTS } from '../data/traits';
 import type { GameTransitionEvent } from '../engine/transition';
 import type { EquipmentClassification } from './worldContext';
@@ -120,6 +120,12 @@ export function readCommendations(storage: Pick<Storage, 'getItem'> | undefined)
     return EMPTY_COMMENDATIONS;
   }
   if (raw === null) return EMPTY_COMMENDATIONS;
+  // Refused unparsed. JSON.parse on a hostile blob is the expensive step and it runs before any
+  // validation could reject the contents — an 8MB payload measured at 60-105ms. This read happens
+  // once at module load rather than on the tick path, so the exposure is small; the cap is here
+  // because two storage readers with two different postures is how the third one gets written
+  // wrong, not because this one is in danger.
+  if (raw.length > MAX_STORED_PAYLOAD_LENGTH) return EMPTY_COMMENDATIONS;
   try {
     const parsed = commendationsSchema.safeParse(JSON.parse(raw));
     return parsed.success ? parsed.data : EMPTY_COMMENDATIONS;

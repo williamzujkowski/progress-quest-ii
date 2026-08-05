@@ -1,4 +1,4 @@
-import { MAX_PENDING_ELAPSED_MS } from '../data/limits';
+import { MAX_PENDING_ELAPSED_MS, MAX_STORED_PAYLOAD_LENGTH } from '../data/limits';
 import { useGameStore } from './gameStore';
 import { activeCheckpointV1Schema, type ActiveCheckpointV1 } from './schemas';
 import { diagnostics, isDOMExceptionNamed } from './diagnostics';
@@ -6,7 +6,9 @@ import { loadMostRecentRosterCharacter } from './saveManager';
 
 export const ACTIVE_CHECKPOINT_KEY = 'progquest_active_session_v1';
 export const ACTIVE_CHECKPOINT_LKG_KEY = 'progquest_active_session_lkg_v1';
-export const MAX_CHECKPOINT_SERIALIZED_LENGTH = 1_000_000;
+// The shared payload cap, re-exported under the name this module's callers already use. The
+// limit is not the checkpoint's own; every reader of local storage is held to the same one.
+export const MAX_CHECKPOINT_SERIALIZED_LENGTH = MAX_STORED_PAYLOAD_LENGTH;
 
 type CheckpointErrorCode =
   | 'invalid_schema'

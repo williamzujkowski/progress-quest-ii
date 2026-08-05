@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GameTransitionEvent } from '../../engine/transition';
+import { MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_STORED_PAYLOAD_LENGTH } from '../../data/limits';
+import { EQUIP_SLOTS } from '../../data/traits';
 import {
   COMMENDATIONS_STORAGE_KEY, EMPTY_COMMENDATIONS, isEmpty,
   mergeEvents, mergeExhibit, readCommendations, writeCommendations,
@@ -102,5 +104,39 @@ describe('commendation ledger', () => {
   it('reports emptiness so the panel can stay away rather than show zeroes', () => {
     expect(isEmpty(EMPTY_COMMENDATIONS)).toBe(true);
     expect(isEmpty(mergeEvents(EMPTY_COMMENDATIONS, [{ type: 'act_completed', act: 1 }]))).toBe(false);
+  });
+});
+
+describe('oversized ledger payloads', () => {
+  // Restored here rather than inline: a failing assertion would skip an inline restore and leak
+  // the JSON.parse stub into the next test, which is how one real failure becomes two confusing
+  // ones. Observed while confirming the guard fails closed without its cap.
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  it('refuses an over-long payload before parsing it', () => {
+    // Proves the guard fires rather than merely exists: JSON.parse is replaced with a throw, so
+    // a payload that reached it would fail loudly instead of degrading. The read still returns
+    // the empty ledger, which means the cap rejected it first.
+    const oversized = `{"padding":"${'x'.repeat(MAX_STORED_PAYLOAD_LENGTH)}"}`;
+    const parse = vi.spyOn(JSON, 'parse').mockImplementation(() => {
+      throw new Error('parse must not be reached for an oversized payload');
+    });
+
+    expect(readCommendations(fakeStorage({ [COMMENDATIONS_STORAGE_KEY]: oversized }))).toEqual(EMPTY_COMMENDATIONS);
+    expect(parse).not.toHaveBeenCalled();
+  });
+
+  it('still reads a legitimate ledger that sits under the cap', () => {
+    // The cap must not be so tight that it rejects what the schema would accept. A full exhibit
+    // with maximum-length names is the largest legitimate ledger there is.
+    const exhibit = Object.fromEntries(EQUIP_SLOTS.map((slot) => [
+      slot, { name: 'N'.repeat(MAX_PERSISTED_DESCRIPTION_LENGTH), label: 'legendary', quality: 99 },
+    ]));
+    const full = JSON.stringify({
+      highestLevel: 99, largestSale: 1234, questsCompleted: 7, actsCompleted: 3, exhibit,
+    });
+
+    expect(full.length).toBeLessThan(MAX_STORED_PAYLOAD_LENGTH);
+    expect(readCommendations(fakeStorage({ [COMMENDATIONS_STORAGE_KEY]: full }))).toMatchObject({ highestLevel: 99 });
   });
 });
