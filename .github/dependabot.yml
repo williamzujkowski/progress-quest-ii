@@ -1,0 +1,38 @@
+version: 2
+
+updates:
+  # npm. Grouped so a routine week produces one reviewable PR rather than a dozen; security
+  # updates are deliberately left ungrouped by Dependabot and still arrive on their own.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      # Off the hour, so this repository is not queued alongside every other one that asked
+      # for "Monday morning".
+      time: '06:17'
+    open-pull-requests-limit: 5
+    groups:
+      dev-tooling:
+        dependency-type: development
+        update-types: [minor, patch]
+      runtime-minor-patch:
+        dependency-type: production
+        update-types: [minor, patch]
+    ignore:
+      # The engine is pinned to a legacy behavioural oracle and a major React change is a
+      # deliberate migration, not a dependency bump. Majors are surfaced by hand.
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+
+  # Actions are pinned to full SHAs, which is what makes this entry necessary rather than
+  # optional: a pinned SHA never floats, so nothing updates it without Dependabot.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:23'
+    open-pull-requests-limit: 5

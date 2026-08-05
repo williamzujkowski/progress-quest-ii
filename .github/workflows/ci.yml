@@ -38,3 +38,26 @@ jobs:
 
       - name: Quality gate
         run: npm run quality
+
+  # Blocks a pull request that introduces a dependency with a known advisory, before it is
+  # merged and before `npm audit` would catch it on main. Pull-request event only: it compares
+  # the base and head manifests, so it has nothing to compare on a push.
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          submodules: false
+
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          # Matches the threshold `npm run audit` enforces, so the two gates cannot disagree
+          # about what is acceptable.
+          fail-on-severity: moderate
+          comment-summary-in-pr: on-failure

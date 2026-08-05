@@ -1,0 +1,46 @@
+name: CodeQL
+
+on:
+  pull_request:
+  push:
+    branches: ['main']
+  schedule:
+    # Weekly, so a newly published query finds existing code without waiting for someone to
+    # push. Off the hour and off Monday to avoid the queue everyone else picked.
+    - cron: '41 4 * * 3'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze ${{ matrix.language }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript-typescript', 'actions']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # The legacy oracle is deliberately not fetched here. It is unmaintained
+          # 2000s-era JavaScript kept as a read-only behavioural reference, and scanning it
+          # would bury real findings in noise about code nobody may modify.
+          submodules: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        with:
+          category: '/language:${{ matrix.language }}'
