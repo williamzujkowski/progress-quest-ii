@@ -15,7 +15,7 @@
     "test:e2e": "playwright test",
     "test:pwa": "npm run build && playwright test --config playwright.pwa.config.ts",
     "typecheck": "tsc -b",
-    "audit": "npm audit --audit-level=moderate",
+    "audit": "npm audit --audit-level=moderate && npm audit signatures",
     "agents:verify": "nexus-agents verify",
     "quality": "npm run agents:verify && npm run lint && npm run lint:workflows && npm run typecheck && npm test && npm run audit && npm run test:e2e && npm run test:pwa"
   },
