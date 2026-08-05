@@ -32,7 +32,8 @@ describe('game clock', () => {
     currentTime = 2_125;
     vi.advanceTimersByTime(50);
 
-    expect(onError).toHaveBeenCalledWith(failure);
+    // The 50ms the failing tick consumed travels with the error.
+    expect(onError).toHaveBeenCalledWith(failure, 50);
     expect(tick).toHaveBeenCalledTimes(2);
     expect(tick).toHaveBeenLastCalledWith(75);
     stop();
@@ -97,6 +98,29 @@ describe('game clock', () => {
 
     const total = tick.mock.calls.reduce((sum, [elapsed]) => sum + elapsed, 0);
     expect(total).toBe(30_000);
+    stop();
+  });
+
+  it('reports how much banked time a failing tick consumed', () => {
+    vi.useFakeTimers();
+    let currentTime = 0;
+    const failure = new Error('transition failed');
+    const tick = vi.fn(() => { throw failure; });
+    const onError = vi.fn();
+    const visibility = new EventTarget() as EventTarget & { hidden: boolean };
+    visibility.hidden = false;
+    const stop = startGameClock(tick, () => currentTime, onError, visibility as Document);
+
+    // Bank two hours while hidden, then fail on the tick that tries to spend it. Without the
+    // magnitude this is indistinguishable from losing a single 50ms slice.
+    visibility.hidden = true;
+    currentTime = 7_200_000;
+    vi.advanceTimersByTime(50);
+    visibility.hidden = false;
+    visibility.dispatchEvent(new Event('visibilitychange'));
+    vi.advanceTimersByTime(50);
+
+    expect(onError).toHaveBeenCalledWith(failure, 7_200_000);
     stop();
   });
 

@@ -49,7 +49,9 @@ export interface DiagnosticEvent {
   buildId: string;
   interactionId: string;
   source: DiagnosticSource;
-  details: { errorType: string };
+  // Numbers only, on purpose. `details` is the one field that travels in an exported report,
+  // and keeping it to an error type plus scalars is what stops a private message riding along.
+  details: { errorType: string; discardedMs?: number };
 }
 
 export interface DiagnosticInput {
@@ -60,6 +62,8 @@ export interface DiagnosticInput {
   outcome: DiagnosticEvent['outcome'];
   source: DiagnosticSource;
   error?: unknown;
+  /** Magnitude of work lost to this failure, where the caller can quantify it. */
+  discardedMs?: number;
 }
 
 interface DiagnosticRecorderOptions {
@@ -135,7 +139,10 @@ export class DiagnosticRecorder {
       buildId: this.buildId,
       interactionId: this.interactionId,
       source: input.source,
-      details: Object.freeze({ errorType: safeErrorType(input.error) }),
+      details: Object.freeze({
+        errorType: safeErrorType(input.error),
+        ...(input.discardedMs === undefined ? {} : { discardedMs: input.discardedMs }),
+      }),
     });
     this.events.push(event);
     if (this.events.length > MAX_DIAGNOSTIC_EVENTS) this.events.shift();
