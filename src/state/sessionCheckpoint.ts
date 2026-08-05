@@ -1,6 +1,6 @@
 import { useGameStore } from './gameStore';
 import { activeCheckpointV1Schema, type ActiveCheckpointV1 } from './schemas';
-import { diagnostics } from './diagnostics';
+import { diagnostics, isDOMExceptionNamed } from './diagnostics';
 import { loadMostRecentRosterCharacter } from './saveManager';
 
 export const ACTIVE_CHECKPOINT_KEY = 'progquest_active_session_v1';
@@ -59,12 +59,8 @@ function parseCheckpoint(raw: string): CheckpointResult<ActiveCheckpointV1> & { 
 }
 
 function writeError(error: unknown): CheckpointResult<never> {
-  try {
-    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-      return failure('storage_full', 'Browser storage is full. Automatic checkpoints are paused.');
-    }
-  } catch {
-    // ponytail: hostile platform errors fall through to the generic safe result.
+  if (isDOMExceptionNamed(error, 'QuotaExceededError')) {
+    return failure('storage_full', 'Browser storage is full. Automatic checkpoints are paused.');
   }
   return failure('storage_failed', 'Browser storage could not save the active session. Automatic checkpoints are paused.');
 }

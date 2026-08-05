@@ -199,3 +199,14 @@ export function installBrowserDiagnosticHandlers(
   installedBrowserHandlers.set(target, removeHandlers);
   return removeHandlers;
 }
+
+// ponytail: one predicate for the four places that classify a platform storage or
+// permission rejection. The try/catch guards a hostile environment where touching
+// `error.name` can itself throw.
+export function isDOMExceptionNamed(error: unknown, name: string): boolean {
+  try {
+    return error instanceof DOMException && error.name === name;
+  } catch {
+    return false;
+  }
+}

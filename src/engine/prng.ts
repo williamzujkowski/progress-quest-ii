@@ -3,7 +3,7 @@
 export type PRNGSeed = string | number;
 export type PRNGState = [number, number, number, number];
 
-export function Mash() {
+function Mash() {
   let n = 0xefc8249d;
 
   const mash = (data: PRNGSeed) => {

@@ -2,10 +2,10 @@ import { Coins, Heart, Package, Sparkles } from 'lucide-react';
 import React from 'react';
 import { calculateEncumbranceMax } from '../engine/math';
 import { calculateEncumbrance } from '../engine/sim';
+import { PRIME_STATS } from '../data/traits';
 import { useGameStore } from '../state/gameStore';
 import { ActLabel, GameNumber } from './GameNumber';
 
-const PRIME_STATS = ['STR', 'CON', 'DEX', 'INT', 'WIS', 'CHA'] as const;
 
 export const HeroBanner: React.FC = () => {
   const { character } = useGameStore();

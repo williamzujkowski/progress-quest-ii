@@ -1,5 +1,5 @@
 import { SOCIAL_PERSONAS, type SocialPersona, type SocialSeat } from '../data/socialCatalog';
-import { formatGameNumber, stableIndex } from '../engine/text';
+import { boundCodePoints, formatGameNumber, stableIndex } from '../engine/text';
 import type { GameTransitionEvent } from '../engine/transition';
 import { projectWorld, type IdentifiedGameTransitionRecord } from './worldContext';
 
@@ -48,9 +48,7 @@ const SYSTEM_SPEAKER: SocialSpeaker = {
   id: 'simulated-system', kind: 'system', displayName: 'System', role: 'Fictional system notice', fictional: true, automaticHero: false,
 };
 
-function bound(text: string): string {
-  return Array.from(text).slice(0, MAX_TEXT_CODE_POINTS).join('');
-}
+const bound = (text: string): string => boundCodePoints(text, MAX_TEXT_CODE_POINTS);
 
 function castFor(source: IdentifiedGameTransitionRecord): Readonly<Record<SocialSeat, SocialPersona>> {
   const { hero } = source.record.post;
