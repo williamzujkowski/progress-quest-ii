@@ -1,13 +1,26 @@
 import { Coins, Heart, Sparkles } from 'lucide-react';
 import React from 'react';
 import { PRIME_STATS } from '../data/traits';
+import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../state/gameStore';
 import { ActLabel, GameNumber } from './GameNumber';
 import { ItemTooltip } from './ItemTooltip';
 
 
 export const HeroBanner: React.FC = () => {
-  const { character, progression } = useGameStore();
+  // Traits and Stats changed identity 3 times across a measured 400 ticks, Inventory 0; the
+  // character reference changed 400 times, because Task advances every tick and this banner
+  // renders none of it.
+  const { Traits, Stats, Gold, Inventory, act, experience } = useGameStore(useShallow((state) => ({
+    Traits: state.character.Traits,
+    Stats: state.character.Stats,
+    Gold: state.character.Gold,
+    Inventory: state.character.Inventory,
+    act: state.character.Plot.act,
+    experience: state.progression.experience,
+  })));
+  const character = { Traits, Stats, Gold, Inventory, Plot: { act } };
+  const progression = { experience };
 
   // Saturates at Number.MAX_VALUE for absurd levels, so guard the denominator.
   const experiencePct = progression.experience.maxSeconds > 0

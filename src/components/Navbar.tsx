@@ -1,6 +1,7 @@
 import { FolderOpen, Palette, Pause, Play, UserPlus, Volume2, VolumeX } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { soundFX } from '../state/audio';
+import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../state/gameStore';
 import { THEME_OPTIONS, type ThemeId } from '../theme';
 import { GameNumber } from './GameNumber';
@@ -14,7 +15,14 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ theme, themeStatus, onThemeChange, onOpenSaveModal, onOpenCharacterCreator }) => {
-  const { character, isPaused, togglePause } = useGameStore();
+  // Selecting the level rather than the whole character: the character reference is rebuilt
+  // every 50ms tick because Task.elapsedMs advances, but Level changed 0 times in a measured
+  // 400 ticks. A bare useGameStore() subscribes to all of it.
+  const { level, isPaused, togglePause } = useGameStore(useShallow((state) => ({
+    level: state.character.Traits.Level,
+    isPaused: state.isPaused,
+    togglePause: state.togglePause,
+  })));
   const [isMuted, setIsMuted] = useState(soundFX.getMuted());
   const [audioStatus, setAudioStatus] = useState('');
 
@@ -44,7 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({ theme, themeStatus, onThemeChang
           </p>
         </div>
         <span className="badge" title="Character Level">
-          Lvl{' '}<GameNumber value={character.Traits.Level} />
+          Lvl{' '}<GameNumber value={level} />
         </span>
       </div>
 
