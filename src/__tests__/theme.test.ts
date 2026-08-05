@@ -11,6 +11,7 @@ import {
   THEME_OPTIONS,
   THEME_STORAGE_KEY,
   writeThemePreference,
+  COLOR_KEYS,
 } from '../theme';
 
 describe('theme contract', () => {
@@ -71,5 +72,15 @@ describe('theme contract', () => {
       expect(theme.contrast.cursorOnBg).toBeGreaterThanOrEqual(3);
       expect(theme.contrast.selectionContrast).toBeGreaterThanOrEqual(4.5);
     }
+  });
+});
+
+describe('terminal colour slots', () => {
+  it('matches the package definition exactly, including order', async () => {
+    // theme.ts declares this list locally so the production bundle does not pull the package
+    // barrel, which drags culori's whole colour-space graph in for twenty strings. That trade
+    // is only safe while the two agree — order included, since applyTheme iterates it.
+    const upstream = await import('@williamzujkowski/oklch-terminal-themes');
+    expect([...COLOR_KEYS]).toEqual([...upstream.COLOR_KEYS]);
   });
 });
