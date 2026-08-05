@@ -2,6 +2,8 @@ import { devices, expect, test, type Page } from '@playwright/test';
 import { expectNoViolations } from './fixtures/accessibility';
 import { readFile } from 'node:fs/promises';
 import { createNewCharacter } from '../src/engine/sim';
+import { levelUpTime } from '../src/engine/math';
+import { RandomGenerator } from '../src/engine/prng';
 import { returningSessionStorageState } from './fixtures/returningSession';
 
 // Origin comes from playwright.config.ts, which reserves a free port per invocation so runs
@@ -1422,4 +1424,69 @@ test.describe('Progress Quest II terminal dashboard', () => {
       }
     });
   }
+});
+
+test.describe('closed casework archive', () => {
+  // The engine keeps this list and trims it; the panel only reads it. Seeded directly rather
+  // than played to, because reaching a hundred closed quests in a test would take hours.
+  const archived = (history: string[]) => {
+    const character = createNewCharacter('Archivist', 'Hob-Hobbit', 'Robot Monk', 908);
+    character.Quest.history = history;
+    return {
+      cookies: [],
+      origins: [{
+        origin: BASE_URL,
+        localStorage: [{
+          name: 'progquest_active_session_v1',
+          value: JSON.stringify({
+            schemaVersion: 1,
+            session: {
+              character,
+              rngState: new RandomGenerator('casework-e2e').getState(),
+              progression: { experience: { currentSeconds: 0, maxSeconds: levelUpTime(1) }, completedTasks: 0, elapsedSeconds: 0 },
+              isPaused: true,
+              log: ['Seeded for the archive.'],
+            },
+          }),
+        }],
+      }],
+    };
+  };
+
+  test('stays away entirely until a quest has closed', async ({ browser }) => {
+    const context = await browser.newContext({ baseURL: BASE_URL, storageState: archived([]) });
+    const page = await context.newPage();
+    await page.goto('/');
+
+    await expect(page.getByRole('heading', { name: 'Questing & Progression' })).toBeVisible();
+    // An empty archive reads as a broken panel rather than a new one, so there is no empty state.
+    await expect(page.getByRole('list', { name: /Closed casework/i })).toHaveCount(0);
+    await context.close();
+  });
+
+  test('lists closed quests newest first and scrolls the rest without pushing the card wider', async ({ browser }) => {
+    const history = Array.from({ length: 40 }, (_value, index) => `Matter number ${index}`);
+    const context = await browser.newContext({ baseURL: BASE_URL, storageState: archived(history) });
+    const page = await context.newPage();
+    await page.goto('/');
+
+    const archive = page.getByRole('list', { name: /Closed casework/i });
+    await expect(archive).toBeVisible();
+    await expect(archive.locator('li')).toHaveCount(40);
+    await expect(archive.locator('li').first()).toHaveText('Matter number 39');
+
+    // The archive scrolls inside itself. If it ever stops doing so it will grow the questing
+    // card without limit, which is the failure this panel is one trim away from.
+    const box = await archive.evaluate((element) => ({
+      scrolls: element.scrollHeight > element.clientHeight,
+      overflowsHorizontally: element.scrollWidth > element.clientWidth,
+    }));
+    expect(box.scrolls).toBe(true);
+    expect(box.overflowsHorizontally).toBe(false);
+
+    const card = page.locator('.quest-card');
+    expect(await card.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await expectNoViolations(page, 'questing card with a populated archive');
+    await context.close();
+  });
 });

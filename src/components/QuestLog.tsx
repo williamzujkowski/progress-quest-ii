@@ -1,6 +1,7 @@
 import React from 'react';
 import { useGameStore } from '../state/gameStore';
 import { ActLabel, GameNumber } from './GameNumber';
+import { ClosedCasework } from './ClosedCasework';
 
 export const QuestLog: React.FC = () => {
   const { character } = useGameStore();
@@ -70,6 +71,8 @@ export const QuestLog: React.FC = () => {
           <div className="progress-bar-fill" style={{ width: `${plotPct}%` }} />
         </div>
       </div>
+
+      <ClosedCasework />
     </section>
   );
 };
