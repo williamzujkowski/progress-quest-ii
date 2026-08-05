@@ -1,0 +1,256 @@
+{
+  "input": {
+    "sheet": {
+      "Traits": {
+        "Name": "Oracle",
+        "Race": "Half Orc",
+        "Class": "Ur-Paladin",
+        "Level": 1
+      },
+      "Stats": {
+        "STR": 10,
+        "CON": 10,
+        "DEX": 10,
+        "INT": 10,
+        "WIS": 10,
+        "CHA": 10,
+        "HP Max": 10,
+        "MP Max": 10
+      },
+      "Equips": {
+        "Weapon": "Sharp Rock",
+        "Shield": "",
+        "Helm": "",
+        "Hauberk": "-3 Burlap",
+        "Brassairts": "",
+        "Vambraces": "",
+        "Gauntlets": "",
+        "Gambeson": "",
+        "Cuisses": "",
+        "Greaves": "",
+        "Sollerets": ""
+      },
+      "Inventory": [
+        [
+          "Gold",
+          0
+        ]
+      ],
+      "Spells": [],
+      "act": 1,
+      "Plots": [
+        "Act I"
+      ],
+      "Quests": [
+        "Test quest"
+      ],
+      "queue": [],
+      "task": "kill|passing Talking Pony Robot Monk|1|*",
+      "tasks": 0,
+      "elapsed": 0,
+      "kill": "Executing passing Talking Pony Robot Monk...",
+      "bestplot": "Act I",
+      "bestquest": "Test quest",
+      "bestequip": "Sharp Rock",
+      "bestspell": "",
+      "beststat": "STR 10",
+      "questmonster": "",
+      "ExpBar": {
+        "position": 0,
+        "max": 1269
+      },
+      "EncumBar": {
+        "position": 0,
+        "max": 20
+      },
+      "PlotBar": {
+        "position": 1000,
+        "max": 1000
+      },
+      "QuestBar": {
+        "position": 0,
+        "max": 100
+      },
+      "TaskBar": {
+        "position": 6000,
+        "max": 6000
+      },
+      "seed": [
+        0.0011501498520374298,
+        0.8276778745930642,
+        0.24009850597940385,
+        1
+      ],
+      "log": {}
+    }
+  },
+  "expected": {
+    "completed": {
+      "tag": "kill|passing Talking Pony Robot Monk|1|*",
+      "caption": "Executing passing Talking Pony Robot Monk...",
+      "durationMs": 6000
+    },
+    "counters": {
+      "tasks": 1,
+      "elapsedSeconds": 6
+    },
+    "character": {
+      "traits": {
+        "Name": "Oracle",
+        "Race": "Half Orc",
+        "Class": "Ur-Paladin",
+        "Level": 1
+      },
+      "stats": [
+        [
+          "STR",
+          10
+        ],
+        [
+          "CON",
+          10
+        ],
+        [
+          "DEX",
+          10
+        ],
+        [
+          "INT",
+          10
+        ],
+        [
+          "WIS",
+          10
+        ],
+        [
+          "CHA",
+          10
+        ],
+        [
+          "HP Max",
+          10
+        ],
+        [
+          "MP Max",
+          10
+        ]
+      ]
+    },
+    "task": {
+      "tag": "",
+      "caption": "Oh sweet relief! You've reached the kind protection of Chief Braexprab of Jiebyick...",
+      "positionMs": 0,
+      "maxMs": 2000,
+      "queue": [
+        "task|3|There is rejoicing, and an unnerving encounter with Chief Braexprab of Jiebyick in private",
+        "task|2|You forget your twig and go back to get it",
+        "task|2|What's this!? You overhear something shocking!",
+        "task|2|Could Chief Braexprab of Jiebyick be a dirty double-dealer?",
+        "task|3|Who can possibly be trusted with this news!? -- Oh yes, of course",
+        "plot|1|Loading"
+      ]
+    },
+    "xp": {
+      "positionSeconds": 6,
+      "maxSeconds": 1269
+    },
+    "encumbrance": {
+      "positionCubits": 1,
+      "maxCubits": 20
+    },
+    "quest": {
+      "caption": "Test quest",
+      "positionSeconds": 6,
+      "maxSeconds": 100,
+      "history": [
+        "Test quest"
+      ],
+      "monster": "",
+      "monsterIndex": null
+    },
+    "plot": {
+      "act": 1,
+      "caption": "Act I",
+      "positionSeconds": 1000,
+      "maxSeconds": 1000
+    },
+    "inventory": [
+      [
+        "Gold",
+        0
+      ],
+      [
+        "Reverential Candelabra of Electrum",
+        1
+      ]
+    ],
+    "equipment": [
+      [
+        "Weapon",
+        "Sharp Rock"
+      ],
+      [
+        "Shield",
+        ""
+      ],
+      [
+        "Helm",
+        ""
+      ],
+      [
+        "Hauberk",
+        "-3 Burlap"
+      ],
+      [
+        "Brassairts",
+        ""
+      ],
+      [
+        "Vambraces",
+        ""
+      ],
+      [
+        "Gauntlets",
+        ""
+      ],
+      [
+        "Gambeson",
+        ""
+      ],
+      [
+        "Cuisses",
+        ""
+      ],
+      [
+        "Greaves",
+        ""
+      ],
+      [
+        "Sollerets",
+        ""
+      ]
+    ],
+    "spells": [],
+    "best": {
+      "stat": "STR 10",
+      "spell": "",
+      "equipment": "Sharp Rock"
+    },
+    "log": [
+      "Gained a Reverential Candelabra of Electrum",
+      "Oh sweet relief! You've reached the kind protection of Chief Braexprab of Jiebyick..."
+    ],
+    "savedRng": [
+      0.0011501498520374298,
+      0.8276778745930642,
+      0.24009850597940385,
+      1
+    ],
+    "rng": [
+      0.10358048020862043,
+      0.09078322304412723,
+      0.09551192913204432,
+      483187
+    ]
+  }
+}
