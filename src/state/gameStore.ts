@@ -10,6 +10,7 @@ import { MAX_PENDING_ELAPSED_MS, MAX_SOCIAL_ENTRIES, MAX_WORLD_NOTICES } from '.
 import { projectWorld, type WorldNotice } from './worldContext';
 import { projectSocialBatch, type SocialEntry } from './socialProjection';
 import { EMPTY_COMMENDATIONS, mergeEvents, mergeExhibit, readCommendations, writeCommendations, type Commendations } from './commendations';
+import { EMPTY_CASELOAD, mergeRecords, readCaseload, writeCaseload, type Caseload } from './caseload';
 
 // Read once at module load, the same way the roster is read: a ledger that cannot be read is
 // simply an empty one, never a reason for the game not to start.
@@ -17,9 +18,14 @@ const initialCommendations = readCommendations(
   typeof window === 'undefined' ? undefined : (() => { try { return window.localStorage; } catch { return undefined; } })(),
 );
 
-// What is believed to be on disk. Seeded with the ledger just read, so an untouched session
+const initialCaseload = readCaseload(
+  typeof window === 'undefined' ? undefined : (() => { try { return window.localStorage; } catch { return undefined; } })(),
+);
+
+// What is believed to be on disk. Seeded with the ledgers just read, so an untouched session
 // never rewrites an identical copy.
 let lastPersistedCommendations = initialCommendations;
+let lastPersistedCaseload = initialCaseload;
 
 type StartSessionRequest =
   | { source: 'creation'; name: string; race: string; klass: string; seed: PRNGSeed; stats?: StatsMap }
@@ -31,6 +37,7 @@ export interface GameStore {
   worldNotices: WorldNotice[];
   socialEntries: SocialEntry[];
   commendations: Commendations;
+  caseload: Caseload;
   nextActivityId: number;
   sessionGeneration: number;
   isPaused: boolean;
@@ -101,6 +108,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     worldNotices: [],
     socialEntries: [],
     commendations: initialCommendations,
+    caseload: initialCaseload,
     nextActivityId: 1,
     sessionGeneration: 0,
     isPaused: false,
@@ -134,6 +142,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         worldNotices: [],
         socialEntries: [],
         commendations: get().commendations ?? EMPTY_COMMENDATIONS,
+        caseload: get().caseload ?? EMPTY_CASELOAD,
         nextActivityId: nextActivityId + 1,
         sessionGeneration: sessionGeneration + 1,
         isPaused: false,
@@ -155,6 +164,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         worldNotices: [],
         socialEntries: [],
         commendations: get().commendations ?? EMPTY_COMMENDATIONS,
+        caseload: get().caseload ?? EMPTY_CASELOAD,
         nextActivityId: nextActivityId + session.log.length,
         sessionGeneration: sessionGeneration + 1,
         pendingElapsedMs: session.pendingElapsedMs,
@@ -206,6 +216,15 @@ export const useGameStore = create<GameStore>((set, get) => {
         lastPersistedCommendations = nextCommendations;
         writeCommendations(typeof window === 'undefined' ? undefined : window.localStorage, nextCommendations);
       }
+
+      // Records rather than events: the kind of a completed quest is not on the event, only on the
+      // snapshot beside it. Held back and compared the same way the commendation ledger is, for
+      // the same reason - a drain closes many quests per tick, and every one of them counts.
+      const nextCaseload = mergeRecords(get().caseload, result.records);
+      if (result.remainingElapsedMs === 0 && nextCaseload !== lastPersistedCaseload) {
+        lastPersistedCaseload = nextCaseload;
+        writeCaseload(typeof window === 'undefined' ? undefined : window.localStorage, nextCaseload);
+      }
       const projectedSocialEntries = projectSocialBatch(sources).toReversed();
       set({
         ...result.state,
@@ -215,6 +234,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         socialEntries: retainWholeSocialScenes([...projectedSocialEntries, ...socialEntries]),
         nextActivityId: nextActivityId + activity.length,
         commendations: nextCommendations,
+        caseload: nextCaseload,
       });
     },
   };

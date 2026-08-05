@@ -1,0 +1,50 @@
+import { Scale } from 'lucide-react';
+import React from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { useGameStore } from '../state/gameStore';
+import { KIND_LABELS, QUEST_KINDS, isEmpty, mostLitigated } from '../state/caseload';
+import { GameNumber } from './GameNumber';
+
+/**
+ * What the casework has consisted of. Every figure is a count of quests the engine classified
+ * itself — nothing here is a reward, an unlock, or a claim about a mechanic that does not exist.
+ *
+ * Absent entirely until something has been filed, because five zeroes read as a broken panel
+ * rather than a young one.
+ */
+export const Caseload: React.FC = () => {
+  const caseload = useGameStore(useShallow((state) => state.caseload));
+  if (isEmpty(caseload)) return null;
+
+  // Every kind, in the engine's own order, but only those actually seen. A kind with no cases is
+  // not a zero worth reporting; it is a category this hero has not been assigned.
+  const filed = QUEST_KINDS.flatMap((kind) => {
+    const count = caseload.kinds[kind];
+    return count ? [[KIND_LABELS[kind], count] as const] : [];
+  });
+  const frequent = mostLitigated(caseload);
+
+  return (
+    <>
+      <div className="section-label">
+        <Scale size={14} aria-hidden="true" /> Docket Summary
+      </div>
+      <div className="equip-list commendation-list" role="region" aria-label="Docket summary">
+        {filed.map(([label, count]) => (
+          <div className="equip-item" key={label}>
+            <span className="equip-slot">{label}</span>
+            <span className="commendation-value"><GameNumber value={count} /></span>
+          </div>
+        ))}
+        {frequent && (
+          <div className="equip-item" key="most-litigated">
+            <span className="equip-slot">Most frequently filed against</span>
+            <span className="commendation-value">
+              {frequent.target} (<GameNumber value={frequent.count} />)
+            </span>
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
