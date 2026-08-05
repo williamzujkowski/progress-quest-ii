@@ -17,14 +17,21 @@ if (jsFiles.length === 0) throw new Error('Production build emitted no JavaScrip
 // dead-code-eliminates the service-worker registration in src/pwa.ts and ships React's
 // development build. The result still looks like a successful build, so fail loudly here
 // instead of shipping an app with no offline mode.
+let registersServiceWorker = false;
 for (const name of jsFiles) {
   const source = await readFile(new URL(name, assetDirectory), 'utf8');
+  // Per chunk: a development runtime anywhere means the whole build is wrong.
   if (source.includes('jsxDEV')) {
     throw new Error(`${name} contains React's development JSX runtime; the build did not run as production. Check that NODE_ENV is not set to development.`);
   }
-  if (!source.includes('serviceWorker')) {
-    throw new Error(`${name} contains no service-worker registration; offline mode would be silently absent.`);
-  }
+  if (source.includes('serviceWorker')) registersServiceWorker = true;
+}
+
+// Across all chunks, not per chunk. Requiring every chunk to mention serviceWorker happened to
+// hold while the build emitted exactly one, and would have failed a correct build the first time
+// a lazy import or vendor split produced a second.
+if (!registersServiceWorker) {
+  throw new Error('No emitted JavaScript registers a service worker; offline mode would be silently absent.');
 }
 
 for (const name of cssFiles) {

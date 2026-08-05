@@ -36,8 +36,16 @@ const packageThemes = await Promise.all(optionIds
 // progros is authored in CSS rather than shipped by the theme package, so its two critical
 // colours are read back out of the stylesheet instead of invented here. A regex over CSS is
 // only safe because a test asserts the generated file matches a fresh run of this script.
-const progrosBlock = cssSource.match(/\[data-theme='progros'\]\s*\{([\s\S]*?)\}/)?.[1];
-if (!progrosBlock) throw new Error('Could not find the progros theme block in src/index.css.');
+// Global match with a uniqueness check, not first-wins. A stale, duplicated, or commented-out
+// progros block earlier in the file would otherwise be picked silently, and as long as it still
+// declared a background and foreground the generator would emit a wrong-but-plausible palette.
+// The drift test cannot catch that, because it compares this parser against itself.
+const progrosBlocks = [...cssSource.matchAll(/\[data-theme='progros'\]\s*\{([\s\S]*?)\}/g)];
+if (progrosBlocks.length === 0) throw new Error('Could not find the progros theme block in src/index.css.');
+if (progrosBlocks.length > 1) {
+  throw new Error(`Found ${progrosBlocks.length} progros theme blocks in src/index.css; cannot tell which is authoritative.`);
+}
+const progrosBlock = progrosBlocks[0][1];
 const progrosBg = progrosBlock.match(/--terminal-background:\s*([^;]+);/)?.[1]?.trim();
 const progrosFg = progrosBlock.match(/--terminal-foreground:\s*([^;]+);/)?.[1]?.trim();
 if (!progrosBg || !progrosFg) throw new Error('progros theme block is missing background or foreground.');
