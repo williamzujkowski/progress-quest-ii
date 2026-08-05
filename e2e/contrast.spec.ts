@@ -1,0 +1,151 @@
+import { expect, test } from '@playwright/test';
+
+/**
+ * Direct contrast measurement, covering what axe-core structurally cannot.
+ *
+ * The axe pass in app.spec.ts asserts on `results.violations` only. axe reports whole subtrees
+ * as `incomplete` when it cannot determine a background — "Element's background color could not
+ * be determined due to a pseudo element", which covers the navbar because those buttons contain
+ * inline SVG icons. An `incomplete` is not a violation, so it reads as a pass. That is how a
+ * genuine 2.98:1 primary button shipped in the progros theme.
+ *
+ * Two things this file does deliberately, both learned the hard way:
+ *
+ * 1. It waits for paint to settle, on every pair it measures. Themes cross-fade, and sampling
+ *    mid-transition reports colours that exist on no frame the user ever sees. That artifact
+ *    produced a convincing "3.2:1 primary button" across three themes which does not exist —
+ *    the settled value is 6.77:1. Hand-checking the arithmetic did not catch it, because the
+ *    arithmetic was right and the sample was wrong.
+ *
+ *    A first attempt settled on one proxy element and passed locally, then failed in CI at
+ *    1.04:1 on exactly the two dark themes: buttons fade over 150ms and the body over 200ms,
+ *    so waiting for one says nothing about the rest. Settling is per-pair for that reason.
+ * 2. It validates its own maths against published WCAG values before trusting any DOM reading.
+ */
+
+const AA_NORMAL_TEXT = 4.5;
+
+// Asserted against the live picker below, so adding a theme without adding it here fails
+// rather than silently going unmeasured.
+const THEMES = [
+  { id: 'remarque-dark', label: 'Remarque Dark' },
+  { id: 'remarque-light', label: 'Remarque Light' },
+  { id: 'green-phosphor-crt', label: 'Green Phosphor CRT' },
+  { id: 'keys-ocean-sunset-hc', label: 'Ocean Sunset HC' },
+  { id: 'progros', label: 'Retro ProgrOS' },
+] as const;
+
+const PAIRS = [
+  { name: 'panel heading', selector: '.card-header' },
+  { name: 'muted subtitle', selector: '.hero-sub' },
+  { name: 'primary button label', selector: '.btn-primary' },
+  { name: 'secondary button label', selector: '.nav-actions .btn:not(.btn-primary)' },
+  { name: 'badge warning', selector: '.total-badge', token: '--accent-warning' },
+  { name: 'badge danger', selector: '.total-badge', token: '--accent-danger' },
+] as const;
+
+const channel = (value: number) => {
+  const v = value / 255;
+  return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+};
+
+const luminance = (rgb: number[]) =>
+  0.2126 * channel(rgb[0]!) + 0.7152 * channel(rgb[1]!) + 0.0722 * channel(rgb[2]!);
+
+const contrast = (a: number[], b: number[]) => {
+  const [x, y] = [luminance(a), luminance(b)];
+  const [hi, lo] = x > y ? [x, y] : [y, x];
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+// Runs in the page. Resolves colours through a canvas (oklch/oklab/color-mix all serialize in
+// forms Number parsing cannot handle) and composites every painted ancestor, because the
+// neutral tokens here are translucent by design.
+const SAMPLE = async (pairs: readonly { name: string; selector: string; token?: string }[]) => {
+  const paint = (colour: string) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 1;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, 1, 1);
+    ctx.fillStyle = colour;
+    ctx.fillRect(0, 0, 1, 1);
+    return [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3);
+  };
+  const backdrop = (element: HTMLElement) => {
+    const layers: string[] = [];
+    for (let node: HTMLElement | null = element; node; node = node.parentElement) {
+      const bg = getComputedStyle(node).backgroundColor;
+      if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') layers.push(bg);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 1;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, 1, 1);
+    for (const layer of layers.reverse()) {
+      ctx.fillStyle = layer;
+      ctx.fillRect(0, 0, 1, 1);
+    }
+    return [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3);
+  };
+  const snapshot = () => {
+    const out: Record<string, { fg: number[]; bg: number[] }> = {};
+    for (const pair of pairs) {
+      const element = document.querySelector(pair.selector) as HTMLElement | null;
+      if (!element) continue;
+      const fg = pair.token
+        ? paint(getComputedStyle(document.documentElement).getPropertyValue(pair.token))
+        : paint(getComputedStyle(element).color);
+      out[pair.name] = { fg, bg: backdrop(element) };
+    }
+    return out;
+  };
+  const frame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+  // Settle on everything being measured, not on one proxy element. Different elements carry
+  // different transition durations — buttons fade over 150ms, the body over 200ms — so waiting
+  // for one to stop moving says nothing about the rest. This returns only once every sampled
+  // pair is identical across two consecutive frames.
+  let previous = JSON.stringify(snapshot());
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    await frame();
+    await frame();
+    const current = snapshot();
+    const serialized = JSON.stringify(current);
+    if (serialized === previous) return current;
+    previous = serialized;
+  }
+  throw new Error('Theme paint never settled; contrast cannot be measured reliably.');
+};
+
+test.describe('theme contrast', () => {
+  test('the measurement agrees with published WCAG values', () => {
+    // Guards the instrument before any reading is trusted. If these drift, every ratio below
+    // is meaningless and the suite should be believed about nothing.
+    expect(contrast([0, 0, 0], [255, 255, 255])).toBeCloseTo(21, 2);
+    expect(contrast([255, 255, 255], [255, 255, 255])).toBeCloseTo(1, 2);
+    expect(contrast([118, 118, 118], [255, 255, 255])).toBeCloseTo(4.54, 2);
+  });
+
+  for (const theme of THEMES) {
+    test(`${theme.label} meets AA for text against its real backdrop`, async ({ page }) => {
+      await page.goto('/');
+      const picker = page.getByRole('combobox', { name: 'Visual theme' });
+      await expect(picker.locator('option')).toHaveCount(THEMES.length);
+      await picker.selectOption(theme.id);
+
+      const samples = await page.evaluate(SAMPLE, PAIRS);
+      const measured = Object.entries(samples);
+
+      // A selector that stops matching would otherwise reduce this to an empty pass, which is
+      // the exact failure mode the file exists to close.
+      expect(measured.length, `${theme.label} matched too few elements to be meaningful`).toBeGreaterThanOrEqual(5);
+
+      for (const [name, value] of measured) {
+        const ratio = contrast(value.fg, value.bg);
+        expect(ratio, `${theme.label} — ${name} measured ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+      }
+    });
+  }
+});
