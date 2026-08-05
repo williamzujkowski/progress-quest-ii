@@ -459,6 +459,28 @@ input[type='radio'] {
   padding: var(--space-2) 0;
 }
 
+/* In the loadout both sides sized to content, so the slot label won ties and the item name -
+   the actual content, and the whole joke - was left with under half the cell. The label yields
+   first now: slot order is canonical and the icon marks the row, so a shortened "Gauntlets"
+   costs far less than a shortened item name. Short labels still never truncate; the label only
+   gives way when the name needs the room. */
+.equipment-list .equip-item {
+  gap: var(--space-2);
+}
+
+.equipment-list .equip-slot {
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.equipment-list .equip-item > .tooltip-trigger {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+
 .equip-slot,
 .empty-state,
 .roster-meta {
