@@ -7,7 +7,7 @@ const SAMPLE_INTERVAL_MS = 10_000;
 /**
  * Hoisted rather than written inline as a default: a default expression is re-evaluated per call,
  * which would hand the effect a new dependency identity every render and rebuild the timer each
- * time. That defect shipped once in the velocity hook and is not worth repeating.
+ * time — sampling at render cadence, which is the coupling this hook exists to avoid.
  */
 const systemNowMs = () => Date.now();
 

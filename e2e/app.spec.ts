@@ -1195,8 +1195,9 @@ test.describe('Progress Quest II terminal dashboard', () => {
 
   test('keeps a focused skip link above the tooltip layer', async ({ page }) => {
     await page.goto('/');
-    // WCAG 2.4.11: a focused skip link must not be obscured. These previously carried bare
-    // z-index values of 200 and 1000 respectively, so an open tooltip painted over it.
+    // WCAG 2.4.11: a focused skip link must not be obscured. The skip link and the tooltip layer
+    // are stacked against each other, so their z-indices have to be ordered deliberately rather
+    // than chosen independently.
     // Open a tooltip first: it is portaled to the body and only exists in the DOM while shown,
     // which is also the exact situation where it could cover the skip link.
     await page.locator('.tooltip-trigger').first().focus();

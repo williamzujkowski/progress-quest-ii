@@ -69,8 +69,8 @@ describe('promotion projection sampling', () => {
   });
 
   it('keeps its timer across host re-renders when no clock is supplied', () => {
-    // The same defect the velocity hook shipped: an inline default argument is re-evaluated per
-    // call, giving the effect a new dependency identity on every render.
+    // An inline default argument is re-evaluated per call, which would give the effect a new
+    // dependency identity on every render and rebuild the timer each time.
     vi.useFakeTimers();
     const setInterval = vi.spyOn(window, 'setInterval');
     const DefaultProbe: React.FC = () => { usePromotionEta(); return null; };

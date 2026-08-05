@@ -61,6 +61,19 @@ Before writing any code, stop at the first rung that holds:
 - **Ponytail comments:** Mark deliberate simplifications or trade-offs with a `ponytail:` comment describing the rationale and upgrade trigger (e.g. `// ponytail: simple O(n) scan, indexed map if item count > 1000`).
 - **Never lazy about:** Understanding the problem (read the full context before editing), input validation at boundaries, error handling that prevents data loss, security, accessibility, or unit tests for non-trivial logic.
 
+### Comments Must Be Evergreen
+
+A comment is read by someone who was not there and cannot check. Write only what stays true, and keep it to what the code cannot say for itself.
+
+- **State durable facts, not events.** *"Experience accrues only on kill tasks, so the track is not a wall clock"* stays true and explains the code. *"Observed in the browser on a returning session"* is an event: unverifiable later, and it explains nothing a reader can act on. History belongs in the commit message and the PR, which are searchable and dated by the tooling.
+- **Numbers belong in tests, not prose.** A measurement in a comment drifts silently as the code moves; the same measurement as an assertion fails loudly. If a figure matters enough to record, write it as a test and let the comment name the invariant it protects. Never assert a benchmark, ratio, or timing in a comment.
+- **No timestamps of any kind** — no dates, no PR or issue numbers, no "recently", "now", "currently", "as of", "still", or "no longer". A comment must read correctly to someone with no memory of when it was written.
+- **Record the rejected alternative as a property, not a story.** *"Comparing against the previous tick misses the case where the finishing tick sets no record"* earns its place: it stops the next person reinstating the bug. *"This was fixed after a review found it"* does not.
+- **Explain the constraint, so a reader knows what breaks if they change it.** That is the one thing a comment can do that a test cannot.
+- **Never name a person, an agent, a model, or a tool.**
+- **Don't restate the code**, and don't annotate the obvious. Every comment is a line that must be re-verified when the code beneath it changes; each one should be worth that cost.
+- **When you change code, re-read the comments around it.** A stale comment is worse than none, because it is trusted.
+
 ---
 
 ## Default Working Mode

@@ -36,12 +36,11 @@ export const ClosedCasework: React.FC = () => {
       */}
       {/*
         Focusable because it scrolls. A scrollable box with nothing tabbable inside cannot be
-        reached by keyboard at all in some browsers, which axe reports as a serious violation and
-        which caught this panel on its first run.
+        reached by keyboard at all in some browsers.
 
         tabIndex alone, without the role="region" the sibling panels carry. Those are divs with no
         implicit role to lose; this is an ordered list, and naming it a region would trade the
-        announcement that actually helps here — "list, forty items" — for one that says less.
+        announcement that actually helps here — "list, N items" — for one that says less.
       */}
       <ol className="casework-list" tabIndex={0} aria-label="Closed casework, most recent first">
         {history.toReversed().map((description, index) => (
