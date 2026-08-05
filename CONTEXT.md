@@ -53,7 +53,7 @@ _Avoid_: XP points
 A bounded number of seconds toward completing the current quest.
 
 **Quest reward**:
-Exactly one spell, equipment, stat, or item effect granted when a nonempty quest completes.
+At most one spell, equipment, stat, or item effect granted when a nonempty quest completes. It is one in the ordinary case; a reward that would exceed a persistence ceiling, or land in a full inventory, changes nothing and emits nothing, matching the rule that an effect is reported only when persisted state actually moves.
 _Avoid_: Kill loot, level-up reward
 
 **Plot track**:

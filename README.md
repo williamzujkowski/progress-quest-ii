@@ -60,8 +60,10 @@ npm run quality
 
 The quality command fails on modern-code or GitHub Actions workflow findings and
 runs Nexus installation verification, lint, typecheck, unit and legacy-oracle
-tests, production build, high-severity dependency audit, browser E2E, and
-production PWA tests. Workflow lint uses the official actionlint v1.7.12 archive
+tests under enforced coverage floors, dependency audit at moderate severity plus registry signature
+verification, browser E2E, and production PWA tests. The production build is not
+a separate step - it runs inside the PWA suite, which is last, so browser E2E
+exercises the dev server and only the PWA suite exercises the shipped bundle. Workflow lint uses the official actionlint v1.7.12 archive
 for the current platform, verifies its pinned release checksum before every
 extraction, and keeps the archive under ignored `node_modules/.cache/`. The
 launcher uses the standard `tar` executable included on supported developer
