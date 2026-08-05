@@ -2,12 +2,19 @@ import { Shield, Sparkles, Sword } from 'lucide-react';
 import React from 'react';
 import { EQUIP_SLOTS } from '../data/traits';
 import type { EquipSlot } from '../engine/types';
+import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../state/gameStore';
 import { GameNumber } from './GameNumber';
 import { ItemTooltip } from './ItemTooltip';
 
 export const CharacterSheetView: React.FC = () => {
-  const { character } = useGameStore();
+  // Equip and Spells changed identity 3 times across a measured 400 ticks; the character
+  // reference changed 400 times, because Task advances every tick.
+  const { Equip, Spells } = useGameStore(useShallow((state) => ({
+    Equip: state.character.Equip,
+    Spells: state.character.Spells,
+  })));
+  const character = { Equip, Spells };
 
   return (
     <section className="card character-card" aria-labelledby="loadout-heading" tabIndex={0}>
