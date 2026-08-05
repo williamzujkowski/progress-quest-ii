@@ -9,7 +9,6 @@ const completeNotices = [
   'Johannes Baagøe',
   'Lucide Icons and Contributors',
   'SIL OPEN FONT LICENSE Version 1.1',
-  'Vite contributors',
 ].join('\n');
 
 test('production notice verification accepts complete offline notices', () => {
