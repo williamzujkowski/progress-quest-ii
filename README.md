@@ -4,7 +4,7 @@
 
 The sequel nobody had to play. First, humans wrote a game that played itself. Then computers helped rebuild the game. The circle is complete, the paperwork has been misplaced, and nobody has had to play anything.
 
-**Progress Quest II** is an unofficial modern continuation of Eric Fredricksen's classic zero-player RPG *Progress Quest*. Created by humans. Rebuilt by machines. Played by nobody.
+**Progress Quest II** is an unofficial spiritual successor to Eric Fredricksen's classic zero-player RPG *Progress Quest* — for people who want to play games without playing them and watch numbers go up. Inspired by the original rather than a port of it: it keeps the humour and the hands-off progression, and extends the mechanics where that makes the watching better. Created by humans. Rebuilt by machines. Played by nobody.
 
 ## Visit the live game
 
