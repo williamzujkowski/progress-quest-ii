@@ -247,7 +247,11 @@ describe('item tooltip details', () => {
     expect(describeInventoryItem('Uncatalogued Chair', 1).description).toContain('Uncatalogued Chair');
   });
 
-  it('keeps every generated special-item identity distinct and bounded', () => {
+  // Exhaustive: every ITEM_ATTRIB x SPECIALS x ITEM_OFS combination, 63,492 generated
+  // descriptions. It runs in roughly 2s alone but has been measured at 5.4s and 6.1s under
+  // parallel CI load, so the 5s default was never the right budget for it - the test was not
+  // slow, the budget was wrong. Timing out here says nothing about correctness.
+  it('keeps every generated special-item identity distinct and bounded', { timeout: 30_000 }, () => {
     const items = ITEM_ATTRIB.flatMap((attribute) =>
       SPECIALS.flatMap((object) => ITEM_OFS.map((concept) => ({ attribute, concept, name: `${attribute} ${object} of ${concept}`, object }))));
     const descriptions = items.map(({ name }) => describeInventoryItem(name, 1).description);
