@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { settleForAudit } from './fixtures/accessibility';
 
 /**
  * Direct contrast measurement, covering what axe-core structurally cannot.
@@ -132,15 +133,11 @@ test.describe('theme contrast', () => {
     test(`${theme.label} meets AA for text against its real backdrop`, async ({ page }) => {
       await page.goto('/');
 
-      // Kill transitions outright rather than waiting them out. The previous approach polled
-      // until two samples agreed, which is wrong in a way that only shows up on a slow runner:
-      // before the cross-fade begins the values are *also* stable — at the outgoing theme — so
-      // two matching pre-transition snapshots read as settled and the suite measured the wrong
-      // theme entirely. With no transition there is no window to sample inside, so the timing
-      // dependency is gone by construction rather than tuned.
-      await page.addStyleTag({
-        content: '*, *::before, *::after { transition: none !important; animation: none !important; }',
-      });
+      // Shared with the axe helper on purpose: one definition of "no animation window to
+      // sample inside". An earlier approach polled until two samples agreed, which fails on a
+      // slow runner because the values are also stable *before* the cross-fade begins — at the
+      // outgoing theme — so two matching pre-transition snapshots read as settled.
+      await settleForAudit(page);
 
       const picker = page.getByRole('combobox', { name: 'Visual theme' });
       await expect(picker.locator('option')).toHaveCount(THEMES.length);
