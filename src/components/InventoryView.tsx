@@ -15,6 +15,9 @@ export const InventoryView: React.FC = () => {
   const encumbrance = calculateEncumbrance(character.Inventory);
   const encumbranceMax = calculateEncumbranceMax(character.Stats.STR);
   const atCapacity = encumbrance >= encumbranceMax;
+  const encumbrancePct = encumbranceMax > 0
+    ? Math.min(100, Math.floor((encumbrance / encumbranceMax) * 100))
+    : 0;
 
   return (
     <section className="card inventory-card" aria-labelledby="inventory-heading">
@@ -31,6 +34,22 @@ export const InventoryView: React.FC = () => {
               {' '}cubits carried of capacity{atCapacity ? ', at capacity' : ''}
             </span>
           </span>
+        </div>
+      </div>
+
+      {/* Legacy renders this as a bar labelled "$position/$max cubits" (main.js:955); the
+          numeric ratio stays in the header where the eye already looks for it. */}
+      <div className={`progress-container progress-encumbrance${atCapacity ? ' progress-encumbrance-full' : ''}`}>
+        <div
+          className="progress-bar-track"
+          role="progressbar"
+          aria-label="Encumbrance, in cubits carried of capacity"
+          aria-valuenow={encumbrance}
+          aria-valuemin={0}
+          aria-valuemax={encumbranceMax}
+          aria-valuetext={`${encumbrance} of ${encumbranceMax} cubits`}
+        >
+          <div className="progress-bar-fill" style={{ width: `${encumbrancePct}%` }} />
         </div>
       </div>
 

@@ -527,6 +527,27 @@ input[type='radio'] {
 .progress-task .progress-bar-fill { background: var(--progress-fill); }
 .progress-quest .progress-bar-fill { background: var(--progress-quest); }
 .progress-plot .progress-bar-fill { background: var(--progress-plot); }
+/* Experience is the character's own track, so it takes the accent rather than one of the
+   world-progress hues. Encumbrance stays neutral until it is full, where it becomes the
+   reason loot stopped being picked up and earns the danger colour. */
+/* Experience rides in the hero banner's identity column, which has vertical slack because the
+   banner's height is set by the stats grid beside it. It is a bare track with no label row:
+   the level badge above it already says what it is counting toward. */
+.hero-experience {
+  margin-top: 0.35rem;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--progress-bg);
+  overflow: hidden;
+}
+
+.hero-experience .progress-bar-fill {
+  height: 100%;
+  background: var(--accent-primary);
+}
+.progress-encumbrance { margin-top: var(--space-3); }
+.progress-encumbrance .progress-bar-fill { background: var(--text-muted); }
+.progress-encumbrance-full .progress-bar-fill { background: var(--accent-danger); }
 
 .log-feed {
   display: flex;

@@ -7,7 +7,12 @@ import { ItemTooltip } from './ItemTooltip';
 
 
 export const HeroBanner: React.FC = () => {
-  const { character } = useGameStore();
+  const { character, progression } = useGameStore();
+
+  // Saturates at Number.MAX_VALUE for absurd levels, so guard the denominator.
+  const experiencePct = progression.experience.maxSeconds > 0
+    ? Math.min(100, Math.floor((progression.experience.currentSeconds / progression.experience.maxSeconds) * 100))
+    : 0;
 
   return (
     <div className="hero-banner" role="region" aria-label="Hero Overview Banner">
@@ -15,6 +20,17 @@ export const HeroBanner: React.FC = () => {
         <div className="hero-name">
           <span>{character.Traits.Name}</span>
           <span className="badge" title="Character Level">Lvl{' '}<GameNumber value={character.Traits.Level} /></span>
+        </div>
+        <div
+          className="hero-experience"
+          role="progressbar"
+          aria-label="Experience toward next level"
+          aria-valuenow={experiencePct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuetext={`${experiencePct}% toward the next level`}
+        >
+          <div className="progress-bar-fill" style={{ width: `${experiencePct}%` }} />
         </div>
         <div className="hero-sub">
           {character.Traits.Race} {character.Traits.Class} • <ActLabel act={character.Plot.act} />
