@@ -171,7 +171,7 @@ Workflow playbooks live in `.agents/skills/<name>/SKILL.md` (conforming to the A
 - **`diagnosing-bugs`**: Root-cause bug investigation and failure trace analysis.
 - **`domain-modeling`**: Modeling RPG domain entities, stats, equipment, items, and state contracts.
 - **`frontend-design`**: Progress Quest II's local adaptation of Anthropic's frontend design guidance for distinctive visual direction, typography, and layout; upstream provenance refresh is tracked in #128.
-- **`vercel-react-best-practices`**: Vercel's React performance playbook; apply only the Vite/client rules supported by measurements or a concrete regression.
+- **`react-best-practices`** (upstream name `vercel-react-best-practices`, kept in its frontmatter): Vercel's React performance playbook; apply only the Vite/client rules supported by measurements or a concrete regression.
 - **`grill-me` / `grilling`**: Interactive requirements grilling to resolve ambiguous user requirements.
 - **`grill-with-docs`**: Grilling requirements against official project documentation and ADRs.
 - **`handoff`**: Context packaging and handoff state summary between agent turns or subagents.
