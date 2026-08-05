@@ -140,6 +140,11 @@ input,
 select,
 textarea {
   font: inherit;
+  /* Native control appearance is refused explicitly rather than assumed away. Left at `auto`,
+     WebKit paints a focused button with its own accent fill and a control with the platform
+     button face, overriding the authored background and leaving text at whatever contrast the
+     platform chose. The authored styles below are complete; this is what lets them win. */
+  appearance: none;
 }
 
 button,

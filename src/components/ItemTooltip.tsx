@@ -10,12 +10,23 @@ type TooltipProps = (
   | { kind: 'spell'; name: string; level: number }
 ) & { children?: React.ReactNode };
 
+/**
+ * Closes whichever tooltip is currently open when another opens.
+ *
+ * Dismissal cannot rest on focus alone. WebKit does not focus a button when it is tapped, so the
+ * blur that closes the previous tooltip never arrives there and taps accumulate visible tooltips.
+ * A single shared closer is the smallest thing that makes "one at a time" true in every browser
+ * rather than only in the ones that focus on click.
+ */
+let openTooltip: React.RefObject<(() => void) | null> | null = null;
+
 export const ItemTooltip: React.FC<TooltipProps> = (props) => {
   const tooltipId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const tooltipRef = useRef<HTMLSpanElement>(null);
   const closeTimerRef = useRef<number>(undefined);
   const openAtPressRef = useRef(false);
+  const hideRef = useRef<(() => void) | null>(null);
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ left: 8, top: 8 });
   const details = props.kind === 'equipment'
@@ -51,7 +62,7 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') hide();
     };
     document.addEventListener('keydown', dismiss);
     return () => document.removeEventListener('keydown', dismiss);
@@ -59,12 +70,23 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
 
   useEffect(() => () => window.clearTimeout(closeTimerRef.current), []);
 
+  const hide = () => {
+    if (openTooltip === hideRef) openTooltip = null;
+    setOpen(false);
+  };
+  // Registered by ref rather than by function: `hide` is a new identity every render, so
+  // comparing the functions themselves would stop recognising this tooltip as the open one the
+  // first time anything re-renders it. The ref object outlives every render this component has.
+  hideRef.current = hide;
+
   const show = () => {
     window.clearTimeout(closeTimerRef.current);
+    if (openTooltip && openTooltip !== hideRef) openTooltip.current?.();
+    openTooltip = hideRef;
     setOpen(true);
   };
   const scheduleHide = () => {
-    closeTimerRef.current = window.setTimeout(() => setOpen(false), 100);
+    closeTimerRef.current = window.setTimeout(hide, 100);
   };
   const showFromHover = (event: React.PointerEvent) => {
     if (event.pointerType === 'mouse') show();
@@ -111,7 +133,7 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
       onPointerEnter={showFromHover}
       onPointerLeave={hideFromHover}
       onFocus={show}
-      onBlur={() => setOpen(false)}
+      onBlur={hide}
       onPointerDown={() => { openAtPressRef.current = open; }}
       onClick={toggleFromPointer}
       onKeyDown={toggleFromKeyboard}

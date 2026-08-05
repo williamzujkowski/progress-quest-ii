@@ -239,7 +239,7 @@ export const LogFeed: React.FC = () => {
             </div>
           ))}
         </div>
-        {showActivityJump ? <button type="button" className="activity-jump" onClick={jumpToLatestActivity}>Jump to latest activity</button> : null}
+        {showActivityJump ? <button type="button" className="btn btn-compact activity-jump" onClick={jumpToLatestActivity}>Jump to latest activity</button> : null}
       </section>
     </section>
   );
