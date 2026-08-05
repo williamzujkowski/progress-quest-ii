@@ -131,9 +131,26 @@ test.describe('theme contrast', () => {
   for (const theme of THEMES) {
     test(`${theme.label} meets AA for text against its real backdrop`, async ({ page }) => {
       await page.goto('/');
+
+      // Kill transitions outright rather than waiting them out. The previous approach polled
+      // until two samples agreed, which is wrong in a way that only shows up on a slow runner:
+      // before the cross-fade begins the values are *also* stable — at the outgoing theme — so
+      // two matching pre-transition snapshots read as settled and the suite measured the wrong
+      // theme entirely. With no transition there is no window to sample inside, so the timing
+      // dependency is gone by construction rather than tuned.
+      await page.addStyleTag({
+        content: '*, *::before, *::after { transition: none !important; animation: none !important; }',
+      });
+
       const picker = page.getByRole('combobox', { name: 'Visual theme' });
       await expect(picker.locator('option')).toHaveCount(THEMES.length);
       await picker.selectOption(theme.id);
+
+      // applyTheme stamps data-theme on the root, so this is the definitive signal that the
+      // switch actually committed. Without it, a slow commit could leave both settle samples
+      // showing the outgoing theme and the suite would measure the wrong palette while
+      // reporting a pass.
+      await expect(page.locator(`html[data-theme="${theme.id}"]`)).toHaveCount(1);
 
       const samples = await page.evaluate(SAMPLE, PAIRS);
       const measured = Object.entries(samples);
