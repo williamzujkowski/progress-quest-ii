@@ -721,7 +721,7 @@ input[type='radio'] {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: var(--z-modal);
   display: flex;
   width: 100%;
   height: 100%;

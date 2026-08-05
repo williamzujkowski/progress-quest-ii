@@ -429,10 +429,12 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(tooltip).toContainText('Combat contribution: none');
     expect(await tooltip.evaluate((element) => element.parentElement === document.body)).toBe(true);
     const tooltipBox = await tooltip.boundingBox();
-    expect(tooltipBox).not.toBeNull();
-    expect(tooltipBox?.x).toBeGreaterThanOrEqual(0);
-    expect(tooltipBox?.y).toBeGreaterThanOrEqual(0);
-    expect(tooltipBox?.x + (tooltipBox?.width ?? 0)).toBeLessThanOrEqual(1280);
+    // Narrowing rather than optional-chaining: `box?.x + (box?.width ?? 0)` evaluates to NaN
+    // when the box is null, and every comparison against NaN is false.
+    if (!tooltipBox) throw new Error('Tooltip reported no bounding box, so it is not rendered.');
+    expect(tooltipBox.x).toBeGreaterThanOrEqual(0);
+    expect(tooltipBox.y).toBeGreaterThanOrEqual(0);
+    expect(tooltipBox.x + tooltipBox.width).toBeLessThanOrEqual(1280);
     await page.locator('.tooltip-trigger', { hasText: 'Golden Orb of Fortune' }).focus();
     await expect(page.getByRole('tooltip')).toContainText('Encumbrance: +3 cubits');
     await page.locator('.tooltip-trigger', { hasText: 'Rabbit Punch' }).focus();
@@ -473,9 +475,9 @@ test.describe('Progress Quest II terminal dashboard', () => {
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible();
     const box = await tooltip.boundingBox();
-    expect(box).not.toBeNull();
-    expect(box?.x).toBeGreaterThanOrEqual(0);
-    expect(box?.x + (box?.width ?? 0)).toBeLessThanOrEqual(390);
+    if (!box) throw new Error('Tooltip reported no bounding box, so it is not rendered.');
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(390);
     await page.getByRole('heading', { name: 'Progress Quest II' }).tap();
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await expect(tooltip).toBeHidden();
@@ -505,9 +507,9 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await lastItem.tap();
     const longTooltip = page.getByRole('tooltip');
     const longBox = await longTooltip.boundingBox();
-    expect(longBox).not.toBeNull();
-    expect(longBox?.y).toBeGreaterThanOrEqual(0);
-    expect(longBox?.y + (longBox?.height ?? 0)).toBeLessThanOrEqual(844);
+    if (!longBox) throw new Error('Tooltip reported no bounding box, so it is not rendered.');
+    expect(longBox.y).toBeGreaterThanOrEqual(0);
+    expect(longBox.y + longBox.height).toBeLessThanOrEqual(844);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 
     await context.close();
@@ -1141,6 +1143,25 @@ test.describe('Progress Quest II terminal dashboard', () => {
       expect(results.violations).toEqual([]);
     });
   }
+
+  test('keeps a focused skip link above the tooltip layer', async ({ page }) => {
+    await page.goto('/');
+    // WCAG 2.4.11: a focused skip link must not be obscured. These previously carried bare
+    // z-index values of 200 and 1000 respectively, so an open tooltip painted over it.
+    // Open a tooltip first: it is portaled to the body and only exists in the DOM while shown,
+    // which is also the exact situation where it could cover the skip link.
+    await page.locator('.tooltip-trigger').first().focus();
+    const tooltip = page.getByRole('tooltip');
+    await expect(tooltip).toBeVisible();
+
+    const layer = (selector: string) => page.locator(selector).first()
+      .evaluate((element) => Number(getComputedStyle(element).zIndex));
+    const skipLink = await layer('.skip-link');
+    const tooltipLayer = await layer('.item-tooltip');
+    expect(Number.isNaN(skipLink)).toBe(false);
+    expect(Number.isNaN(tooltipLayer)).toBe(false);
+    expect(skipLink).toBeGreaterThan(tooltipLayer);
+  });
 
   test('honors reduced motion and remains usable in forced colors', async ({ page }) => {
     await page.emulateMedia({ forcedColors: 'active', reducedMotion: 'reduce' });

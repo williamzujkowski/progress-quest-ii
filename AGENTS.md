@@ -112,7 +112,7 @@ Always follow this layout — do not create duplicate or parallel module structu
 Before completing ANY task:
 
 - [ ] **Ponytail & TDD/YAGNI/DRY verified** — 7-rung ladder checked, tests written, zero speculative code, zero duplicated logic.
-- [ ] **Strict Typing** — Zero TypeScript errors (`npx tsc --noEmit`), zero `any` usage, all storage inputs validated via Zod.
+- [ ] **Strict Typing** — Zero TypeScript errors (`npm run typecheck`), zero `any` usage, all storage inputs validated via Zod. Use the script, not bare `tsc --noEmit`: this repo's root `tsconfig.json` is solution-style, so plain `tsc` traverses no project references and exits 0 having checked nothing.
 - [ ] **Engine Isolation** — Game logic in `src/engine/` remains 100% decoupled from DOM/React rendering.
 - [ ] **Wiring Complete** — New components, state actions, and type definitions properly exported and connected.
 - [ ] **Tests Pass** — `npm test` runs clean with full coverage on happy paths, edge cases, and failure modes.
@@ -218,4 +218,4 @@ Every piece of identified follow-up work — including feature ideas, discovered
 
 1. **Feature Branches**: All non-trivial work MUST be done on a dedicated branch (e.g. `feat/game-state-machine`, `feat/save-system`, `fix/encumbrance-calc`).
 2. **Pull Requests**: Submit PRs via `gh pr create` with clear titles, descriptions, and linked issue numbers.
-3. **Verification**: Run `npm test` and `npx tsc --noEmit` before opening or merging any PR.
+3. **Verification**: Run `npm test` and `npm run typecheck` before opening or merging any PR.

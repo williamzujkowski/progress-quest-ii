@@ -111,7 +111,9 @@
   position: fixed;
   top: 0.5rem;
   left: 0.5rem;
-  z-index: 200;
+  /* Tops everything by contract: a focused skip-link must never be obscured (WCAG 2.4.11).
+     It previously sat at 200 while the tooltip sat at 1000, so an open tooltip painted over it. */
+  z-index: var(--z-skip-link);
   transform: translateY(-160%);
   padding: var(--space-3) var(--space-4);
   border-radius: 0.35rem;
@@ -318,7 +320,7 @@
 
 .item-tooltip {
   position: fixed;
-  z-index: 1000;
+  z-index: var(--z-toast);
   display: grid;
   width: min(20rem, calc(100vw - 2rem));
   gap: 0.35rem;
