@@ -178,14 +178,16 @@ Nexus runtime data belongs in `.nexus-agents/` and MUST remain untracked. Never 
 
 ## Skills Library
 
-Workflow playbooks live in `.agents/skills/<name>/SKILL.md` (conforming to the Anthropic Agent Skills specification). When a task matches a skill's intent, read its `SKILL.md` and follow its instructions:
+Workflow playbooks live in `.agents/skills/<name>/SKILL.md` (conforming to the Anthropic Agent Skills specification). When a task matches a skill's intent, read its `SKILL.md` and follow its instructions.
+
+Most of these are imported. `.agents/skills/PROVENANCE.md` records where each came from, the upstream revision it was audited against, the retained license text, and whether the local copy still matches — including the two entries whose licensing is unresolved. Read it before importing another, and follow the refresh workflow at its end rather than editing an import in place.
 
 - **`ponytail`**: Lazy senior dev mode. Enforces the 7-rung decision ladder (YAGNI → reuse → stdlib → native platform → installed dep → 1 line → minimal safe code).
 - **`code-review`**: Standardized code review checklist and architectural review before merging PRs.
 - **`codebase-design`**: Designing modular components, interface boundaries, and data flow.
 - **`diagnosing-bugs`**: Root-cause bug investigation and failure trace analysis.
 - **`domain-modeling`**: Modeling RPG domain entities, stats, equipment, items, and state contracts.
-- **`frontend-design`**: Progress Quest II's local adaptation of Anthropic's frontend design guidance for distinctive visual direction, typography, and layout; upstream provenance refresh is tracked in #128.
+- **`frontend-design`**: Anthropic's frontend design guidance, upstream text verbatim, with the project's own constraints below a marked overlay heading.
 - **`react-best-practices`** (upstream name `vercel-react-best-practices`, kept in its frontmatter): Vercel's React performance playbook; apply only the Vite/client rules supported by measurements or a concrete regression.
 - **`grill-me` / `grilling`**: Interactive requirements grilling to resolve ambiguous user requirements.
 - **`grill-with-docs`**: Grilling requirements against official project documentation and ADRs.
