@@ -1144,6 +1144,26 @@ test.describe('Progress Quest II terminal dashboard', () => {
     });
   }
 
+  test('keeps the console tabs usable when the centre column runs short', async ({ page }) => {
+    // #207: the chatter panel was flex: 1 with min-height: 0, which resolves to nothing when
+    // the parent distributes no height. It measured 20px tall here — present in the
+    // accessibility tree, unreachable in practice — so a region silently disappeared rather
+    // than shrinking. The room existed; nothing was claiming it.
+    await page.setViewportSize({ width: 1025, height: 760 });
+    await page.goto('/');
+    await loadDenseDashboard(page);
+
+    const heights = await page.evaluate(() => {
+      const panel = document.querySelector('.console-panel:not([hidden])');
+      return { panel: panel ? Math.round(panel.getBoundingClientRect().height) : 0 };
+    });
+    expect(heights.panel, 'console tab panel collapsed instead of shrinking').toBeGreaterThanOrEqual(120);
+
+    await expect(page.getByRole('region', { name: 'Simulated chatter' })).toBeVisible();
+    await openActivityTab(page);
+    await expect(page.getByRole('region', { name: 'Activity Event Log' })).toBeVisible();
+  });
+
   test('keeps a focused skip link above the tooltip layer', async ({ page }) => {
     await page.goto('/');
     // WCAG 2.4.11: a focused skip link must not be obscured. These previously carried bare
