@@ -116,8 +116,8 @@ VITE STARTER ASSETS (PENDING REPLACEMENT UNDER #177)
 
 The favicon is a byte-identical Vite starter asset. The PWA PNGs visibly use
 the same Vite mark, but their generator is not recorded.
-The unused Vite starter hero and social sprite remain in the source tree until
-#177 removes them.
+The unused Vite starter hero image and social-service sprite have been removed;
+the social-service marks they carried are no longer present in the tree.
 
 Copyright (c) 2019-present, VoidZero Inc. and Vite contributors
 

@@ -224,6 +224,13 @@ test.describe('Progress Quest II terminal dashboard', () => {
     expect(diagnosticReport.events.some((event) => event.code === 'react_caught')).toBe(true);
     await expect(page.locator('.recovery-status[role="status"]')).toHaveText(/nothing was uploaded/i);
 
+    // Themes cross-fade over 200ms. Running axe straight after applyTheme measured colours
+    // from mid-transition - present on no frame a user sees - which surfaced as an intermittent
+    // wall of contrast violations. Killing transitions removes the window rather than timing it.
+    await page.addStyleTag({
+      content: '*, *::before, *::after { transition: none !important; animation: none !important; }',
+    });
+
     for (const theme of ['remarque-dark', 'remarque-light', 'progros'] as const) {
       await page.evaluate(async (themeId) => {
         const { applyTheme } = await import('/src/theme.ts');
