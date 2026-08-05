@@ -201,6 +201,11 @@ input[type='radio'] {
 /* Carried weight, read the way an EverQuest inventory window reads it: a quiet
    ratio that only raises its voice at capacity, where it becomes the reason loot
    stopped being picked up. */
+/* Quieter than gold: a rate is context for the totals beside it, not a headline of its own. */
+.velocity-pill {
+  color: var(--text-muted);
+}
+
 .inventory-weight {
   display: flex;
   align-items: center;

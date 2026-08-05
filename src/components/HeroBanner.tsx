@@ -1,8 +1,10 @@
 import { Coins, Heart, Sparkles } from 'lucide-react';
 import React from 'react';
 import { PRIME_STATS } from '../data/traits';
+import { Gauge } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../state/gameStore';
+import { useFilingVelocity } from '../state/useFilingVelocity';
 import { ActLabel, GameNumber } from './GameNumber';
 import { ItemTooltip } from './ItemTooltip';
 
@@ -20,6 +22,8 @@ export const HeroBanner: React.FC = () => {
     experience: state.progression.experience,
   })));
   const character = { Traits, Stats, Gold, Inventory, Plot: { act } };
+  // Derived, non-authoritative, and sampled on its own timer - see useFilingVelocity.
+  const velocity = useFilingVelocity();
   const progression = { experience };
 
   // Saturates at Number.MAX_VALUE for absurd levels, so guard the denominator.
@@ -88,6 +92,18 @@ export const HeroBanner: React.FC = () => {
             <GameNumber value={character.Gold} />{' '}GP
           </ItemTooltip>
         </div>
+
+        {/* The rate, not the total. Absent until the window is long enough to mean something,
+            because a wild first figure is worse than no figure on a dashboard made of numbers. */}
+        {velocity !== null && (
+          <div className="stat-pill velocity-pill" title="Completed tasks per hour, averaged over the last few minutes">
+            <Gauge size={16} aria-hidden="true" />
+            <span>
+              <GameNumber value={velocity} />{' '}/hr
+              <span className="sr-only"> tasks filed per hour</span>
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
