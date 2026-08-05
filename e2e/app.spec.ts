@@ -1468,3 +1468,76 @@ test.describe('closed casework archive', () => {
     await context.close();
   });
 });
+
+test.describe('WCAG 2.2 criteria the automated floor can reach', () => {
+  test.use({ storageState: returningStorageState });
+
+  test('meets the 24px target size minimum, by size or by spacing', async ({ page }) => {
+    // 2.5.8 Target Size (Minimum). The criterion has two ways to pass, and only implementing the
+    // first reports conformant dense lists as failures: an undersized target also passes when a
+    // 24px circle centred on it intersects no other target's circle. Both are implemented here so
+    // the assertion means what the criterion means.
+    await page.goto('/');
+
+    const failures = await page.evaluate(() => {
+      const selector = 'button, a[href], select, input, [role="tab"], summary';
+      const rendered = [...document.querySelectorAll<HTMLElement>(selector)].flatMap((element) => {
+        const rect = element.getBoundingClientRect();
+        // A hidden panel's controls are not pointer targets.
+        if (rect.width === 0 && rect.height === 0) return [];
+        if (element.closest('[hidden]')) return [];
+        return [{
+          element,
+          rect,
+          centre: { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 },
+        }];
+      });
+
+      return rendered.flatMap((target) => {
+        if (target.rect.width >= 24 && target.rect.height >= 24) return [];
+
+        // Circles of 24px diameter, so two intersect when their centres are closer than 24px.
+        const crowded = rendered.some((other) =>
+          other !== target
+          && Math.hypot(target.centre.x - other.centre.x, target.centre.y - other.centre.y) < 24);
+        if (!crowded) return [];
+
+        return [{
+          label: target.element.getAttribute('aria-label')
+            ?? target.element.textContent?.trim().slice(0, 40)
+            ?? target.element.tagName,
+          width: Math.round(target.rect.width),
+          height: Math.round(target.rect.height),
+        }];
+      });
+    });
+
+    expect(failures, `undersized and crowded targets: ${JSON.stringify(failures)}`).toEqual([]);
+  });
+
+  test('survives the text-spacing overrides without losing content', async ({ page }) => {
+    // 1.4.12 Text Spacing. The criterion is that applying these produces no loss of content or
+    // function, so the assertion is that nothing starts overflowing its own container - not that
+    // the layout is unchanged, which it is entitled to be.
+    await page.goto('/');
+    await page.addStyleTag({
+      content: `* { line-height: 1.5 !important; letter-spacing: 0.12em !important; word-spacing: 0.16em !important; }
+                p { margin-block: 2em !important; }`,
+    });
+
+    const overflowing = await page.evaluate(() => {
+      const body = document.body;
+      const horizontal = body.scrollWidth > document.documentElement.clientWidth + 1;
+      // Panels that clip their own content rather than scrolling it are the real loss here.
+      const clipped = [...document.querySelectorAll<HTMLElement>('.card, .hero-banner')].flatMap((element) => {
+        const style = getComputedStyle(element);
+        if (style.overflow !== 'hidden' && style.overflowY !== 'hidden') return [];
+        return element.scrollHeight > element.clientHeight + 1 ? [element.className] : [];
+      });
+      return { horizontal, clipped };
+    });
+
+    expect(overflowing.horizontal, 'the page scrolls horizontally under text-spacing overrides').toBe(false);
+    expect(overflowing.clipped, 'panels clip their content under text-spacing overrides').toEqual([]);
+  });
+});
