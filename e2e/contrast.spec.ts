@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { settleForAudit } from './fixtures/accessibility';
+import { archivedSessionStorageState } from './fixtures/archivedSession';
+
+const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:5173';
 
 /**
  * Direct contrast measurement, covering what axe-core structurally cannot.
@@ -149,9 +152,66 @@ test.describe('theme contrast', () => {
       const samples = await page.evaluate(SAMPLE, PAIRS);
       const measured = Object.entries(samples);
 
-      // A selector that stops matching would otherwise reduce this to an empty pass, which is
-      // the exact failure mode the file exists to close.
-      expect(measured.length, `${theme.label} matched too few elements to be meaningful`).toBeGreaterThanOrEqual(5);
+      // Exact, not a floor. A floor below the pair count lets one selector stop matching without
+      // anyone noticing, and an unmeasured pair reports nothing while reading as a pass — the
+      // failure mode this file exists to close, reintroduced one selector at a time.
+      expect(measured.map(([name]) => name).sort(), `${theme.label} did not measure every pair`)
+        .toEqual(PAIRS.map((pair) => pair.name).sort());
+
+      for (const [name, value] of measured) {
+        const ratio = contrast(value.fg, value.bg);
+        expect(ratio, `${theme.label} — ${name} measured ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+      }
+    });
+  }
+});
+
+/**
+ * Surfaces that only exist once a session has history.
+ *
+ * The block above measures a bare load, which is the right page for the pairs it covers and the
+ * wrong one for these: the activity feed has no entries and the casework archive does not render
+ * at all until a quest has closed. A pair the suite cannot reach is a pair it silently says
+ * nothing about, and silence here reads as a pass.
+ *
+ * Kept separate rather than seeding the block above, so the established pairs keep measuring the
+ * page they were calibrated against. Only the fixture differs; the settle and measure path is the
+ * same one.
+ */
+const SEEDED_PAIRS = [
+  { name: 'activity feed entry', selector: '.log-entry' },
+  { name: 'closed casework entry', selector: '.casework-entry' },
+] as const;
+
+test.describe('theme contrast on surfaces that need a session', () => {
+  test.use({
+    storageState: archivedSessionStorageState(BASE_URL, {
+      history: ['Placate the Duke of the Kobolds', 'Fetch me 6 kobold spleens'],
+      log: ['Defeated a kobold.', 'Quest completed: placate the Duke of the Kobolds'],
+    }),
+  });
+
+  for (const theme of THEMES) {
+    test(`${theme.label} meets AA for seeded text against its real backdrop`, async ({ page }) => {
+      await page.goto('/');
+
+      // The feed opens on the chatter tab, so the activity entries exist but are inside a hidden
+      // panel. Measuring them there would sample an element the user cannot see.
+      await page.getByRole('tab', { name: /Activity/i }).click();
+      await expect(page.locator('.log-entry').first()).toBeVisible();
+      await expect(page.locator('.casework-entry').first()).toBeVisible();
+
+      await settleForAudit(page);
+
+      const picker = page.getByRole('combobox', { name: 'Visual theme' });
+      await picker.selectOption(theme.id);
+      await expect(page.locator(`html[data-theme="${theme.id}"]`)).toHaveCount(1);
+
+      const samples = await page.evaluate(SAMPLE, SEEDED_PAIRS);
+      const measured = Object.entries(samples);
+
+      expect(measured.map(([name]) => name).sort(), `${theme.label} did not measure every seeded pair`)
+        .toEqual(SEEDED_PAIRS.map((pair) => pair.name).sort());
 
       for (const [name, value] of measured) {
         const ratio = contrast(value.fg, value.bg);

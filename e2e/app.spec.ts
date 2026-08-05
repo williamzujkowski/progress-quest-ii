@@ -2,8 +2,7 @@ import { devices, expect, test, type Page } from '@playwright/test';
 import { expectNoViolations } from './fixtures/accessibility';
 import { readFile } from 'node:fs/promises';
 import { createNewCharacter } from '../src/engine/sim';
-import { levelUpTime } from '../src/engine/math';
-import { RandomGenerator } from '../src/engine/prng';
+import { archivedSessionStorageState } from './fixtures/archivedSession';
 import { returningSessionStorageState } from './fixtures/returningSession';
 
 // Origin comes from playwright.config.ts, which reserves a free port per invocation so runs
@@ -1430,29 +1429,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
 test.describe('closed casework archive', () => {
   // The engine keeps this list and trims it; the panel only reads it. Seeded directly rather
   // than played to, because reaching a hundred closed quests in a test would take hours.
-  const archived = (history: string[]) => {
-    const character = createNewCharacter('Archivist', 'Hob-Hobbit', 'Robot Monk', 908);
-    character.Quest.history = history;
-    return {
-      cookies: [],
-      origins: [{
-        origin: BASE_URL,
-        localStorage: [{
-          name: 'progquest_active_session_v1',
-          value: JSON.stringify({
-            schemaVersion: 1,
-            session: {
-              character,
-              rngState: new RandomGenerator('casework-e2e').getState(),
-              progression: { experience: { currentSeconds: 0, maxSeconds: levelUpTime(1) }, completedTasks: 0, elapsedSeconds: 0 },
-              isPaused: true,
-              log: ['Seeded for the archive.'],
-            },
-          }),
-        }],
-      }],
-    };
-  };
+  const archived = (history: string[]) => archivedSessionStorageState(BASE_URL, { history });
 
   test('stays away entirely until a quest has closed', async ({ browser }) => {
     const context = await browser.newContext({ baseURL: BASE_URL, storageState: archived([]) });
