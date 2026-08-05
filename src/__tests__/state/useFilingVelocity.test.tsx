@@ -62,4 +62,24 @@ describe('filing velocity sampling', () => {
     // No further renders, so the last reported value stands.
     expect(shown).toBe(before);
   });
+
+  it('keeps its timer across host re-renders when no clock is supplied', () => {
+    // The hook exists to sample on its own cadence rather than the render's. A default argument
+    // written inline is re-evaluated per call, which would give the effect a new dependency
+    // identity every render and rebuild the timer each time — sampling at render cadence, the
+    // exact coupling this is meant to avoid. Probed through the no-argument call, since that is
+    // the one the dashboard actually makes.
+    vi.useFakeTimers();
+    startSession();
+    const setInterval = vi.spyOn(window, 'setInterval');
+    const DefaultProbe: React.FC = () => { useFilingVelocity(); return null; };
+
+    const { rerender } = render(<DefaultProbe />);
+    expect(setInterval).toHaveBeenCalledTimes(1);
+
+    for (let index = 0; index < 5; index += 1) act(() => { rerender(<DefaultProbe />); });
+
+    expect(setInterval).toHaveBeenCalledTimes(1);
+    setInterval.mockRestore();
+  });
 });

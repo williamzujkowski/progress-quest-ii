@@ -17,6 +17,10 @@ const initialCommendations = readCommendations(
   typeof window === 'undefined' ? undefined : (() => { try { return window.localStorage; } catch { return undefined; } })(),
 );
 
+// What is believed to be on disk. Seeded with the ledger just read, so an untouched session
+// never rewrites an identical copy.
+let lastPersistedCommendations = initialCommendations;
+
 type StartSessionRequest =
   | { source: 'creation'; name: string; race: string; klass: string; seed: PRNGSeed; stats?: StatsMap }
   | { source: 'import' | 'roster'; character: CharacterSheet };
@@ -176,7 +180,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       const projections = sources.map((source) => ({ source, projection: projectWorld({ kind: 'transition', source }) }));
       const projectedWorldNotices = projections.flatMap(({ projection }) => projection.notices).toReversed();
       // Records are a maximum over events, so this returns the same object on the overwhelming
-      // majority of ticks and the write below almost never runs.
+      // majority of ticks of ordinary play.
       let nextCommendations = mergeEvents(get().commendations, sources.map(({ record }) => record.event));
       for (const { source, projection } of projections) {
         const event = source.record.event;
@@ -186,7 +190,20 @@ export const useGameStore = create<GameStore>((set, get) => {
           nextCommendations = mergeExhibit(nextCommendations, event.slot, event.name, projection.equipment);
         }
       }
-      if (nextCommendations !== get().commendations) {
+      // Held back until the backlog is drained. Catching up on a long absence replays many levels
+      // and quests per tick, and questsCompleted/actsCompleted count rather than compare, so a new
+      // record lands on nearly every tick of a drain — a synchronous stringify and localStorage
+      // write roughly eighteen times a second, on the thread already running the engine and the
+      // render. The in-memory ledger stays current either way, so the panel is never stale; only
+      // the persisted copy waits. A tab closed mid-drain loses that interval's records, which is
+      // the right thing for a decorative ledger to lose to keep the drain smooth.
+      //
+      // Compared against what was last written rather than against the previous tick, because the
+      // tick that finishes a drain need not be one that set a record — and everything banked
+      // during the drain has to land on the first opportunity after it, not linger until the next
+      // record happens along.
+      if (result.remainingElapsedMs === 0 && nextCommendations !== lastPersistedCommendations) {
+        lastPersistedCommendations = nextCommendations;
         writeCommendations(typeof window === 'undefined' ? undefined : window.localStorage, nextCommendations);
       }
       const projectedSocialEntries = projectSocialBatch(sources).toReversed();
