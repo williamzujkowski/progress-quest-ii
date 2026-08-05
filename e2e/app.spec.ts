@@ -137,14 +137,18 @@ test.describe('Progress Quest II terminal dashboard', () => {
         progression: { experience: { currentSeconds: 3, maxSeconds: 10 }, completedTasks: 7, elapsedSeconds: 22 },
       });
       window.dispatchEvent(new PageTransitionEvent('pagehide'));
-      return captureActiveSession();
+      // savedAtMs is wall-clock and legitimately differs across a reload; the claim under test
+      // is that the session state resumes exactly, not that the save timestamp is frozen.
+      const { savedAtMs: _ignored, ...session } = captureActiveSession().session;
+      return session;
     });
 
     await page.reload({ waitUntil: 'networkidle' });
 
     const restored = await page.evaluate(async () => {
       const { captureActiveSession } = await import('/src/state/sessionCheckpoint.ts');
-      return captureActiveSession();
+      const { savedAtMs: _ignored, ...session } = captureActiveSession().session;
+      return session;
     });
     expect(restored).toEqual(expected);
     await expect(page.getByText('Reloaded Bureaucrat')).toBeVisible();
@@ -767,7 +771,10 @@ test.describe('Progress Quest II terminal dashboard', () => {
         import('/src/state/gameStore.ts'),
         import('/src/state/sessionCheckpoint.ts'),
       ]);
-      return { session: captureActiveSession(), generation: useGameStore.getState().sessionGeneration };
+      // savedAtMs is wall-clock; two captures of identical session state are still identical
+      // state, so it is excluded from the comparison rather than pinned.
+      const { savedAtMs: _ignored, ...session } = captureActiveSession().session;
+      return { session, generation: useGameStore.getState().sessionGeneration };
     });
     await chatterTab.focus();
     await page.keyboard.press('ArrowRight');
@@ -790,7 +797,10 @@ test.describe('Progress Quest II terminal dashboard', () => {
         import('/src/state/gameStore.ts'),
         import('/src/state/sessionCheckpoint.ts'),
       ]);
-      return { session: captureActiveSession(), generation: useGameStore.getState().sessionGeneration };
+      // savedAtMs is wall-clock; two captures of identical session state are still identical
+      // state, so it is excluded from the comparison rather than pinned.
+      const { savedAtMs: _ignored, ...session } = captureActiveSession().session;
+      return { session, generation: useGameStore.getState().sessionGeneration };
     });
     expect(authoritativeAfter).toEqual(authoritativeBefore);
 

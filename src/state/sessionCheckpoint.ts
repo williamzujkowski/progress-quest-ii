@@ -1,3 +1,4 @@
+import { MAX_PENDING_ELAPSED_MS } from '../data/limits';
 import { useGameStore } from './gameStore';
 import { activeCheckpointV1Schema, type ActiveCheckpointV1 } from './schemas';
 import { diagnostics, isDOMExceptionNamed } from './diagnostics';
@@ -78,7 +79,7 @@ function serializeCheckpoint(checkpoint: ActiveCheckpointV1): CheckpointResult<s
   }
 }
 
-export function captureActiveSession(): ActiveCheckpointV1 {
+export function captureActiveSession(nowMs: number = Date.now()): ActiveCheckpointV1 {
   const state = useGameStore.getState();
   return {
     schemaVersion: 1,
@@ -87,15 +88,57 @@ export function captureActiveSession(): ActiveCheckpointV1 {
       rngState: [...state.rng.getState()],
       progression: structuredClone(state.progression),
       pendingElapsedMs: state.pendingElapsedMs,
+      savedAtMs: nowMs,
       isPaused: state.isPaused,
       log: state.log.slice(0, 50).map(({ message }) => message),
     },
   };
 }
 
-export function restoreActiveSession(checkpoint: ActiveCheckpointV1): void {
+/**
+ * Time the app was closed, converted once into elapsed milliseconds the engine can spend.
+ *
+ * Pure so the awkward cases are testable without a clock: a checkpoint written before this
+ * field existed credits nothing, a rolled-back or future clock credits nothing rather than
+ * negative or absurd time, and the total is capped by the same ceiling live accrual uses so a
+ * long absence cannot hand the engine an unbounded backlog.
+ */
+export function creditClosedElapsed(
+  session: Pick<ActiveCheckpointV1['session'], 'pendingElapsedMs' | 'savedAtMs' | 'isPaused'>,
+  nowMs: number,
+): number {
+  // A paused session asked for time to stop. Honour that across a close as well as a tab switch.
+  if (session.isPaused) return session.pendingElapsedMs;
+  if (session.savedAtMs === undefined || !Number.isFinite(nowMs)) return session.pendingElapsedMs;
+  const closedMs = Math.max(0, nowMs - session.savedAtMs);
+  return Math.min(MAX_PENDING_ELAPSED_MS, session.pendingElapsedMs + closedMs);
+}
+
+/** Deadpan and approximate on purpose: an exact figure would imply the absence was supervised. */
+export function describeAbsence(closedMs: number): string {
+  const minutes = Math.floor(closedMs / 60_000);
+  if (minutes < 1) return 'A brief absence was filed and required no processing.';
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  const span = days >= 1
+    ? `${days} day${days === 1 ? '' : 's'}`
+    : hours >= 1
+      ? `${hours} hour${hours === 1 ? '' : 's'}`
+      : `${minutes} minute${minutes === 1 ? '' : 's'}`;
+  return `Absence of ${span} filed. Progress continued regardless.`;
+}
+
+export function restoreActiveSession(checkpoint: ActiveCheckpointV1, nowMs: number = Date.now()): void {
   const parsed = activeCheckpointV1Schema.parse(checkpoint);
-  useGameStore.getState().restoreSession(parsed.session);
+  const pendingElapsedMs = creditClosedElapsed(parsed.session, nowMs);
+  const creditedMs = pendingElapsedMs - parsed.session.pendingElapsedMs;
+  useGameStore.getState().restoreSession({
+    ...parsed.session,
+    pendingElapsedMs,
+    // A line in the feed, not a modal. It reports what already happened and blocks nothing;
+    // the progress applies whether or not anyone reads it.
+    log: creditedMs > 0 ? [describeAbsence(creditedMs), ...parsed.session.log].slice(0, 50) : parsed.session.log,
+  });
 }
 
 export function loadActiveCheckpoint(storage: Pick<Storage, 'getItem'>): CheckpointLoad {
@@ -222,6 +265,8 @@ interface SessionCheckpointOptions {
   visibilityTarget?: VisibilityTarget;
   pagehideTarget?: LifecycleTarget;
   intervalMs?: number;
+  /** The one place wall-clock enters. Injectable so tests can pin that boundary. */
+  now?: () => number;
 }
 
 function defaultStorage(): Storage | undefined {
@@ -237,6 +282,9 @@ export function startSessionCheckpoints({
   visibilityTarget = typeof document === 'undefined' ? undefined : document,
   pagehideTarget = typeof window === 'undefined' ? undefined : window,
   intervalMs = 1_000,
+  // Injectable so tests can pin the boundary where wall-clock enters. Everything downstream of
+  // this call takes elapsed milliseconds, never a clock.
+  now = () => Date.now(),
 }: SessionCheckpointOptions = {}): SessionCheckpointController {
   const listeners = new Set<() => void>();
   let notice: CheckpointNotice | null = null;
@@ -268,7 +316,7 @@ export function startSessionCheckpoints({
     if (timer !== undefined) clearTimeout(timer);
     timer = undefined;
     if (!dirty || !canPersist || storage === undefined) return;
-    const result = writeActiveCheckpoint(storage, captureActiveSession(), expectedPrimaryRaw);
+    const result = writeActiveCheckpoint(storage, captureActiveSession(now()), expectedPrimaryRaw);
     if (!result.ok) {
       block(result.error.message);
       return;
@@ -286,9 +334,13 @@ export function startSessionCheckpoints({
   } else {
     const loaded = loadActiveCheckpoint(storage);
     if (loaded.status === 'loaded') {
-      restoreActiveSession(loaded.checkpoint);
+      restoreActiveSession(loaded.checkpoint, now());
       expectedPrimaryRaw = loaded.expectedPrimaryRaw;
       canPersist = true;
+      // Write straight back with a fresh timestamp. Without this, a reload before the first
+      // debounced save would find the same savedAtMs still on disk and credit the same absence
+      // a second time.
+      flush();
     } else if (loaded.status === 'missing') {
       const mostRecentRosterCharacter = loadMostRecentRosterCharacter(storage);
       if (!mostRecentRosterCharacter.ok) {
@@ -302,7 +354,7 @@ export function startSessionCheckpoints({
         requiresCharacterCreation = true;
       }
     } else if (loaded.status === 'recovered_lkg') {
-      restoreActiveSession(loaded.checkpoint);
+      restoreActiveSession(loaded.checkpoint, now());
       expectedPrimaryRaw = loaded.expectedPrimaryRaw;
       repairAllowed = loaded.canRepair;
       if (loaded.expectedPrimaryRaw === null) repairSuccessMessage = 'The recovered active session was adopted. Automatic checkpoints resumed.';
@@ -336,7 +388,7 @@ export function startSessionCheckpoints({
     },
     repair: () => {
       if (storage === undefined || !repairAllowed) return;
-      const result = repairActiveCheckpoint(storage, captureActiveSession(), expectedPrimaryRaw);
+      const result = repairActiveCheckpoint(storage, captureActiveSession(now()), expectedPrimaryRaw);
       if (!result.ok) {
         block(result.error.message);
         return;
