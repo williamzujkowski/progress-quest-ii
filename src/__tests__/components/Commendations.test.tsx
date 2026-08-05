@@ -17,7 +17,7 @@ describe('commendation panel', () => {
 
   it('reports each record once there is one', () => {
     useGameStore.setState({
-      commendations: { highestLevel: 27, largestSale: 1834, questsCompleted: 9, actsCompleted: 2 },
+      commendations: { highestLevel: 27, largestSale: 1834, questsCompleted: 9, actsCompleted: 2, exhibit: {} },
     });
     render(<Commendations />);
     expect(screen.getByRole('region', { name: 'Commendation ledger' })).toBeTruthy();
@@ -28,7 +28,7 @@ describe('commendation panel', () => {
 
   it('claims no mechanic the engine does not model', () => {
     useGameStore.setState({
-      commendations: { highestLevel: 5, largestSale: 10, questsCompleted: 1, actsCompleted: 1 },
+      commendations: { highestLevel: 5, largestSale: 10, questsCompleted: 1, actsCompleted: 1, exhibit: {} },
     });
     const { container } = render(<Commendations />);
     expect(container.textContent ?? '').not.toMatch(/damage|dps|healed|bonus|reward|unlock|achievement/i);

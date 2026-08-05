@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { GameTransitionEvent } from '../../engine/transition';
 import {
   COMMENDATIONS_STORAGE_KEY, EMPTY_COMMENDATIONS, isEmpty,
-  mergeEvents, readCommendations, writeCommendations,
+  mergeEvents, mergeExhibit, readCommendations, writeCommendations,
 } from '../../state/commendations';
 
 const fakeStorage = (initial: Record<string, string> = {}) => {
@@ -76,6 +76,27 @@ describe('commendation ledger', () => {
     const storage = fakeStorage();
     writeCommendations(storage, { highestLevel: -1 } as never);
     expect(storage.map.size).toBe(0);
+  });
+
+  it('keeps the finer item per slot and survives it being sold', () => {
+    const notable = mergeExhibit(EMPTY_COMMENDATIONS, 'Weapon', 'Notable Stick', { label: 'notable', quality: 4 });
+    const worse = mergeExhibit(notable, 'Weapon', 'Plain Stick', { label: 'serviceable', quality: 1 });
+    // The record is about what was once owned, not what is worn now - selling must not erase it.
+    expect(worse).toBe(notable);
+    expect(worse.exhibit.Weapon?.name).toBe('Notable Stick');
+
+    const better = mergeExhibit(notable, 'Weapon', 'Legendary Stick', { label: 'legendary', quality: 9 });
+    expect(better.exhibit.Weapon?.name).toBe('Legendary Stick');
+  });
+
+  it('keeps the incumbent on a tie, so the record marks when a quality was first reached', () => {
+    const first = mergeExhibit(EMPTY_COMMENDATIONS, 'Helm', 'First Helm', { label: 'notable', quality: 3 });
+    expect(mergeExhibit(first, 'Helm', 'Second Helm', { label: 'notable', quality: 3 })).toBe(first);
+  });
+
+  it('ignores a slot that is not a real equipment slot', () => {
+    expect(mergeExhibit(EMPTY_COMMENDATIONS, 'Trousers', 'Invented', { label: 'legendary', quality: 99 }))
+      .toBe(EMPTY_COMMENDATIONS);
   });
 
   it('reports emptiness so the panel can stay away rather than show zeroes', () => {
