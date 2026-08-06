@@ -2,7 +2,7 @@ import { stableIndex } from '../engine/text';
 import type { WorldContext } from './worldContext';
 
 /**
- * What the town has an office for.
+ * What the place the hero is standing in has an office for.
  *
  * The hero already goes to town — the venue is derived whenever a task is buying or selling, and
  * the place already has a name. What it has never had is anything in it. A settlement that exists
@@ -43,21 +43,56 @@ const OFFICES: readonly string[] = [
 const OFFICES_LISTED = 3;
 
 /**
- * The offices this town keeps, or null anywhere that is not a town — a field has no civic
- * infrastructure and inventing some would be scenery, which is what this exists to replace.
+ * A field and a dungeon are somewhere too, and had nothing but a name and a tenor line while the
+ * town beside them kept a directory. The catalogues differ because the joke differs: a town is
+ * over-administered, a field is under-administered, and a dungeon is administered by people who
+ * have never been inside it.
+ */
+const FIELD_NOTICES: readonly string[] = [
+  'Foraging permits, provisional',
+  'Territorial notice, unresolved',
+  'Weather advisory, ignored',
+  'Boundary survey, disputed by both sides',
+  'Grazing rights, dormant',
+  'Wildlife census, abandoned midway',
+  'Drainage petition, forwarded',
+  'Right of way, asserted by custom only',
+];
+
+const DUNGEON_NOTICES: readonly string[] = [
+  'Structural survey, overdue',
+  'Torch requisition, denied twice',
+  'Occupancy limit, theoretical',
+  'Emergency exit, proposed',
+  'Damp report, filed and damp',
+  'Access agreement, unsigned by the occupants',
+  'Noise complaint, from below',
+  'Insurance schedule, lapsed',
+];
+
+const CATALOGUES: Partial<Record<WorldContext['venue'], readonly string[]>> = {
+  town: OFFICES,
+  field: FIELD_NOTICES,
+  dungeon: DUNGEON_NOTICES,
+};
+
+/**
+ * The notices this place keeps, or null where the venue has no catalogue — a road is passed
+ * through rather than administered, and a cinematic is not a place at all.
  *
- * Distinct by construction: the same office is never listed twice, because a town with two
+ * Distinct by construction: the same entry is never listed twice, because a town with two
  * sanitation boards is a different joke and not the one intended here.
  */
-export function townServices(context: Pick<WorldContext, 'venue' | 'location' | 'act'>): readonly string[] | null {
-  if (context.venue !== 'town') return null;
+export function venueBulletin(context: Pick<WorldContext, 'venue' | 'location' | 'act'>): readonly string[] | null {
+  const catalogue = CATALOGUES[context.venue];
+  if (!catalogue) return null;
 
   const chosen: string[] = [];
   // Walks forward from the hashed start rather than re-hashing, which is what guarantees
   // distinctness without a rejection loop that could spin on a small catalogue.
-  const start = stableIndex(`${context.location}:${context.act}`, OFFICES.length);
-  for (let offset = 0; offset < OFFICES_LISTED; offset += 1) {
-    chosen.push(OFFICES[(start + offset) % OFFICES.length]!);
+  const start = stableIndex(`${context.venue}:${context.location}:${context.act}`, catalogue.length);
+  for (let offset = 0; offset < Math.min(OFFICES_LISTED, catalogue.length); offset += 1) {
+    chosen.push(catalogue[(start + offset) % catalogue.length]!);
   }
   return chosen;
 }

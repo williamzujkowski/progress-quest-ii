@@ -4,7 +4,7 @@ import { describeGameNumber, formatGameNumber } from '../engine/text';
 import { useGameStore } from '../state/gameStore';
 import { projectWorld } from '../state/worldContext';
 import { TENOR_LABELS, tenorFor, tenorLine } from '../state/institutionalTenor';
-import { townServices } from '../state/townServices';
+import { venueBulletin } from '../state/venueBulletin';
 import { attendanceLabel, raidMuster } from '../state/raidMuster';
 import { ActLabel } from './GameNumber';
 import { ChatterFeed } from './ChatterFeed';
@@ -36,7 +36,7 @@ export const LogFeed: React.FC = () => {
   const progression = useGameStore((state) => state.progression);
   const sessionGeneration = useGameStore((state) => state.sessionGeneration);
   const world = projectWorld({ kind: 'current', state: { character, progression } }).context;
-  const services = townServices(world);
+  const services = venueBulletin(world);
   const muster = raidMuster(world);
   const feedRef = useRef<HTMLDivElement>(null);
   const activityPanelRef = useRef<HTMLElement>(null);
