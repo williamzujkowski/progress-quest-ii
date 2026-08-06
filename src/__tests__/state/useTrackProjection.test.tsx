@@ -3,11 +3,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, render } from '@testing-library/react';
 import React from 'react';
 import { useGameStore } from '../../state/gameStore';
-import { usePromotionEta } from '../../state/usePromotionEta';
+import { useTrackProjection } from '../../state/useTrackProjection';
 
 let shown: number | null | undefined;
 const Probe: React.FC<{ now: () => number }> = ({ now }) => {
-  shown = usePromotionEta(now);
+  shown = useTrackProjection('experience', now);
   return null;
 };
 
@@ -73,7 +73,7 @@ describe('promotion projection sampling', () => {
     // dependency identity on every render and rebuild the timer each time.
     vi.useFakeTimers();
     const setInterval = vi.spyOn(window, 'setInterval');
-    const DefaultProbe: React.FC = () => { usePromotionEta(); return null; };
+    const DefaultProbe: React.FC = () => { useTrackProjection('experience'); return null; };
 
     const { rerender } = render(<DefaultProbe />);
     expect(setInterval).toHaveBeenCalledTimes(1);

@@ -5,7 +5,7 @@ import { Gauge } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../state/gameStore';
 import { useFilingVelocity } from '../state/useFilingVelocity';
-import { usePromotionEta } from '../state/usePromotionEta';
+import { useTrackProjection } from '../state/useTrackProjection';
 import { useTabTitle } from '../state/useTabTitle';
 import { formatDuration } from '../engine/text';
 import { ActLabel, GameNumber } from './GameNumber';
@@ -29,7 +29,9 @@ export const HeroBanner: React.FC = () => {
   const velocity = useFilingVelocity();
   // Projected from the observed rate rather than the experience track's own arithmetic, which
   // only advances on kill tasks and so runs about a quarter short. See promotionEta.
-  const promotionSeconds = usePromotionEta();
+  const promotionSeconds = useTrackProjection('experience');
+  // The act is the coarsest thing the engine advances and the unit a watcher thinks in.
+  const actSeconds = useTrackProjection('plot');
   // The tab strip is this game's only surface while it is not the active tab.
   useTabTitle({ velocity });
   const progression = { experience };
@@ -66,6 +68,11 @@ export const HeroBanner: React.FC = () => {
         {promotionSeconds !== null && (
           <div className="hero-eta">
             Next promotion expected in ~{formatDuration(promotionSeconds)}, pending administrative review.
+          </div>
+        )}
+        {actSeconds !== null && (
+          <div className="hero-eta">
+            Current act expected to close in ~{formatDuration(actSeconds)}, barring a revision.
           </div>
         )}
         <div className="hero-sub">

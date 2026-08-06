@@ -23,7 +23,7 @@
  * the player can read.
  */
 
-export interface PromotionSample {
+export interface TrackSample {
   readonly atMs: number;
   readonly currentSeconds: number;
   readonly maxSeconds: number;
@@ -31,7 +31,7 @@ export interface PromotionSample {
 }
 
 /** Long enough to average over a market trip, short enough to track a change in the task mix. */
-export const PROMOTION_WINDOW_MS = 5 * 60_000;
+export const TRACK_WINDOW_MS = 5 * 60_000;
 
 /**
  * Game seconds, not real ones. The window is retained by wall clock so the buffer stays bounded,
@@ -47,11 +47,11 @@ const MINIMUM_ELAPSED_SPAN = 45;
  */
 export const MAX_PROJECTED_SECONDS = 100 * 60 * 60;
 
-export function retainPromotionWindow(
-  samples: readonly PromotionSample[],
+export function retainTrackWindow(
+  samples: readonly TrackSample[],
   nowMs: number,
-): PromotionSample[] {
-  const cutoff = nowMs - PROMOTION_WINDOW_MS;
+): TrackSample[] {
+  const cutoff = nowMs - TRACK_WINDOW_MS;
   const kept = samples.filter((sample) => sample.atMs >= cutoff);
   // Keep one sample behind the cutoff so the window never briefly collapses to no span at all.
   const oldest = samples.filter((sample) => sample.atMs < cutoff).at(-1);
@@ -59,13 +59,13 @@ export function retainPromotionWindow(
 }
 
 /**
- * Seconds of play until the next level at the observed rate, or null when there is nothing honest
- * to say.
+ * Seconds of play until the track fills at the observed rate, or null when there is nothing
+ * honest to say.
  *
  * Null rather than a guess in every ambiguous case. This number's only value is that it can be
  * trusted, and an idle game is watched for hours by someone who will notice when it cannot be.
  */
-export function computePromotionEta(samples: readonly PromotionSample[]): number | null {
+export function projectTrack(samples: readonly TrackSample[]): number | null {
   if (samples.length < 2) return null;
   const first = samples[0]!;
   const last = samples[samples.length - 1]!;
