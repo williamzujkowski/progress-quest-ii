@@ -31,7 +31,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
-  workers: 1,
+  // Was one worker, from the original harness setup and never revisited as the suite grew to
+  // three browser projects. Parallelism roughly halves the wall clock. A fixed count on CI rather
+  // than a share of the cores, because a hosted runner's core count is not ours to rely on.
+  workers: process.env.CI ? 4 : '50%',
   reporter: 'list',
   use: {
     baseURL,
@@ -49,6 +52,18 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
+      // A real mobile profile rather than a narrow desktop window: touch input, a device pixel
+      // ratio, and a mobile user agent are what separate this from the viewport-width checks the
+      // suite already makes. Chromium-based, because the WebKit project above already covers the
+      // engine and this is about the input model.
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 7'] },
     },
   ],
 });

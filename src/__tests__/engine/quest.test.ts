@@ -18,6 +18,9 @@ describe('legacy quest generators', () => {
         type: 'kill',
         durationMs: 6_000,
         loot: { type: 'random' },
+        // The count the engine used, asserted rather than stripped. A single named opponent is
+        // one opponent, and the description saying "a passing" agrees with it.
+        opponents: 1,
       },
       finalState: [0.44347366294823587, 0.86426544142887, 0.03502870723605156, 1408544],
     },
@@ -29,6 +32,7 @@ describe('legacy quest generators', () => {
         type: 'kill',
         durationMs: 6_000,
         loot: { type: 'random' },
+        opponents: 1,
       },
       finalState: [0.21785219269804657, 0.8072053005453199, 0.47258021542802453, 308334],
     },

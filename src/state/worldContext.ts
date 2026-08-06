@@ -191,6 +191,24 @@ function equipmentFor(event: GameTransitionEvent): EquipmentClassification | und
   return { label, quality, combatContribution: mechanics.combatContribution };
 }
 
+/**
+ * What the archive says about a legendary acquisition, which is the only thing it gets.
+ *
+ * Ceremony rather than power. Every line describes filing, storage, or the reaction of people who
+ * handle paperwork, because equipment carries no combat contribution at any quality and a rare
+ * one that read as strong would be the exact claim CONTEXT.md forbids.
+ */
+const LEGENDARY_REMARKS: readonly string[] = [
+  'Two modifiers on one item. The registrar has asked for the form to be re-copied in ink.',
+  'Filed under exceptional, a category maintained for completeness and used almost never.',
+  'The acquisition was witnessed, which is more than most of them manage.',
+  'Provisionally catalogued as remarkable, pending somebody senior confirming what that means.',
+  'Entered in the ledger twice, once by a clerk who did not believe the first entry.',
+];
+
+const legendaryRemark = (name: string): string =>
+  LEGENDARY_REMARKS[stableIndex(`legendary:${name}`, LEGENDARY_REMARKS.length)]!;
+
 function noticesFor(source: IdentifiedGameTransitionRecord, context: WorldContext, equipment: EquipmentClassification | undefined): readonly WorldNotice[] {
   const { activityId, record: { event, post } } = source;
   if (event.type === 'level_gained') {
@@ -215,7 +233,14 @@ function noticesFor(source: IdentifiedGameTransitionRecord, context: WorldContex
   }
   if (event.type === 'equipment_gained' || event.type === 'equipment_purchased') {
     if (!equipment) return [];
-    return [notice(activityId, 0, 'loot', `${equipment.label} equipment filed at generation quality ${formatGameNumber(equipment.quality)}; no combat effect is modeled.`)];
+    const filed = notice(activityId, 0, 'loot', `${equipment.label} equipment filed at generation quality ${formatGameNumber(equipment.quality)}; no combat effect is modeled.`);
+    // A legendary piece turns up in roughly one acquisition in fifty and used to read exactly
+    // like the other forty-nine: the same sentence with a different adjective in the middle of
+    // it. The institution now says something, which is the whole of what a rare find gets here -
+    // the item is no more use in a fight than any other, and the line above still says so.
+    return equipment.label === 'legendary'
+      ? [filed, notice(activityId, 1, 'milestone', legendaryRemark(event.name))]
+      : [filed];
   }
   if (event.type === 'inventory_sold') {
     return [notice(activityId, 0, 'commerce', post.marketSale
@@ -231,6 +256,13 @@ function noticesFor(source: IdentifiedGameTransitionRecord, context: WorldContex
     if (event.task.type === 'buying' && post.completedTask === 'selling') return [notice(activityId, 0, 'commerce', `Procurement convened at ${townName(post)}.`)];
     if (event.task.type === 'heading' && (post.completedTask === 'selling' || post.completedTask === 'buying')) return [notice(activityId, 0, 'departure', `Departed town for ${fieldName(post)}.`)];
     if (event.task.type === 'kill' && post.completedTask === 'heading') return [notice(activityId, 0, 'arrival', `Arrived at ${fieldName(post)}. Hunting administration resumed.`)];
+    // A pull against several opponents at once. The count is the engine's own - the encounter's
+    // duration is derived from it - so the longer processing time is a modelled fact rather than
+    // a flourish, and saying so is the joke. Anything below two is an ordinary encounter and
+    // needs no permit.
+    if (event.task.type === 'kill' && (event.task.opponents ?? 1) > 1) {
+      return [notice(activityId, 0, 'assignment', `Group assignment: ${formatGameNumber(event.task.opponents!)} opponents processed together, which the schedule accommodates by taking longer.`)];
+    }
     if (event.task.type === 'cinematic' && post.interplotRole === 'nemesis') return [notice(activityId, 0, 'milestone', `${context.venue === 'raid' ? 'Raid-class' : 'Dungeon'} boss framing opened at ${context.location}; no party mechanics were added.`)];
   }
   return [];

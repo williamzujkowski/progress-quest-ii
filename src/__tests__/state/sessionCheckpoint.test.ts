@@ -8,6 +8,11 @@ import { createActivityEntries, useGameStore } from '../../state/gameStore';
 import { activeCheckpointV1Schema } from '../../state/schemas';
 import { diagnostics } from '../../state/diagnostics';
 import { saveToRoster } from '../../state/saveManager';
+
+// Checkpoints now carry the wall-clock time they were written, so that a reopened app can
+// credit the time it was closed. Two captures of identical state are still identical game
+// state, but they are not identical bytes unless the clock is pinned — so pin it here.
+const FIXED_SAVED_AT = 1_700_000_000_000;
 import {
   ACTIVE_CHECKPOINT_KEY,
   ACTIVE_CHECKPOINT_LKG_KEY,
@@ -32,7 +37,7 @@ afterEach(() => {
 
 describe('active session checkpoint boundary', () => {
   it('requires character creation when no active session or roster exists', () => {
-    const controller = startSessionCheckpoints({ storage: localStorage });
+    const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT, storage: localStorage });
 
     expect(controller.requiresCharacterCreation).toBe(true);
     controller.dispose();
@@ -42,7 +47,7 @@ describe('active session checkpoint boundary', () => {
     saveToRoster(createNewCharacter('Earlier Roster', 'Half Orc', 'Robot Monk', 704));
     saveToRoster(createNewCharacter('Latest Roster', 'Dung Elf', 'Vermineer', 705));
 
-    const controller = startSessionCheckpoints({ storage: localStorage });
+    const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT, storage: localStorage });
 
     expect(controller.requiresCharacterCreation).toBe(false);
     expect(useGameStore.getState().character.Traits.Name).toBe('Latest Roster');
@@ -53,11 +58,11 @@ describe('active session checkpoint boundary', () => {
   it('restores the active checkpoint before considering the roster', () => {
     const active = createNewCharacter('Active Wins', 'Half Orc', 'Robot Monk', 706);
     useGameStore.setState({ character: active });
-    expect(writeActiveCheckpoint(localStorage, captureActiveSession(), null)).toMatchObject({ ok: true });
+    expect(writeActiveCheckpoint(localStorage, captureActiveSession(FIXED_SAVED_AT), null)).toMatchObject({ ok: true });
     saveToRoster(createNewCharacter('Roster Loses', 'Dung Elf', 'Vermineer', 707));
     useGameStore.setState(originalState, true);
 
-    const controller = startSessionCheckpoints({ storage: localStorage });
+    const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT, storage: localStorage });
 
     expect(controller.requiresCharacterCreation).toBe(false);
     expect(useGameStore.getState().character.Traits.Name).toBe('Active Wins');
@@ -69,7 +74,7 @@ describe('active session checkpoint boundary', () => {
     const corruptRoster = '{broken';
     localStorage.setItem('progquest_roster_v1', corruptRoster);
 
-    const controller = startSessionCheckpoints({ storage: localStorage, intervalMs: 1 });
+    const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT, storage: localStorage, intervalMs: 1 });
 
     expect(controller.requiresCharacterCreation).toBe(true);
     expect(controller.getNotice()).toMatchObject({ kind: 'alert', canRepair: false });
@@ -93,7 +98,7 @@ describe('active session checkpoint boundary', () => {
       log: activityLog('Newest event', 'Older event'),
       progression: { experience: { currentSeconds: 7, maxSeconds: 11 }, completedTasks: 9, elapsedSeconds: 42 },
     });
-    const checkpoint = captureActiveSession();
+    const checkpoint = captureActiveSession(FIXED_SAVED_AT);
     expect(checkpoint.session.log).toEqual(['Newest event', 'Older event']);
     expect(checkpoint.session.log.every((entry) => typeof entry === 'string')).toBe(true);
 
@@ -103,7 +108,7 @@ describe('active session checkpoint boundary', () => {
 
     useGameStore.getState().startSession({ source: 'creation', name: 'Replacement', race: 'Half Orc', klass: 'Robot Monk', seed: 702 });
     if (loaded.status !== 'loaded') throw new Error('Expected a loaded checkpoint');
-    restoreActiveSession(loaded.checkpoint);
+    restoreActiveSession(loaded.checkpoint, FIXED_SAVED_AT);
     const restored = useGameStore.getState();
     expect(restored.character).toEqual(character);
     expect(restored.rng.getState()).toEqual(rng.getState());
@@ -113,7 +118,7 @@ describe('active session checkpoint boundary', () => {
   });
 
   it('normalizes legacy remainder absence and rejects hostile scheduler debt', () => {
-    const checkpoint = captureActiveSession();
+    const checkpoint = captureActiveSession(FIXED_SAVED_AT);
     const { pendingElapsedMs: _pendingElapsedMs, ...legacySession } = checkpoint.session;
 
     expect(activeCheckpointV1Schema.parse({ ...checkpoint, session: legacySession }).session.pendingElapsedMs).toBe(0);
@@ -126,7 +131,7 @@ describe('active session checkpoint boundary', () => {
   });
 
   it('recovers a valid last-known-good checkpoint without replacing corrupt primary bytes', () => {
-    const checkpoint = captureActiveSession();
+    const checkpoint = captureActiveSession(FIXED_SAVED_AT);
     localStorage.setItem(ACTIVE_CHECKPOINT_KEY, '{broken');
     localStorage.setItem(ACTIVE_CHECKPOINT_LKG_KEY, JSON.stringify(checkpoint));
     const primary = localStorage.getItem(ACTIVE_CHECKPOINT_KEY);
@@ -138,7 +143,7 @@ describe('active session checkpoint boundary', () => {
   });
 
   it('recovers an orphaned last-known-good checkpoint instead of treating it as a fresh session', () => {
-    const checkpoint = captureActiveSession();
+    const checkpoint = captureActiveSession(FIXED_SAVED_AT);
     const backupRaw = JSON.stringify(checkpoint);
     localStorage.setItem(ACTIVE_CHECKPOINT_LKG_KEY, backupRaw);
 
@@ -146,7 +151,7 @@ describe('active session checkpoint boundary', () => {
 
     expect(loaded).toMatchObject({ status: 'recovered_lkg', checkpoint, canPersist: false });
     vi.useFakeTimers();
-    const controller = startSessionCheckpoints({ storage: localStorage, intervalMs: 1 });
+    const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT, storage: localStorage, intervalMs: 1 });
     expect(controller.getNotice()).toMatchObject({ repairLabel: 'Adopt recovered checkpoint' });
     expect(localStorage.getItem(ACTIVE_CHECKPOINT_KEY)).toBeNull();
     controller.repair();
@@ -164,7 +169,7 @@ describe('active session checkpoint boundary', () => {
   it('blocks without authorizing repair when an orphaned LKG is corrupt', () => {
     localStorage.setItem(ACTIVE_CHECKPOINT_LKG_KEY, '{broken-backup');
 
-    const controller = startSessionCheckpoints({ storage: localStorage });
+    const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT, storage: localStorage });
 
     expect(controller.getNotice()).toMatchObject({ kind: 'alert', canRepair: false });
     controller.repair();
@@ -174,7 +179,7 @@ describe('active session checkpoint boundary', () => {
   });
 
   it('requires explicit repair before replacing an unreadable primary', () => {
-    const checkpoint = captureActiveSession();
+    const checkpoint = captureActiveSession(FIXED_SAVED_AT);
     localStorage.setItem(ACTIVE_CHECKPOINT_KEY, '{broken');
 
     expect(writeActiveCheckpoint(localStorage, checkpoint, '{broken')).toMatchObject({ ok: false, error: { code: 'storage_corrupt' } });
@@ -184,11 +189,11 @@ describe('active session checkpoint boundary', () => {
   });
 
   it('rotates a valid primary before writing its replacement', () => {
-    const first = captureActiveSession();
+    const first = captureActiveSession(FIXED_SAVED_AT);
     const firstWrite = writeActiveCheckpoint(localStorage, first, null);
     if (!firstWrite.ok) throw new Error('Expected first checkpoint write');
     useGameStore.setState({ log: activityLog('Changed') });
-    const second = captureActiveSession();
+    const second = captureActiveSession(FIXED_SAVED_AT);
 
     expect(writeActiveCheckpoint(localStorage, second, firstWrite.value.raw)).toMatchObject({ ok: true });
     expect(localStorage.getItem(ACTIVE_CHECKPOINT_LKG_KEY)).toBe(firstWrite.value.raw);
@@ -196,7 +201,7 @@ describe('active session checkpoint boundary', () => {
   });
 
   it('blocks a stale tab instead of overwriting a changed primary', () => {
-    const checkpoint = captureActiveSession();
+    const checkpoint = captureActiveSession(FIXED_SAVED_AT);
     localStorage.setItem(ACTIVE_CHECKPOINT_KEY, 'other-tab');
 
     expect(writeActiveCheckpoint(localStorage, checkpoint, null)).toMatchObject({ ok: false, error: { code: 'storage_conflict' } });
@@ -204,7 +209,7 @@ describe('active session checkpoint boundary', () => {
   });
 
   it('rejects unsupported, unknown, and invalid Alea state without mutating the session', () => {
-    const checkpoint = captureActiveSession();
+    const checkpoint = captureActiveSession(FIXED_SAVED_AT);
     const before = useGameStore.getState();
     for (const candidate of [
       { ...checkpoint, schemaVersion: 2 },
@@ -223,7 +228,7 @@ describe('active session checkpoint boundary', () => {
     const original = localStorage.getItem(ACTIVE_CHECKPOINT_KEY);
     const beforeDiagnostics = diagnostics.snapshot().length;
     const setItem = vi.spyOn(Storage.prototype, 'setItem');
-    const controller = startSessionCheckpoints({ storage: localStorage, intervalMs: 1 });
+    const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT, storage: localStorage, intervalMs: 1 });
 
     useGameStore.setState({ log: activityLog('Must not overwrite') });
     vi.runAllTimers();
@@ -237,10 +242,10 @@ describe('active session checkpoint boundary', () => {
   });
 
   it('does not authorize repair for unsupported or unavailable checkpoint reads', () => {
-    const checkpoint = captureActiveSession();
+    const checkpoint = captureActiveSession(FIXED_SAVED_AT);
     const unsupportedRaw = JSON.stringify({ ...checkpoint, schemaVersion: 2 });
     localStorage.setItem(ACTIVE_CHECKPOINT_KEY, unsupportedRaw);
-    const unsupported = startSessionCheckpoints({ storage: localStorage });
+    const unsupported = startSessionCheckpoints({ now: () => FIXED_SAVED_AT, storage: localStorage });
 
     expect(unsupported.getNotice()).toMatchObject({ kind: 'alert', canRepair: false });
     unsupported.repair();
@@ -283,7 +288,7 @@ describe('active session checkpoint boundary', () => {
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('Full', 'QuotaExceededError');
     });
-    const controller = startSessionCheckpoints({ storage: localStorage });
+    const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT, storage: localStorage });
     expect(controller.getNotice()).toMatchObject({ canRepair: true });
 
     controller.repair();
@@ -298,8 +303,8 @@ describe('active session checkpoint boundary', () => {
 
   it('does not let a stale tab repair over a newer cross-tab checkpoint', () => {
     localStorage.setItem(ACTIVE_CHECKPOINT_KEY, '{broken');
-    const controller = startSessionCheckpoints({ storage: localStorage, pagehideTarget: window });
-    const newer = JSON.stringify(captureActiveSession());
+    const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT, storage: localStorage, pagehideTarget: window });
+    const newer = JSON.stringify(captureActiveSession(FIXED_SAVED_AT));
     localStorage.setItem(ACTIVE_CHECKPOINT_KEY, newer);
 
     expect(controller.getNotice()).toMatchObject({ kind: 'alert', canRepair: true });
@@ -311,11 +316,11 @@ describe('active session checkpoint boundary', () => {
   });
 
   it('preserves primary bytes when either step of checkpoint rotation fails', () => {
-    const first = captureActiveSession();
+    const first = captureActiveSession(FIXED_SAVED_AT);
     const firstWrite = writeActiveCheckpoint(localStorage, first, null);
     if (!firstWrite.ok) throw new Error('Expected first checkpoint write');
     useGameStore.setState({ log: activityLog('Replacement') });
-    const replacement = captureActiveSession();
+    const replacement = captureActiveSession(FIXED_SAVED_AT);
     const nativeSetItem = Storage.prototype.setItem;
     const setItem = vi.spyOn(Storage.prototype, 'setItem');
 
@@ -338,14 +343,14 @@ describe('active session checkpoint boundary', () => {
     character.PendingTasks = undefined;
     const rng = new RandomGenerator('continuation-rng');
     useGameStore.setState({ character, rng, isPaused: false, log: activityLog('Before'), progression: { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 } });
-    const checkpoint = captureActiveSession();
+    const checkpoint = captureActiveSession(FIXED_SAVED_AT);
 
     useGameStore.getState().tick(25);
-    const uninterrupted = captureActiveSession();
-    restoreActiveSession(checkpoint);
+    const uninterrupted = captureActiveSession(FIXED_SAVED_AT);
+    restoreActiveSession(checkpoint, FIXED_SAVED_AT);
     useGameStore.getState().tick(25);
 
-    expect(captureActiveSession()).toEqual(uninterrupted);
+    expect(captureActiveSession(FIXED_SAVED_AT)).toEqual(uninterrupted);
   });
 
   it('preserves bounded catch-up remainder across pause and restore', () => {
@@ -353,20 +358,20 @@ describe('active session checkpoint boundary', () => {
     useGameStore.getState().tick(Number.MAX_VALUE);
     expect(useGameStore.getState().progression.completedTasks).toBe(100);
     useGameStore.getState().togglePause();
-    const checkpoint = captureActiveSession();
+    const checkpoint = captureActiveSession(FIXED_SAVED_AT);
 
     expect(checkpoint.session.pendingElapsedMs).toBeGreaterThan(0);
     expect(checkpoint.session.pendingElapsedMs).toBeLessThanOrEqual(MAX_PENDING_ELAPSED_MS);
     expect(checkpoint.session.log).toHaveLength(50);
     useGameStore.getState().togglePause();
     useGameStore.getState().tick(1);
-    const uninterrupted = captureActiveSession();
+    const uninterrupted = captureActiveSession(FIXED_SAVED_AT);
 
-    restoreActiveSession(checkpoint);
+    restoreActiveSession(checkpoint, FIXED_SAVED_AT);
     useGameStore.getState().togglePause();
     useGameStore.getState().tick(1);
 
-    expect(captureActiveSession()).toEqual(uninterrupted);
+    expect(captureActiveSession(FIXED_SAVED_AT)).toEqual(uninterrupted);
     expect(uninterrupted.session.progression.completedTasks).toBe(200);
   });
 
@@ -378,14 +383,14 @@ describe('active session checkpoint boundary', () => {
       progression: { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 },
     }, 7000, rng);
     useGameStore.setState({ ...midPrologue.state, rng, isPaused: false, log: activityLog('Before prologue checkpoint') });
-    const checkpoint = captureActiveSession();
+    const checkpoint = captureActiveSession(FIXED_SAVED_AT);
 
     useGameStore.getState().tick(23_000);
-    const uninterrupted = captureActiveSession();
-    restoreActiveSession(checkpoint);
+    const uninterrupted = captureActiveSession(FIXED_SAVED_AT);
+    restoreActiveSession(checkpoint, FIXED_SAVED_AT);
     useGameStore.getState().tick(23_000);
 
-    expect(captureActiveSession()).toEqual(uninterrupted);
+    expect(captureActiveSession(FIXED_SAVED_AT)).toEqual(uninterrupted);
     expect(uninterrupted.session.character.Task).toMatchObject({ description: 'Heading to the killing fields...', type: 'heading' });
     expect(uninterrupted.session.character.PendingTasks).toBeUndefined();
   });
@@ -396,7 +401,7 @@ describe('active session checkpoint boundary', () => {
     const visibilityTarget = new EventTarget() as EventTarget & { hidden: boolean };
     visibilityTarget.hidden = false;
     const pagehideTarget = new EventTarget();
-    const controller = startSessionCheckpoints({ storage: localStorage, visibilityTarget, pagehideTarget, intervalMs: 1_000 });
+    const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT, storage: localStorage, visibilityTarget, pagehideTarget, intervalMs: 1_000 });
 
     for (let index = 0; index < 20; index += 1) useGameStore.setState({ log: activityLog(`Event ${index}`) });
     vi.advanceTimersByTime(999);
@@ -413,6 +418,27 @@ describe('active session checkpoint boundary', () => {
     useGameStore.setState({ log: activityLog('Pagehide latest') });
     pagehideTarget.dispatchEvent(new Event('pagehide'));
     expect(loadActiveCheckpoint(localStorage)).toMatchObject({ status: 'loaded', checkpoint: { session: { log: ['Pagehide latest'] } } });
+    controller.dispose();
+  });
+
+  it('stamps a fresh savedAtMs on restore so the absence cannot be credited twice', () => {
+    // An absence is credited by comparing now() against the savedAtMs on disk. If a restore
+    // leaves the old stamp there, every subsequent boot measures its absence from the same
+    // origin and re-credits time that has already been banked. Closing that window is the whole
+    // reason the restore writes straight back instead of waiting for the debounce — and dispose()
+    // deliberately does not flush, so a crash or a mobile tab eviction lands squarely in it.
+    useGameStore.getState().startSession({ source: 'creation', name: 'Twice Counted', race: 'Half Orc', klass: 'Robot Monk', seed: 715 });
+    useGameStore.setState({ isPaused: false, pendingElapsedMs: 0 });
+    expect(writeActiveCheckpoint(localStorage, captureActiveSession(FIXED_SAVED_AT), null).ok).toBe(true);
+
+    const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT + 5_000, storage: localStorage });
+
+    expect(useGameStore.getState().pendingElapsedMs).toBe(5_000);
+    // On disk, not just in memory: the next boot reads this and nothing else.
+    expect(loadActiveCheckpoint(localStorage)).toMatchObject({
+      status: 'loaded',
+      checkpoint: { session: { savedAtMs: FIXED_SAVED_AT + 5_000 } },
+    });
     controller.dispose();
   });
 });

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { soundFX } from './audio';
-import { describeGameEvent, soundCueForGameEvent } from './gameEventAdapter';
+import { describeDecisionReason, describeGameEvent, soundCueForGameEvent } from './gameEventAdapter';
 import { RandomGenerator, type PRNGSeed } from '../engine/prng';
 import { createNewCharacter } from '../engine/sim';
 import { levelUpTime } from '../engine/math';
@@ -9,6 +9,35 @@ import type { CharacterSheet, ProgressionState, StatsMap } from '../engine/types
 import { MAX_PENDING_ELAPSED_MS, MAX_SOCIAL_ENTRIES, MAX_WORLD_NOTICES } from '../data/limits';
 import { projectWorld, type WorldNotice } from './worldContext';
 import { projectSocialBatch, type SocialEntry } from './socialProjection';
+import { EMPTY_COMMENDATIONS, mergeEvents, mergeExhibit, readCommendations, writeCommendations, type Commendations } from './commendations';
+import { EMPTY_CASELOAD, mergeRecords, readCaseload, writeCaseload, type Caseload } from './caseload';
+import { EMPTY_DIGEST, accumulateDigest, describeDigest, type AbsenceDigest } from './absenceDigest';
+import { EMPTY_SPECIMEN_LOG, mergeSpecimens, readSpecimenLog, writeSpecimenLog, type SpecimenLog } from './specimenLog';
+
+// Read once at module load, the same way the roster is read: a ledger that cannot be read is
+// simply an empty one, never a reason for the game not to start.
+const initialCommendations = readCommendations(
+  typeof window === 'undefined' ? undefined : (() => { try { return window.localStorage; } catch { return undefined; } })(),
+);
+
+const initialSpecimens = readSpecimenLog(
+  typeof window === 'undefined' ? undefined : (() => { try { return window.localStorage; } catch { return undefined; } })(),
+);
+
+const initialCaseload = readCaseload(
+  typeof window === 'undefined' ? undefined : (() => { try { return window.localStorage; } catch { return undefined; } })(),
+);
+
+// What is believed to be on disk. Seeded with the ledgers just read, so an untouched session
+// never rewrites an identical copy.
+let lastPersistedCommendations = initialCommendations;
+let lastPersistedCaseload = initialCaseload;
+let lastPersistedSpecimens = initialSpecimens;
+
+// What the current catch-up drain has produced so far. Module-level rather than store state
+// because nothing renders it until it is finished and nothing persists it at all: it exists for
+// exactly as long as one backlog takes to work through.
+let drainDigest: AbsenceDigest = EMPTY_DIGEST;
 
 type StartSessionRequest =
   | { source: 'creation'; name: string; race: string; klass: string; seed: PRNGSeed; stats?: StatsMap }
@@ -19,6 +48,9 @@ export interface GameStore {
   log: ActivityEntry[];
   worldNotices: WorldNotice[];
   socialEntries: SocialEntry[];
+  commendations: Commendations;
+  caseload: Caseload;
+  specimens: SpecimenLog;
   nextActivityId: number;
   sessionGeneration: number;
   isPaused: boolean;
@@ -43,6 +75,8 @@ export interface GameStore {
 export interface ActivityEntry {
   readonly id: number;
   readonly message: string;
+  /** Optional and supplemental: the chronological line stands on its own without it. */
+  readonly reason?: string;
 }
 
 export function createActivityEntries(messages: readonly string[], firstId: number): ActivityEntry[] {
@@ -86,6 +120,9 @@ export const useGameStore = create<GameStore>((set, get) => {
     log: createActivityEntries([`Welcome to Progress Quest II! ${initialChar.Traits.Name} the ${initialChar.Traits.Race} ${initialChar.Traits.Class} sets out on an adventure.`], 0),
     worldNotices: [],
     socialEntries: [],
+    commendations: initialCommendations,
+    caseload: initialCaseload,
+    specimens: initialSpecimens,
     nextActivityId: 1,
     sessionGeneration: 0,
     isPaused: false,
@@ -96,6 +133,9 @@ export const useGameStore = create<GameStore>((set, get) => {
     togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
 
     startSession: (request: StartSessionRequest) => {
+      // Whoever was mid-catch-up is gone. A digest describes one absence by one character, and
+      // carrying a partial one across would report another session's work as this one's.
+      drainDigest = EMPTY_DIGEST;
       const { nextActivityId, sessionGeneration } = get();
       let character: CharacterSheet;
       let rng: RandomGenerator;
@@ -118,6 +158,9 @@ export const useGameStore = create<GameStore>((set, get) => {
         log: createActivityEntries([message], nextActivityId),
         worldNotices: [],
         socialEntries: [],
+        commendations: get().commendations ?? EMPTY_COMMENDATIONS,
+        caseload: get().caseload ?? EMPTY_CASELOAD,
+        specimens: get().specimens ?? EMPTY_SPECIMEN_LOG,
         nextActivityId: nextActivityId + 1,
         sessionGeneration: sessionGeneration + 1,
         isPaused: false,
@@ -127,6 +170,8 @@ export const useGameStore = create<GameStore>((set, get) => {
     },
 
     restoreSession: (session) => {
+      // Same reasoning as startSession: the drain this was accumulating no longer has an owner.
+      drainDigest = EMPTY_DIGEST;
       const { nextActivityId, sessionGeneration } = get();
       const rng = new RandomGenerator('restored-session');
       rng.setState([...session.rngState]);
@@ -138,6 +183,9 @@ export const useGameStore = create<GameStore>((set, get) => {
         log: createActivityEntries(session.log.toReversed(), nextActivityId).reverse(),
         worldNotices: [],
         socialEntries: [],
+        commendations: get().commendations ?? EMPTY_COMMENDATIONS,
+        caseload: get().caseload ?? EMPTY_CASELOAD,
+        specimens: get().specimens ?? EMPTY_SPECIMEN_LOG,
         nextActivityId: nextActivityId + session.log.length,
         sessionGeneration: sessionGeneration + 1,
         pendingElapsedMs: session.pendingElapsedMs,
@@ -152,16 +200,84 @@ export const useGameStore = create<GameStore>((set, get) => {
       const result = advanceGame({ character, progression }, elapsedBudgetMs, rng);
       const sources = result.records.map((record, index) => ({ activityId: nextActivityId + index, record }));
       for (const { record } of sources) playEventSound(record.event);
-      const activity = sources.map(({ activityId: id, record }) => ({ id, message: describeGameEvent(record.event) })).reverse();
-      const projectedWorldNotices = sources.flatMap((source) => projectWorld({ kind: 'transition', source }).notices).toReversed();
+      const activity = sources.map(({ activityId: id, record }) => {
+        const reason = describeDecisionReason(record.event);
+        return reason === undefined
+          ? { id, message: describeGameEvent(record.event) }
+          : { id, message: describeGameEvent(record.event), reason };
+      }).reverse();
+      // One projection per record, used for both the world notices and the exhibit case, rather
+      // than classifying the same equipment twice.
+      const projections = sources.map((source) => ({ source, projection: projectWorld({ kind: 'transition', source }) }));
+      const projectedWorldNotices = projections.flatMap(({ projection }) => projection.notices).toReversed();
+      // Records are a maximum over events, so this returns the same object on the overwhelming
+      // majority of ticks of ordinary play.
+      let nextCommendations = mergeEvents(get().commendations, sources.map(({ record }) => record.event));
+      for (const { source, projection } of projections) {
+        const event = source.record.event;
+        // The classification belongs to the equipment this record awarded, so pair them here
+        // rather than trying to reconstruct which item it described later.
+        if (event.type === 'equipment_gained' && projection.equipment) {
+          nextCommendations = mergeExhibit(nextCommendations, event.slot, event.name, projection.equipment);
+        }
+      }
+      // Held back until the backlog is drained. Catching up on a long absence replays many levels
+      // and quests per tick, and questsCompleted/actsCompleted count rather than compare, so a new
+      // record lands on nearly every tick of a drain — a synchronous stringify and localStorage
+      // write roughly eighteen times a second, on the thread already running the engine and the
+      // render. The in-memory ledger stays current either way, so the panel is never stale; only
+      // the persisted copy waits. A tab closed mid-drain loses that interval's records, which is
+      // the right thing for a decorative ledger to lose to keep the drain smooth.
+      //
+      // Compared against what was last written rather than against the previous tick, because the
+      // tick that finishes a drain need not be one that set a record — and everything banked
+      // during the drain has to land on the first opportunity after it, not linger until the next
+      // record happens along.
+      // A drain is running whenever the tick started with time banked. Accumulate then, and only
+      // then: ordinary play spends its 50ms immediately and must never produce a digest.
+      const draining = pendingElapsedMs > 0;
+      if (draining) drainDigest = accumulateDigest(drainDigest, sources.map(({ record }) => record.event));
+      const digestLine = draining && result.remainingElapsedMs === 0 ? describeDigest(drainDigest) : null;
+      if (draining && result.remainingElapsedMs === 0) drainDigest = EMPTY_DIGEST;
+
+      if (result.remainingElapsedMs === 0 && nextCommendations !== lastPersistedCommendations) {
+        lastPersistedCommendations = nextCommendations;
+        writeCommendations(typeof window === 'undefined' ? undefined : window.localStorage, nextCommendations);
+      }
+
+      // Records rather than events: the kind of a completed quest is not on the event, only on the
+      // snapshot beside it. Held back and compared the same way the commendation ledger is, for
+      // the same reason - a drain closes many quests per tick, and every one of them counts.
+      const nextCaseload = mergeRecords(get().caseload, result.records);
+      // A specimen is new only once, so this returns the same object on nearly every tick.
+      const nextSpecimens = mergeSpecimens(get().specimens, sources.map(({ record }) => record.event));
+      if (result.remainingElapsedMs === 0 && nextCaseload !== lastPersistedCaseload) {
+        lastPersistedCaseload = nextCaseload;
+        writeCaseload(typeof window === 'undefined' ? undefined : window.localStorage, nextCaseload);
+      }
+      // Held back through a drain for the same reason the other ledgers are: a catch-up replays
+      // many first sightings, and each would otherwise be its own synchronous write.
+      if (result.remainingElapsedMs === 0 && nextSpecimens !== lastPersistedSpecimens) {
+        lastPersistedSpecimens = nextSpecimens;
+        writeSpecimenLog(typeof window === 'undefined' ? undefined : window.localStorage, nextSpecimens);
+      }
       const projectedSocialEntries = projectSocialBatch(sources).toReversed();
       set({
         ...result.state,
         pendingElapsedMs: result.remainingElapsedMs,
-        log: [...activity, ...log].slice(0, 50),
+        log: [
+          // Ahead of the batch it summarises, because the feed is newest-first and a summary
+          // that appears below its own contents reads as one more entry rather than a total.
+          ...(digestLine === null ? [] : [{ id: nextActivityId + activity.length, message: digestLine }]),
+          ...activity,
+          ...log,
+        ].slice(0, 50),
         worldNotices: [...projectedWorldNotices, ...worldNotices].slice(0, MAX_WORLD_NOTICES),
         socialEntries: retainWholeSocialScenes([...projectedSocialEntries, ...socialEntries]),
-        nextActivityId: nextActivityId + activity.length,
+        nextActivityId: nextActivityId + activity.length + (digestLine === null ? 0 : 1),
+        commendations: nextCommendations,
+        caseload: nextCaseload,
+        specimens: nextSpecimens,
       });
     },
   };

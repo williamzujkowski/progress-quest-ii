@@ -92,7 +92,7 @@ export const App: React.FC<AppProps> = ({ sessionCheckpoints }) => {
   // Main 50ms tick game loop timer
   useEffect(() => {
     if (requiresCharacterCreation) return;
-    return startGameClock(tick, undefined, (error) => {
+    return startGameClock(tick, undefined, (error, discardedMs) => {
       diagnostics.record({
         code: 'game_tick_failed',
         severity: 'error',
@@ -101,6 +101,7 @@ export const App: React.FC<AppProps> = ({ sessionCheckpoints }) => {
         outcome: 'failed',
         source: 'game-clock',
         error,
+        discardedMs,
       });
     });
   }, [requiresCharacterCreation, tick]);

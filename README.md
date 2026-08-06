@@ -4,7 +4,7 @@
 
 The sequel nobody had to play. First, humans wrote a game that played itself. Then computers helped rebuild the game. The circle is complete, the paperwork has been misplaced, and nobody has had to play anything.
 
-**Progress Quest II** is an unofficial modern continuation of Eric Fredricksen's classic zero-player RPG *Progress Quest*. Created by humans. Rebuilt by machines. Played by nobody.
+**Progress Quest II** is an unofficial spiritual successor to Eric Fredricksen's classic zero-player RPG *Progress Quest* — for people who want to play games without playing them and watch numbers go up. Inspired by the original rather than a port of it: it keeps the humour and the hands-off progression, and extends the mechanics where that makes the watching better. Created by humans. Rebuilt by machines. Played by nobody.
 
 ## Visit the live game
 
@@ -60,8 +60,10 @@ npm run quality
 
 The quality command fails on modern-code or GitHub Actions workflow findings and
 runs Nexus installation verification, lint, typecheck, unit and legacy-oracle
-tests, production build, high-severity dependency audit, browser E2E, and
-production PWA tests. Workflow lint uses the official actionlint v1.7.12 archive
+tests under enforced coverage floors, dependency audit at moderate severity plus registry signature
+verification, browser E2E, and production PWA tests. The production build is not
+a separate step - it runs inside the PWA suite, which is last, so browser E2E
+exercises the dev server and only the PWA suite exercises the shipped bundle. Workflow lint uses the official actionlint v1.7.12 archive
 for the current platform, verifies its pinned release checksum before every
 extraction, and keeps the archive under ignored `node_modules/.cache/`. The
 launcher uses the standard `tar` executable included on supported developer

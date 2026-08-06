@@ -42,6 +42,17 @@ export interface ProgressTask {
   elapsedMs: number;
   type: 'kill' | 'buying' | 'selling' | 'quest' | 'plot' | 'loading' | 'prologue' | 'cinematic' | 'act_marker' | 'heading_to_market' | 'heading';
   loot?: { type: 'fixed'; item: string } | { type: 'random' } | undefined;
+  /**
+   * How many opponents this task is against, where the engine decided a number.
+   *
+   * Already computed - the encounter's duration is derived from `targetLevel * quantity` - and
+   * previously discarded, surviving only as the pluralised noun inside `description`. Exposed so
+   * a reader can be told about a multi-opponent pull without anything parsing presentation text.
+   *
+   * Absent on every task that is not an encounter, and read by nothing in the engine: it is a
+   * fact the simulation reports, never one it consults.
+   */
+  opponents?: number | undefined;
 }
 
 export type SequenceTask = Omit<ProgressTask, 'elapsedMs' | 'loot' | 'type'> & {

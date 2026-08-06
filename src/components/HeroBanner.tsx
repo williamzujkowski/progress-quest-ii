@@ -1,13 +1,40 @@
 import { Coins, Heart, Sparkles } from 'lucide-react';
 import React from 'react';
 import { PRIME_STATS } from '../data/traits';
+import { Gauge } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../state/gameStore';
+import { useFilingVelocity } from '../state/useFilingVelocity';
+import { useTrackProjection } from '../state/useTrackProjection';
+import { useTabTitle } from '../state/useTabTitle';
+import { formatDuration } from '../engine/text';
 import { ActLabel, GameNumber } from './GameNumber';
 import { ItemTooltip } from './ItemTooltip';
 
 
 export const HeroBanner: React.FC = () => {
-  const { character, progression } = useGameStore();
+  // Traits and Stats changed identity 3 times across a measured 400 ticks, Inventory 0; the
+  // character reference changed 400 times, because Task advances every tick and this banner
+  // renders none of it.
+  const { Traits, Stats, Gold, Inventory, act, experience } = useGameStore(useShallow((state) => ({
+    Traits: state.character.Traits,
+    Stats: state.character.Stats,
+    Gold: state.character.Gold,
+    Inventory: state.character.Inventory,
+    act: state.character.Plot.act,
+    experience: state.progression.experience,
+  })));
+  const character = { Traits, Stats, Gold, Inventory, Plot: { act } };
+  // Derived, non-authoritative, and sampled on its own timer - see useFilingVelocity.
+  const velocity = useFilingVelocity();
+  // Projected from the observed rate rather than the experience track's own arithmetic, which
+  // only advances on kill tasks and so runs about a quarter short. See promotionEta.
+  const promotionSeconds = useTrackProjection('experience');
+  // The act is the coarsest thing the engine advances and the unit a watcher thinks in.
+  const actSeconds = useTrackProjection('plot');
+  // The tab strip is this game's only surface while it is not the active tab.
+  useTabTitle({ velocity });
+  const progression = { experience };
 
   // Saturates at Number.MAX_VALUE for absurd levels, so guard the denominator.
   const experiencePct = progression.experience.maxSeconds > 0
@@ -32,6 +59,22 @@ export const HeroBanner: React.FC = () => {
         >
           <div className="progress-bar-fill" style={{ width: `${experiencePct}%` }} />
         </div>
+        {/*
+          Absent until the sampled window can support a figure, rather than showing a placeholder.
+          "Expected" and "pending review" are doing real work here: this is a projection from a
+          five-minute average, and the copy should not promise a schedule the institution has no
+          way to keep.
+        */}
+        {promotionSeconds !== null && (
+          <div className="hero-eta">
+            Next promotion expected in ~{formatDuration(promotionSeconds)}, pending administrative review.
+          </div>
+        )}
+        {actSeconds !== null && (
+          <div className="hero-eta">
+            Current act expected to close in ~{formatDuration(actSeconds)}, barring a revision.
+          </div>
+        )}
         <div className="hero-sub">
           {character.Traits.Race} {character.Traits.Class} • <ActLabel act={character.Plot.act} />
         </div>
@@ -55,6 +98,29 @@ export const HeroBanner: React.FC = () => {
             <strong><GameNumber value={character.Stats['MP Max']} /></strong>
           </div>
         </div>
+
+        <div className="hero-stats-quick">
+          {/* Gold reads once, here. Carried weight lives on the inventory panel, where the
+              bag it describes is. The tooltip is what teaches that Gold weighs nothing. */}
+          <div className="stat-pill gold-pill">
+            <Coins size={16} aria-hidden="true" />
+            <ItemTooltip kind="inventory" name="Gold" quantity={character.Gold}>
+              <GameNumber value={character.Gold} />{' '}GP
+            </ItemTooltip>
+          </div>
+
+          {/* The rate, not the total. Absent until the window is long enough to mean something,
+              because a wild first figure is worse than no figure on a dashboard made of numbers. */}
+          {velocity !== null && (
+            <div className="stat-pill velocity-pill" title="Completed tasks per hour, averaged over the last few minutes">
+              <Gauge size={16} aria-hidden="true" />
+              <span>
+                <GameNumber value={velocity} />{' '}/hr
+                <span className="sr-only"> tasks filed per hour</span>
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="hero-prime-stats" data-testid="hero-prime-stats" aria-label="Prime stats">
@@ -66,16 +132,6 @@ export const HeroBanner: React.FC = () => {
         ))}
       </div>
 
-      <div className="hero-stats-quick">
-        {/* Gold reads once, here. Carried weight lives on the inventory panel, where the
-            bag it describes is. The tooltip is what teaches that Gold weighs nothing. */}
-        <div className="stat-pill gold-pill">
-          <Coins size={16} aria-hidden="true" />
-          <ItemTooltip kind="inventory" name="Gold" quantity={character.Gold}>
-            <GameNumber value={character.Gold} />{' '}GP
-          </ItemTooltip>
-        </div>
-      </div>
     </div>
   );
 };

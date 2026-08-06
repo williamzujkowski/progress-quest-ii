@@ -240,6 +240,13 @@ describe('advanceGame', () => {
     expect(characterSheetSchema.safeParse(firstRound.state.character).success).toBe(true);
   });
 
+  // Provenance: these values are oracle-derived, not copied from the port. The same scenario is
+  // captured as fixtures/legacy/random-star-interplot.json and compared against the live port by
+  // the parity suite, and scripts/test-legacy-oracle.mjs re-runs that fixture through the real
+  // pq-web-src code on every `npm test`. Worth stating, because the port genuinely orders its
+  // draws differently here - transition.ts computes loot between the cinematic's opening and its
+  // remainder, where legacy runs InterplotCinematic whole - and a reader could reasonably assume
+  // a single pinned seed was masking that. It is not: the oracle agrees on the observable surface.
   it('awards random-star loot before generating the remaining nemesis cinematic', () => {
     const character = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 800);
     character.Plot = { act: 1, currentProgress: 10, maxProgress: 10 };
@@ -445,7 +452,9 @@ describe('advanceGame', () => {
     expect(result.state.character.Spells).toEqual([{ name: 'Slime Finger', level: 1 }]);
     expect(result.state.progression.experience).toEqual({ currentSeconds: 0, maxSeconds: 1279 });
     expect(eventsOf(result)).toEqual([
-      { type: 'level_gained', level: 2 },
+      // The level carries the experience track that filled to cause it — the same figure the
+      // fixture's ExpBar maximum states, asserted rather than stripped.
+      { type: 'level_gained', level: 2, reason: { experienceSeconds: sheet.ExpBar.max } },
       { type: 'stat_gained', stat: 'HP Max', amount: 6 },
       { type: 'stat_gained', stat: 'MP Max', amount: 5 },
       { type: 'stat_gained', stat: 'INT', amount: 1 },

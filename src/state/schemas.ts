@@ -95,6 +95,12 @@ export const progressTaskSchema = z.object({
     z.object({ type: z.literal('fixed'), item: z.string().min(1).max(200) }).strict(),
     z.object({ type: z.literal('random') }).strict(),
   ]).optional(),
+  // Optional so a checkpoint written before the field still restores, and bounded by the same
+  // ceiling every other persisted figure uses. A tighter, more plausible-looking bound was tried
+  // first and rejected a character the engine can legitimately produce: at the maximum level the
+  // count reaches hundreds of millions, because it is derived from the level. The bound is here
+  // to keep a hostile save finite, not to express an opinion about crowd sizes.
+  opponents: z.number().int().min(1).max(MAX_PERSISTED_VALUE).optional(),
 }).strict().refine(({ durationMs, elapsedMs }) => elapsedMs <= durationMs, {
   message: 'Task elapsed time cannot exceed its duration.',
   path: ['elapsedMs'],
@@ -180,6 +186,11 @@ export const activeCheckpointV1Schema = z.object({
       elapsedSeconds: boundedInteger,
     }).strict(),
     pendingElapsedMs: z.number().finite().min(0).max(MAX_PENDING_ELAPSED_MS).default(0),
+    // Wall-clock, written when the checkpoint is saved, so a reopened app can credit the time
+    // it was closed. Optional: checkpoints written before this existed simply credit nothing,
+    // which is the behaviour they already had. It is never read by the engine - only at the
+    // load boundary, converted once into elapsed milliseconds.
+    savedAtMs: z.number().finite().min(0).optional(),
     isPaused: z.boolean(),
     log: z.array(description).max(50),
   }).strict(),

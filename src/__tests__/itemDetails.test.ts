@@ -247,7 +247,11 @@ describe('item tooltip details', () => {
     expect(describeInventoryItem('Uncatalogued Chair', 1).description).toContain('Uncatalogued Chair');
   });
 
-  it('keeps every generated special-item identity distinct and bounded', () => {
+  // Exhaustive: every ITEM_ATTRIB x SPECIALS x ITEM_OFS combination, 63,492 generated
+  // descriptions. It runs in roughly 2s alone but has been measured at 5.4s and 6.1s under
+  // parallel CI load, so the 5s default was never the right budget for it - the test was not
+  // slow, the budget was wrong. Timing out here says nothing about correctness.
+  it('keeps every generated special-item identity distinct and bounded', { timeout: 30_000 }, () => {
     const items = ITEM_ATTRIB.flatMap((attribute) =>
       SPECIALS.flatMap((object) => ITEM_OFS.map((concept) => ({ attribute, concept, name: `${attribute} ${object} of ${concept}`, object }))));
     const descriptions = items.map(({ name }) => describeInventoryItem(name, 1).description);
@@ -349,5 +353,27 @@ describe('item tooltip details', () => {
 
     expect(repeat).toBe(first);
     expect(other).toBe(first);
+  });
+});
+
+describe('modifier count as a register signal', () => {
+  it('files a stacked item with more ceremony and no more power', () => {
+    // Modifier count is the engine's own rarity signal. It escalates the paperwork's tone; it must
+    // never escalate the claim, because equipment has no combat contribution at any quality.
+    const stacked = describeEquipment('+3 Holy Fine Chain Mail', 'Hauberk');
+    const plain = describeEquipment('+1 Fine Chain Mail', 'Hauberk');
+
+    expect(stacked.description).not.toBe(plain.description);
+    for (const details of [stacked, plain]) {
+      expect(details.effect).toContain('Combat contribution: none');
+      expect(details.description).not.toMatch(/stronger|tougher|deadlier|more effective/i);
+    }
+  });
+
+  it('keeps a stacked story inside the same bounds as any other', () => {
+    // The register may change; the two-sentence and length contracts may not.
+    const stacked = describeEquipment('+3 Holy Fine Chain Mail', 'Hauberk');
+    expect(stacked.description.split(/(?<=\.)\s+/).filter(Boolean).length).toBeLessThanOrEqual(2);
+    expect(stacked.description.length).toBeLessThanOrEqual(220);
   });
 });
