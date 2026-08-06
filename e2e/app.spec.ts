@@ -1454,6 +1454,10 @@ test.describe('closed casework archive', () => {
     await expect(page.getByRole('heading', { name: 'Questing & Progression' })).toBeVisible();
     // An empty archive reads as a broken panel rather than a new one, so there is no empty state.
     await expect(page.getByRole('list', { name: /Closed casework/i })).toHaveCount(0);
+    // And no disclosure inviting anyone to open it. Asserting only the list's absence is what let
+    // a summary that opens onto nothing ship: the contents were hidden, the triangle was not.
+    await expect(page.locator('.records-details > summary').filter({ hasText: /Case archive/i }))
+      .toHaveCount(0);
     expectNoPageErrors();
     await context.close();
   });
