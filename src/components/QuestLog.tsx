@@ -11,6 +11,7 @@ export const QuestLog: React.FC = () => {
   // counting the same thing is two places to disagree about it.
   const dockets = useGameStore((state) => state.caseload.targets[character.Quest.target ?? ''] ?? 0);
   // Filed under a composite key; named by the part of it a reader recognises.
+  const hasClosedCasework = (character.Quest.history?.length ?? 0) > 0;
   const dossier = adversaryDossier(
     character.Quest.target === undefined ? undefined : displayTarget(character.Quest.target),
     dockets,
@@ -86,11 +87,16 @@ export const QuestLog: React.FC = () => {
         </div>
       </div>
 
-      {/* The archive is looked at occasionally; the bars above it are looked at constantly. */}
-      <details className="records-details">
-        <summary>Case archive</summary>
-        <ClosedCasework />
-      </details>
+      {/* The archive is looked at occasionally; the bars above it are looked at constantly.
+          Gated on having something to show, like the records disclosure opposite: a summary that
+          opens onto nothing is a promise the panel cannot keep, and ClosedCasework returning null
+          hides its contents without hiding the triangle inviting someone to look for them. */}
+      {hasClosedCasework && (
+        <details className="records-details">
+          <summary>Case archive</summary>
+          <ClosedCasework />
+        </details>
+      )}
     </section>
   );
 };

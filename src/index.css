@@ -394,10 +394,6 @@ input[type='radio'] {
   font-weight: 700;
 }
 
-.badge-success {
-  color: var(--accent-success);
-}
-
 .badge-warning {
   color: var(--accent-warning);
 }
@@ -495,12 +491,6 @@ input[type='radio'] {
   flex-direction: column;
   gap: var(--space-2);
   font-size: 0.82rem;
-}
-
-.scroll-region {
-  max-height: 200px;
-  overflow-y: auto;
-  scrollbar-color: var(--panel-border) transparent;
 }
 
 .equip-item {
