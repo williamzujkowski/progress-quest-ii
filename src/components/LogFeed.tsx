@@ -3,6 +3,7 @@ import React, { useId, useLayoutEffect, useRef, useState } from 'react';
 import { describeGameNumber, formatGameNumber } from '../engine/text';
 import { useGameStore } from '../state/gameStore';
 import { projectWorld } from '../state/worldContext';
+import { TENOR_LABELS, tenorFor, tenorLine } from '../state/institutionalTenor';
 import { ActLabel } from './GameNumber';
 import { ChatterFeed } from './ChatterFeed';
 
@@ -146,7 +147,12 @@ export const LogFeed: React.FC = () => {
         <div className="world-context-line world-context-meta">
           <span>{world.venue} // {world.activity}</span>
           {world.assignmentScope ? <span>assignment // {world.assignmentScope}</span> : null}
+          <span>tenor // {TENOR_LABELS[tenorFor(world)].toLowerCase()}</span>
         </div>
+        {/* The institution's opinion of itself, which is the only thing here that changes by
+            degree rather than by counting up. Every line is literally true of a hero filing
+            paperwork and killing rats; only the confidence moves. */}
+        <p className="world-context-tenor">{tenorLine(world)}</p>
         <details className="world-context-details">
           <summary>World filings{worldNotices.length > 0 ? ` (${worldNotices.length})` : ''}</summary>
           <div className="world-context-notices" role="region" tabIndex={0} aria-label="Derived world notices">
