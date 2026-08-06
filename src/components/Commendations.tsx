@@ -16,9 +16,13 @@ import { ItemTooltip } from './ItemTooltip';
  */
 export const Commendations: React.FC = () => {
   const records = useGameStore(useShallow((state) => state.commendations));
-  if (isEmpty(records)) return null;
+  // Variety rather than quality: the exhibit case opposite keeps the best of each slot, and this
+  // counts how many different things have ever passed through at all.
+  const specimens = useGameStore((state) => state.specimens.specimens.length);
+  if (isEmpty(records) && specimens === 0) return null;
 
   const rows: ReadonlyArray<readonly [string, number]> = [
+    ...(specimens > 0 ? [['Distinct specimens filed', specimens] as const] : []),
     ['Highest level attained', records.highestLevel],
     ['Largest single sale', records.largestSale],
     ['Quests closed', records.questsCompleted],
