@@ -1,4 +1,4 @@
-import { DUNGEON_NAMES, FIELD_NAMES, RAID_ACT_THRESHOLD, RAID_NAMES, TOWN_NAMES } from '../data/worldContext';
+import { dungeonNamesAt, fieldNamesAt, RAID_ACT_THRESHOLD, raidNamesAt, townNamesAt } from '../data/worldContext';
 import { analyzeItemMechanics } from '../engine/itemMechanics';
 import { boundCodePoints, MAX_TEXT_CODE_POINTS, describeGameNumber, formatGameNumber, stableIndex } from '../engine/text';
 import type { GamePresentationSnapshot, GameTransitionEvent, GameTransitionRecord, GameTransitionState } from '../engine/transition';
@@ -58,17 +58,17 @@ const assignmentScope = (kind: QuestKind | undefined): AssignmentScope | undefin
 const choose = (values: readonly string[], key: string): string => values[stableIndex(key, values.length)] ?? 'Unallocated Territory';
 
 function fieldName(post: GamePresentationSnapshot, level = post.hero.level, spoken = false): string {
-  const name = choose(FIELD_NAMES, `${post.hero.name}:${post.hero.race}:${post.hero.className}:field:${level}`);
+  const name = choose(fieldNamesAt(post.act), `${post.hero.name}:${post.hero.race}:${post.hero.className}:field:${level}`);
   return `${name} // ${spoken ? 'level ' : 'L'}${spoken ? describeGameNumber(level) : formatGameNumber(level)}`;
 }
 
 function townName(post: GamePresentationSnapshot, spoken = false): string {
-  const name = choose(TOWN_NAMES, `${post.hero.name}:${post.hero.className}:town:${post.act}`);
+  const name = choose(townNamesAt(post.act), `${post.hero.name}:${post.hero.className}:town:${post.act}`);
   return `${name} // Act ${spoken ? describeGameNumber(post.act) : formatGameNumber(post.act)}`;
 }
 
 function milestoneName(post: GamePresentationSnapshot, venue: 'dungeon' | 'raid', spoken = false): string {
-  const names = venue === 'raid' ? RAID_NAMES : DUNGEON_NAMES;
+  const names = venue === 'raid' ? raidNamesAt(post.act) : dungeonNamesAt(post.act);
   const name = choose(names, `${post.hero.name}:${venue}:${post.act}`);
   return `${name} // Act ${spoken ? describeGameNumber(post.act) : formatGameNumber(post.act)}`;
 }

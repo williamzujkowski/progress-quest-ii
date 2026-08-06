@@ -5,6 +5,7 @@ import { advanceGame, type GamePresentationSnapshot, type GameTransitionEvent } 
 import { activeCheckpointV1Schema } from '../../state/schemas';
 import { encodePQWSave } from '../../state/saveManager';
 import { projectWorld, type IdentifiedGameTransitionRecord } from '../../state/worldContext';
+import { dungeonNamesAt, fieldNamesAt, raidNamesAt, substrateStage, townNamesAt } from '../../data/worldContext';
 
 const snapshot = (overrides: Partial<GamePresentationSnapshot> = {}): GamePresentationSnapshot => ({
   hero: { name: 'Krg', race: 'Hob-Hobbit', className: 'Robot Monk', level: 7 },
@@ -270,5 +271,65 @@ describe('world context projection', () => {
       expect(eventTypes.has(type)).toBe(true);
     }
     expect(enabled).toEqual(run(false));
+  });
+});
+
+describe('sited substrate', () => {
+  const POOLS = [fieldNamesAt, townNamesAt, dungeonNamesAt, raidNamesAt];
+
+  it('sites nothing before the first threshold', () => {
+    // The world the hero started in has to be the world for a long time, or its arrival is not an
+    // arrival. Acts 0 to 4 are roughly the first two days of credited time.
+    for (const at of POOLS) {
+      for (let act = 0; act < 5; act += 1) expect(at(act)).toEqual(at(0));
+    }
+    expect(substrateStage(4)).toBe(0);
+  });
+
+  it('sites more at each threshold and never fewer', () => {
+    expect(substrateStage(5)).toBe(1);
+    expect(substrateStage(11)).toBe(1);
+    expect(substrateStage(12)).toBe(2);
+    let previous = 0;
+    for (let act = 0; act <= 40; act += 1) {
+      const stage = substrateStage(act);
+      expect(stage).toBeGreaterThanOrEqual(previous);
+      previous = stage;
+    }
+    for (const at of POOLS) {
+      expect(at(5).length).toBeGreaterThan(at(4).length);
+      expect(at(12).length).toBeGreaterThan(at(5).length);
+    }
+  });
+
+  it('adds alongside the original world rather than over it', () => {
+    // The distinction the whole conceit rests on. If an original name ever stopped being
+    // reachable, this would be a re-theme instead of an accretion.
+    for (const at of POOLS) {
+      for (const original of at(0)) {
+        expect(at(5)).toContain(original);
+        expect(at(40)).toContain(original);
+      }
+    }
+  });
+
+  it('keeps a saturating act inside the last pool', () => {
+    for (const at of POOLS) {
+      expect(at(Number.MAX_SAFE_INTEGER)).toEqual(at(12));
+      // An act past every threshold belongs in the last pool. Reporting the base pool here would
+      // describe the most advanced world imaginable as the one nothing has arrived in yet.
+      expect(at(Number.POSITIVE_INFINITY)).toEqual(at(12));
+    }
+    // An unreadable act sites nothing, which is the safe direction to fail in.
+    expect(substrateStage(Number.NaN)).toBe(0);
+  });
+
+  it('changes what a projected location can be called, and stays deterministic', () => {
+    const at = (act: number) => projectWorld({
+      kind: 'transition',
+      source: source(1, { type: 'level_gained', level: 7 }, snapshot({ act })),
+    }).context;
+    expect(at(1)).toEqual(at(1));
+    expect(at(30).location).not.toBe(at(1).location);
   });
 });
