@@ -80,5 +80,24 @@ signature and identity check out.
 A successful verification says the tarball was produced by this repository's workflow at a
 particular commit; it is not a statement about the contents being free of defects.
 
+### Rebuilding it yourself
+
+The attestation says which workflow produced an artifact. It does not say what the artifact
+contains, and the two questions are worth separating. The build is reproducible, so the second
+question can be answered independently:
+
+```sh
+git checkout <the deployed commit>
+npm ci
+GITHUB_SHA=<the deployed commit> npm run build
+```
+
+The emitted `dist/assets/index-*.js` is byte-identical to the deployed one. `GITHUB_SHA` matters:
+the build stamps it into the bundle as a build identifier, defaulting to `development`, so
+omitting it produces a legitimately different file and a different content hash.
+
+Verified against a live deployment rather than asserted — a rebuild of the deployed commit matched
+the served bundle byte for byte.
+
 Attestation deliberately does not gate the deploy. It describes an artifact that has already been
 built, and blocking on it would turn a signing outage into an outage of the site.
