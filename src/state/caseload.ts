@@ -53,6 +53,19 @@ export type Caseload = z.infer<typeof caseloadSchema>;
 
 export const EMPTY_CASELOAD: Caseload = { kinds: {}, targets: {} };
 
+/**
+ * The name a target is known by, out of the key it is filed under.
+ *
+ * The engine identifies an extermination target as `name|level|item` — a composite that keeps two
+ * monsters of the same name apart. That is the right thing to store and the wrong thing to show:
+ * filed against "Gnoll|2|collar" is not a sentence. Splitting happens at the point of display so
+ * the stored identity keeps its precision and every ledger already on disk keeps loading.
+ */
+export function displayTarget(target: string): string {
+  const name = target.split('|')[0];
+  return name && name.length > 0 ? name : target;
+}
+
 /** True when nothing has been filed, so the panel can stay away rather than show five zeroes. */
 export function isEmpty(caseload: Caseload): boolean {
   return Object.keys(caseload.kinds).length === 0 && Object.keys(caseload.targets).length === 0;

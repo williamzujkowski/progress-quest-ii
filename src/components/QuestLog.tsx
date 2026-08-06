@@ -2,9 +2,19 @@ import React from 'react';
 import { useGameStore } from '../state/gameStore';
 import { ActLabel, GameNumber } from './GameNumber';
 import { ClosedCasework } from './ClosedCasework';
+import { adversaryDossier } from '../state/adversaryDossier';
+import { displayTarget } from '../state/caseload';
 
 export const QuestLog: React.FC = () => {
   const { character } = useGameStore();
+  // The docket tally the summary panel already keeps. Reused rather than recounted: two places
+  // counting the same thing is two places to disagree about it.
+  const dockets = useGameStore((state) => state.caseload.targets[character.Quest.target ?? ''] ?? 0);
+  // Filed under a composite key; named by the part of it a reader recognises.
+  const dossier = adversaryDossier(
+    character.Quest.target === undefined ? undefined : displayTarget(character.Quest.target),
+    dockets,
+  );
 
   const taskPct = Math.min(100, Math.floor((character.Task.elapsedMs / character.Task.durationMs) * 100));
   const questPct = Math.min(100, Math.floor((character.Quest.currentProgress / character.Quest.maxProgress) * 100));
@@ -52,6 +62,10 @@ export const QuestLog: React.FC = () => {
           <div className="progress-bar-fill" style={{ width: `${questPct}%` }} />
         </div>
       </div>
+
+      {/* What the archive has on whoever the hero is currently bothering. Bureaucracy rather than
+          threat: a target filed against forty times is exactly as dangerous as a fresh one. */}
+      {dossier && <p className="quest-dossier">{dossier.summary}</p>}
 
       <div className="progress-container progress-plot" style={{ marginTop: '0.75rem' }}>
         <div className="progress-label">

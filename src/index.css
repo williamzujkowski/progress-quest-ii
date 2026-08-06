@@ -627,6 +627,15 @@ input[type='radio'] {
   The archive of closed quests. Sized to show a few entries and scroll for the rest, so it reads
   as a drawer that was opened rather than a list that took over the card it sits in.
 */
+/* Sits under the quest bar it annotates, in the muted register the archive speaks in. */
+.quest-dossier {
+  margin: var(--space-2) 0 0;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  overflow-wrap: anywhere;
+}
+
 .casework-list {
   margin: var(--space-2) 0 0;
   max-height: 7.5rem;
