@@ -65,8 +65,20 @@ gh attestation verify artifact.tar --repo williamzujkowski/progress-quest-ii
 ```
 
 `artifact.tar` is the `github-pages` artifact from the deploy run that published the version you
-are checking. A successful verification says the tarball was produced by this repository's
-workflow at a particular commit; it is not a statement about the contents being free of defects.
+are checking. The subcommand needs GitHub CLI 2.49 or newer; older builds report it as unknown.
+
+Without a recent CLI, the attestation can be fetched by digest instead:
+
+```sh
+gh api repos/williamzujkowski/progress-quest-ii/attestations/sha256:<digest>
+```
+
+That returns the in-toto envelope and its Rekor transparency-log entry, but retrieving an
+attestation is not the same as verifying one — it confirms the record exists, not that the
+signature and identity check out.
+
+A successful verification says the tarball was produced by this repository's workflow at a
+particular commit; it is not a statement about the contents being free of defects.
 
 Attestation deliberately does not gate the deploy. It describes an artifact that has already been
 built, and blocking on it would turn a signing outage into an outage of the site.
