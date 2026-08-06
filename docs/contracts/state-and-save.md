@@ -44,6 +44,13 @@ Owner: `src/engine/transition.ts`; shared limits: `src/data/limits.ts`
 - Every completed Act advances to the next accepted Act, resets duration to `min(1,000,000,000, 3600 * (1 + 5 * nextAct))`, and—after Act I—grants one canonical item roll plus one equipment roll at the hero's current level. At the persistence ceiling the numeric Act remains saturated, but later transitions, rewards, and saves continue.
 - Inter-Act nemesis loops consume at most the 95 materialized-round budget synchronously. Longer loops persist a compact replay cursor tied to the current Act and checkpoint RNG state, keeping every later narration step and canonical post-loop continuation while allowing Acts to scale to the persistence ceiling.
 - Ordinary legacy-sized cinematics consume RNG in the canonical eager order. The bounded synthetic-high-Act exception changes only *when* entropy after round 95 is consumed: one round is replayed when its narration task begins instead of materializing an enormous queue up front. Mid-fight RNG state therefore intentionally differs from an unbounded legacy queue; exact narration, per-round draws, and post-fight continuation reconverge when the cursor finishes.
+- A kill that both drops random loot and crosses the plot threshold resolves its loot *between*
+  the cinematic's opening and its remainder. Legacy runs `InterplotCinematic` whole and resolves
+  the loot afterwards. This is a deliberate divergence in draw order, not an oversight: the two
+  agree on the observable surface — the same item is awarded and the same narration queue is
+  produced — and the oracle fixture `random-star-interplot.json` is re-run through the real
+  legacy code on every `npm test` to keep that true. The clause above about canonical eager order
+  does not extend to this interaction.
 - Market arrival schedules one ordered inventory stack per one-second selling task. Ordinary stacks pay `quantity * level`; names containing ` of ` apply the two canonical `RandomLow` multipliers. Gold and sale events report only the amount actually credited at the persistence ceiling. Market exit buys for five seconds only when Gold is strictly greater than the level price; equality takes the four-second route back to the killing fields.
 
 Verified by: `src/__tests__/engine/actSoak.test.ts`, `src/__tests__/engine/transition.test.ts`, `src/__tests__/engine/reward.test.ts`, and `src/__tests__/fidelity/transitionParity.test.ts`.
