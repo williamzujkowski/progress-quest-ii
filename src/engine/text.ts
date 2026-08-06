@@ -24,6 +24,35 @@ export function stableIndex(key: string, length: number): number {
   return hash % length;
 }
 
+/**
+ * A stable index whose low bits actually vary.
+ *
+ * `stableIndex` multiplies by 31, which is odd, so its result modulo two depends only on the
+ * parity of the key's character-code sum. That is invisible at most lengths and decisive at
+ * length two: two keys differing only by a short suffix pick the same option whenever the
+ * suffixes share a parity, so choices that should be independent move in lockstep.
+ *
+ * This adds a final avalanche so the low bits depend on the whole key. Kept separate rather than
+ * folded into `stableIndex`, because that function's outputs are baked into the item catalogue,
+ * the world bulletins and the legacy fixtures — changing it would rewrite text everywhere to fix
+ * a defect in one place.
+ */
+export function stableChoice(key: string, length: number): number {
+  if (!Number.isSafeInteger(length) || length <= 0) throw new RangeError('Stable choice requires a positive safe length');
+  let hash = 7;
+  for (const character of key) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  // xorshift-multiply finish, so every input bit reaches the bottom of the word.
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 0x7feb352d) >>> 0;
+  hash ^= hash >>> 15;
+  hash = Math.imul(hash, 0x846ca68b) >>> 0;
+  // XOR yields a signed 32-bit value, so this must return to unsigned before the modulo — without
+  // it a negative hash produces a negative index and an undefined option, which is how this was
+  // caught rather than shipped.
+  hash = (hash ^ (hash >>> 16)) >>> 0;
+  return hash % length;
+}
+
 const SCIENTIFIC_NOTATION_THRESHOLD = 1_000_000;
 const MAX_ORDINARY_CHARACTERS = 6;
 const MAX_SPOKEN_CHARACTERS = 40;

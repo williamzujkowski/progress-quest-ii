@@ -1,5 +1,5 @@
 import { SOCIAL_PERSONAS, type SocialPersona, type SocialSeat } from '../data/socialCatalog';
-import { boundCodePoints, MAX_TEXT_CODE_POINTS, formatGameNumber, stableIndex } from '../engine/text';
+import { boundCodePoints, MAX_TEXT_CODE_POINTS, formatGameNumber, stableIndex, stableChoice } from '../engine/text';
 import type { GameTransitionEvent } from '../engine/transition';
 import { projectWorld, type IdentifiedGameTransitionRecord } from './worldContext';
 
@@ -54,7 +54,10 @@ function castFor(source: IdentifiedGameTransitionRecord): Readonly<Record<Social
   const heroKey = `${hero.name}:${hero.race}:${hero.className}`;
   const choosePersona = (seat: SocialSeat): SocialPersona => {
     const options = SOCIAL_PERSONAS.filter((persona) => persona.seat === seat);
-    const persona = options[stableIndex(`${heroKey}:${seat}`, options.length)];
+    // stableChoice rather than stableIndex: with two options per seat the latter decides on the
+    // parity of the key's character sum, so all four seats resolved together and every hero drew
+    // one of two fixed troupes instead of one of sixteen combinations.
+    const persona = options[stableChoice(`${heroKey}:${seat}`, options.length)];
     if (!persona) throw new Error(`Social catalog has no persona for the ${seat} seat`);
     return persona;
   };
