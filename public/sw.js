@@ -1,3 +1,7 @@
+// Deliberately still the old slug, after the move to /progress-quest-iii/. Caches are keyed per
+// origin rather than per scope, so this prefix is what the cleanup filter matches on: renaming it
+// would leave every cache an installed copy already wrote unmatched and therefore never collected.
+// It is a storage key that happens to read like a name, and storage keys do not get renamed here.
 const CACHE_PREFIX = 'progress-quest-ii-shell-';
 const CACHE_NAME = `${CACHE_PREFIX}__BUILD_ID__`;
 const PRECACHE_URLS = __PRECACHE_URLS__;

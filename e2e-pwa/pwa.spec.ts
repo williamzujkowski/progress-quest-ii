@@ -49,7 +49,7 @@ test('loads the Pages-scoped app offline after one successful visit', async ({ p
   await expect(page.locator('.pwa-status[role="status"]')).toHaveCount(0);
   await page.reload();
 
-  expect(await page.evaluate(() => navigator.serviceWorker.controller?.scriptURL)).toMatch(/\/progress-quest-ii\/sw\.js$/);
+  expect(await page.evaluate(() => navigator.serviceWorker.controller?.scriptURL)).toMatch(/\/progress-quest-iii\/sw\.js$/);
   await context.setOffline(true);
   await page.reload({ waitUntil: 'domcontentloaded' });
 
