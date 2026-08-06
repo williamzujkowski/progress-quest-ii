@@ -355,3 +355,25 @@ describe('item tooltip details', () => {
     expect(other).toBe(first);
   });
 });
+
+describe('modifier count as a register signal', () => {
+  it('files a stacked item with more ceremony and no more power', () => {
+    // Modifier count is the engine's own rarity signal. It escalates the paperwork's tone; it must
+    // never escalate the claim, because equipment has no combat contribution at any quality.
+    const stacked = describeEquipment('+3 Holy Fine Chain Mail', 'Hauberk');
+    const plain = describeEquipment('+1 Fine Chain Mail', 'Hauberk');
+
+    expect(stacked.description).not.toBe(plain.description);
+    for (const details of [stacked, plain]) {
+      expect(details.effect).toContain('Combat contribution: none');
+      expect(details.description).not.toMatch(/stronger|tougher|deadlier|more effective/i);
+    }
+  });
+
+  it('keeps a stacked story inside the same bounds as any other', () => {
+    // The register may change; the two-sentence and length contracts may not.
+    const stacked = describeEquipment('+3 Holy Fine Chain Mail', 'Hauberk');
+    expect(stacked.description.split(/(?<=\.)\s+/).filter(Boolean).length).toBeLessThanOrEqual(2);
+    expect(stacked.description.length).toBeLessThanOrEqual(220);
+  });
+});
