@@ -221,6 +221,21 @@ function linesFor(candidate: SceneCandidate): readonly SceneLine[] {
         { speaker: 'support', channel: 'guild', text: 'Acquisition is confirmed. Glory has not submitted supporting evidence.' },
         { speaker: 'hero', channel: 'hero', text: 'Then the paperwork and I are equally equipped.' },
       ],
+      [
+        { speaker: 'logistics', channel: 'party', text: `Intake of ${formatGameNumber(event.quantity)} unit${event.quantity === 1 ? '' : 's'} logged. The previous owner has not been located and is not being sought.` },
+        { speaker: 'support', channel: 'party', text: 'Sentimental value has been assessed at the usual figure.' },
+        { speaker: 'hero', channel: 'hero', text: 'Record it as found, which is nearly true.' },
+      ],
+      [
+        { speaker: 'logistics', channel: 'guild', text: `Manifest amended by ${formatGameNumber(event.quantity)}. The amendment is longer than the item.` },
+        { speaker: 'support', channel: 'guild', text: 'Storage has been notified and has responded with a form.' },
+        { speaker: 'hero', channel: 'hero', text: 'I shall carry it until carrying it becomes the story.' },
+      ],
+      [
+        { speaker: 'logistics', channel: 'guild', text: `${formatGameNumber(event.quantity)} unit${event.quantity === 1 ? '' : 's'} accessioned. The catalogue has been asked to make room and has declined.` },
+        { speaker: 'support', channel: 'guild', text: 'No ceremony is scheduled. None was requested.' },
+        { speaker: 'hero', channel: 'hero', text: 'Good. Ceremony weighs the same as everything else.' },
+      ],
     ] as const, candidate);
   }
   if (candidate.kind === 'market' && event.type === 'inventory_sold') {
@@ -261,6 +276,16 @@ function linesFor(candidate: SceneCandidate): readonly SceneLine[] {
           { speaker: 'field', channel: 'guild', text: `Road assignment confirmed: ${world.context.spokenLocation}. The map appears cautiously involved.` },
           { speaker: 'logistics', channel: 'guild', text: 'Travel expenses remain zero and therefore beyond audit.' },
           { speaker: 'hero', channel: 'hero', text: 'Declare the detour intentional and resume competence.' },
+        ],
+        [
+          { speaker: 'field', channel: 'party', text: `${world.context.spokenLocation} has been entered on the strength of a previous assurance.` },
+          { speaker: 'logistics', channel: 'party', text: 'The assurance was verbal and is no longer available for comment.' },
+          { speaker: 'hero', channel: 'hero', text: 'Then we are making excellent unverified progress.' },
+        ],
+        [
+          { speaker: 'field', channel: 'guild', text: `Passage through ${world.context.spokenLocation} is under way and has not been contested.` },
+          { speaker: 'logistics', channel: 'guild', text: 'Nobody is positioned to contest it, which the file records as agreement.' },
+          { speaker: 'hero', channel: 'hero', text: 'Unanimity is easier with a smaller quorum.' },
         ],
       ] as const, candidate);
     }
