@@ -43,6 +43,10 @@ correctness > simplicity > performance > cleverness
 
 This codebase incorporates **Ponytail** (`https://github.com/dietrichgebert/ponytail`). Write only what the task needs: lazy means efficient, not careless. The best code is the code never written.
 
+The full skill is vendored at `.agents/skills/ponytail/SKILL.md` — upstream text verbatim, with project-specific guidance below a marked overlay heading and the MIT terms retained under `.agents/skills/licenses/`. Read it rather than working from the summary below when a decision is close; it carries the intensity switch (`lite` / `full` / `ultra`) and the scope note that the ladder governs coding work, not prose or research.
+
+**What the ladder does not govern.** It decides how a thing is built, never whether a claim is true. `CONTEXT.md` and the editorial contract sit outside it: the laziest copy that asserts an unmodelled mechanic is still wrong, and the shortest test that cannot fail is worth less than no test. When simplicity and correctness disagree, correctness wins and the trade-off gets a `ponytail:` comment saying so.
+
 ### The 7-Rung Decision Ladder
 Before writing any code, stop at the first rung that holds:
 

@@ -51,7 +51,7 @@ here would only ever be a second opinion competing with the tool.
 | `grill-me` | mattpocock/skills | MIT | same | Identical |
 | `teach` | mattpocock/skills | MIT | same | Identical |
 | `handoff` | mattpocock/skills | MIT | same | Identical |
-| `ponytail` | DietrichGebert/ponytail | MIT | [`licenses/ponytail-LICENSE.txt`](licenses/ponytail-LICENSE.txt) | Modified |
+| `ponytail` | DietrichGebert/ponytail | MIT | [`licenses/ponytail-LICENSE.txt`](licenses/ponytail-LICENSE.txt) | Upstream text verbatim, plus a marked local overlay |
 | `frontend-design` | Anthropic | Apache-2.0 | [`frontend-design/LICENSE.txt`](frontend-design/LICENSE.txt) | Upstream text verbatim, plus a marked local overlay and the modification notice Apache-2.0 §4(b) requires |
 | `web-design-guidelines` | vercel-labs/web-interface-guidelines | MIT | [`web-design-guidelines/LICENSE.txt`](web-design-guidelines/LICENSE.txt) | Pinned in the skill body; the pattern the others follow |
 | `react-best-practices` | vercel-labs/agent-skills | **See below** | None available | Unresolved |
