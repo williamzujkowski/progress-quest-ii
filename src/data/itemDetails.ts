@@ -122,7 +122,7 @@ const equipmentOpening = (base: string, slot: EquipSlot): string => {
   return `${opening.slice(0, -1)}; its intake file was ${dossierBeat(baseIndex, base, 82)}.`;
 };
 
-const equipmentAssessment = (modifier: string, modifierValue: number, slot: EquipSlot, explicitLabel?: string): string => {
+const equipmentAssessment = (modifier: string, modifierValue: number, slot: EquipSlot, explicitLabel: string | undefined, stacked: boolean): string => {
   const label = boundedLabel(modifier, 'unnamed modifier');
   const table = slot === 'Weapon' ? [...OFFENSE_ATTRIB, ...OFFENSE_BAD] : [...DEFENSE_ATTRIB, ...DEFENSE_BAD];
   const modifierIndex = table.findIndex(([candidate]) => candidate === modifier);
@@ -144,7 +144,16 @@ const equipmentAssessment = (modifier: string, modifierValue: number, slot: Equi
       `Procurement lists ${label} under cosmetic litigation`,
       `${label} survived vigorous polishing of the report`,
     ];
-  return `${choose(assessments, `${modifier}:assessment`)}; its warranty was ${dossierBeat(modifierIndex, modifier, 123)}${mark}.`;
+  // Modifier count is the engine's own rarity signal and was read only as a number to add up.
+  // Across four simulated hours it falls out at roughly three quarters plain, a quarter single,
+  // and a twentieth double, so a second modifier is rare enough to be worth noticing and common
+  // enough to be seen. The register escalates and the claim does not: a stacked item is filed
+  // with more ceremony and is exactly as useless in a fight, which the effect line still says.
+  //
+  // Carried inside the existing sentence rather than added after it, because equipment stories
+  // are held to two sentences and a length bound, both of which are tested.
+  const custody = stacked ? 'its warranties were countersigned and' : 'its warranty was';
+  return `${choose(assessments, `${modifier}:assessment`)}; ${custody} ${dossierBeat(modifierIndex, modifier, 123)}${mark}.`;
 };
 
 const boundEquipmentStory = (
@@ -176,7 +185,7 @@ export function describeEquipment(name: string, slot: EquipSlot): ItemDetails {
   const explicitLabel = mark ? signedGameNumber(mark.value) : undefined;
   const opening = equipmentOpening(base, slot);
   const story = modifier
-    ? `${opening} ${equipmentAssessment(modifier, modifierTotal, slot, explicitLabel)}`
+    ? `${opening} ${equipmentAssessment(modifier, modifierTotal, slot, explicitLabel, modifiers.length >= 2)}`
     : `${opening} It carries ${explicitLabel ? `a ${explicitLabel} assessor’s mark and no` : 'no'} named modifier, which procurement calls restraint.`;
   const description = boundEquipmentStory(story, base, modifier, slot, explicitLabel);
   const qualityParts = [
