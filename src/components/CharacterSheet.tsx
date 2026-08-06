@@ -8,6 +8,8 @@ import { GameNumber } from './GameNumber';
 import { ItemTooltip } from './ItemTooltip';
 import { Commendations } from './Commendations';
 import { Caseload } from './Caseload';
+import { isEmpty as caseloadIsEmpty } from '../state/caseload';
+import { isEmpty as commendationsIsEmpty } from '../state/commendations';
 
 export const CharacterSheetView: React.FC = () => {
   // Equip and Spells changed identity 3 times across a measured 400 ticks; the character
@@ -17,6 +19,12 @@ export const CharacterSheetView: React.FC = () => {
     Spells: state.character.Spells,
   })));
   const character = { Equip, Spells };
+  // The disclosure follows the same rule its contents do: absent until there is something to
+  // file. An empty "Records" heading is a promise of nothing, and takes up the vertical room the
+  // one-screen desktop layout is measured against.
+  const hasRecords = useGameStore(
+    (state) => !commendationsIsEmpty(state.commendations) || !caseloadIsEmpty(state.caseload),
+  );
 
   return (
     <section className="card character-card" aria-labelledby="loadout-heading" tabIndex={0}>
@@ -63,8 +71,23 @@ export const CharacterSheetView: React.FC = () => {
         )}
       </div>
 
-      <Commendations />
-      <Caseload />
+      {/*
+        Records fold away by default. They change on a level, a sale, or a closed quest — not on
+        the tick — while everything above them moves constantly, and on a phone they were three
+        stacked sections standing between the loadout and the rest of the page.
+
+        A native disclosure rather than tabs, a drawer, or a separate screen. It is keyboard
+        operable and announced without a line of ARIA, it cannot strand anyone away from the live
+        numbers the way a route could, and each future record type becomes one more block in here
+        rather than one more panel to place.
+      */}
+      {hasRecords && (
+        <details className="records-details">
+          <summary>Records</summary>
+          <Commendations />
+          <Caseload />
+        </details>
+      )}
     </section>
   );
 };

@@ -1465,6 +1465,8 @@ test.describe('closed casework archive', () => {
     const expectNoPageErrors = watchForErrors(page);
     await page.goto('/');
 
+    // The archive lives behind a disclosure now, so opening it is part of reaching it.
+    await page.locator('.records-details > summary').filter({ hasText: /Case archive/i }).click();
     const archive = page.getByRole('list', { name: /Closed casework/i });
     await expect(archive).toBeVisible();
     await expect(archive.locator('li')).toHaveCount(40);
