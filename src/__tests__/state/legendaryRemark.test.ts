@@ -66,3 +66,63 @@ describe('legendary acquisitions', () => {
     }
   });
 });
+
+describe('opponent count exposure', () => {
+  it('reports a count on encounters and on nothing else', async () => {
+    const rng = new RandomGenerator('opponent-exposure');
+    let state = {
+      character: createNewCharacter('Counter', 'Half Orc', 'Robot Monk', rng),
+      progression: { experience: { currentSeconds: 0, maxSeconds: levelUpTime(1) }, completedTasks: 0, elapsedSeconds: 0 },
+    };
+    const seenByType = new Map<string, Set<number | undefined>>();
+    for (let step = 0; step < 2 * 60 * 60 * 20; step += 1) {
+      state = advanceGame(state, 50, rng).state;
+      const task = state.character.Task;
+      const bucket = seenByType.get(task.type) ?? new Set();
+      bucket.add(task.opponents);
+      seenByType.set(task.type, bucket);
+    }
+
+    expect([...seenByType.get('kill')!].every((count) => count !== undefined && count >= 1)).toBe(true);
+    // Nothing that is not an encounter claims a count.
+    for (const [type, counts] of seenByType) {
+      if (type === 'kill') continue;
+      expect([...counts]).toEqual([undefined]);
+    }
+  });
+
+  it('reports more than one where the engine actually fights a crowd', async () => {
+    // Multi-opponent pulls need a level that hours of play would be needed to reach, so the
+    // generator is asked directly rather than waited for. Without this the field could report a
+    // constant 1 forever and the test above would still pass.
+    const { generateTaskDescription } = await import('../../engine/sim');
+    const rng = new RandomGenerator('crowd');
+    const character = createNewCharacter('Veteran', 'Half Orc', 'Robot Monk', rng);
+    character.Traits.Level = 60;
+    character.Inventory = [];
+
+    const counts = new Set<number | undefined>();
+    for (let attempt = 0; attempt < 400; attempt += 1) {
+      const task = generateTaskDescription(rng, character);
+      if (task.type === 'kill') counts.add(task.opponents);
+    }
+    expect([...counts].some((count) => (count ?? 0) > 1)).toBe(true);
+  });
+
+  it('restores a checkpoint written before the field existed', async () => {
+    // Save compatibility is the risk this change actually carries, so it is asserted rather than
+    // reasoned about: a task with no opponents field must still parse.
+    const { progressTaskSchema } = await import('../../state/schemas');
+    const legacyTask = { description: 'Executing a kobold...', durationMs: 1000, elapsedMs: 0, type: 'kill' as const };
+    expect(progressTaskSchema.safeParse(legacyTask).success).toBe(true);
+    expect(progressTaskSchema.safeParse({ ...legacyTask, opponents: 3 }).success).toBe(true);
+    // A large crowd is legitimate - the count is derived from level, and at the maximum level the
+    // engine produces hundreds of millions - so the bound is the shared persistence ceiling rather
+    // than a guess at a plausible number. Only the impossible is refused.
+    const { MAX_PERSISTED_VALUE } = await import('../../data/limits');
+    expect(progressTaskSchema.safeParse({ ...legacyTask, opponents: 10_000 }).success).toBe(true);
+    expect(progressTaskSchema.safeParse({ ...legacyTask, opponents: 0 }).success).toBe(false);
+    expect(progressTaskSchema.safeParse({ ...legacyTask, opponents: 1.5 }).success).toBe(false);
+    expect(progressTaskSchema.safeParse({ ...legacyTask, opponents: MAX_PERSISTED_VALUE + 1 }).success).toBe(false);
+  });
+});

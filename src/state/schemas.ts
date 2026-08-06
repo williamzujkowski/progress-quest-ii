@@ -95,6 +95,12 @@ export const progressTaskSchema = z.object({
     z.object({ type: z.literal('fixed'), item: z.string().min(1).max(200) }).strict(),
     z.object({ type: z.literal('random') }).strict(),
   ]).optional(),
+  // Optional so a checkpoint written before the field still restores, and bounded by the same
+  // ceiling every other persisted figure uses. A tighter, more plausible-looking bound was tried
+  // first and rejected a character the engine can legitimately produce: at the maximum level the
+  // count reaches hundreds of millions, because it is derived from the level. The bound is here
+  // to keep a hostile save finite, not to express an opinion about crowd sizes.
+  opponents: z.number().int().min(1).max(MAX_PERSISTED_VALUE).optional(),
 }).strict().refine(({ durationMs, elapsedMs }) => elapsedMs <= durationMs, {
   message: 'Task elapsed time cannot exceed its duration.',
   path: ['elapsedMs'],
