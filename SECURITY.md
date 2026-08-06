@@ -1,6 +1,6 @@
 # Security Policy
 
-Progress Quest II is an unofficial, non-commercial modernization of a zero-player RPG. It has
+Progress Quest III is an unofficial, non-commercial modernization of a zero-player RPG. It has
 no backend, no accounts, and no network calls: everything runs in the browser and every byte it
 persists stays in that browser's own storage. That bounds what a vulnerability here can do, but
 it does not make the surface empty — imported save data, browser storage, the clipboard, and

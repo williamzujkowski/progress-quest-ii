@@ -76,10 +76,18 @@ defunct freeware directories.
 
 ## Still open
 
-- **The tagline.** The masthead currently reads "Zero players. Zero developers. Progress continues
-  regardless." and `index.html` carries "The Sequel Nobody Had to Play" as the browser title. With
-  the subtitle no longer telling the missing-sequel joke, one of those is the natural place for it.
-  Not decided here.
+- ~~**The tagline.**~~ Resolved, by discovering the question was wrong. This ADR assumed the
+  missing-sequel joke needed rehoming once the subtitle stopped telling it. There is no missing
+  sequel: two *Progress Quest 2*s already exist, which is recorded three paragraphs above this one
+  and was contradicted anyway. A tagline built on it would have asserted something false, which the
+  editorial contract forbids and which is a worse failure than an unfunny tagline.
+
+  So the master tagline is unchanged — "Zero players. Zero developers. Progress continues
+  regardless." is true, is the thing the project actually is, and does not compete with the
+  subtitle. The browser title takes the full name, because a tab is what lands in bookmarks and
+  history and spending it on a joke leaves the title displayed nowhere. The numeral joke, in its
+  truthful form — the second installment is oversubscribed, not absent — went to the README, where
+  prose can carry it.
 - **The repository and Pages move.** Unchanged from #140: redirects planned before the URL moves,
   and #111 already tracks the older `/progquest/` path.
 

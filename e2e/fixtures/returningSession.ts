@@ -11,6 +11,9 @@ const activeSession = JSON.stringify({
     rngState: rng.getState(),
     progression: { experience: { currentSeconds: 0, maxSeconds: levelUpTime(1) }, completedTasks: 0, elapsedSeconds: 0 },
     isPaused: false,
+    // Deliberately the pre-rename wording: this fixture stands in for a save written before the
+    // title changed, and the log is stored text rather than something the app regenerates. Updating
+    // it would quietly retire the one case that proves an older save still restores and renders.
     log: ['Welcome to Progress Quest II! Krg the Hob-Hobbit Robot Monk sets out on an adventure.'],
   },
 });

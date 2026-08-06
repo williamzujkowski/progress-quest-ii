@@ -28,7 +28,7 @@ test('the icon is first-party artwork rather than a starter asset', async () => 
   const svg = await readFile(ICON_SOURCE, 'utf8');
 
   // Names the application, so the file identifies what it belongs to rather than only how it draws.
-  assert.match(svg, /<title>Progress Quest II<\/title>/);
+  assert.match(svg, /<title>Progress Quest III<\/title>/);
   // The starter mark this replaced was a single filled path in one signature colour. Asserting its
   // absence keeps a regeneration from a stale source from quietly reinstating it.
   assert.doesNotMatch(svg, /863bff|7e14ff/i, 'the favicon must not carry the starter mark colours');

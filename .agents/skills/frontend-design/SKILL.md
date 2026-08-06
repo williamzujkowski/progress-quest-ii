@@ -9,7 +9,7 @@ license: Complete terms in LICENSE.txt
   Licensed under Apache-2.0; the full terms are in LICENSE.txt beside this file.
 
   Apache-2.0 section 4(b) requires that modified files carry prominent notice of modification.
-  This file is modified only by the addition of the "Progress Quest II overlay" section at the
+  This file is modified only by the addition of the "Progress Quest III overlay" section at the
   end and this notice. Nothing upstream is edited or removed, so a future sync is a replacement
   of everything above the overlay rather than a merge.
 -->
@@ -67,7 +67,7 @@ Keep the register conversational and tuned: plain verbs, sentence case, no fille
 
 ---
 
-# Progress Quest II overlay
+# Progress Quest III overlay
 
 Local additions. Everything above this heading is upstream and should be replaced wholesale on
 sync rather than merged.

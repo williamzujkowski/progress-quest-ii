@@ -1,7 +1,7 @@
 {
-  "name": "Progress Quest II",
-  "short_name": "ProgQuest II",
-  "description": "The sequel nobody had to play—created by humans, rebuilt by machines, and played by nobody.",
+  "name": "Progress Quest III",
+  "short_name": "ProgQuest III",
+  "description": "A zero-player RPG—created by humans, rebuilt by machines, and played by nobody.",
   "lang": "en",
   "start_url": "./",
   "scope": "./",

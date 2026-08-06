@@ -117,7 +117,7 @@ export const useGameStore = create<GameStore>((set, get) => {
 
   return {
     character: initialChar,
-    log: createActivityEntries([`Welcome to Progress Quest II! ${initialChar.Traits.Name} the ${initialChar.Traits.Race} ${initialChar.Traits.Class} sets out on an adventure.`], 0),
+    log: createActivityEntries([`Welcome to Progress Quest III! ${initialChar.Traits.Name} the ${initialChar.Traits.Race} ${initialChar.Traits.Class} sets out on an adventure.`], 0),
     worldNotices: [],
     socialEntries: [],
     commendations: initialCommendations,
