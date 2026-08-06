@@ -8,7 +8,7 @@ There are already two *Progress Quest 2*s out there. Neither is ours, so we went
 
 ## Visit the live game
 
-Open the [Progress Quest III GitHub Pages site](https://williamzujkowski.github.io/progress-quest-ii/) in a current desktop or mobile browser.
+Open the [Progress Quest III GitHub Pages site](https://williamzujkowski.github.io/progress-quest-iii/) in a current desktop or mobile browser.
 
 The intended player story is pleasantly hands-off:
 

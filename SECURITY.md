@@ -9,7 +9,7 @@ the service worker are all real trust boundaries.
 ## Reporting a vulnerability
 
 Report privately through GitHub's
-[private vulnerability reporting](https://github.com/williamzujkowski/progress-quest-ii/security/advisories/new)
+[private vulnerability reporting](https://github.com/williamzujkowski/progress-quest-iii/security/advisories/new)
 rather than opening a public issue.
 
 Please include what you did, what happened, and what you expected — a save payload or a
@@ -61,7 +61,7 @@ Stated so a reporter knows what has already been considered:
 Provenance is only worth having if it can be checked, so the check is written down:
 
 ```sh
-gh attestation verify artifact.tar --repo williamzujkowski/progress-quest-ii
+gh attestation verify artifact.tar --repo williamzujkowski/progress-quest-iii
 ```
 
 `artifact.tar` is the `github-pages` artifact from the deploy run that published the version you
@@ -70,7 +70,7 @@ are checking. The subcommand needs GitHub CLI 2.49 or newer; older builds report
 Without a recent CLI, the attestation can be fetched by digest instead:
 
 ```sh
-gh api repos/williamzujkowski/progress-quest-ii/attestations/sha256:<digest>
+gh api repos/williamzujkowski/progress-quest-iii/attestations/sha256:<digest>
 ```
 
 That returns the in-toto envelope and its Rekor transparency-log entry, but retrieving an

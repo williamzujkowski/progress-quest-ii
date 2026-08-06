@@ -8,14 +8,14 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:4173/progress-quest-ii/',
+    baseURL: 'http://127.0.0.1:4173/progress-quest-iii/',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     serviceWorkers: 'allow',
   },
   webServer: {
     command: 'node scripts/serve-production.mjs',
-    url: 'http://127.0.0.1:4173/progress-quest-ii/',
+    url: 'http://127.0.0.1:4173/progress-quest-iii/',
     reuseExistingServer: false,
     timeout: 120000,
   },

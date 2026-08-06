@@ -3,7 +3,7 @@ Last updated: 2026-08-04
 
 This file ships with the PWA. It records direct production inputs; it does not
 change their licenses or resolve the legacy-web-source ambiguity documented at
-https://github.com/williamzujkowski/progress-quest-ii/blob/main/docs/content-provenance.md.
+https://github.com/williamzujkowski/progress-quest-iii/blob/main/docs/content-provenance.md.
 
 PROJECT CREDIT
 

@@ -4,7 +4,7 @@ import { extname, resolve, sep } from 'node:path';
 
 const host = '127.0.0.1';
 const port = 4173;
-const basePath = '/progress-quest-ii/';
+const basePath = '/progress-quest-iii/';
 const distPath = resolve('dist');
 const workerModes = new Set(['normal', 'missing', 'update', 'broken', 'stalled']);
 let workerMode = 'normal';
