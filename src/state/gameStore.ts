@@ -133,6 +133,9 @@ export const useGameStore = create<GameStore>((set, get) => {
     togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
 
     startSession: (request: StartSessionRequest) => {
+      // Whoever was mid-catch-up is gone. A digest describes one absence by one character, and
+      // carrying a partial one across would report another session's work as this one's.
+      drainDigest = EMPTY_DIGEST;
       const { nextActivityId, sessionGeneration } = get();
       let character: CharacterSheet;
       let rng: RandomGenerator;
@@ -167,6 +170,8 @@ export const useGameStore = create<GameStore>((set, get) => {
     },
 
     restoreSession: (session) => {
+      // Same reasoning as startSession: the drain this was accumulating no longer has an owner.
+      drainDigest = EMPTY_DIGEST;
       const { nextActivityId, sessionGeneration } = get();
       const rng = new RandomGenerator('restored-session');
       rng.setState([...session.rngState]);

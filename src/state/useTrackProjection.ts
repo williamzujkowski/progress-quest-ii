@@ -41,7 +41,22 @@ const readTrack = (track: ProjectedTrack) => {
  */
 export function useTrackProjection(track: ProjectedTrack, nowMs: () => number = systemNowMs): number | null {
   const samples = useRef<TrackSample[]>([]);
+  const sampledTrack = useRef<ProjectedTrack>(track);
   const [seconds, setSeconds] = useState<number | null>(null);
+
+  // Discarded when the track changes, and only then. The buffer is a ref, so it would otherwise
+  // survive the switch and the projection would divide one track's progress by the other's
+  // elapsed time — an error with no bound, since the two tracks share no scale, and one that can
+  // read as negative and return null, hiding a projection that should have shown.
+  //
+  // Keyed on the track rather than cleared whenever the effect restarts. The effect also restarts
+  // when the clock function's identity changes, which happens on every render for any caller
+  // passing an inline arrow — clearing there would empty the buffer continuously and the readout
+  // would never have enough samples to say anything.
+  if (sampledTrack.current !== track) {
+    sampledTrack.current = track;
+    samples.current = [];
+  }
 
   useEffect(() => {
     const sample = () => {

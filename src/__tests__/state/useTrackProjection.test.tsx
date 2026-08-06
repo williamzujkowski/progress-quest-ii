@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, render } from '@testing-library/react';
+import { act, cleanup, render } from '@testing-library/react';
 import React from 'react';
 import { useGameStore } from '../../state/gameStore';
 import { useTrackProjection } from '../../state/useTrackProjection';
@@ -81,5 +81,65 @@ describe('promotion projection sampling', () => {
 
     expect(setInterval).toHaveBeenCalledTimes(1);
     setInterval.mockRestore();
+  });
+});
+
+describe('switching which track is projected', () => {
+  /** Drives a fixed plot-track sequence and returns what the hook projects at the end. */
+  const projectPlotAfter = (precedingExperienceSamples: number) => {
+    let clock = 0;
+    const now = () => clock;
+    let seen: number | null | undefined;
+    const Switchable: React.FC<{ track: 'experience' | 'plot' }> = ({ track }) => {
+      seen = useTrackProjection(track, now);
+      return null;
+    };
+
+    useGameStore.setState({
+      progression: { experience: { currentSeconds: 0, maxSeconds: 100_000 }, completedTasks: 0, elapsedSeconds: 0 },
+      character: { ...useGameStore.getState().character, Plot: { act: 1, currentProgress: 0, maxProgress: 50_000 } },
+    });
+
+    const { rerender } = render(<Switchable track={precedingExperienceSamples > 0 ? 'experience' : 'plot'} />);
+
+    // Optional history on the other track, with numbers unlike the plot track's.
+    for (let step = 1; step <= precedingExperienceSamples; step += 1) {
+      clock += 10_000;
+      act(() => {
+        useGameStore.setState({
+          progression: { experience: { currentSeconds: step * 900, maxSeconds: 100_000 }, completedTasks: 0, elapsedSeconds: step * 10 },
+        });
+        vi.advanceTimersByTime(10_000);
+      });
+    }
+    if (precedingExperienceSamples > 0) act(() => { rerender(<Switchable track="plot" />); });
+
+    // The plot sequence both runs share.
+    for (let step = 1; step <= 6; step += 1) {
+      clock += 10_000;
+      act(() => {
+        const previous = useGameStore.getState();
+        useGameStore.setState({
+          progression: { ...previous.progression, elapsedSeconds: (precedingExperienceSamples * 10) + step * 10 },
+          character: { ...previous.character, Plot: { act: 1, currentProgress: step * 200, maxProgress: 50_000 } },
+        });
+        vi.advanceTimersByTime(10_000);
+      });
+    }
+    cleanup();
+    return seen;
+  };
+
+  it('projects the plot track from plot samples only', () => {
+    // The buffer is a ref and survives a track change. Without discarding it, the projection
+    // divides plot progress by experience-track elapsed time — two scales with nothing in common,
+    // so the error has no bound and can read as negative, returning null and hiding a figure that
+    // should have shown.
+    vi.useFakeTimers();
+    const clean = projectPlotAfter(0);
+    const afterSwitch = projectPlotAfter(6);
+
+    expect(typeof clean).toBe('number');
+    expect(afterSwitch).toBe(clean);
   });
 });

@@ -90,3 +90,45 @@ describe('the digest against a real drain', () => {
     expect(describeDigest(expected)).toContain(`${expected.levels} level`);
   });
 });
+
+describe('a digest belongs to one absence', () => {
+  const originalState = useGameStore.getState();
+
+  /** Runs one character's credited absence to completion and returns the line it filed. */
+  const digestFor = (name: string, seed: number, precededByAbandonedDrain: boolean) => {
+    useGameStore.setState(originalState, true);
+
+    if (precededByAbandonedDrain) {
+      useGameStore.getState().startSession({
+        source: 'creation', name: 'Abandoned', race: 'Half Orc', klass: 'Ur-Paladin', seed: 999,
+      });
+      useGameStore.getState().tick(6 * 60 * 60 * 1000);
+      // A handful of ticks only, so the backlog is still deep when the character is replaced.
+      for (let step = 0; step < 5; step += 1) useGameStore.getState().tick(50);
+      expect(useGameStore.getState().pendingElapsedMs).toBeGreaterThan(0);
+    }
+
+    useGameStore.getState().startSession({
+      source: 'creation', name, race: 'Half Orc', klass: 'Ur-Paladin', seed,
+    });
+    useGameStore.getState().tick(20 * 60 * 1000);
+    for (let guard = 0; guard < 20_000 && useGameStore.getState().pendingElapsedMs > 0; guard += 1) {
+      useGameStore.getState().tick(50);
+    }
+
+    const digests = useGameStore.getState().log.filter(({ message }) => message.startsWith('Backlog processed'));
+    expect(digests).toHaveLength(1);
+    return digests[0]!.message;
+  };
+
+  it('does not carry an abandoned drain into the next character', () => {
+    // The accumulator is module-level. Without a reset when the session changes, an interrupted
+    // drain survives whoever interrupted it and reports their work as the next character's.
+    // The same character with the same seed must file the same line either way.
+    const alone = digestFor('Beta', 222, false);
+    const afterAbandonment = digestFor('Beta', 222, true);
+
+    expect(afterAbandonment).toBe(alone);
+    useGameStore.setState(originalState, true);
+  });
+});
