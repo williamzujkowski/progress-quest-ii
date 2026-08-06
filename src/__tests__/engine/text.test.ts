@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDuration, indefinite, plural } from '../../engine/text';
+import { formatDuration, indefinite, plural, stableChoice } from '../../engine/text';
 
 describe('legacy text grammar', () => {
   it.each([
@@ -48,5 +48,49 @@ describe('duration formatting', () => {
     expect(formatDuration(-1)).toBe('—');
     expect(formatDuration(Number.NaN)).toBe('—');
     expect(formatDuration(Number.POSITIVE_INFINITY)).toBe('—');
+  });
+});
+
+describe('stable choice', () => {
+  it('returns an index inside the range for every key', () => {
+    // The first implementation let a signed intermediate through and produced negative indices,
+    // which read as an undefined option rather than as an error.
+    for (let i = 0; i < 2_000; i += 1) {
+      for (const length of [1, 2, 3, 8, 47]) {
+        const index = stableChoice(`key-${i}`, length);
+        expect(Number.isInteger(index)).toBe(true);
+        expect(index).toBeGreaterThanOrEqual(0);
+        expect(index).toBeLessThan(length);
+      }
+    }
+  });
+
+  it('is stable for a key, which is the whole point of it', () => {
+    expect(stableChoice('the same key', 7)).toBe(stableChoice('the same key', 7));
+  });
+
+  it('decides independently for keys differing only by a suffix', () => {
+    // stableIndex multiplies by 31, so its result modulo two depends only on the parity of the
+    // key's character-code sum. Four keys sharing a prefix and differing by a one-word suffix
+    // therefore moved together, and a cast of four two-option seats had two outcomes instead of
+    // sixteen. This pins the property that fixed it.
+    const suffixes = ['official', 'logistics', 'field', 'support'];
+    const combinations = new Set<string>();
+    for (let i = 0; i < 1_000; i += 1) {
+      combinations.add(suffixes.map((suffix) => stableChoice(`subject-${i}:${suffix}`, 2)).join(''));
+    }
+    expect(combinations.size).toBe(2 ** suffixes.length);
+  });
+
+  it('spreads roughly evenly across the options', () => {
+    const counts = new Array(4).fill(0);
+    for (let i = 0; i < 4_000; i += 1) counts[stableChoice(`spread-${i}`, 4)] += 1;
+    for (const count of counts) expect(count).toBeGreaterThan(4_000 / 4 * 0.8);
+  });
+
+  it('refuses a length that is not a length', () => {
+    for (const length of [0, -1, 1.5, Number.NaN]) {
+      expect(() => stableChoice('key', length)).toThrow(RangeError);
+    }
   });
 });
