@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/strictConsole';
 
 /**
  * #126: the shell used to paint its static dark fallback until React mounted, so a stored light

@@ -54,5 +54,13 @@ export default defineConfig({
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
     },
+    {
+      // A real mobile profile rather than a narrow desktop window: touch input, a device pixel
+      // ratio, and a mobile user agent are what separate this from the viewport-width checks the
+      // suite already makes. Chromium-based, because the WebKit project above already covers the
+      // engine and this is about the input model.
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 7'] },
+    },
   ],
 });
