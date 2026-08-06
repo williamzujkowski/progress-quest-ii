@@ -256,6 +256,13 @@ function noticesFor(source: IdentifiedGameTransitionRecord, context: WorldContex
     if (event.task.type === 'buying' && post.completedTask === 'selling') return [notice(activityId, 0, 'commerce', `Procurement convened at ${townName(post)}.`)];
     if (event.task.type === 'heading' && (post.completedTask === 'selling' || post.completedTask === 'buying')) return [notice(activityId, 0, 'departure', `Departed town for ${fieldName(post)}.`)];
     if (event.task.type === 'kill' && post.completedTask === 'heading') return [notice(activityId, 0, 'arrival', `Arrived at ${fieldName(post)}. Hunting administration resumed.`)];
+    // A pull against several opponents at once. The count is the engine's own - the encounter's
+    // duration is derived from it - so the longer processing time is a modelled fact rather than
+    // a flourish, and saying so is the joke. Anything below two is an ordinary encounter and
+    // needs no permit.
+    if (event.task.type === 'kill' && (event.task.opponents ?? 1) > 1) {
+      return [notice(activityId, 0, 'assignment', `Group assignment: ${formatGameNumber(event.task.opponents!)} opponents processed together, which the schedule accommodates by taking longer.`)];
+    }
     if (event.task.type === 'cinematic' && post.interplotRole === 'nemesis') return [notice(activityId, 0, 'milestone', `${context.venue === 'raid' ? 'Raid-class' : 'Dungeon'} boss framing opened at ${context.location}; no party mechanics were added.`)];
   }
   return [];
