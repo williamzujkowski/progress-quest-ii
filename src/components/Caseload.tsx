@@ -2,7 +2,7 @@ import { Scale } from 'lucide-react';
 import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../state/gameStore';
-import { KIND_LABELS, QUEST_KINDS, isEmpty, mostLitigated } from '../state/caseload';
+import { KIND_LABELS, QUEST_KINDS, displayTarget, isEmpty, mostLitigated } from '../state/caseload';
 import { GameNumber } from './GameNumber';
 
 /**
@@ -40,7 +40,7 @@ export const Caseload: React.FC = () => {
           <div className="equip-item" key="most-litigated">
             <span className="equip-slot">Most frequently filed against</span>
             <span className="commendation-value">
-              {frequent.target} (<GameNumber value={frequent.count} />)
+              {displayTarget(frequent.target)} (<GameNumber value={frequent.count} />)
             </span>
           </div>
         )}

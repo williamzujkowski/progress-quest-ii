@@ -3,7 +3,7 @@ import { MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_STORED_PAYLOAD_LENGTH } from '../
 import type { GameTransitionRecord } from '../../engine/transition';
 import {
   CASELOAD_STORAGE_KEY, EMPTY_CASELOAD, MAX_TRACKED_TARGETS,
-  isEmpty, mergeRecords, mostLitigated, readCaseload, writeCaseload,
+  displayTarget, isEmpty, mergeRecords, mostLitigated, readCaseload, writeCaseload,
 } from '../../state/caseload';
 
 const fakeStorage = (initial: Record<string, string> = {}) => {
@@ -175,5 +175,26 @@ describe('against the engine rather than a fixture', () => {
     expect(Object.keys(tally.kinds).length).toBeGreaterThan(1);
     expect(mostLitigated(tally)).not.toBeNull();
     expect(Object.keys(tally.targets).length).toBeLessThanOrEqual(MAX_TRACKED_TARGETS);
+  });
+});
+
+describe('naming a target that is filed under a composite key', () => {
+  it('shows the name out of the engine key rather than the key', () => {
+    // The engine identifies an extermination target as name|level|item, which keeps two monsters
+    // of the same name apart and is not a sentence. Verified against real engine output:
+    // "Gnoll|2|collar" is what actually lands in the tally.
+    expect(displayTarget('Gnoll|2|collar')).toBe('Gnoll');
+    expect(displayTarget('Stun Worm|2|trode')).toBe('Stun Worm');
+  });
+
+  it('leaves a plain name alone', () => {
+    // Not every quest kind sets a composite target, and a name with no delimiter must survive.
+    expect(displayTarget('Kobold')).toBe('Kobold');
+  });
+
+  it('falls back to the key rather than rendering nothing', () => {
+    // A leading delimiter would otherwise produce an empty label, which reads as a broken panel.
+    expect(displayTarget('|2|collar')).toBe('|2|collar');
+    expect(displayTarget('')).toBe('');
   });
 });
