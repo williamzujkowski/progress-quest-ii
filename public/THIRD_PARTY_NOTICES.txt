@@ -69,9 +69,20 @@ The imported terminal themes retain attribution as follows:
   97e244cf98a0eb2ce4339d2069ec1bba6c81f141 — MIT
   Copyright (c) 2011 to Present Mark Badolato
   The collection license notes that each individual theme's copyright and
-  license remains with its author. Those individual terms have not yet been
-  established for these two records; local issue #180 tracks proof or
-  replacement.
+  license remains with its author, so the collection notice alone does not
+  finish the chain. Both themes were traced to the commit that introduced
+  them and to the attribution the collection's own CREDITS.md records:
+
+  - Green Phosphor CRT — created by PoshPalette, MIT
+    Copyright (c) PoshPalette contributors
+    https://github.com/livlign/posh-palette
+    Contributed to the collection by the same party, so the author and the
+    contributor are one and the same and no separate permission is relied on.
+
+  - Keys Ocean Sunset HC — created by its contributor, Jesse Miller, using an
+    AI palette generator, and submitted to the collection as original work.
+    There is no third-party rights holder upstream of the contribution, so
+    there is nobody else from whom permission would be owed.
 - Remarque Light and Remarque Dark — native oklch-terminal-themes material,
   MIT, William Zujkowski.
 
