@@ -11,6 +11,7 @@ import { projectWorld, type WorldNotice } from './worldContext';
 import { projectSocialBatch, type SocialEntry } from './socialProjection';
 import { EMPTY_COMMENDATIONS, mergeEvents, mergeExhibit, readCommendations, writeCommendations, type Commendations } from './commendations';
 import { EMPTY_CASELOAD, mergeRecords, readCaseload, writeCaseload, type Caseload } from './caseload';
+import { EMPTY_DIGEST, accumulateDigest, describeDigest, type AbsenceDigest } from './absenceDigest';
 
 // Read once at module load, the same way the roster is read: a ledger that cannot be read is
 // simply an empty one, never a reason for the game not to start.
@@ -26,6 +27,11 @@ const initialCaseload = readCaseload(
 // never rewrites an identical copy.
 let lastPersistedCommendations = initialCommendations;
 let lastPersistedCaseload = initialCaseload;
+
+// What the current catch-up drain has produced so far. Module-level rather than store state
+// because nothing renders it until it is finished and nothing persists it at all: it exists for
+// exactly as long as one backlog takes to work through.
+let drainDigest: AbsenceDigest = EMPTY_DIGEST;
 
 type StartSessionRequest =
   | { source: 'creation'; name: string; race: string; klass: string; seed: PRNGSeed; stats?: StatsMap }
@@ -212,6 +218,13 @@ export const useGameStore = create<GameStore>((set, get) => {
       // tick that finishes a drain need not be one that set a record — and everything banked
       // during the drain has to land on the first opportunity after it, not linger until the next
       // record happens along.
+      // A drain is running whenever the tick started with time banked. Accumulate then, and only
+      // then: ordinary play spends its 50ms immediately and must never produce a digest.
+      const draining = pendingElapsedMs > 0;
+      if (draining) drainDigest = accumulateDigest(drainDigest, sources.map(({ record }) => record.event));
+      const digestLine = draining && result.remainingElapsedMs === 0 ? describeDigest(drainDigest) : null;
+      if (draining && result.remainingElapsedMs === 0) drainDigest = EMPTY_DIGEST;
+
       if (result.remainingElapsedMs === 0 && nextCommendations !== lastPersistedCommendations) {
         lastPersistedCommendations = nextCommendations;
         writeCommendations(typeof window === 'undefined' ? undefined : window.localStorage, nextCommendations);
@@ -229,10 +242,16 @@ export const useGameStore = create<GameStore>((set, get) => {
       set({
         ...result.state,
         pendingElapsedMs: result.remainingElapsedMs,
-        log: [...activity, ...log].slice(0, 50),
+        log: [
+          // Ahead of the batch it summarises, because the feed is newest-first and a summary
+          // that appears below its own contents reads as one more entry rather than a total.
+          ...(digestLine === null ? [] : [{ id: nextActivityId + activity.length, message: digestLine }]),
+          ...activity,
+          ...log,
+        ].slice(0, 50),
         worldNotices: [...projectedWorldNotices, ...worldNotices].slice(0, MAX_WORLD_NOTICES),
         socialEntries: retainWholeSocialScenes([...projectedSocialEntries, ...socialEntries]),
-        nextActivityId: nextActivityId + activity.length,
+        nextActivityId: nextActivityId + activity.length + (digestLine === null ? 0 : 1),
         commendations: nextCommendations,
         caseload: nextCaseload,
       });
