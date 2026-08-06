@@ -19,7 +19,7 @@ Do not import code, prose, data, screenshots, art, or assets from unofficial Pro
 | Classic game data, vocabulary, flavor text, and fidelity implementation | Primarily `src/data/traits.ts`, plus fidelity-sensitive strings and algorithms in `src/engine/` and tests | Ported or independently reimplemented against `pq-web-src/`; fidelity tests intentionally preserve the baseline | Progress Quest-derived expression and implementation. Do not assume the root MIT notice alone grants reuse rights. See “Progress Quest evidence” below. |
 | Legacy web reference | `pq-web-src/` git submodule at commit `3e9431b38cb54647530197501a29b8cce6c9f4f4` from `https://bitbucket.org/grumdrig/pq-web.git` | Eric Fredricksen's JavaScript web port; `main.js` and `newguy.js` contain all-rights-reserved headers | Read-only test oracle, not part of the production bundle. Repository-level permission for the web port is not explicit; retain separately and do not copy its assets into the modern UI. |
 | Original Progress Quest license evidence | Official `https://progressquest.com/dl.php` links `https://progressquest.com/license.txt` and says the agreement applies before downloading any version | MIT-style grant, copyright 2002–2004 Eric Fredricksen | Strong evidence of permissive terms for Progress Quest, but the project has not established whether it supersedes the later web-port headers. Owner confirmation or qualified legal review remains required before representing the ambiguity as resolved. |
-| Runtime libraries and themes | Direct production dependencies in `package.json`; exact versions/integrity in `package-lock.json` | Upstream packages | MIT, ISC, and package-specific terms; see `public/THIRD_PARTY_NOTICES.txt`. The two iTerm-derived theme records lack individual author/license evidence and remain tracked by #180. |
+| Runtime libraries and themes | Direct production dependencies in `package.json`; exact versions/integrity in `package-lock.json` | Upstream packages | MIT, ISC, and package-specific terms; see `public/THIRD_PARTY_NOTICES.txt`. Both iTerm-derived themes are traced to their authoring commit and to the collection's CREDITS.md: Green Phosphor CRT is PoshPalette's (MIT), and Keys Ocean Sunset HC was original work by its own contributor. |
 | Bundled webfonts | Production WOFF2 files built from `@fontsource-variable/inter` and `@fontsource-variable/jetbrains-mono` | Fontsource packages 5.3.0; package metadata and license files | SIL Open Font License 1.1. Copyright and license text are retained in `public/THIRD_PARTY_NOTICES.txt`, which ships with the PWA shell. |
 | Application icons | `public/favicon.svg`, `public/icon-192.png`, `public/icon-512.png` | Original artwork belonging to this project. The SVG is the source; both PNGs are rasterised from it and are regenerated from that one file rather than drawn separately. | No third-party permission is relied upon for the application's own identity. The Vite starter mark these replaced is gone, as are the unreferenced `icons.svg` sprite and `hero.png` that carried social-service marks. |
 | Generated production files | `public/sw.js` template and ignored `dist/` outputs | Project-authored service-worker template; `scripts/generate-service-worker.mjs` materializes `dist/sw.js` from the production artifact set | Generated files inherit the applicable terms of their inputs. The tracked `public/sw.js` template is not itself generated or replaced. |
@@ -56,9 +56,24 @@ Upstream cleanup is tracked by
 proof are tracked by #178.
 
 The iTerm2-Color-Schemes collection license says each individual theme retains
-its author's copyright and license. The imported Green Phosphor CRT and Keys
-Ocean Sunset HC records do not identify those individual terms. #180 tracks
-either establishing that evidence or replacing the schemes with native themes.
+its author's copyright and license, so the collection's MIT grant does not by
+itself cover the two schemes imported here. Both were traced to the commit that
+introduced them upstream and to the attribution the collection's own CREDITS.md
+records at the pinned revision.
+
+**Green Phosphor CRT** was authored by PoshPalette
+(<https://github.com/livlign/posh-palette>, MIT, copyright PoshPalette
+contributors) and contributed to the collection by that same party. Author and
+contributor being one removes the gap the collection's disclaimer opens: the
+party who holds the rights is the party who submitted it.
+
+**Keys Ocean Sunset HC** was created by its own contributor, Jesse Miller, using
+an AI palette generator, and submitted as original work rather than adapted from
+an existing scheme. There is no third-party rights holder upstream of the
+contribution, so there is nobody else from whom permission would be owed.
+
+Neither finding rests on the collection-level license, which is the failure #180
+was opened to prevent.
 
 ## Known non-import sources
 
