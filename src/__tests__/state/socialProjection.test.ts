@@ -47,6 +47,12 @@ describe('project-owned simulated cast', () => {
       'erenshor', 'simplayer', 'everquest', 'world of warcraft', 'ultima online',
       'kingdom of loathing', 'universal paperclips', 'zombo.com', 'douglas adams',
       'monty python', 'terry gilliam', 'mel brooks', 'http://', 'https://',
+      // Half the cast is named like software, which is the joke and also the hazard: a handle that
+      // evokes the era is fine, and one that names a real person borrows their identity for a bit.
+      // Labs and model names are here on the separate ground that they date the writing.
+      'turing', 'lovelace', 'mccarthy', 'minsky', 'weizenbaum', 'shannon', 'hopper',
+      'hinton', 'lecun', 'bengio', 'sutskever', 'karpathy', 'goodfellow', 'schmidhuber',
+      'openai', 'anthropic', 'deepmind', 'chatgpt', 'claude', 'gemini', 'copilot', 'llama',
     ]) expect(serialized).not.toContain(forbidden);
     expect(serialized).not.toMatch(/[<>\u202a-\u202e\u2066-\u2069]/u);
     expect(Array.from(serialized).some((character) => {
