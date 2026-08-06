@@ -690,6 +690,22 @@ input[type='radio'] {
 
 /* Quieter than the readings above it: this is the institution editorialising, and it should
    never be mistaken for one of the facts it is commenting on. */
+/* Reads as a directory board: one office per line, in the same muted mono the rest of the
+   console's derived text uses. */
+.world-context-services {
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+}
+
+.world-context-services li {
+  padding: 0.1rem 0;
+  overflow-wrap: anywhere;
+}
+
 .world-context-tenor {
   margin: var(--space-2) 0 0;
   color: var(--text-muted);
