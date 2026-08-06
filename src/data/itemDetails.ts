@@ -16,16 +16,23 @@ const boundedLabel = (name: string, fallback: string, limit = 60): string => {
   return characters.length > limit ? `${characters.slice(0, limit - 1).join('')}…` : name || fallback;
 };
 
+// The last entries in each list came later than the rest and are a shade more industrial than the
+// candlelight the others were written by. Provenance is provenance whichever century files it, and
+// an object that passed through this operation late in its run picked up the vocabulary of the
+// place. Nothing here is a measurement: the beat says a thing was handled, never how much of
+// anything it drew, because the engine models none of that.
 const DOSSIER_ACTIONS = [
   'approved', 'condemned', 'misfiled', 'insured', 'quarantined',
   'audited', 'reclassified', 'appealed', 'redacted', 'outsourced',
   'backdated', 'witnessed', 'repossessed', 'sanctified', 'returned',
+  'de-provisioned', 'derated',
 ] as const;
 
 const DOSSIER_CONDITIONS = [
   'at intake', 'by candlelight', 'under protest', 'after lunch', 'without jurisdiction',
   'for tax purposes', 'during the evacuation', 'by correspondence', 'pending weather', 'in triplicate',
   'on clerical advice', 'after the witness vanished', 'with ceremonial urgency', 'before testing', 'by the night shift',
+  'during the brownout', 'while the coolant held', 'pending thermal review',
 ] as const;
 
 const dossierBeat = (index: number, fallbackKey: string, salt = 0): string => {
