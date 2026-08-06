@@ -54,13 +54,25 @@ repository of that name, and a full-text search surfaces only repositories that 
 Steam and itch.io searches for the title returned descriptive prose containing the words, not a
 game by that name.
 
-**Not checked: trademark registries.** Justia blocks scripted access, and general web search for
-this phrase is confounded because "abandoned trademark" and similar terms return articles about
-trademark law rather than marks. A USPTO TESS search should be run in a browser before any
-public rename ships. ADR 0002 exists partly because a rebrand shipped on a check that stopped
-where the searcher ran out of patience, and this ADR is not going to repeat that by implication.
+The US federal trademark register was searched, and found nothing in the way:
 
-Also unchecked: non-English markets, and older or defunct freeware directories.
+| Phrase | Records | Nearest mark |
+| --- | --- | --- |
+| `"search for more compute"` | 0 | — |
+| `"more compute"` | 376 | MORE COMPUTERS, IC 042, cancelled under Section 8 (75041387) |
+| `"progress quest"` | 7 | none is *Progress Quest*; all dead, all fuzzy matches such as PROCUREQUEST |
+
+Every hit for `"more compute"` matched the phrase in goods-and-services prose rather than in a
+mark. No live registration uses either phrase as a wordmark.
+
+Worth recording for anyone repeating this: the public search page ORs the terms in a quoted
+phrase, so `"more compute"` returns twenty thousand records containing *compute*, and the
+field-tag mode reverts on every submit. The numbers above come from the endpoint the page itself
+calls, `POST tmsearch.uspto.gov/prod-v1-0-0/tmsearch`, which honours a quoted phrase. A search run
+through the front end would have produced a count that looked like an answer and was not one.
+
+Still unchecked: state registrations, unregistered common-law use, non-US registries, and older or
+defunct freeware directories.
 
 ## Still open
 
