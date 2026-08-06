@@ -2,6 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { describeEquipment, describeInventoryItem, describeSpell } from '../data/itemDetails';
+import { useGameStore } from '../state/gameStore';
 import type { EquipSlot } from '../engine/types';
 
 type TooltipProps = (
@@ -29,11 +30,14 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
   const hideRef = useRef<(() => void) | null>(null);
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ left: 8, top: 8 });
+  // Selected narrowly rather than taken from the whole character, because an act changes once
+  // every several hours and a tooltip should not re-render on every tick to learn that.
+  const act = useGameStore((state) => state.character.Plot.act);
   const details = props.kind === 'equipment'
-    ? describeEquipment(props.name, props.slot)
+    ? describeEquipment(props.name, props.slot, act)
     : props.kind === 'spell'
       ? describeSpell(props.name, props.level)
-      : describeInventoryItem(props.name, props.quantity);
+      : describeInventoryItem(props.name, props.quantity, act);
 
   useLayoutEffect(() => {
     if (!open || !triggerRef.current || !tooltipRef.current) return;

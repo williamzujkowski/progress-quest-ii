@@ -423,3 +423,42 @@ describe('the boundary between what a thing is and what it does', () => {
     }
   });
 });
+
+describe('provenance acquires an industrial edge as acts accumulate', () => {
+  const INDUSTRIAL = ['de-provisioned', 'derated', 'during the brownout', 'while the coolant held', 'pending thermal review'];
+
+  const sample = (act: number) => [
+    ...SPECIALS.map((name) => describeInventoryItem(name, 1, act).description),
+    ...BORING_ITEMS.map((name) => describeInventoryItem(name, 3, act).description),
+    ...MONSTERS.filter(({ item }) => item).map(({ item }) => describeInventoryItem(item, 1, act).description),
+    ...EQUIP_SLOTS.flatMap((slot) => (slot === 'Weapon' ? WEAPONS : slot === 'Shield' ? SHIELDS : ARMORS)
+      .map(([base]) => describeEquipment(`Plexiglass ${base}`, slot, act).description)),
+  ];
+
+  const industrialCount = (act: number) =>
+    sample(act).filter((description) => INDUSTRIAL.some((word) => description.includes(word))).length;
+
+  it('files nothing industrially before the first threshold', () => {
+    // An object filed early cannot have been derated by a facility that did not exist yet.
+    for (const act of [0, 1, 2, 3, 4]) expect(industrialCount(act)).toBe(0);
+  });
+
+  it('actually reaches the vocabulary once the acts are there', () => {
+    // The assertion that makes the rest of this feature real. Threading a parameter that changes
+    // no output would typecheck, pass every existing test, and do nothing.
+    expect(industrialCount(5)).toBeGreaterThan(0);
+    expect(industrialCount(12)).toBeGreaterThan(industrialCount(5));
+  });
+
+  it('stays deterministic and defaults to the era the archive started in', () => {
+    expect(describeInventoryItem('Rat Tail', 1, 30)).toEqual(describeInventoryItem('Rat Tail', 1, 30));
+    expect(describeInventoryItem('Rat Tail', 1)).toEqual(describeInventoryItem('Rat Tail', 1, 0));
+  });
+
+  it('leaves the mechanical effect alone at every act', () => {
+    for (const act of [0, 5, 12, 30]) {
+      expect(describeInventoryItem('Rat Tail', 1, act).effect).toBe(describeInventoryItem('Rat Tail', 1, 0).effect);
+      expect(describeEquipment('Plexiglass Sword', 'Weapon', act).effect).toBe(describeEquipment('Plexiglass Sword', 'Weapon', 0).effect);
+    }
+  });
+});
