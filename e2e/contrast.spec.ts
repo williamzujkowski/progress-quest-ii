@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/strictConsole';
 import { settleForAudit } from './fixtures/accessibility';
 import { archivedSessionStorageState } from './fixtures/archivedSession';
 

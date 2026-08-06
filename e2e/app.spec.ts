@@ -1,4 +1,5 @@
-import { devices, expect, test, type Page } from '@playwright/test';
+import { devices, type Page } from '@playwright/test';
+import { expect, test, watchForErrors } from './fixtures/strictConsole';
 import { expectNoViolations } from './fixtures/accessibility';
 import { readFile } from 'node:fs/promises';
 import { createNewCharacter } from '../src/engine/sim';
@@ -55,6 +56,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
       storageState: { cookies: [], origins: [] },
     });
     const page = await context.newPage();
+    const expectNoPageErrors = watchForErrors(page);
     await page.goto('/');
 
     const creator = page.getByRole('dialog', { name: /New Character/i });
@@ -82,6 +84,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
       const checkpoint = activeCheckpointV1Schema.parse(JSON.parse(localStorage.getItem('progquest_active_session_v1') ?? ''));
       return { schemaVersion: checkpoint.schemaVersion, name: checkpoint.session.character.Traits.Name };
     })).toEqual({ schemaVersion: 1, name: 'First Bureaucrat' });
+    expectNoPageErrors();
     await context.close();
   });
 
@@ -99,6 +102,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
       },
     });
     const page = await context.newPage();
+    const expectNoPageErrors = watchForErrors(page);
     await page.goto('/');
 
     await expect(page.getByRole('dialog', { name: /New Character/i })).toHaveCount(0);
@@ -107,6 +111,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
       const raw = localStorage.getItem('progquest_active_session_v1');
       return raw ? JSON.parse(raw).session.character.Traits.Name : null;
     })).toBe('Latest Roster');
+    expectNoPageErrors();
     await context.close();
   });
 
@@ -462,6 +467,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
   test('toggles a tooltip by touch inside a narrow viewport', async ({ browser }) => {
     const context = await browser.newContext({ ...devices['iPhone 13'], baseURL: BASE_URL, storageState: returningStorageState });
     const page = await context.newPage();
+    const expectNoPageErrors = watchForErrors(page);
     await page.goto('/');
 
     const trigger = page.locator('.tooltip-trigger').first();
@@ -508,6 +514,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     expect(longBox.y + longBox.height).toBeLessThanOrEqual(844);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 
+    expectNoPageErrors();
     await context.close();
   });
 
@@ -891,6 +898,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
   test('opens and mutes automated chatter by touch', async ({ browser }) => {
     const context = await browser.newContext({ ...devices['iPhone 13'], baseURL: BASE_URL, storageState: returningStorageState });
     const page = await context.newPage();
+    const expectNoPageErrors = watchForErrors(page);
     await page.goto('/');
 
     const activityTab = page.getByRole('tab', { name: 'Activity' });
@@ -902,6 +910,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await page.getByRole('button', { name: 'Mute fictional chatter' }).tap();
     await expect(page.getByRole('region', { name: 'Fictional chatter messages' })).toContainText('Fictional chatter is muted');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    expectNoPageErrors();
     await context.close();
   });
 
@@ -1434,11 +1443,13 @@ test.describe('closed casework archive', () => {
   test('stays away entirely until a quest has closed', async ({ browser }) => {
     const context = await browser.newContext({ baseURL: BASE_URL, storageState: archived([]) });
     const page = await context.newPage();
+    const expectNoPageErrors = watchForErrors(page);
     await page.goto('/');
 
     await expect(page.getByRole('heading', { name: 'Questing & Progression' })).toBeVisible();
     // An empty archive reads as a broken panel rather than a new one, so there is no empty state.
     await expect(page.getByRole('list', { name: /Closed casework/i })).toHaveCount(0);
+    expectNoPageErrors();
     await context.close();
   });
 
@@ -1446,6 +1457,7 @@ test.describe('closed casework archive', () => {
     const history = Array.from({ length: 40 }, (_value, index) => `Matter number ${index}`);
     const context = await browser.newContext({ baseURL: BASE_URL, storageState: archived(history) });
     const page = await context.newPage();
+    const expectNoPageErrors = watchForErrors(page);
     await page.goto('/');
 
     const archive = page.getByRole('list', { name: /Closed casework/i });
@@ -1465,6 +1477,7 @@ test.describe('closed casework archive', () => {
     const card = page.locator('.quest-card');
     expect(await card.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     await expectNoViolations(page, 'questing card with a populated archive');
+    expectNoPageErrors();
     await context.close();
   });
 });
