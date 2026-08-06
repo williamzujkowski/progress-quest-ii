@@ -1,7 +1,9 @@
 # Revisit the name under the machine framing
 
-**Status: proposed. This ADR does not decide anything. It exists so the choice can be made
-from options rather than from one recommendation, and the owner picks.**
+**Status: resolved by ADR 0005, which adopts *Progress Quest III: The Search for More Compute*.
+This ADR did not decide anything; it exists so the choice could be made from options rather than
+from one recommendation. Its candidate list and prior-art checks are retained because 0005's
+reasoning refers to what was set aside and why.**
 
 ADR 0002 chose *Progress Quest III: The Search for Progress Quest II* and rejected
 *Progress Quest Infinity* as "safe but comedically inert". That reasoning was sound on the axis
