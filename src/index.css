@@ -628,6 +628,30 @@ input[type='radio'] {
   as a drawer that was opened rather than a list that took over the card it sits in.
 */
 /* Sits under the quest bar it annotates, in the muted register the archive speaks in. */
+/* Matches the disclosure the world console already uses, including its coarse-pointer target
+   size, so the two read as the same control rather than as two conventions. */
+.records-details {
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--panel-border);
+  padding-top: var(--space-2);
+}
+
+.records-details > summary {
+  display: flex;
+  min-height: 1.75rem;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-variant-caps: all-small-caps;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+}
+
+@media (max-width: 640px), (pointer: coarse) {
+  .records-details > summary { min-height: 44px; }
+}
+
 .quest-dossier {
   margin: var(--space-2) 0 0;
   color: var(--text-muted);

@@ -198,6 +198,9 @@ test.describe('theme contrast on surfaces that need a session', () => {
       // The feed opens on the chatter tab, so the activity entries exist but are inside a hidden
       // panel. Measuring them there would sample an element the user cannot see.
       await page.getByRole('tab', { name: /Activity/i }).click();
+      // Records fold away by default. A collapsed disclosure is not a hidden failure to measure -
+      // it is a surface the reader has to open too, so the test opens it exactly as they would.
+      for (const summary of await page.locator('.records-details > summary').all()) await summary.click();
       await expect(page.locator('.log-entry').first()).toBeVisible();
       await expect(page.locator('.casework-entry').first()).toBeVisible();
 

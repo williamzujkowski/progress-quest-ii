@@ -86,7 +86,11 @@ export const QuestLog: React.FC = () => {
         </div>
       </div>
 
-      <ClosedCasework />
+      {/* The archive is looked at occasionally; the bars above it are looked at constantly. */}
+      <details className="records-details">
+        <summary>Case archive</summary>
+        <ClosedCasework />
+      </details>
     </section>
   );
 };
