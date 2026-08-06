@@ -665,6 +665,17 @@ input[type='radio'] {
   font-size: 0.78rem;
 }
 
+/* Quieter than the readings above it: this is the institution editorialising, and it should
+   never be mistaken for one of the facts it is commenting on. */
+.world-context-tenor {
+  margin: var(--space-2) 0 0;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
 .world-context {
   display: grid;
   flex: 0 0 auto;
