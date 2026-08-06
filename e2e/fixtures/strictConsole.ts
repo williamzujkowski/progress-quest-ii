@@ -58,3 +58,18 @@ export const test = base.extend<{ expectedPageErrors: RegExp[] }>({
 });
 
 export { expect };
+
+/**
+ * Waits until the application has mounted before a test reaches into its module graph.
+ *
+ * Several tests drive state through `page.evaluate(() => import('/src/state/gameStore.ts'))`. That
+ * import resolves instantly once the app has loaded the module itself, and slowly when it has
+ * not — and a slow one under a loaded machine outlives its evaluate, which Playwright reports as
+ * "Resulting promise was garbage collected". It surfaced in CI only after the suite began running
+ * workers in parallel, on a test that had passed for months.
+ *
+ * Waiting for a rendered element is what makes the import a cache hit rather than a fetch.
+ */
+export async function appReady(page: Page): Promise<void> {
+  await expect(page.locator('.hero-banner')).toBeVisible();
+}

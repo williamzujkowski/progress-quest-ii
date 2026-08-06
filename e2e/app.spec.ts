@@ -1,5 +1,5 @@
 import { devices, type Page } from '@playwright/test';
-import { expect, test, watchForErrors } from './fixtures/strictConsole';
+import { appReady, expect, test, watchForErrors } from './fixtures/strictConsole';
 import { expectNoViolations } from './fixtures/accessibility';
 import { readFile } from 'node:fs/promises';
 import { createNewCharacter } from '../src/engine/sim';
@@ -163,6 +163,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
   test('recovers the last-known-good session without overwriting corrupt bytes', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto('/');
+    await appReady(page);
     await page.evaluate(async () => {
       const { ACTIVE_CHECKPOINT_KEY, ACTIVE_CHECKPOINT_LKG_KEY, captureActiveSession } = await import('/src/state/sessionCheckpoint.ts');
       localStorage.setItem(ACTIVE_CHECKPOINT_LKG_KEY, JSON.stringify(captureActiveSession()));
@@ -330,6 +331,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     const pageErrors: string[] = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto('/');
+    await appReady(page);
     await page.evaluate(() => {
       const original = Storage.prototype.setItem;
       const trackedWindow = window as Window & { __rosterWrites?: number };
@@ -409,6 +411,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
 
   test('shows mechanics and flavor for equipment, loot, and spells', async ({ page }) => {
     await page.goto('/');
+    await appReady(page);
     await page.evaluate(async () => {
       const { useGameStore } = await import('/src/state/gameStore.ts');
       const state = useGameStore.getState();
@@ -545,6 +548,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.goto('/');
+    await appReady(page);
     await page.evaluate(() => {
       const original = Storage.prototype.setItem;
       Storage.prototype.setItem = function(key, value) {
@@ -621,6 +625,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
 
   test('labels activity events without substring false positives', async ({ page }) => {
     await page.goto('/');
+    await appReady(page);
     await page.evaluate(async () => {
       const { useGameStore } = await import('/src/state/gameStore.ts');
       const messages = [
@@ -1036,6 +1041,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
   test('compacts absurd progression values without overflowing mobile or desktop', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto('/');
+    await appReady(page);
     await page.evaluate(async () => {
       const { useGameStore } = await import('/src/state/gameStore.ts');
       const { character } = useGameStore.getState();
