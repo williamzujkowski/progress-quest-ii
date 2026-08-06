@@ -1,3 +1,7 @@
+**Superseded by ADR 0005.** The numeral and its reasoning survive; the subtitle does not. See
+`0005-name-the-project-the-search-for-more-compute.md` for why the Spaceballs structure's two
+halves were separated.
+
 # Rename to Progress Quest III: The Search for Progress Quest II
 
 Adopt **Progress Quest III: The Search for Progress Quest II** as the project title, with
