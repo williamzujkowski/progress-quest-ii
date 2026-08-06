@@ -53,3 +53,20 @@ Stated so a reporter knows what has already been considered:
   `npm audit signatures`, alongside the standard quality gate.
 - The deployment workflow separates a read-only build job from the write-capable Pages job,
   and publishes an SBOM for the exact artifact that gets deployed.
+- The deployed artifact carries a build provenance attestation, produced in a third job so that
+  the write scopes attestation requires never reach the job that runs the build and the tests.
+
+## Verifying a deployed artifact
+
+Provenance is only worth having if it can be checked, so the check is written down:
+
+```sh
+gh attestation verify artifact.tar --repo williamzujkowski/progress-quest-ii
+```
+
+`artifact.tar` is the `github-pages` artifact from the deploy run that published the version you
+are checking. A successful verification says the tarball was produced by this repository's
+workflow at a particular commit; it is not a statement about the contents being free of defects.
+
+Attestation deliberately does not gate the deploy. It describes an artifact that has already been
+built, and blocking on it would turn a signing outage into an outage of the site.
