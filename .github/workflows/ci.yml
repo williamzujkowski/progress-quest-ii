@@ -33,8 +33,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        # Both engines the suite runs against. WebKit earns its download: running it found
+        # unstyled controls inheriting the platform button face at 1.81:1, and tooltips that
+        # accumulated because it does not focus a button on tap - neither visible to Chromium.
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Quality gate
         run: npm run quality

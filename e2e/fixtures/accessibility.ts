@@ -30,7 +30,26 @@ export const settleForAudit = async (page: Page): Promise<void> => {
 
 export const expectNoViolations = async (page: Page, context?: string): Promise<void> => {
   await settleForAudit(page);
-  const results = await new AxeBuilder({ page }).withTags(WCAG_AA_TAGS).analyze();
+
+  // Under forced colors the user agent owns the palette: it repaints controls with the system
+  // Highlight and HighlightText colours and ignores the authored ones. Asserting a contrast ratio
+  // there measures the platform's choices rather than this project's, and engines disagree about
+  // which controls to repaint at all — WebKit fills a selected tab where Chromium leaves it. The
+  // rule is switched off rather than the audit skipped, so everything else still runs.
+  //
+  // Detected here rather than passed in, on the same reasoning as the transition guard above:
+  // this is not an argument a caller should be able to forget.
+  //
+  // Best-effort, because one caller audits a page whose render was deliberately crashed and any
+  // evaluate there re-raises that pending error. Failing to detect falls back to keeping the rule
+  // enabled, which is the stricter of the two outcomes - a detection fault must not quietly widen
+  // what the audit accepts.
+  const forcedColors = await page
+    .evaluate(() => matchMedia('(forced-colors: active)').matches)
+    .catch(() => false);
+
+  const builder = new AxeBuilder({ page }).withTags(WCAG_AA_TAGS);
+  const results = await (forcedColors ? builder.disableRules(['color-contrast']) : builder).analyze();
 
   // axe reports `incomplete` for elements whose background it cannot resolve — the navbar, for
   // one, because its buttons contain inline SVG. Those are not violations and are not asserted

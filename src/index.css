@@ -1063,8 +1063,12 @@ textarea.form-control { resize: vertical; }
     box-shadow: inset 0 -3px 0 HighlightText;
   }
 
+  /* Named rather than inherited. `inherit` resolves against the parent's used value, and engines
+     do not agree on that under forced colors at every breakpoint - one leaves these children at
+     the authored colour, putting dark text on the platform's Highlight fill. Stating the system
+     colour directly is the same intent with nothing left to resolve. */
   .console-tabs [role='tab'][aria-selected='true'] > span,
-  .console-tabs [role='tab'][aria-selected='true'] > small { color: inherit; }
+  .console-tabs [role='tab'][aria-selected='true'] > small { color: HighlightText; }
 
   /* The primary button paints its label with --text-on-accent, which resolves to the
      page background — correct against the accent fill, and the UA does remap it to
