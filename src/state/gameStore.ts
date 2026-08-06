@@ -12,10 +12,15 @@ import { projectSocialBatch, type SocialEntry } from './socialProjection';
 import { EMPTY_COMMENDATIONS, mergeEvents, mergeExhibit, readCommendations, writeCommendations, type Commendations } from './commendations';
 import { EMPTY_CASELOAD, mergeRecords, readCaseload, writeCaseload, type Caseload } from './caseload';
 import { EMPTY_DIGEST, accumulateDigest, describeDigest, type AbsenceDigest } from './absenceDigest';
+import { EMPTY_SPECIMEN_LOG, mergeSpecimens, readSpecimenLog, writeSpecimenLog, type SpecimenLog } from './specimenLog';
 
 // Read once at module load, the same way the roster is read: a ledger that cannot be read is
 // simply an empty one, never a reason for the game not to start.
 const initialCommendations = readCommendations(
+  typeof window === 'undefined' ? undefined : (() => { try { return window.localStorage; } catch { return undefined; } })(),
+);
+
+const initialSpecimens = readSpecimenLog(
   typeof window === 'undefined' ? undefined : (() => { try { return window.localStorage; } catch { return undefined; } })(),
 );
 
@@ -27,6 +32,7 @@ const initialCaseload = readCaseload(
 // never rewrites an identical copy.
 let lastPersistedCommendations = initialCommendations;
 let lastPersistedCaseload = initialCaseload;
+let lastPersistedSpecimens = initialSpecimens;
 
 // What the current catch-up drain has produced so far. Module-level rather than store state
 // because nothing renders it until it is finished and nothing persists it at all: it exists for
@@ -44,6 +50,7 @@ export interface GameStore {
   socialEntries: SocialEntry[];
   commendations: Commendations;
   caseload: Caseload;
+  specimens: SpecimenLog;
   nextActivityId: number;
   sessionGeneration: number;
   isPaused: boolean;
@@ -115,6 +122,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     socialEntries: [],
     commendations: initialCommendations,
     caseload: initialCaseload,
+    specimens: initialSpecimens,
     nextActivityId: 1,
     sessionGeneration: 0,
     isPaused: false,
@@ -149,6 +157,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         socialEntries: [],
         commendations: get().commendations ?? EMPTY_COMMENDATIONS,
         caseload: get().caseload ?? EMPTY_CASELOAD,
+        specimens: get().specimens ?? EMPTY_SPECIMEN_LOG,
         nextActivityId: nextActivityId + 1,
         sessionGeneration: sessionGeneration + 1,
         isPaused: false,
@@ -171,6 +180,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         socialEntries: [],
         commendations: get().commendations ?? EMPTY_COMMENDATIONS,
         caseload: get().caseload ?? EMPTY_CASELOAD,
+        specimens: get().specimens ?? EMPTY_SPECIMEN_LOG,
         nextActivityId: nextActivityId + session.log.length,
         sessionGeneration: sessionGeneration + 1,
         pendingElapsedMs: session.pendingElapsedMs,
@@ -234,9 +244,17 @@ export const useGameStore = create<GameStore>((set, get) => {
       // snapshot beside it. Held back and compared the same way the commendation ledger is, for
       // the same reason - a drain closes many quests per tick, and every one of them counts.
       const nextCaseload = mergeRecords(get().caseload, result.records);
+      // A specimen is new only once, so this returns the same object on nearly every tick.
+      const nextSpecimens = mergeSpecimens(get().specimens, sources.map(({ record }) => record.event));
       if (result.remainingElapsedMs === 0 && nextCaseload !== lastPersistedCaseload) {
         lastPersistedCaseload = nextCaseload;
         writeCaseload(typeof window === 'undefined' ? undefined : window.localStorage, nextCaseload);
+      }
+      // Held back through a drain for the same reason the other ledgers are: a catch-up replays
+      // many first sightings, and each would otherwise be its own synchronous write.
+      if (result.remainingElapsedMs === 0 && nextSpecimens !== lastPersistedSpecimens) {
+        lastPersistedSpecimens = nextSpecimens;
+        writeSpecimenLog(typeof window === 'undefined' ? undefined : window.localStorage, nextSpecimens);
       }
       const projectedSocialEntries = projectSocialBatch(sources).toReversed();
       set({
@@ -254,6 +272,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         nextActivityId: nextActivityId + activity.length + (digestLine === null ? 0 : 1),
         commendations: nextCommendations,
         caseload: nextCaseload,
+        specimens: nextSpecimens,
       });
     },
   };
