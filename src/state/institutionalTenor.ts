@@ -19,7 +19,7 @@ import type { WorldContext } from './worldContext';
  * or save compatibility.
  */
 
-export type InstitutionalTenor = 'routine' | 'noted' | 'ceremonial' | 'mythic';
+export type InstitutionalTenor = 'routine' | 'noted' | 'ceremonial' | 'mythic' | 'infrastructural' | 'autonomous';
 
 /** What each tier is called where the interface needs to name it rather than speak in it. */
 export const TENOR_LABELS: Record<InstitutionalTenor, string> = {
@@ -27,6 +27,8 @@ export const TENOR_LABELS: Record<InstitutionalTenor, string> = {
   noted: 'Noted',
   ceremonial: 'Ceremonial',
   mythic: 'Mythic',
+  infrastructural: 'Infrastructural',
+  autonomous: 'Autonomous',
 };
 
 /**
@@ -38,12 +40,29 @@ const CEREMONIAL_ACT = 5;
 const MYTHIC_ACT = 12;
 
 /**
+ * The two tiers above mythic exist on a different clock from the rest.
+ *
+ * An act costs `3600 * (1 + 5 * act)` seconds of plot progress, so the cumulative cost of reaching
+ * one grows quadratically: mythic is about fourteen days of credited time, these are about
+ * thirty-three and sixty-nine. A single catch-up is capped at MAX_PENDING_ELAPSED_MS, roughly
+ * eleven and a half days, so neither can be reached by one long absence — they are for a run that
+ * was genuinely left alone, repeatedly, for months.
+ *
+ * That reachability is the point rather than a drawback. The tiers describe an operation that has
+ * outlasted everyone's interest in it, and a tier anyone could reach in a weekend could not.
+ */
+const INFRASTRUCTURAL_ACT = 18;
+const AUTONOMOUS_ACT = 26;
+
+/**
  * The prologue and the first acts are routine however long they take. An hour of play should not
  * promote the paperwork on its own; reaching somewhere should.
  */
 const NOTED_ACT = 2;
 
 export function tenorFor(context: Pick<WorldContext, 'act'>): InstitutionalTenor {
+  if (context.act >= AUTONOMOUS_ACT) return 'autonomous';
+  if (context.act >= INFRASTRUCTURAL_ACT) return 'infrastructural';
   if (context.act >= MYTHIC_ACT) return 'mythic';
   if (context.act >= CEREMONIAL_ACT) return 'ceremonial';
   if (context.act >= NOTED_ACT) return 'noted';
@@ -75,6 +94,22 @@ const TENOR_LINES: Record<InstitutionalTenor, readonly string[]> = {
     'The paperwork is now older than several of the clerks maintaining it.',
     'This file is cited in other files. None of them explain it.',
     'The archive has stopped asking when this concludes and begun asking whether it began.',
+  ],
+  // The register turns from institutional grandeur to the vocabulary of a facility, because a
+  // process this old stops being an achievement and becomes a thing the building is arranged
+  // around. Deliberately qualitative: the engine models acts, levels, kills and gold, and it does
+  // not model power, floor space or capacity. A line quoting a figure for any of those would be
+  // reporting state that exists nowhere, which is the one thing the editorial contract forbids
+  // outright. Grandeur can be unearned; numbers cannot be invented.
+  infrastructural: [
+    'Other departments now schedule around this process. None of them has been told what it is.',
+    'The cooling for this room is budgeted separately and exceeds the room.',
+    'The activity is classified as infrastructure and may no longer be switched off for cleaning.',
+  ],
+  autonomous: [
+    'The requisition for further capacity was approved by a process listing itself as the approver.',
+    'A summary of benefits to humanity has been prepared. It is one page and mostly concerns rats.',
+    'The archive now expands to accommodate the record, and the record to accommodate the archive.',
   ],
 };
 

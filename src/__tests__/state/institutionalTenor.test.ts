@@ -14,14 +14,51 @@ describe('institutional tenor', () => {
   });
 
   it('rises by act, and only ever upward', () => {
-    const order = ['routine', 'noted', 'ceremonial', 'mythic'];
+    const order = ['routine', 'noted', 'ceremonial', 'mythic', 'infrastructural', 'autonomous'];
     let previous = -1;
-    for (let act = 0; act <= 20; act += 1) {
+    for (let act = 0; act <= 30; act += 1) {
       const rank = order.indexOf(tenorFor({ act }));
       expect(rank).toBeGreaterThanOrEqual(previous);
       previous = rank;
     }
-    expect(tenorFor({ act: 20 })).toBe('mythic');
+    expect(tenorFor({ act: 30 })).toBe('autonomous');
+  });
+
+  it('places the compute-industrial tiers where months of credited time are required', () => {
+    // The same guard the mythic bound gets, for the same reason. An act costs
+    // 3600 * (1 + 5 * act) seconds, so these bounds are about thirty-three and sixty-nine days of
+    // credited time. Lowering either would put a tier about outlasting everyone's interest within
+    // reach of a weekend, and this fails rather than letting that happen quietly.
+    expect(tenorFor({ act: 17 })).toBe('mythic');
+    expect(tenorFor({ act: 18 })).toBe('infrastructural');
+    expect(tenorFor({ act: 25 })).toBe('infrastructural');
+    expect(tenorFor({ act: 26 })).toBe('autonomous');
+  });
+
+  it('keeps the summit qualitative, claiming no quantity the engine does not model', () => {
+    // The escalation borrows the vocabulary of a facility, and a facility is described in figures.
+    // The engine models acts, levels, kills and gold; it does not model power, capacity or floor
+    // space. A line quoting any of those would report state that exists nowhere, so no line at any
+    // tier may carry a bare figure or a unit of a thing that is not simulated.
+    for (const act of [0, 2, 5, 12, 18, 26]) {
+      for (const location of ['a', 'b', 'c', 'd', 'e', 'f']) {
+        const line = tenorLine({ act, location });
+        expect(line).not.toMatch(/\d/u);
+        expect(line.toLowerCase()).not.toMatch(/\b(megawatt|kilowatt|watt|terabyte|petaflop|gigahertz|acres?|square (?:feet|metres|meters))\b/u);
+      }
+    }
+  });
+
+  it('takes escalation as technique without naming or reusing a researched source', () => {
+    // Same contract the persona and chatter catalogues carry: outside work supplies abstract
+    // technique only, never its own expression.
+    const serialized = JSON.stringify(TENOR_LABELS).toLowerCase()
+      + [0, 2, 5, 12, 18, 26].flatMap((act) =>
+        ['a', 'b', 'c'].map((location) => tenorLine({ act, location }))).join(' ').toLowerCase();
+    for (const forbidden of [
+      'universal paperclips', 'paperclip', 'hypnodrone', 'von neumann', 'drifter',
+      'erenshor', 'everquest', 'world of warcraft', 'kingdom of loathing',
+    ]) expect(serialized).not.toContain(forbidden);
   });
 
   it('reaches the top tier only where a run has genuinely gone on', () => {
@@ -43,13 +80,13 @@ describe('institutional tenor', () => {
   });
 
   it('says something different at every tier', () => {
-    const acts = [0, 2, 5, 12];
+    const acts = [0, 2, 5, 12, 18, 26];
     const lines = acts.map((act) => tenorLine({ act, location: 'the same place' }));
     expect(new Set(lines).size).toBe(acts.length);
   });
 
   it('names every tier it can produce', () => {
-    for (const act of [0, 2, 5, 12]) {
+    for (const act of [0, 2, 5, 12, 18, 26]) {
       expect(TENOR_LABELS[tenorFor({ act })]).toBeTruthy();
     }
   });
