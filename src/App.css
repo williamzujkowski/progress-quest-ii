@@ -196,9 +196,21 @@
 .brand-tagline a:hover { color: var(--text-main); }
 
 .nav-actions {
+  /* Wraps as a group and keeps every label on one line. Holding the row to a single line instead
+     fits the controls but breaks "New Character" and "Roster & Saves" across two lines each,
+     which is a worse trade: a control that wraps to the next row still reads as a control, and a
+     label broken mid-phrase reads as a mistake.
+
+     This is the rule that wins - index.css defines .nav-actions too, and App.css loads after it.
+     Editing the other one has no effect. */
   flex: 1 1 34rem;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.nav-actions .btn span,
+.theme-control > span {
+  white-space: nowrap;
 }
 
 .theme-status {
@@ -226,7 +238,10 @@
 
 .hero-banner {
   position: relative;
-  grid-template-columns: minmax(11rem, 1fr) minmax(12rem, 1fr) minmax(16rem, 1.4fr) auto;
+  /* Three regions, not four. Gold and the filing rate are resource readings and now sit with
+     HP and MP; as their own trailing column they were pushed to the far edge with a gap between
+     them and everything they belong with. */
+  grid-template-columns: minmax(11rem, 1fr) minmax(13rem, 1fr) minmax(16rem, 1.3fr);
   overflow: hidden;
   border-radius: 0.5rem;
   padding-top: 1.5rem;
@@ -253,7 +268,14 @@
 .hero-meters {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: center;
   gap: var(--space-3);
+}
+
+/* The pills sit under the two meters and span both, so the four readings read as one block
+   rather than as a row that happens to be followed by another row. */
+.hero-meters .hero-stats-quick {
+  grid-column: 1 / -1;
 }
 
 .hero-prime-stats {
@@ -362,7 +384,7 @@
 .meter-header strong { font-family: var(--font-mono); font-size: 1rem; }
 .meter-health { color: var(--accent-danger); }
 .meter-magic { color: var(--accent-primary); }
-.hero-stats-quick { flex-wrap: wrap; justify-content: flex-end; }
+.hero-stats-quick { flex-wrap: wrap; }
 .stat-pill { border-radius: 0.35rem; }
 
 .card {

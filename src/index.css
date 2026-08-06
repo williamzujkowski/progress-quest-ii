@@ -281,8 +281,10 @@ input[type='radio'] {
 
 .navbar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
 }
 
@@ -294,6 +296,7 @@ input[type='radio'] {
 }
 
 .brand {
+  min-width: 0;
   gap: var(--space-3);
   color: var(--text-main);
   font-size: 1.5rem;
@@ -366,7 +369,10 @@ input[type='radio'] {
 
 .theme-control select {
   align-self: stretch;
-  max-width: 11.5rem;
+  /* Sized to the longest theme name rather than to a round number. The extra width was what
+     pushed the whole control onto a second row at common desktop widths, leaving a band of dead
+     space beside it. */
+  max-width: 9.5rem;
   border: 0;
   border-left: 1px solid var(--panel-border);
   background: var(--panel-raised);

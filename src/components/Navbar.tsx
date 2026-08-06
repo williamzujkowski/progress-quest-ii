@@ -4,7 +4,6 @@ import { soundFX } from '../state/audio';
 import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../state/gameStore';
 import { THEME_OPTIONS, type ThemeId } from '../theme';
-import { GameNumber } from './GameNumber';
 
 interface NavbarProps {
   theme: ThemeId;
@@ -15,11 +14,10 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ theme, themeStatus, onThemeChange, onOpenSaveModal, onOpenCharacterCreator }) => {
-  // Selecting the level rather than the whole character: the character reference is rebuilt
-  // every 50ms tick because Task.elapsedMs advances, but Level changed 0 times in a measured
-  // 400 ticks. A bare useGameStore() subscribes to all of it.
-  const { level, isPaused, togglePause } = useGameStore(useShallow((state) => ({
-    level: state.character.Traits.Level,
+  // Narrow on purpose: the character reference is rebuilt every 50ms tick because Task.elapsedMs
+  // advances, and a bare useGameStore() would subscribe this bar to all of it. Nothing here
+  // depends on the character any more.
+  const { isPaused, togglePause } = useGameStore(useShallow((state) => ({
     isPaused: state.isPaused,
     togglePause: state.togglePause,
   })));
@@ -51,9 +49,6 @@ export const Navbar: React.FC<NavbarProps> = ({ theme, themeStatus, onThemeChang
             <a href="./THIRD_PARTY_NOTICES.txt">Credits &amp; notices</a>
           </p>
         </div>
-        <span className="badge" title="Character Level">
-          Lvl{' '}<GameNumber value={level} />
-        </span>
       </div>
 
       <div className="nav-actions">
