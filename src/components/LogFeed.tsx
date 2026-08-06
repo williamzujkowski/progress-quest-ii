@@ -5,6 +5,7 @@ import { useGameStore } from '../state/gameStore';
 import { projectWorld } from '../state/worldContext';
 import { TENOR_LABELS, tenorFor, tenorLine } from '../state/institutionalTenor';
 import { townServices } from '../state/townServices';
+import { attendanceLabel, raidMuster } from '../state/raidMuster';
 import { ActLabel } from './GameNumber';
 import { ChatterFeed } from './ChatterFeed';
 
@@ -36,6 +37,7 @@ export const LogFeed: React.FC = () => {
   const sessionGeneration = useGameStore((state) => state.sessionGeneration);
   const world = projectWorld({ kind: 'current', state: { character, progression } }).context;
   const services = townServices(world);
+  const muster = raidMuster(world);
   const feedRef = useRef<HTMLDivElement>(null);
   const activityPanelRef = useRef<HTMLElement>(null);
   const chatterTabRef = useRef<HTMLButtonElement>(null);
@@ -161,6 +163,16 @@ export const LogFeed: React.FC = () => {
         {services && (
           <ul className="world-context-services" aria-label="Offices open in this settlement">
             {services.map((office) => <li key={office}>{office}</li>)}
+          </ul>
+        )}
+        {/* The artefact a raid actually produced: an attendance sheet. Everyone named is from the
+            cast the chatter panel already declares fictional, and nobody's attendance changes the
+            encounter, which is resolved by opponent puissance and level as it is everywhere. */}
+        {muster && (
+          <ul className="world-context-services" aria-label="Muster sheet for this raid, fictional">
+            {muster.map((entry) => (
+              <li key={entry.name}>{entry.name} · {entry.role} · {attendanceLabel(entry.attendance)}</li>
+            ))}
           </ul>
         )}
         <details className="world-context-details">
