@@ -31,10 +31,26 @@ If a cached shell ever becomes impressively confused, use the browser's site set
 
 - Deterministic, zero-player progression based on the legacy game behavior.
 - Character creation, deterministic session resume, roster/save import and export, quests, combat progression, equipment, spells, loot, and activity history.
-- Responsive desktop and mobile layouts with bounded scrolling panels.
+- Time credited for a session spent closed, and a line on return saying what the backlog produced.
+- Projections that stay quiet until they can be trusted: a rate of filing, and how long the next
+  level and the current act are expected to take, measured rather than assumed.
+- A world console that names where the hero is, what the place has an office for, who turned up
+  to the raid, and what the archive makes of whoever they are currently fighting.
+- Records kept in the institution's own filing cabinet: personal bests, the best equipment ever
+  held per slot, a tally of casework by kind, the closed-quest archive, and a count of every
+  distinct specimen ever acquired.
+- Simulated chatter from a fictional cast, generated locally and sent nowhere. Nobody is online.
+- Responsive desktop and mobile layouts with bounded scrolling panels, and records folded behind
+  native disclosures so the live numbers keep the room.
 - Remarque Dark/Light, Green Phosphor CRT, color-vision-safe Ocean Sunset HC, and legacy ProgrOS themes powered by [`@williamzujkowski/oklch-terminal-themes`](https://github.com/williamzujkowski/oklch-terminal-themes).
 - Accessible keyboard paths, tooltip descriptions, local validation, and fail-closed save imports.
-- Playwright browser suites covering dense dashboards, mobile widths, themes, accessibility, saves, creator flows, installation, offline restart, explicit updates, rollback, and cache privacy.
+- Playwright suites across desktop Chromium, WebKit, and a mobile profile, covering dense
+  dashboards, mobile widths, per-theme contrast measured directly, WCAG 2.2 target size and text
+  spacing, saves, creator flows, installation, offline restart, explicit updates, rollback, and
+  cache privacy.
+
+Nothing on any of those surfaces asserts a mechanic the engine does not model. Equipment, spells,
+and loot have no combat contribution at any quality, and the copy says so where it matters.
 
 Existing `.pqw` saves and locally stored rosters remain compatible. The Roman numeral is branding, not an excuse to confiscate anybody's Hob-Hobbit.
 
