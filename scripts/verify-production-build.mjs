@@ -55,10 +55,35 @@ for (const name of cssFiles) {
 if (fontUrls.length === 0) throw new Error('Production CSS declares no font assets to verify.');
 await Promise.all(fontUrls.map((fontUrl) => access(fontUrl)));
 
+/**
+ * A ceiling on what gets shipped, so a regression is a failed build rather than a discovery.
+ *
+ * Nothing has been watching this. A burst of feature work grew the bundle by about thirteen
+ * kilobytes raw across ten additions, which is fine — but "fine" was established by measuring
+ * once, and a measurement taken once is a fact about that afternoon.
+ *
+ * The numbers are generous on purpose: roughly a quarter above the size at the time of writing.
+ * This is here to catch a dependency arriving by accident or a catalogue being embedded whole,
+ * not to make a legitimate feature argue for its own bytes. A budget tight enough to trip on
+ * ordinary work gets raised reflexively until it means nothing.
+ */
+const BUDGETS = { js: 560_000, css: 48_000 };
+
+for (const [kind, files] of [['js', jsFiles], ['css', cssFiles]]) {
+  const total = (await Promise.all(files.map(async (name) =>
+    (await readFile(new URL(name, assetDirectory))).byteLength))).reduce((sum, size) => sum + size, 0);
+  if (total > BUDGETS[kind]) {
+    throw new Error(
+      `Production ${kind.toUpperCase()} is ${total} bytes, over the ${BUDGETS[kind]} byte budget. `
+      + 'Check for an unintended dependency or an embedded catalogue before raising this.',
+    );
+  }
+}
+
 const notices = await readFile(noticeUrl, 'utf8');
 const worker = await readFile(workerUrl, 'utf8');
 const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
 const fontPackages = Object.keys(manifest.dependencies ?? {}).filter((name) => name.startsWith('@fontsource'));
 verifyProductionNotices(notices, worker, fontPackages);
 
-console.log(`Verified ${fontUrls.length} local font asset(s) across ${cssFiles.length} production CSS asset(s).`);
+console.log(`Verified ${fontUrls.length} local font asset(s) across ${cssFiles.length} production CSS asset(s), within size budget.`);
