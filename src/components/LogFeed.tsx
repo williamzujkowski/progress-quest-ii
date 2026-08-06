@@ -4,6 +4,7 @@ import { describeGameNumber, formatGameNumber } from '../engine/text';
 import { useGameStore } from '../state/gameStore';
 import { projectWorld } from '../state/worldContext';
 import { TENOR_LABELS, tenorFor, tenorLine } from '../state/institutionalTenor';
+import { townServices } from '../state/townServices';
 import { ActLabel } from './GameNumber';
 import { ChatterFeed } from './ChatterFeed';
 
@@ -34,6 +35,7 @@ export const LogFeed: React.FC = () => {
   const progression = useGameStore((state) => state.progression);
   const sessionGeneration = useGameStore((state) => state.sessionGeneration);
   const world = projectWorld({ kind: 'current', state: { character, progression } }).context;
+  const services = townServices(world);
   const feedRef = useRef<HTMLDivElement>(null);
   const activityPanelRef = useRef<HTMLElement>(null);
   const chatterTabRef = useRef<HTMLButtonElement>(null);
@@ -153,6 +155,14 @@ export const LogFeed: React.FC = () => {
             degree rather than by counting up. Every line is literally true of a hero filing
             paperwork and killing rats; only the confidence moves. */}
         <p className="world-context-tenor">{tenorLine(world)}</p>
+        {/* A town used to be a name with nothing in it. These offices do nothing the engine does
+            not already do — two of them name a real transaction and the rest are departments the
+            institution keeps regardless, which is the point. */}
+        {services && (
+          <ul className="world-context-services" aria-label="Offices open in this settlement">
+            {services.map((office) => <li key={office}>{office}</li>)}
+          </ul>
+        )}
         <details className="world-context-details">
           <summary>World filings{worldNotices.length > 0 ? ` (${worldNotices.length})` : ''}</summary>
           <div className="world-context-notices" role="region" tabIndex={0} aria-label="Derived world notices">
