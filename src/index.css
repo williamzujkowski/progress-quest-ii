@@ -140,6 +140,11 @@ input,
 select,
 textarea {
   font: inherit;
+  /* Native control appearance is refused explicitly rather than assumed away. Left at `auto`,
+     WebKit paints a focused button with its own accent fill and a control with the platform
+     button face, overriding the authored background and leaving text at whatever contrast the
+     platform chose. The authored styles below are complete; this is what lets them win. */
+  appearance: none;
 }
 
 button,
@@ -176,6 +181,17 @@ input[type='radio'] {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
+/*
+  Sits directly under the experience bar it explains, quieter than the identity line above it —
+  it is a note about a projection, not a fact about the hero.
+*/
+.hero-eta {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
 .game-number {
   font-family: var(--font-mono);
   font-feature-settings: 'tnum' 1, 'lnum' 1;
@@ -201,6 +217,36 @@ input[type='radio'] {
 /* Carried weight, read the way an EverQuest inventory window reads it: a quiet
    ratio that only raises its voice at capacity, where it becomes the reason loot
    stopped being picked up. */
+/* A footnote to one entry, not a second entry. Quiet enough to ignore, reachable enough to use. */
+.log-reason {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: var(--text-micro);
+}
+
+.log-reason summary {
+  cursor: pointer;
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-caps);
+  min-height: 1.5rem;
+}
+
+.log-reason > span { display: block; margin-top: 0.15rem; }
+
+/* Records are history, not live state: quieter than the numbers that are still moving. */
+.commendation-list .equip-slot { color: var(--text-muted); }
+
+.commendation-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 650;
+}
+
+/* Quieter than gold: a rate is context for the totals beside it, not a headline of its own. */
+.velocity-pill {
+  color: var(--text-muted);
+}
+
 .inventory-weight {
   display: flex;
   align-items: center;
@@ -235,8 +281,10 @@ input[type='radio'] {
 
 .navbar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
 }
 
@@ -248,6 +296,7 @@ input[type='radio'] {
 }
 
 .brand {
+  min-width: 0;
   gap: var(--space-3);
   color: var(--text-main);
   font-size: 1.5rem;
@@ -320,7 +369,10 @@ input[type='radio'] {
 
 .theme-control select {
   align-self: stretch;
-  max-width: 11.5rem;
+  /* Sized to the longest theme name rather than to a round number. The extra width was what
+     pushed the whole control onto a second row at common desktop widths, leaving a band of dead
+     space beside it. */
+  max-width: 9.5rem;
   border: 0;
   border-left: 1px solid var(--panel-border);
   background: var(--panel-raised);
@@ -340,10 +392,6 @@ input[type='radio'] {
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 700;
-}
-
-.badge-success {
-  color: var(--accent-success);
 }
 
 .badge-warning {
@@ -445,18 +493,34 @@ input[type='radio'] {
   font-size: 0.82rem;
 }
 
-.scroll-region {
-  max-height: 200px;
-  overflow-y: auto;
-  scrollbar-color: var(--panel-border) transparent;
-}
-
 .equip-item {
   display: flex;
   justify-content: space-between;
   gap: var(--space-3);
   border-bottom: 1px dashed var(--panel-border);
   padding: var(--space-2) 0;
+}
+
+/* In the loadout both sides sized to content, so the slot label won ties and the item name -
+   the actual content, and the whole joke - was left with under half the cell. The label yields
+   first now: slot order is canonical and the icon marks the row, so a shortened "Gauntlets"
+   costs far less than a shortened item name. Short labels still never truncate; the label only
+   gives way when the name needs the room. */
+.equipment-list .equip-item {
+  gap: var(--space-2);
+}
+
+.equipment-list .equip-slot {
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.equipment-list .equip-item > .tooltip-trigger {
+  flex: 1 1 auto;
+  justify-content: flex-end;
 }
 
 .equip-slot,
@@ -549,6 +613,65 @@ input[type='radio'] {
 .progress-encumbrance .progress-bar-fill { background: var(--text-muted); }
 .progress-encumbrance-full .progress-bar-fill { background: var(--accent-danger); }
 
+/*
+  The archive of closed quests. Sized to show a few entries and scroll for the rest, so it reads
+  as a drawer that was opened rather than a list that took over the card it sits in.
+*/
+/* Sits under the quest bar it annotates, in the muted register the archive speaks in. */
+/* Matches the disclosure the world console already uses, including its coarse-pointer target
+   size, so the two read as the same control rather than as two conventions. */
+.records-details {
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--panel-border);
+  padding-top: var(--space-2);
+}
+
+.records-details > summary {
+  display: flex;
+  min-height: 1.75rem;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-variant-caps: all-small-caps;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+}
+
+@media (max-width: 640px), (pointer: coarse) {
+  .records-details > summary { min-height: 44px; }
+}
+
+.quest-dossier {
+  margin: var(--space-2) 0 0;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  overflow-wrap: anywhere;
+}
+
+.casework-list {
+  margin: var(--space-2) 0 0;
+  max-height: 7.5rem;
+  overflow-y: auto;
+  border: 1px solid var(--panel-border);
+  border-radius: 0.35rem;
+  background: var(--progress-bg);
+  padding: var(--space-2);
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.casework-entry {
+  padding: 0.15rem 0;
+}
+
+.casework-entry + .casework-entry {
+  border-top: 1px solid var(--panel-border);
+}
+
 .log-feed {
   display: flex;
   flex-direction: column;
@@ -563,6 +686,33 @@ input[type='radio'] {
   padding: var(--space-3);
   font-family: var(--font-mono);
   font-size: 0.78rem;
+}
+
+/* Quieter than the readings above it: this is the institution editorialising, and it should
+   never be mistaken for one of the facts it is commenting on. */
+/* Reads as a directory board: one office per line, in the same muted mono the rest of the
+   console's derived text uses. */
+.world-context-services {
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+}
+
+.world-context-services li {
+  padding: 0.1rem 0;
+  overflow-wrap: anywhere;
+}
+
+.world-context-tenor {
+  margin: var(--space-2) 0 0;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-style: italic;
+  overflow-wrap: anywhere;
 }
 
 .world-context {
@@ -657,10 +807,16 @@ input[type='radio'] {
   box-shadow: inset 0 -3px 0 var(--accent-primary);
 }
 
+/* The floor lives here rather than on either tab, so both size alike - which is the point:
+   the activity feed pinned itself to 12rem while chatter was flex: 1 with min-height: 0, and
+   "take what is left" resolves to nothing when the parent distributes no height. Measured at
+   20px tall at the 1025x760 breakpoint, present in the accessibility tree and unreachable in
+   practice, while the column sat at 434px of a 760px viewport with no overflow. The room was
+   already there; nothing was claiming it. */
 .console-panel {
   display: flex;
   min-width: 0;
-  min-height: 0;
+  min-height: 12rem;
   flex: 1;
   overflow: hidden;
 }
@@ -669,6 +825,11 @@ input[type='radio'] {
 .activity-console-panel { flex-direction: column; gap: var(--space-2); }
 .activity-console-panel .log-feed { flex: 1; height: 12rem; min-height: 0; max-height: 12rem; }
 
+/* The sibling activity panel pins its feed to 12rem; this one was flex: 1 with min-height: 0,
+   which reads as "take what is left" and resolves to nothing when the parent distributes no
+   height. Measured at 20px tall at the 1025x760 breakpoint - present in the accessibility tree,
+   unreachable in practice - while the column sat at 434px of a 760px viewport with no overflow.
+   A floor makes it claim the room that was already there. */
 .chatter-panel {
   display: flex;
   width: 100%;
@@ -958,8 +1119,12 @@ textarea.form-control { resize: vertical; }
     box-shadow: inset 0 -3px 0 HighlightText;
   }
 
+  /* Named rather than inherited. `inherit` resolves against the parent's used value, and engines
+     do not agree on that under forced colors at every breakpoint - one leaves these children at
+     the authored colour, putting dark text on the platform's Highlight fill. Stating the system
+     colour directly is the same intent with nothing left to resolve. */
   .console-tabs [role='tab'][aria-selected='true'] > span,
-  .console-tabs [role='tab'][aria-selected='true'] > small { color: inherit; }
+  .console-tabs [role='tab'][aria-selected='true'] > small { color: HighlightText; }
 
   /* The primary button paints its label with --text-on-accent, which resolves to the
      page background — correct against the accent fill, and the UA does remap it to

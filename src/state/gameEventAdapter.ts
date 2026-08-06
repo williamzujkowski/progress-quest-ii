@@ -33,6 +33,24 @@ export function describeGameEvent(event: GameTransitionEvent): string {
   return describeUnboundedGameEvent(event).slice(0, MAX_PERSISTED_DESCRIPTION_LENGTH);
 }
 
+/**
+ * The mechanical cause behind an event, where the engine already knew it.
+ *
+ * Kept literal and separate from the flavour line it accompanies — the same split the item
+ * tooltips use. It reports only quantities the engine actually computed, and never damage,
+ * mitigation, spell priority, or any other system this game does not have.
+ */
+export function describeDecisionReason(event: GameTransitionEvent): string | undefined {
+  if (event.type === 'task_started' && event.reason) {
+    const { carriedCubits, capacityCubits } = event.reason;
+    return `Carrying ${carriedCubits} of ${capacityCubits} cubits. At capacity, procurement routes the hero to market.`;
+  }
+  if (event.type === 'level_gained' && event.reason) {
+    return `The experience track reached its full ${event.reason.experienceSeconds} seconds and was reset for the next level.`;
+  }
+  return undefined;
+}
+
 export function soundCueForGameEvent(event: GameTransitionEvent): GameSoundCue | undefined {
   if (event.type === 'level_gained') return 'level_up';
   if (event.type === 'quest_completed') return 'quest_complete';

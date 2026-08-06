@@ -1,7 +1,9 @@
-import { devices, expect, test, type Page } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
+import { devices, type Page } from '@playwright/test';
+import { appReady, expect, test, watchForErrors } from './fixtures/strictConsole';
+import { expectNoViolations } from './fixtures/accessibility';
 import { readFile } from 'node:fs/promises';
 import { createNewCharacter } from '../src/engine/sim';
+import { archivedSessionStorageState } from './fixtures/archivedSession';
 import { returningSessionStorageState } from './fixtures/returningSession';
 
 // Origin comes from playwright.config.ts, which reserves a free port per invocation so runs
@@ -54,13 +56,14 @@ test.describe('Progress Quest II terminal dashboard', () => {
       storageState: { cookies: [], origins: [] },
     });
     const page = await context.newPage();
+    const expectNoPageErrors = watchForErrors(page);
     await page.goto('/');
 
     const creator = page.getByRole('dialog', { name: /New Character/i });
     await expect(creator).toBeVisible();
     await expect(creator).toContainText('No resumable adventurer was found');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()).violations).toEqual([]);
+    await expectNoViolations(page);
     await expect(creator.getByRole('button', { name: /Close character creator/i })).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(creator).toBeVisible();
@@ -81,6 +84,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
       const checkpoint = activeCheckpointV1Schema.parse(JSON.parse(localStorage.getItem('progquest_active_session_v1') ?? ''));
       return { schemaVersion: checkpoint.schemaVersion, name: checkpoint.session.character.Traits.Name };
     })).toEqual({ schemaVersion: 1, name: 'First Bureaucrat' });
+    expectNoPageErrors();
     await context.close();
   });
 
@@ -98,6 +102,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
       },
     });
     const page = await context.newPage();
+    const expectNoPageErrors = watchForErrors(page);
     await page.goto('/');
 
     await expect(page.getByRole('dialog', { name: /New Character/i })).toHaveCount(0);
@@ -106,6 +111,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
       const raw = localStorage.getItem('progquest_active_session_v1');
       return raw ? JSON.parse(raw).session.character.Traits.Name : null;
     })).toBe('Latest Roster');
+    expectNoPageErrors();
     await context.close();
   });
 
@@ -137,14 +143,18 @@ test.describe('Progress Quest II terminal dashboard', () => {
         progression: { experience: { currentSeconds: 3, maxSeconds: 10 }, completedTasks: 7, elapsedSeconds: 22 },
       });
       window.dispatchEvent(new PageTransitionEvent('pagehide'));
-      return captureActiveSession();
+      // savedAtMs is wall-clock and legitimately differs across a reload; the claim under test
+      // is that the session state resumes exactly, not that the save timestamp is frozen.
+      const { savedAtMs: _ignored, ...session } = captureActiveSession().session;
+      return session;
     });
 
     await page.reload({ waitUntil: 'networkidle' });
 
     const restored = await page.evaluate(async () => {
       const { captureActiveSession } = await import('/src/state/sessionCheckpoint.ts');
-      return captureActiveSession();
+      const { savedAtMs: _ignored, ...session } = captureActiveSession().session;
+      return session;
     });
     expect(restored).toEqual(expected);
     await expect(page.getByText('Reloaded Bureaucrat')).toBeVisible();
@@ -153,6 +163,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
   test('recovers the last-known-good session without overwriting corrupt bytes', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto('/');
+    await appReady(page);
     await page.evaluate(async () => {
       const { ACTIVE_CHECKPOINT_KEY, ACTIVE_CHECKPOINT_LKG_KEY, captureActiveSession } = await import('/src/state/sessionCheckpoint.ts');
       localStorage.setItem(ACTIVE_CHECKPOINT_LKG_KEY, JSON.stringify(captureActiveSession()));
@@ -229,10 +240,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
         const { applyTheme } = await import('/src/theme.ts');
         applyTheme(document.documentElement, themeId);
       }, theme);
-      const results = await new AxeBuilder({ page })
-        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-        .analyze();
-      expect(results.violations).toEqual([]);
+      await expectNoViolations(page, theme);
     }
   });
 
@@ -315,10 +323,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(page.getByRole('button', { name: 'Audio' })).toBeVisible();
     await expect(page.locator('.audio-status')).toHaveCount(0);
     expect(pageErrors).toEqual([]);
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze();
-    expect(results.violations).toEqual([]);
+    await expectNoViolations(page);
   });
 
   test('saves explicitly and recovers from clipboard denial without a write storm', async ({ page }) => {
@@ -326,6 +331,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     const pageErrors: string[] = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto('/');
+    await appReady(page);
     await page.evaluate(() => {
       const original = Storage.prototype.setItem;
       const trackedWindow = window as Window & { __rosterWrites?: number };
@@ -361,10 +367,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await expect(page.getByRole('alert')).toContainText('copy it manually');
     expect(pageErrors).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze();
-    expect(results.violations).toEqual([]);
+    await expectNoViolations(page);
   });
 
   test('renders full game interface with Hero Banner, loadout, quest log, and spell book', async ({ page }) => {
@@ -408,6 +411,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
 
   test('shows mechanics and flavor for equipment, loot, and spells', async ({ page }) => {
     await page.goto('/');
+    await appReady(page);
     await page.evaluate(async () => {
       const { useGameStore } = await import('/src/state/gameStore.ts');
       const state = useGameStore.getState();
@@ -466,6 +470,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
   test('toggles a tooltip by touch inside a narrow viewport', async ({ browser }) => {
     const context = await browser.newContext({ ...devices['iPhone 13'], baseURL: BASE_URL, storageState: returningStorageState });
     const page = await context.newPage();
+    const expectNoPageErrors = watchForErrors(page);
     await page.goto('/');
 
     const trigger = page.locator('.tooltip-trigger').first();
@@ -512,6 +517,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     expect(longBox.y + longBox.height).toBeLessThanOrEqual(844);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 
+    expectNoPageErrors();
     await context.close();
   });
 
@@ -542,6 +548,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.goto('/');
+    await appReady(page);
     await page.evaluate(() => {
       const original = Storage.prototype.setItem;
       Storage.prototype.setItem = function(key, value) {
@@ -561,10 +568,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     expect(diagnosticCodes).toContain('theme_write_failed');
     expect(pageErrors).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze();
-    expect(results.violations).toEqual([]);
+    await expectNoViolations(page);
   });
 
   test('uses the system theme accessibly when preference storage rejects the read', async ({ page }) => {
@@ -621,6 +625,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
 
   test('labels activity events without substring false positives', async ({ page }) => {
     await page.goto('/');
+    await appReady(page);
     await page.evaluate(async () => {
       const { useGameStore } = await import('/src/state/gameStore.ts');
       const messages = [
@@ -709,6 +714,11 @@ test.describe('Progress Quest II terminal dashboard', () => {
   });
 
   test('keeps simulated chatter quiet, bounded, responsive, and entirely local', async ({ page }) => {
+    // The longest test here by some way: four viewports, a channel filter, a mute round trip, a
+    // forced-colors pass and two axe audits. It fits the default budget when it has a machine to
+    // itself and exceeds it once workers compete for cores, so the budget is raised rather than
+    // the work reduced - every step of it is checking something.
+    test.slow();
     const externalRequests: string[] = [];
     page.on('request', (request) => {
       if (new URL(request.url()).origin !== BASE_URL) externalRequests.push(request.url());
@@ -779,7 +789,10 @@ test.describe('Progress Quest II terminal dashboard', () => {
         import('/src/state/gameStore.ts'),
         import('/src/state/sessionCheckpoint.ts'),
       ]);
-      return { session: captureActiveSession(), generation: useGameStore.getState().sessionGeneration };
+      // savedAtMs is wall-clock; two captures of identical session state are still identical
+      // state, so it is excluded from the comparison rather than pinned.
+      const { savedAtMs: _ignored, ...session } = captureActiveSession().session;
+      return { session, generation: useGameStore.getState().sessionGeneration };
     });
     await chatterTab.focus();
     await page.keyboard.press('ArrowRight');
@@ -802,7 +815,10 @@ test.describe('Progress Quest II terminal dashboard', () => {
         import('/src/state/gameStore.ts'),
         import('/src/state/sessionCheckpoint.ts'),
       ]);
-      return { session: captureActiveSession(), generation: useGameStore.getState().sessionGeneration };
+      // savedAtMs is wall-clock; two captures of identical session state are still identical
+      // state, so it is excluded from the comparison rather than pinned.
+      const { savedAtMs: _ignored, ...session } = captureActiveSession().session;
+      return { session, generation: useGameStore.getState().sessionGeneration };
     });
     expect(authoritativeAfter).toEqual(authoritativeBefore);
 
@@ -882,7 +898,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
       messages: document.querySelector<HTMLElement>('.chatter-messages')!.scrollWidth - document.querySelector<HTMLElement>('.chatter-messages')!.clientWidth,
     }));
     expect(overflow).toEqual({ page: 0, chatter: 0, messages: 0 });
-    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()).violations).toEqual([]);
+    await expectNoViolations(page);
 
     await activityTab.click();
     await page.reload();
@@ -892,6 +908,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
   test('opens and mutes automated chatter by touch', async ({ browser }) => {
     const context = await browser.newContext({ ...devices['iPhone 13'], baseURL: BASE_URL, storageState: returningStorageState });
     const page = await context.newPage();
+    const expectNoPageErrors = watchForErrors(page);
     await page.goto('/');
 
     const activityTab = page.getByRole('tab', { name: 'Activity' });
@@ -903,6 +920,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     await page.getByRole('button', { name: 'Mute fictional chatter' }).tap();
     await expect(page.getByRole('region', { name: 'Fictional chatter messages' })).toContainText('Fictional chatter is muted');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    expectNoPageErrors();
     await context.close();
   });
 
@@ -1023,6 +1041,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
   test('compacts absurd progression values without overflowing mobile or desktop', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto('/');
+    await appReady(page);
     await page.evaluate(async () => {
       const { useGameStore } = await import('/src/state/gameStore.ts');
       const { character } = useGameStore.getState();
@@ -1136,18 +1155,68 @@ test.describe('Progress Quest II terminal dashboard', () => {
       await page.locator('.tooltip-trigger').first().focus();
       await expect(page.getByRole('tooltip')).toBeVisible();
 
-      const results = await new AxeBuilder({ page })
-        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-        .analyze();
-
-      expect(results.violations).toEqual([]);
+      await expectNoViolations(page);
     });
   }
 
+  for (const [label, width] of [['desktop', 1280], ['mobile', 375]] as const) {
+    test(`reveals and dismisses a decision reason at ${label} width`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/');
+      await loadDenseDashboard(page);
+      await openActivityTab(page);
+
+      // Seed one entry carrying a reason. The feed renders what the store holds; the engine
+      // attaching the cause correctly is asserted separately at the transition seam.
+      await page.evaluate(async () => {
+        const { useGameStore } = await import('/src/state/gameStore.ts');
+        const state = useGameStore.getState();
+        useGameStore.setState({
+          log: [{ id: state.nextActivityId + 1, message: 'Heading to market to sell loot...', reason: 'Carrying 22 of 22 cubits. At capacity, procurement routes the hero to market.' }, ...state.log],
+          nextActivityId: state.nextActivityId + 2,
+        });
+      });
+
+      const disclosure = page.locator('.log-reason').first();
+      await expect(disclosure).toBeVisible();
+      // Closed by default: the chronological line is the feed, this is a footnote to one entry.
+      await expect(page.getByText(/At capacity, procurement routes/)).toBeHidden();
+
+      await disclosure.locator('summary').click();
+      await expect(page.getByText(/At capacity, procurement routes/)).toBeVisible();
+
+      await disclosure.locator('summary').click();
+      await expect(page.getByText(/At capacity, procurement routes/)).toBeHidden();
+
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    });
+  }
+
+  test('keeps the console tabs usable when the centre column runs short', async ({ page }) => {
+    // #207: the chatter panel was flex: 1 with min-height: 0, which resolves to nothing when
+    // the parent distributes no height. It measured 20px tall here — present in the
+    // accessibility tree, unreachable in practice — so a region silently disappeared rather
+    // than shrinking. The room existed; nothing was claiming it.
+    await page.setViewportSize({ width: 1025, height: 760 });
+    await page.goto('/');
+    await loadDenseDashboard(page);
+
+    const heights = await page.evaluate(() => {
+      const panel = document.querySelector('.console-panel:not([hidden])');
+      return { panel: panel ? Math.round(panel.getBoundingClientRect().height) : 0 };
+    });
+    expect(heights.panel, 'console tab panel collapsed instead of shrinking').toBeGreaterThanOrEqual(120);
+
+    await expect(page.getByRole('region', { name: 'Simulated chatter' })).toBeVisible();
+    await openActivityTab(page);
+    await expect(page.getByRole('region', { name: 'Activity Event Log' })).toBeVisible();
+  });
+
   test('keeps a focused skip link above the tooltip layer', async ({ page }) => {
     await page.goto('/');
-    // WCAG 2.4.11: a focused skip link must not be obscured. These previously carried bare
-    // z-index values of 200 and 1000 respectively, so an open tooltip painted over it.
+    // WCAG 2.4.11: a focused skip link must not be obscured. The skip link and the tooltip layer
+    // are stacked against each other, so their z-indices have to be ordered deliberately rather
+    // than chosen independently.
     // Open a tooltip first: it is portaled to the body and only exists in the DOM while shown,
     // which is also the exact situation where it could cover the skip link.
     await page.locator('.tooltip-trigger').first().focus();
@@ -1180,10 +1249,7 @@ test.describe('Progress Quest II terminal dashboard', () => {
     expect(await notices.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('none');
     expect(await page.locator('.progress-bar-fill').first().evaluate((element) => parseFloat(getComputedStyle(element).animationDuration))).toBeLessThan(0.001);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze();
-    expect(results.violations).toEqual([]);
+    await expectNoViolations(page);
   });
 
   test('opens and rolls stats in Character Creator modal', async ({ page }) => {
@@ -1378,4 +1444,130 @@ test.describe('Progress Quest II terminal dashboard', () => {
       }
     });
   }
+});
+
+test.describe('closed casework archive', () => {
+  // The engine keeps this list and trims it; the panel only reads it. Seeded directly rather
+  // than played to, because reaching a hundred closed quests in a test would take hours.
+  const archived = (history: string[]) => archivedSessionStorageState(BASE_URL, { history });
+
+  test('stays away entirely until a quest has closed', async ({ browser }) => {
+    const context = await browser.newContext({ baseURL: BASE_URL, storageState: archived([]) });
+    const page = await context.newPage();
+    const expectNoPageErrors = watchForErrors(page);
+    await page.goto('/');
+
+    await expect(page.getByRole('heading', { name: 'Questing & Progression' })).toBeVisible();
+    // An empty archive reads as a broken panel rather than a new one, so there is no empty state.
+    await expect(page.getByRole('list', { name: /Closed casework/i })).toHaveCount(0);
+    // And no disclosure inviting anyone to open it. Asserting only the list's absence is what let
+    // a summary that opens onto nothing ship: the contents were hidden, the triangle was not.
+    await expect(page.locator('.records-details > summary').filter({ hasText: /Case archive/i }))
+      .toHaveCount(0);
+    expectNoPageErrors();
+    await context.close();
+  });
+
+  test('lists closed quests newest first and scrolls the rest without pushing the card wider', async ({ browser }) => {
+    const history = Array.from({ length: 40 }, (_value, index) => `Matter number ${index}`);
+    const context = await browser.newContext({ baseURL: BASE_URL, storageState: archived(history) });
+    const page = await context.newPage();
+    const expectNoPageErrors = watchForErrors(page);
+    await page.goto('/');
+
+    // The archive lives behind a disclosure now, so opening it is part of reaching it.
+    await page.locator('.records-details > summary').filter({ hasText: /Case archive/i }).click();
+    const archive = page.getByRole('list', { name: /Closed casework/i });
+    await expect(archive).toBeVisible();
+    await expect(archive.locator('li')).toHaveCount(40);
+    await expect(archive.locator('li').first()).toHaveText('Matter number 39');
+
+    // The archive scrolls inside itself. If it ever stops doing so it will grow the questing
+    // card without limit, which is the failure this panel is one trim away from.
+    const box = await archive.evaluate((element) => ({
+      scrolls: element.scrollHeight > element.clientHeight,
+      overflowsHorizontally: element.scrollWidth > element.clientWidth,
+    }));
+    expect(box.scrolls).toBe(true);
+    expect(box.overflowsHorizontally).toBe(false);
+
+    const card = page.locator('.quest-card');
+    expect(await card.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await expectNoViolations(page, 'questing card with a populated archive');
+    expectNoPageErrors();
+    await context.close();
+  });
+});
+
+test.describe('WCAG 2.2 criteria the automated floor can reach', () => {
+  test.use({ storageState: returningStorageState });
+
+  test('meets the 24px target size minimum, by size or by spacing', async ({ page }) => {
+    // 2.5.8 Target Size (Minimum). The criterion has two ways to pass, and only implementing the
+    // first reports conformant dense lists as failures: an undersized target also passes when a
+    // 24px circle centred on it intersects no other target's circle. Both are implemented here so
+    // the assertion means what the criterion means.
+    await page.goto('/');
+
+    const failures = await page.evaluate(() => {
+      const selector = 'button, a[href], select, input, [role="tab"], summary';
+      const rendered = [...document.querySelectorAll<HTMLElement>(selector)].flatMap((element) => {
+        const rect = element.getBoundingClientRect();
+        // A hidden panel's controls are not pointer targets.
+        if (rect.width === 0 && rect.height === 0) return [];
+        if (element.closest('[hidden]')) return [];
+        return [{
+          element,
+          rect,
+          centre: { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 },
+        }];
+      });
+
+      return rendered.flatMap((target) => {
+        if (target.rect.width >= 24 && target.rect.height >= 24) return [];
+
+        // Circles of 24px diameter, so two intersect when their centres are closer than 24px.
+        const crowded = rendered.some((other) =>
+          other !== target
+          && Math.hypot(target.centre.x - other.centre.x, target.centre.y - other.centre.y) < 24);
+        if (!crowded) return [];
+
+        return [{
+          label: target.element.getAttribute('aria-label')
+            ?? target.element.textContent?.trim().slice(0, 40)
+            ?? target.element.tagName,
+          width: Math.round(target.rect.width),
+          height: Math.round(target.rect.height),
+        }];
+      });
+    });
+
+    expect(failures, `undersized and crowded targets: ${JSON.stringify(failures)}`).toEqual([]);
+  });
+
+  test('survives the text-spacing overrides without losing content', async ({ page }) => {
+    // 1.4.12 Text Spacing. The criterion is that applying these produces no loss of content or
+    // function, so the assertion is that nothing starts overflowing its own container - not that
+    // the layout is unchanged, which it is entitled to be.
+    await page.goto('/');
+    await page.addStyleTag({
+      content: `* { line-height: 1.5 !important; letter-spacing: 0.12em !important; word-spacing: 0.16em !important; }
+                p { margin-block: 2em !important; }`,
+    });
+
+    const overflowing = await page.evaluate(() => {
+      const body = document.body;
+      const horizontal = body.scrollWidth > document.documentElement.clientWidth + 1;
+      // Panels that clip their own content rather than scrolling it are the real loss here.
+      const clipped = [...document.querySelectorAll<HTMLElement>('.card, .hero-banner')].flatMap((element) => {
+        const style = getComputedStyle(element);
+        if (style.overflow !== 'hidden' && style.overflowY !== 'hidden') return [];
+        return element.scrollHeight > element.clientHeight + 1 ? [element.className] : [];
+      });
+      return { horizontal, clipped };
+    });
+
+    expect(overflowing.horizontal, 'the page scrolls horizontally under text-spacing overrides').toBe(false);
+    expect(overflowing.clipped, 'panels clip their content under text-spacing overrides').toEqual([]);
+  });
 });

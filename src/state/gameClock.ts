@@ -1,7 +1,7 @@
 export function startGameClock(
   tick: (elapsedMs: number) => void,
   now = () => performance.now(),
-  onError: (error: unknown) => void = () => undefined,
+  onError: (error: unknown, discardedMs: number) => void = () => undefined,
   visibilityTarget: Pick<Document, 'hidden' | 'addEventListener' | 'removeEventListener'> | undefined = typeof document === 'undefined' ? undefined : document,
 ): () => void {
   let previousTime = now();
@@ -28,7 +28,10 @@ export function startGameClock(
       tick(elapsedMs);
     } catch (error: unknown) {
       // Keep the interval alive so a recoverable transition failure cannot strand the session.
-      onError(error);
+      // The bank was emptied before the call, so this failure consumed all of it - and since a
+      // hidden tab can bank hours, "one tick failed" and "a day of progress vanished" look
+      // identical from here unless the magnitude travels with the error.
+      onError(error, elapsedMs);
     }
   }, 50);
 

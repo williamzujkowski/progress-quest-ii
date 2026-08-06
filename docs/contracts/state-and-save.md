@@ -37,7 +37,7 @@ Owner: `src/engine/transition.ts`; shared limits: `src/data/limits.ts`
 
 - Every schema-accepted session remains schema-valid after an engine transition.
 - Increasing numeric values saturate at the existing persistence ceiling. This preserves PQW v0 and checkpoint compatibility without admitting `Infinity`, lowering accepted input limits, or changing ordinary legacy progression.
-- Level, stats, spell levels, inventory quantities, Gold, completed-task count, and adventure elapsed use the shared finite limits. Quest and plot progress remain capped by their accepted per-track maxima.
+- Level, stats, spell levels, inventory quantities, completed-task count, and adventure elapsed use the shared finite limit, `MAX_PERSISTED_VALUE` (1e9). Gold does not: it saturates at `MAX_PERSISTED_GOLD` (1e12), a thousand times higher. Anything adding new saturating logic must pick the right one of the two. Quest and plot progress remain capped by their accepted per-track maxima.
 - Inventory and spell collections do not append beyond the existing 5,000-row limit. Existing rows may still advance until their value ceiling.
 - Saturation consumes the same RNG calls as the corresponding ordinary transition. A gain event or reward effect is emitted only when persisted state actually changes.
 - Monster-task perturbation retains the exact legacy roll count through the last level with a finite progression interval, then reuses that bounded roll budget for higher accepted levels.
@@ -99,8 +99,12 @@ Owner: `src/engine/prng.ts`
 
 After dependencies and Chromium are installed, `npm run quality` is the canonical
 local, CI, and deployment gate. It runs full Nexus installation verification,
-warning-clean modern lint, typecheck, unit and legacy-oracle tests, production
-build, high-severity dependency audit, Playwright E2E, and production PWA tests.
+warning-clean modern lint, typecheck, unit and legacy-oracle tests under enforced
+coverage floors, dependency
+audit at moderate severity plus registry signature verification, Playwright E2E,
+and production PWA tests. There is no standalone build step: the production build
+runs inside `test:pwa`, which is last, so `test:e2e` exercises the Vite dev server
+and only `test:pwa` exercises the shipped bundle.
 GitHub Actions workflows additionally pass checksum-pinned actionlint v1.7.12;
 its negative contract covers syntax, expressions, local action inputs, and
 unsafe untrusted interpolation without optional ShellCheck or Pyflakes. The

@@ -1,4 +1,18 @@
-import { COLOR_KEYS, type TerminalColorTheme } from '@williamzujkowski/oklch-terminal-themes';
+import type { TerminalColorTheme } from '@williamzujkowski/oklch-terminal-themes';
+
+// Declared here rather than imported. The package's only exported entry point is its barrel,
+// which re-exports convert/classify/schema; those pull culori's entire colour-space graph -
+// every space it supports - for what is a list of twenty strings. Nothing in this app converts
+// a colour; it reads precomputed .oklchCss values out of static JSON. Importing the barrel cost
+// 47.75 kB raw / 17.05 kB gzip of dead code, measured by stubbing the dependency and rebuilding.
+// src/__tests__/theme.test.ts asserts this list still matches the package, so it cannot drift
+// silently; that test imports the barrel, but tests are not bundled.
+export const COLOR_KEYS = [
+  'background', 'foreground', 'cursor', 'selection',
+  'black', 'red', 'green', 'yellow', 'blue', 'purple', 'cyan', 'white',
+  'brightBlack', 'brightRed', 'brightGreen', 'brightYellow',
+  'brightBlue', 'brightPurple', 'brightCyan', 'brightWhite',
+] as const satisfies readonly (keyof TerminalColorTheme['colors'])[];
 import greenPhosphorCrt from '@williamzujkowski/oklch-terminal-themes/themes/green-phosphor-crt.json';
 import keysOceanSunsetHc from '@williamzujkowski/oklch-terminal-themes/themes/keys-ocean-sunset-hc.json';
 import remarqueDark from '@williamzujkowski/oklch-terminal-themes/themes/remarque-dark.json';

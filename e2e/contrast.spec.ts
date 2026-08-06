@@ -1,4 +1,8 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures/strictConsole';
+import { settleForAudit } from './fixtures/accessibility';
+import { archivedSessionStorageState } from './fixtures/archivedSession';
+
+const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:5173';
 
 /**
  * Direct contrast measurement, covering what axe-core structurally cannot.
@@ -6,21 +10,18 @@ import { expect, test } from '@playwright/test';
  * The axe pass in app.spec.ts asserts on `results.violations` only. axe reports whole subtrees
  * as `incomplete` when it cannot determine a background — "Element's background color could not
  * be determined due to a pseudo element", which covers the navbar because those buttons contain
- * inline SVG icons. An `incomplete` is not a violation, so it reads as a pass. That is how a
- * genuine 2.98:1 primary button shipped in the progros theme.
+ * inline SVG icons. An `incomplete` is not a violation, so an unmeasurable pair reads as a pass.
+ * A failing contrast can ship through that gap unseen, which is why this file measures directly.
  *
- * Two things this file does deliberately, both learned the hard way:
+ * Two properties it depends on, both easy to lose in a refactor:
  *
- * 1. It waits for paint to settle, on every pair it measures. Themes cross-fade, and sampling
- *    mid-transition reports colours that exist on no frame the user ever sees. That artifact
- *    produced a convincing "3.2:1 primary button" across three themes which does not exist —
- *    the settled value is 6.77:1. Hand-checking the arithmetic did not catch it, because the
- *    arithmetic was right and the sample was wrong.
- *
- *    A first attempt settled on one proxy element and passed locally, then failed in CI at
- *    1.04:1 on exactly the two dark themes: buttons fade over 150ms and the body over 200ms,
- *    so waiting for one says nothing about the rest. Settling is per-pair for that reason.
- * 2. It validates its own maths against published WCAG values before trusting any DOM reading.
+ * 1. Paint is settled before every pair is sampled, per pair rather than once. Themes cross-fade,
+ *    and a mid-transition sample reports colours that exist on no frame the user ever sees — an
+ *    arithmetically correct ratio for a state that was never rendered. Different elements carry
+ *    different transition durations, so settling on one proxy element says nothing about the
+ *    rest and fails intermittently under load.
+ * 2. The maths is validated against published WCAG values before any DOM reading is trusted. A
+ *    bad sample and a bad formula are indistinguishable from the ratio alone.
  */
 
 const AA_NORMAL_TEXT = 4.5;
@@ -132,15 +133,11 @@ test.describe('theme contrast', () => {
     test(`${theme.label} meets AA for text against its real backdrop`, async ({ page }) => {
       await page.goto('/');
 
-      // Kill transitions outright rather than waiting them out. The previous approach polled
-      // until two samples agreed, which is wrong in a way that only shows up on a slow runner:
-      // before the cross-fade begins the values are *also* stable — at the outgoing theme — so
-      // two matching pre-transition snapshots read as settled and the suite measured the wrong
-      // theme entirely. With no transition there is no window to sample inside, so the timing
-      // dependency is gone by construction rather than tuned.
-      await page.addStyleTag({
-        content: '*, *::before, *::after { transition: none !important; animation: none !important; }',
-      });
+      // Shared with the axe helper on purpose: one definition of "no animation window to sample
+      // inside". Polling until two samples agree is not sufficient on its own — the values are
+      // also stable *before* a cross-fade begins, at the outgoing theme, so two matching
+      // pre-transition snapshots read as settled while showing the wrong palette entirely.
+      await settleForAudit(page);
 
       const picker = page.getByRole('combobox', { name: 'Visual theme' });
       await expect(picker.locator('option')).toHaveCount(THEMES.length);
@@ -155,9 +152,69 @@ test.describe('theme contrast', () => {
       const samples = await page.evaluate(SAMPLE, PAIRS);
       const measured = Object.entries(samples);
 
-      // A selector that stops matching would otherwise reduce this to an empty pass, which is
-      // the exact failure mode the file exists to close.
-      expect(measured.length, `${theme.label} matched too few elements to be meaningful`).toBeGreaterThanOrEqual(5);
+      // Exact, not a floor. A floor below the pair count lets one selector stop matching without
+      // anyone noticing, and an unmeasured pair reports nothing while reading as a pass — the
+      // failure mode this file exists to close, reintroduced one selector at a time.
+      expect(measured.map(([name]) => name).sort(), `${theme.label} did not measure every pair`)
+        .toEqual(PAIRS.map((pair) => pair.name).sort());
+
+      for (const [name, value] of measured) {
+        const ratio = contrast(value.fg, value.bg);
+        expect(ratio, `${theme.label} — ${name} measured ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+      }
+    });
+  }
+});
+
+/**
+ * Surfaces that only exist once a session has history.
+ *
+ * The block above measures a bare load, which is the right page for the pairs it covers and the
+ * wrong one for these: the activity feed has no entries and the casework archive does not render
+ * at all until a quest has closed. A pair the suite cannot reach is a pair it silently says
+ * nothing about, and silence here reads as a pass.
+ *
+ * Kept separate rather than seeding the block above, so the established pairs keep measuring the
+ * page they were calibrated against. Only the fixture differs; the settle and measure path is the
+ * same one.
+ */
+const SEEDED_PAIRS = [
+  { name: 'activity feed entry', selector: '.log-entry' },
+  { name: 'closed casework entry', selector: '.casework-entry' },
+] as const;
+
+test.describe('theme contrast on surfaces that need a session', () => {
+  test.use({
+    storageState: archivedSessionStorageState(BASE_URL, {
+      history: ['Placate the Duke of the Kobolds', 'Fetch me 6 kobold spleens'],
+      log: ['Defeated a kobold.', 'Quest completed: placate the Duke of the Kobolds'],
+    }),
+  });
+
+  for (const theme of THEMES) {
+    test(`${theme.label} meets AA for seeded text against its real backdrop`, async ({ page }) => {
+      await page.goto('/');
+
+      // The feed opens on the chatter tab, so the activity entries exist but are inside a hidden
+      // panel. Measuring them there would sample an element the user cannot see.
+      await page.getByRole('tab', { name: /Activity/i }).click();
+      // Records fold away by default. A collapsed disclosure is not a hidden failure to measure -
+      // it is a surface the reader has to open too, so the test opens it exactly as they would.
+      for (const summary of await page.locator('.records-details > summary').all()) await summary.click();
+      await expect(page.locator('.log-entry').first()).toBeVisible();
+      await expect(page.locator('.casework-entry').first()).toBeVisible();
+
+      await settleForAudit(page);
+
+      const picker = page.getByRole('combobox', { name: 'Visual theme' });
+      await picker.selectOption(theme.id);
+      await expect(page.locator(`html[data-theme="${theme.id}"]`)).toHaveCount(1);
+
+      const samples = await page.evaluate(SAMPLE, SEEDED_PAIRS);
+      const measured = Object.entries(samples);
+
+      expect(measured.map(([name]) => name).sort(), `${theme.label} did not measure every seeded pair`)
+        .toEqual(SEEDED_PAIRS.map((pair) => pair.name).sort());
 
       for (const [name, value] of measured) {
         const ratio = contrast(value.fg, value.bg);

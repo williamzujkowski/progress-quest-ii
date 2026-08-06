@@ -2,7 +2,7 @@
 
 Standalone guidance for AI coding agents (OpenCode, Codex CLI, Cursor, Aider, Cline, Continue, Goose, Claude Code) working in this repository. Self-contained — single source of truth for agent guidance in this project.
 
-**About this project:** `progress-quest-ii` is an unofficial modern continuation of Eric Fredricksen's classic zero-player RPG *Progress Quest* (web edition). The goal of this project is to modernize the legacy 2000s JavaScript / jQuery codebase into a clean, modular, responsive, high-performance web application while retaining 100% of the original game's iconic mechanics, flavor text, humor, and deterministic progression logic.
+**About this project:** `progress-quest-ii` is an unofficial spiritual successor to Eric Fredricksen's classic zero-player RPG *Progress Quest* (web edition) — a game for people who want to play games without playing them and watch numbers go up. It is inspired by the original rather than a port of it. It keeps the humour, the flavour, and the deterministic, hands-off progression; it is free to extend or refine the mechanics where that serves the goal, and it has already done so. See [ADR 0003](docs/adr/0003-spiritual-successor-not-a-port.md) for what that means in practice and which divergences are deliberate.
 
 ---
 
@@ -10,7 +10,7 @@ Standalone guidance for AI coding agents (OpenCode, Codex CLI, Cursor, Aider, Cl
 
 Build and maintain a modern, fully-typed, responsive, and tested web application for **Progress Quest II**.
 
-- **Reference Baseline:** `pq-web-src/` contains the legacy JavaScript/HTML source (`main.js`, `config.js`, `newguy.js`, `roster.js`, `sim.js`, `cheat.js`, `clock.js`, `main.css`, `progros.css`). It serves as the authoritative functional reference.
+- **Reference Baseline:** `pq-web-src/` contains the legacy JavaScript/HTML source (`main.js`, `config.js`, `newguy.js`, `roster.js`, `sim.js`, `cheat.js`, `clock.js`, `main.css`, `progros.css`). It is the behavioural reference for anything this project has not deliberately changed, and the oracle harness exists to catch *unintended* drift. A parity failure is a question — did we mean this? — not an automatic bug. An unexplained divergence is still far likelier to be a mistake than a choice, so treat it as one until someone explains it.
 - **Modernization Goals:**
   1. **Strict TypeScript & Modular Engine:** Decouple core game simulation logic (`src/engine/`) from UI rendering (`src/components/`). Zero UI dependencies in engine code.
   2. **Modern Web UI & Design System:** Implement a responsive visual design system (supporting retro ProgrOS / Windows classic themes alongside sleek modern dark/light modes) with smooth animations and progress bars.
@@ -43,6 +43,10 @@ correctness > simplicity > performance > cleverness
 
 This codebase incorporates **Ponytail** (`https://github.com/dietrichgebert/ponytail`). Write only what the task needs: lazy means efficient, not careless. The best code is the code never written.
 
+The full skill is vendored at `.agents/skills/ponytail/SKILL.md` — upstream text verbatim, with project-specific guidance below a marked overlay heading and the MIT terms retained under `.agents/skills/licenses/`. Read it rather than working from the summary below when a decision is close; it carries the intensity switch (`lite` / `full` / `ultra`) and the scope note that the ladder governs coding work, not prose or research.
+
+**What the ladder does not govern.** It decides how a thing is built, never whether a claim is true. `CONTEXT.md` and the editorial contract sit outside it: the laziest copy that asserts an unmodelled mechanic is still wrong, and the shortest test that cannot fail is worth less than no test. When simplicity and correctness disagree, correctness wins and the trade-off gets a `ponytail:` comment saying so.
+
 ### The 7-Rung Decision Ladder
 Before writing any code, stop at the first rung that holds:
 
@@ -60,6 +64,19 @@ Before writing any code, stop at the first rung that holds:
 - **Shortest working diff wins:** Deletion over addition. Boring over clever. Fewest files possible.
 - **Ponytail comments:** Mark deliberate simplifications or trade-offs with a `ponytail:` comment describing the rationale and upgrade trigger (e.g. `// ponytail: simple O(n) scan, indexed map if item count > 1000`).
 - **Never lazy about:** Understanding the problem (read the full context before editing), input validation at boundaries, error handling that prevents data loss, security, accessibility, or unit tests for non-trivial logic.
+
+### Comments Must Be Evergreen
+
+A comment is read by someone who was not there and cannot check. Write only what stays true, and keep it to what the code cannot say for itself.
+
+- **State durable facts, not events.** *"Experience accrues only on kill tasks, so the track is not a wall clock"* stays true and explains the code. *"Observed in the browser on a returning session"* is an event: unverifiable later, and it explains nothing a reader can act on. History belongs in the commit message and the PR, which are searchable and dated by the tooling.
+- **Numbers belong in tests, not prose.** A measurement in a comment drifts silently as the code moves; the same measurement as an assertion fails loudly. If a figure matters enough to record, write it as a test and let the comment name the invariant it protects. Never assert a benchmark, ratio, or timing in a comment.
+- **No timestamps of any kind** — no dates, no PR or issue numbers, no "recently", "now", "currently", "as of", "still", or "no longer". A comment must read correctly to someone with no memory of when it was written.
+- **Record the rejected alternative as a property, not a story.** *"Comparing against the previous tick misses the case where the finishing tick sets no record"* earns its place: it stops the next person reinstating the bug. *"This was fixed after a review found it"* does not.
+- **Explain the constraint, so a reader knows what breaks if they change it.** That is the one thing a comment can do that a test cannot.
+- **Never name a person, an agent, a model, or a tool.**
+- **Don't restate the code**, and don't annotate the obvious. Every comment is a line that must be re-verified when the code beneath it changes; each one should be worth that cost.
+- **When you change code, re-read the comments around it.** A stale comment is worse than none, because it is trusted.
 
 ---
 
@@ -147,7 +164,9 @@ The repository pins Nexus Agents as a development dependency and exposes it thro
 
 **Temporary Nexus bypass:** Do not invoke Nexus adapter-backed routing, research, brainstorming, or PR review. Exhausted providers currently fall through to zero-token heuristic output that can look authoritative. Until upstream [#4350](https://github.com/nexus-substrate/nexus-agents/issues/4350) and [#4351](https://github.com/nexus-substrate/nexus-agents/issues/4351) are fixed and verified on this host, use Claude subagents and repository skills instead. Keep `npm run agents:verify`; it is deterministic and remains a CI installation/configuration gate.
 
-**`consensus_vote` is exempt, conditionally.** It was re-verified on 2026-08-04 in two runs (three-voter and seven-voter) that both returned `simulated: false`, `error: false`, real per-voter reasoning, and non-zero token counts, with every voter routed to a Claude model. Use it, but check those fields on the result before trusting a verdict. The #4351 defect is *not* fixed upstream — it is simply not being triggered while Claude has capacity, so a vote that lands on an exhausted adapter can still report a confident decision backed by no model work. Record votes as advisory input; a vote never substitutes for the user's approval on an outward-facing or irreversible action.
+**`consensus_vote` is exempt, conditionally.** It was re-verified on 2026-08-04 in two runs (three-voter and seven-voter) that both returned `simulated: false`, `error: false`, real per-voter reasoning, and non-zero token counts, with every voter routed to a Claude model. Use it, but check those fields on the result before trusting a verdict.
+
+**The condition has since been observed to fail.** A seven-voter run on 2026-08-05 routed two voters to `gpt-5.5` and reported `inputTokens: 0, outputTokens: 0` for both, while still returning full reasoning prose — with `simulated: false` and `error: false`, so those two fields do not catch it. That is the #4351 shape: confident output with no measurable model work behind it. Read `costSummary.perVoter` and discard any voter with zero tokens before counting, then check the verdict still holds on the remainder. If discarding them changes the outcome, the vote decided nothing. The #4351 defect is *not* fixed upstream — it is simply not being triggered while Claude has capacity, so a vote that lands on an exhausted adapter can still report a confident decision backed by no model work. Record votes as advisory input; a vote never substitutes for the user's approval on an outward-facing or irreversible action.
 
 **Adapter status (2026-08-04):** Claude is the only routable adapter. Codex is quota-exhausted; Gemini's OAuth expired 2026-07-29 and its replacement CLI, `agy`, has no adapter in nexus-agents 2.173.6 (the current latest), so that capability route is dead rather than degraded — tracked upstream in [#4318](https://github.com/nexus-substrate/nexus-agents/issues/4318) and [#4346](https://github.com/nexus-substrate/nexus-agents/issues/4346). Treat `doctor`'s `Capacity: 100% remaining` as a static placeholder, not a live quota reading — it reports full capacity for exhausted providers, which is the failure this bypass exists to contain.
 
@@ -163,15 +182,17 @@ Nexus runtime data belongs in `.nexus-agents/` and MUST remain untracked. Never 
 
 ## Skills Library
 
-Workflow playbooks live in `.agents/skills/<name>/SKILL.md` (conforming to the Anthropic Agent Skills specification). When a task matches a skill's intent, read its `SKILL.md` and follow its instructions:
+Workflow playbooks live in `.agents/skills/<name>/SKILL.md` (conforming to the Anthropic Agent Skills specification). When a task matches a skill's intent, read its `SKILL.md` and follow its instructions.
+
+Most of these are imported. `.agents/skills/PROVENANCE.md` records where each came from, the upstream revision it was audited against, the retained license text, and whether the local copy still matches — including the two entries whose licensing is unresolved. Read it before importing another, and follow the refresh workflow at its end rather than editing an import in place.
 
 - **`ponytail`**: Lazy senior dev mode. Enforces the 7-rung decision ladder (YAGNI → reuse → stdlib → native platform → installed dep → 1 line → minimal safe code).
 - **`code-review`**: Standardized code review checklist and architectural review before merging PRs.
 - **`codebase-design`**: Designing modular components, interface boundaries, and data flow.
 - **`diagnosing-bugs`**: Root-cause bug investigation and failure trace analysis.
 - **`domain-modeling`**: Modeling RPG domain entities, stats, equipment, items, and state contracts.
-- **`frontend-design`**: Progress Quest II's local adaptation of Anthropic's frontend design guidance for distinctive visual direction, typography, and layout; upstream provenance refresh is tracked in #128.
-- **`vercel-react-best-practices`**: Vercel's React performance playbook; apply only the Vite/client rules supported by measurements or a concrete regression.
+- **`frontend-design`**: Anthropic's frontend design guidance, upstream text verbatim, with the project's own constraints below a marked overlay heading.
+- **`react-best-practices`** (upstream name `vercel-react-best-practices`, kept in its frontmatter): Vercel's React performance playbook; apply only the Vite/client rules supported by measurements or a concrete regression.
 - **`grill-me` / `grilling`**: Interactive requirements grilling to resolve ambiguous user requirements.
 - **`grill-with-docs`**: Grilling requirements against official project documentation and ADRs.
 - **`handoff`**: Context packaging and handoff state summary between agent turns or subagents.

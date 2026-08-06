@@ -208,6 +208,8 @@ export const ITEM_OFS: string[] = [
   'Dignard', 'Ra', 'the Bone', 'Diamonique', 'Electrum', 'Hydragyrum',
 ];
 
+// 'writ' appears twice, exactly as it does in the legacy table this mirrors. It is faithful
+// rather than careless, and deduplicating it would change the draw weights.
 export const BORING_ITEMS: string[] = [
   'nail', 'lunchpail', 'sock', 'I.O.U.', 'cookie', 'pint', 'toothpick',
   'writ', 'newspaper', 'letter', 'plank', 'hat', 'egg', 'coin', 'needle',
@@ -487,6 +489,16 @@ export const DEFENSE_BAD: [string, number][] = [
   ['Corroded', -3],
 ];
 
+/**
+ * Ported faithfully, and unused — in this codebase and in the original.
+ *
+ * `K.MonMods` is declared in the legacy `config.js` and referenced nowhere else in that source
+ * either, so the modifiers it lists never reached a monster name in the game this one descends
+ * from. It is kept because the fidelity suite compares it against the legacy table, and because
+ * its absence would otherwise look like something this port lost.
+ *
+ * Do not wire it up expecting to restore a missing behaviour; there is no behaviour to restore.
+ */
 export const MON_MODS: string[] = [
   '-4 fœtal *',
   '-4 dying *',

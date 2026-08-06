@@ -302,7 +302,7 @@ export function applyQuestReward(rng: RandomGenerator, character: CharacterSheet
   };
 }
 
-function generateMonsterTask(rng: RandomGenerator, character: CharacterSheet): { description: string; durationMs: number; loot: NonNullable<ProgressTask['loot']> } {
+function generateMonsterTask(rng: RandomGenerator, character: CharacterSheet): { description: string; durationMs: number; loot: NonNullable<ProgressTask['loot']>; opponents: number } {
   const characterLevel = character.Traits.Level;
   let targetLevel = characterLevel;
   // ponytail: levels beyond finite progression get the last finite level's legacy roll budget.
@@ -368,13 +368,16 @@ function generateMonsterTask(rng: RandomGenerator, character: CharacterSheet): {
   return {
     description: `Executing ${definiteName ? displayName : indefinite(displayName, quantity)}...`,
     durationMs: Math.floor((2 * 3 * opponentLevel * 1000) / characterLevel),
+    // Reported at the site that decided it. Nothing downstream recomputes it, and nothing in the
+    // engine reads it back - the duration above is still derived from the same local value.
+    opponents: quantity,
     loot: monster.item === '*'
       ? { type: 'random' }
       : { type: 'fixed', item: `${monster.name} ${monster.item}`.toLowerCase() },
   };
 }
 
-export function generateTaskDescription(rng: RandomGenerator, character: CharacterSheet): { description: string; type: ProgressTask['type']; durationMs: number; loot?: ProgressTask['loot'] } {
+export function generateTaskDescription(rng: RandomGenerator, character: CharacterSheet): { description: string; type: ProgressTask['type']; durationMs: number; loot?: ProgressTask['loot']; opponents?: number } {
   const encum = calculateEncumbrance(character.Inventory);
   const maxEncum = calculateEncumbranceMax(character.Stats.STR);
   const price = equipPrice(character.Traits.Level);
@@ -401,5 +404,8 @@ export function generateTaskDescription(rng: RandomGenerator, character: Charact
     type: 'kill',
     durationMs: monster.durationMs,
     loot: monster.loot,
+    // Rebuilt field by field here rather than spread, so a new fact has to be threaded through
+    // deliberately - which is why the count reached the task only after this line was added.
+    opponents: monster.opponents,
   };
 }

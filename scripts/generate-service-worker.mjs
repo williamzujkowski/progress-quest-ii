@@ -14,8 +14,32 @@ async function listFiles(directory) {
   return nested.flat();
 }
 
+// Font subsets the interface can never render. Browsers already skip these at runtime via
+// @font-face unicode-range, so the waste is specific to offline install: precaching every
+// subset unconditionally put ~128 kB of glyphs nobody can see into every user's cache.
+//
+// `latin-ext` is deliberately absent from this list and must stay precached — it is genuinely
+// used, by `œ` in src/data/traits.ts and `ü`/`Ü` in src/engine/text.ts.
+const UNRENDERABLE_FONT_SUBSETS = ['cyrillic', 'cyrillic-ext', 'greek', 'greek-ext', 'vietnamese'];
+const KNOWN_FONT_SUBSETS = [...UNRENDERABLE_FONT_SUBSETS, 'latin', 'latin-ext'];
+
+function isUnrenderableFont(pathname) {
+  if (!pathname.endsWith('.woff2')) return false;
+  const name = pathname.split('/').pop() ?? '';
+  const subset = KNOWN_FONT_SUBSETS.filter((candidate) => name.includes(`-${candidate}-`))
+    // `latin-ext` also contains `latin`; take the most specific match.
+    .sort((a, b) => b.length - a.length)[0];
+  if (!subset) {
+    // Fail loudly rather than guess. Silently dropping a font nobody recognised would take
+    // glyphs out of the offline shell with no signal that it happened.
+    throw new Error(`Unrecognised font asset ${name}: add its subset to KNOWN_FONT_SUBSETS before it can be classified.`);
+  }
+  return UNRENDERABLE_FONT_SUBSETS.includes(subset);
+}
+
 const artifactUrls = (await listFiles(distDirectory))
-  .filter((url) => url.pathname !== workerUrl.pathname && !url.pathname.endsWith('.map'));
+  .filter((url) => url.pathname !== workerUrl.pathname && !url.pathname.endsWith('.map'))
+  .filter((url) => !isUnrenderableFont(url.pathname));
 const files = artifactUrls
   .map((url) => `./${relative(distDirectory.pathname, url.pathname).split(sep).join('/')}`)
   .sort();

@@ -12,6 +12,7 @@ import purchaseExitPriceFixtureJson from '../fixtures/legacy/purchase-exit-price
 import purchaseExitPricePlusOneFixtureJson from '../fixtures/legacy/purchase-exit-price-plus-one.json';
 import randomStarDuplicateFixtureJson from '../fixtures/legacy/random-star-duplicate.json';
 import randomStarSpecialFixtureJson from '../fixtures/legacy/random-star-special.json';
+import randomStarInterplotFixtureJson from '../fixtures/legacy/random-star-interplot.json';
 import { observeLegacyEncounterTransition, observeModernEncounterTransition, type LegacyTransitionFixture } from './transitionParity';
 
 const npcTransitionFixture = structuredClone(oneKillFixtureJson) as unknown as LegacyTransitionFixture;
@@ -43,6 +44,9 @@ describe('modern encounter-output fidelity', () => {
     ['purchase exit above equipment price', purchaseExitPricePlusOneFixtureJson],
     ['random-star duplicate item', randomStarDuplicateFixtureJson],
     ['random-star special item', randomStarSpecialFixtureJson],
+    // The overlap where the port and legacy order their draws differently: a kill that drops
+    // random-star loot on the same tick the plot threshold opens an interplot cinematic.
+    ['random-star loot during an interplot cinematic', randomStarInterplotFixtureJson],
   ])('matches the legacy %s transition on the shared observable surface', (_name, fixtureJson) => {
     const fixture = fixtureJson as unknown as LegacyTransitionFixture;
 

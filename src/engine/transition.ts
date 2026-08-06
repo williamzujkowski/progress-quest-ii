@@ -12,7 +12,7 @@ export interface GameTransitionState {
 }
 
 export type GameTransitionEvent =
-  | { type: 'level_gained'; level: number }
+  | { type: 'level_gained'; level: number; reason?: { experienceSeconds: number } }
   | { type: 'stat_gained'; stat: StatName; amount: number }
   | { type: 'quest_completed'; description: string }
   | { type: 'quest_started'; description: string }
@@ -23,7 +23,9 @@ export type GameTransitionEvent =
   | { type: 'equipment_purchased'; slot: EquipSlot; name: string }
   | { type: 'equipment_gained'; slot: EquipSlot; name: string }
   | { type: 'act_completed'; act: number }
-  | { type: 'task_started'; task: ProgressTask };
+  // `reason` carries the cause the engine already knew at the decision site. It is never
+  // recomputed downstream, and never describes a mechanic that does not exist.
+  | { type: 'task_started'; task: ProgressTask; reason?: { carriedCubits: number; capacityCubits: number } };
 
 export interface QuestIdentity {
   readonly kind?: QuestKind;
@@ -257,7 +259,7 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
         experience.currentSeconds = Math.min(experience.maxSeconds, experience.currentSeconds + progressDelta);
       } else {
         const nextLevel = Math.min(MAX_PERSISTED_VALUE, traits.Level + 1);
-        if (nextLevel > traits.Level) events.push({ type: 'level_gained', level: nextLevel });
+        if (nextLevel > traits.Level) events.push({ type: 'level_gained', level: nextLevel, reason: { experienceSeconds: experience.maxSeconds } });
         traits.Level = nextLevel;
 
         const hpGain = Math.floor(stats.CON / 3) + 1 + rng.random(4);
@@ -402,6 +404,8 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
 
     let transitionedCharacter: CharacterSheet = { ...character, Traits: traits, Stats: stats, Equip: equip, Spells: spells, Inventory: inventory, Gold: gold, Quest: quest, Plot: plot, Task: task, PendingTasks: pendingTasks };
     let nextTask: ProgressTask | undefined;
+    // Set only where the engine actually made the decision, so the feed never has to guess.
+    let marketReason: { carriedCubits: number; capacityCubits: number } | undefined;
     if (pendingTasks.length > 0) {
       let queuedTask = pendingTasks[0];
       if (!queuedTask) throw new Error('Pending task queue became empty while dequeuing');
@@ -448,7 +452,10 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
         nextTask = activeSequenceTask(queuedTask);
       }
     } else if (task.type === 'act_marker') {
-      if (calculateEncumbrance(inventory) >= calculateEncumbranceMax(stats.STR)) {
+      const carriedCubits = calculateEncumbrance(inventory);
+      const capacityCubits = calculateEncumbranceMax(stats.STR);
+      if (carriedCubits >= capacityCubits) {
+        marketReason = { carriedCubits, capacityCubits };
         nextTask = { description: 'Heading to market to sell loot...', durationMs: 4000, elapsedMs: 0, type: 'heading_to_market' };
       } else {
         nextTask = leaveMarketTask(gold, traits.Level);
@@ -467,7 +474,9 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
     if (!nextTask) throw new Error('Sequence transition did not produce a task');
     transitionedCharacter = { ...transitionedCharacter, Equip: equip, Inventory: inventory, Gold: gold, Plot: plot, PendingTasks: pendingTasks };
     if (pendingTasks.length === 0) delete transitionedCharacter.PendingTasks;
-    events.push({ type: 'task_started', task: structuredClone(nextTask) });
+    events.push(marketReason
+      ? { type: 'task_started', task: structuredClone(nextTask), reason: marketReason }
+      : { type: 'task_started', task: structuredClone(nextTask) });
     current = { character: { ...transitionedCharacter, Task: nextTask }, progression: nextProgression };
 
     const activeQuest = questIdentity(current.character.Quest);

@@ -5,8 +5,13 @@ const REQUIRED_NOTICES = [
   'Johannes Baagøe',
   'Lucide Icons and Contributors',
   'SIL OPEN FONT LICENSE Version 1.1',
-  'Vite contributors',
 ];
+
+// Vite was on this list while the application shipped the starter favicon and its PWA
+// rasterisations. Those are gone, no Vite-copyrighted code reaches the bundle, and Vite is a
+// build-time dependency only - so there is no longer distributed content for the attribution to
+// cover. scripts/test-app-icons.mjs holds the other end of that reasoning by refusing an icon
+// carrying the starter mark, which is what would make an attribution owed again.
 
 // `fontPackages` is derived from package.json rather than listed here on purpose. A generic
 // "SIL OPEN FONT LICENSE" string was already satisfied by the existing entries, so adding a

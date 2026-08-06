@@ -3,6 +3,9 @@ import React, { useId, useLayoutEffect, useRef, useState } from 'react';
 import { describeGameNumber, formatGameNumber } from '../engine/text';
 import { useGameStore } from '../state/gameStore';
 import { projectWorld } from '../state/worldContext';
+import { TENOR_LABELS, tenorFor, tenorLine } from '../state/institutionalTenor';
+import { venueBulletin } from '../state/venueBulletin';
+import { attendanceLabel, raidMuster } from '../state/raidMuster';
 import { ActLabel } from './GameNumber';
 import { ChatterFeed } from './ChatterFeed';
 
@@ -33,6 +36,8 @@ export const LogFeed: React.FC = () => {
   const progression = useGameStore((state) => state.progression);
   const sessionGeneration = useGameStore((state) => state.sessionGeneration);
   const world = projectWorld({ kind: 'current', state: { character, progression } }).context;
+  const services = venueBulletin(world);
+  const muster = raidMuster(world);
   const feedRef = useRef<HTMLDivElement>(null);
   const activityPanelRef = useRef<HTMLElement>(null);
   const chatterTabRef = useRef<HTMLButtonElement>(null);
@@ -146,7 +151,30 @@ export const LogFeed: React.FC = () => {
         <div className="world-context-line world-context-meta">
           <span>{world.venue} // {world.activity}</span>
           {world.assignmentScope ? <span>assignment // {world.assignmentScope}</span> : null}
+          <span>tenor // {TENOR_LABELS[tenorFor(world)].toLowerCase()}</span>
         </div>
+        {/* The institution's opinion of itself, which is the only thing here that changes by
+            degree rather than by counting up. Every line is literally true of a hero filing
+            paperwork and killing rats; only the confidence moves. */}
+        <p className="world-context-tenor">{tenorLine(world)}</p>
+        {/* A town used to be a name with nothing in it. These offices do nothing the engine does
+            not already do — two of them name a real transaction and the rest are departments the
+            institution keeps regardless, which is the point. */}
+        {services && (
+          <ul className="world-context-services" aria-label="Offices open in this settlement">
+            {services.map((office) => <li key={office}>{office}</li>)}
+          </ul>
+        )}
+        {/* The artefact a raid actually produced: an attendance sheet. Everyone named is from the
+            cast the chatter panel already declares fictional, and nobody's attendance changes the
+            encounter, which is resolved by opponent puissance and level as it is everywhere. */}
+        {muster && (
+          <ul className="world-context-services" aria-label="Muster sheet for this raid, fictional">
+            {muster.map((entry) => (
+              <li key={entry.name}>{entry.name} · {entry.role} · {attendanceLabel(entry.attendance)}</li>
+            ))}
+          </ul>
+        )}
         <details className="world-context-details">
           <summary>World filings{worldNotices.length > 0 ? ` (${worldNotices.length})` : ''}</summary>
           <div className="world-context-notices" role="region" tabIndex={0} aria-label="Derived world notices">
@@ -227,10 +255,19 @@ export const LogFeed: React.FC = () => {
             <div className="log-entry log-entry-animated" key={entry.id} data-activity-id={entry.id}>
               {getLogTag(entry.message)}
               <span>{entry.message}</span>
+              {/* Native disclosure so it is keyboard-operable and screen-reader-announced without
+                  any state of its own. Subordinate to the line above it, and closed by default:
+                  the chronological record is the feed, and this is a footnote to one entry. */}
+              {entry.reason !== undefined && (
+                <details className="log-reason">
+                  <summary>Why</summary>
+                  <span>{entry.reason}</span>
+                </details>
+              )}
             </div>
           ))}
         </div>
-        {showActivityJump ? <button type="button" className="activity-jump" onClick={jumpToLatestActivity}>Jump to latest activity</button> : null}
+        {showActivityJump ? <button type="button" className="btn btn-compact activity-jump" onClick={jumpToLatestActivity}>Jump to latest activity</button> : null}
       </section>
     </section>
   );

@@ -64,7 +64,7 @@ export const ChatterFeed: React.FC<{ readonly active?: boolean }> = ({ active = 
         </label>
         <button
           type="button"
-          className="chatter-mute"
+          className="btn btn-compact chatter-mute"
           aria-controls={messagesId}
           aria-pressed={muted}
           onClick={() => setMuted((current) => !current)}
@@ -106,7 +106,7 @@ export const ChatterFeed: React.FC<{ readonly active?: boolean }> = ({ active = 
               </ol>
             : <p className="chatter-empty">No fictional messages on this channel. Even the silence is simulated.</p>}
       </div>
-      {showJump && !muted ? <button type="button" className="chatter-jump" onClick={jumpToLatest}>Jump to latest chatter</button> : null}
+      {showJump && !muted ? <button type="button" className="btn btn-compact chatter-jump" onClick={jumpToLatest}>Jump to latest chatter</button> : null}
     </section>
   );
 };

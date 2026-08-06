@@ -1,9 +1,9 @@
 import { FolderOpen, Palette, Pause, Play, UserPlus, Volume2, VolumeX } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { soundFX } from '../state/audio';
+import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../state/gameStore';
 import { THEME_OPTIONS, type ThemeId } from '../theme';
-import { GameNumber } from './GameNumber';
 
 interface NavbarProps {
   theme: ThemeId;
@@ -14,7 +14,13 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ theme, themeStatus, onThemeChange, onOpenSaveModal, onOpenCharacterCreator }) => {
-  const { character, isPaused, togglePause } = useGameStore();
+  // Narrow on purpose: the character reference is rebuilt every 50ms tick because Task.elapsedMs
+  // advances, and a bare useGameStore() would subscribe this bar to all of it. Nothing here
+  // depends on the character any more.
+  const { isPaused, togglePause } = useGameStore(useShallow((state) => ({
+    isPaused: state.isPaused,
+    togglePause: state.togglePause,
+  })));
   const [isMuted, setIsMuted] = useState(soundFX.getMuted());
   const [audioStatus, setAudioStatus] = useState('');
 
@@ -43,9 +49,6 @@ export const Navbar: React.FC<NavbarProps> = ({ theme, themeStatus, onThemeChang
             <a href="./THIRD_PARTY_NOTICES.txt">Credits &amp; notices</a>
           </p>
         </div>
-        <span className="badge" title="Character Level">
-          Lvl{' '}<GameNumber value={character.Traits.Level} />
-        </span>
       </div>
 
       <div className="nav-actions">
