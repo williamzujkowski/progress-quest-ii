@@ -709,6 +709,11 @@ test.describe('Progress Quest II terminal dashboard', () => {
   });
 
   test('keeps simulated chatter quiet, bounded, responsive, and entirely local', async ({ page }) => {
+    // The longest test here by some way: four viewports, a channel filter, a mute round trip, a
+    // forced-colors pass and two axe audits. It fits the default budget when it has a machine to
+    // itself and exceeds it once workers compete for cores, so the budget is raised rather than
+    // the work reduced - every step of it is checking something.
+    test.slow();
     const externalRequests: string[] = [];
     page.on('request', (request) => {
       if (new URL(request.url()).origin !== BASE_URL) externalRequests.push(request.url());
