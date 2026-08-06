@@ -43,7 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({ theme, themeStatus, onThemeChang
     <header className="navbar" role="banner">
       <div className="brand">
         <div className="brand-copy">
-          <h1><span aria-hidden="true">⚔</span> Progress Quest II</h1>
+          <h1><span aria-hidden="true">⚔</span> Progress Quest III</h1>
           <p className="brand-tagline">
             Zero players. Zero developers. Progress continues regardless. <span aria-hidden="true">·</span>{' '}
             <a href="./THIRD_PARTY_NOTICES.txt">Credits &amp; notices</a>

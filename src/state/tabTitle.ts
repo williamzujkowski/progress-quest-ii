@@ -12,7 +12,7 @@ import { formatGameNumber } from '../engine/text';
  * not exist, which is the same bar the item catalogue is held to.
  */
 
-export const BASE_TITLE = 'Progress Quest II';
+export const BASE_TITLE = 'Progress Quest III';
 
 export interface TabFacts {
   readonly level: number;

@@ -133,7 +133,7 @@ The shortest path to done is the right path.
 
 ---
 
-# Progress Quest II overlay
+# Progress Quest III overlay
 
 Local additions. Everything above this heading is upstream and should be replaced wholesale on
 sync rather than merged.

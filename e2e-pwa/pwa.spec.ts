@@ -4,7 +4,7 @@ import { returningSessionStorageState } from '../e2e/fixtures/returningSession';
 
 test.use({ storageState: returningSessionStorageState('http://127.0.0.1:4173') });
 
-test('publishes the Progress Quest II install contract at its Pages scope', async ({ page }) => {
+test('publishes the Progress Quest III install contract at its Pages scope', async ({ page }) => {
   await page.goto('./');
 
   await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', './favicon.svg');
@@ -20,8 +20,8 @@ test('publishes the Progress Quest II install contract at its Pages scope', asyn
   });
 
   expect(manifest).toMatchObject({
-    name: 'Progress Quest II',
-    short_name: 'ProgQuest II',
+    name: 'Progress Quest III',
+    short_name: 'ProgQuest III',
     start_url: './',
     scope: './',
     display: 'standalone',
@@ -53,7 +53,7 @@ test('loads the Pages-scoped app offline after one successful visit', async ({ p
   await context.setOffline(true);
   await page.reload({ waitUntil: 'domcontentloaded' });
 
-  await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest II' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest III' })).toBeVisible();
   await expect(page.getByText('Zero players. Zero developers. Progress continues regardless.')).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Chatter' })).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('tab', { name: 'Activity' }).click();
@@ -74,7 +74,7 @@ test('keeps questing when service-worker registration fails', async ({ page, req
     await page.goto('./');
 
     await expect(page.locator('.pwa-status[role="status"]')).toHaveText('Offline mode is unavailable. Questing may require civilization.');
-    await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest II' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest III' })).toBeVisible();
     await expect(page.locator('.pwa-status[role="status"]')).toHaveCount(1);
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -91,7 +91,7 @@ test('reports a first-install precache failure without leaving a cache', async (
     await page.goto('./');
 
     await expect(page.locator('.pwa-status[role="status"]')).toHaveText('Offline mode is unavailable. Questing may require civilization.');
-    await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest II' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest III' })).toBeVisible();
     await expect.poll(() => page.evaluate(() => caches.keys())).toEqual([]);
   } finally {
     await request.post('./__test__/worker-mode/normal');
@@ -122,7 +122,7 @@ test('applies an update only after the user approves it and removes the stale ca
     expect(results.violations).toEqual([]);
     await updateButton.focus();
     await Promise.all([page.waitForEvent('load'), page.keyboard.press('Enter')]);
-    await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest II' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest III' })).toBeVisible();
     await expect.poll(() => page.evaluate(() => caches.keys())).toEqual(['progress-quest-ii-shell-pwa-test-update']);
   } finally {
     await request.post('./__test__/worker-mode/normal');
@@ -215,7 +215,7 @@ test('keeps the previous offline shell when an update fails atomically', async (
     expect(await page.evaluate(() => caches.keys())).toEqual(initialCaches);
     await context.setOffline(true);
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest II' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest III' })).toBeVisible();
   } finally {
     await context.setOffline(false);
     await request.post('./__test__/worker-mode/normal');

@@ -1,4 +1,4 @@
-# AGENTS.md — Progress Quest II
+# AGENTS.md — Progress Quest III
 
 Standalone guidance for AI coding agents (OpenCode, Codex CLI, Cursor, Aider, Cline, Continue, Goose, Claude Code) working in this repository. Self-contained — single source of truth for agent guidance in this project.
 
@@ -8,7 +8,7 @@ Standalone guidance for AI coding agents (OpenCode, Codex CLI, Cursor, Aider, Cl
 
 ## Mission
 
-Build and maintain a modern, fully-typed, responsive, and tested web application for **Progress Quest II**.
+Build and maintain a modern, fully-typed, responsive, and tested web application for **Progress Quest III**.
 
 - **Reference Baseline:** `pq-web-src/` contains the legacy JavaScript/HTML source (`main.js`, `config.js`, `newguy.js`, `roster.js`, `sim.js`, `cheat.js`, `clock.js`, `main.css`, `progros.css`). It is the behavioural reference for anything this project has not deliberately changed, and the oracle harness exists to catch *unintended* drift. A parity failure is a question — did we mean this? — not an automatic bug. An unexplained divergence is still far likelier to be a mistake than a choice, so treat it as one until someone explains it.
 - **Modernization Goals:**

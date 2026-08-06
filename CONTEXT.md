@@ -1,4 +1,4 @@
-# Progress Quest II Domain
+# Progress Quest III Domain
 
 The canonical language for a deterministic zero-player RPG session and its progression.
 

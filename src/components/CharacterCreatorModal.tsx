@@ -78,7 +78,7 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
       <div className="modal-content modal-wide" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2 id="creator-title">
-            Progress Quest II — New Character
+            Progress Quest III — New Character
           </h2>
           {isRequired ? null : (
             <button className="btn btn-compact" onClick={onClose} aria-label="Close character creator modal">
