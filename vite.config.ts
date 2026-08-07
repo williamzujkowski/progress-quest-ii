@@ -31,12 +31,15 @@ export default defineConfig({
         // Listed one by one rather than as `src/components/**`, because several components do
         // have unit tests and excluding those would throw away real coverage. Each entry here is
         // a component whose verification lives entirely in the Playwright suite.
+        //
+        // ItemTooltip was on this list and stopped qualifying when #307 gave it a unit test, which
+        // nobody noticed — the list is only as reviewable as the reader is attentive, so
+        // scripts/test-coverage-exclusions.mjs now fails when an entry acquires a matching test.
         'src/App.tsx',
         'src/components/CharacterCreatorModal.tsx',
         'src/components/CharacterSheet.tsx',
         'src/components/HeroBanner.tsx',
         'src/components/InventoryView.tsx',
-        'src/components/ItemTooltip.tsx',
         'src/components/Navbar.tsx',
         'src/components/PwaStatus.tsx',
         'src/components/QuestLog.tsx',
