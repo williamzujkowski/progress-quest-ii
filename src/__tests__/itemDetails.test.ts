@@ -377,3 +377,49 @@ describe('modifier count as a register signal', () => {
     expect(stacked.description.length).toBeLessThanOrEqual(220);
   });
 });
+
+describe('the boundary between what a thing is and what it does', () => {
+  // Flavour is free to drift; effects are the interface's only mechanical claim, and CONTEXT.md
+  // forbids asserting anything the engine does not model. These pin the shape of every effect
+  // string so a future flavour pass cannot append prose to one, or smuggle a quantity in beside a
+  // real figure. A legitimate mechanics change updates the pattern here deliberately.
+  const EQUIPMENT_EFFECT = /^Generation quality: [-\d,]+ \([^)]*\)\. Combat contribution: [a-z ]+; classic encounter time ignores equipment\.$/u;
+  const SPELL_EFFECT = /^Spell rank: [-\d,]+\. Combat contribution: [a-z ]+; classic encounter time ignores spells\.$/u;
+
+  it('keeps every generated equipment effect to the mechanical shape', () => {
+    for (const slot of EQUIP_SLOTS) {
+      for (const [base] of slot === 'Weapon' ? WEAPONS : slot === 'Shield' ? SHIELDS : ARMORS) {
+        for (const [modifier] of [...OFFENSE_ATTRIB, ...DEFENSE_ATTRIB, ...OFFENSE_BAD, ...DEFENSE_BAD]) {
+          expect(describeEquipment(`${modifier} ${base}`, slot).effect).toMatch(EQUIPMENT_EFFECT);
+        }
+      }
+    }
+  });
+
+  it('keeps every spell effect to the mechanical shape', () => {
+    for (const [index, spell] of SPELLS.entries()) {
+      expect(describeSpell(spell, index + 1).effect).toMatch(SPELL_EFFECT);
+    }
+  });
+
+  it('never lets a flavour beat reach an effect', () => {
+    // The dossier vocabulary belongs to descriptions. If one of these words ever appears in an
+    // effect, the two halves have merged and the mechanical claim is no longer trustworthy.
+    const flavour = [
+      'approved', 'condemned', 'misfiled', 'quarantined', 'de-provisioned', 'derated',
+      'by candlelight', 'during the brownout', 'while the coolant held', 'pending thermal review',
+    ];
+    const samples = [
+      ...SPECIALS.slice(0, 12).map((name) => describeInventoryItem(name, 1)),
+      ...BORING_ITEMS.slice(0, 12).map((name) => describeInventoryItem(name, 3)),
+      ...ITEM_ATTRIB.slice(0, 8).map((attribute, index) => describeInventoryItem(`${attribute} ${ITEM_OFS[index] ?? 'Thing'}`, 2)),
+      ...MONSTERS.slice(0, 20).filter(({ item }) => item).map(({ item }) => describeInventoryItem(item, 1)),
+      ...EQUIP_SLOTS.map((slot) => describeEquipment(`Plexiglass ${slot}`, slot)),
+      ...SPELLS.slice(0, 12).map((spell, index) => describeSpell(spell, index + 1)),
+    ];
+    expect(samples.length).toBeGreaterThan(60);
+    for (const { effect } of samples) {
+      for (const word of flavour) expect(effect.toLowerCase()).not.toContain(word);
+    }
+  });
+});
