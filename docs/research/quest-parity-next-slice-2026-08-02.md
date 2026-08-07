@@ -7,7 +7,7 @@ Add a deterministic, test-only quest-completion fixture for the existing legacy 
 ## Evidence
 
 - `pq-web-src/main.js:666-726` defines `CompleteQuest`: reset bar, log/check prior quests, choose one of four rewards, trim history before push to a maximum of 100 entries, clear the target, generate one of five quest kinds, append/log the new quest, and save.
-- `src/__tests__/fixtures/legacy/quest-completion.json` records the canonical Exterminate vector: max `138`, next target `Swamp Elf|1|lilypad`, spell reward `Rabbit Punch I`, and final RNG state.
+- `src/__tests__/fixtures/goldens/quest-completion.json` records the canonical Exterminate vector: max `138`, next target `Swamp Elf|1|lilypad`, spell reward `Rabbit Punch I`, and final RNG state.
 - Current `src/state/gameStore.ts` resets quest max with synthetic `floor(max * 1.2) + 1`, always grants a spell, and stores no quest history or target metadata.
 
 ## Scope decision

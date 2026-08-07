@@ -75,7 +75,7 @@ npm run quality
 ```
 
 The quality command fails on modern-code or GitHub Actions workflow findings and
-runs Nexus installation verification, lint, typecheck, unit and legacy-oracle
+runs Nexus installation verification, lint, typecheck, unit and golden-master
 tests under enforced coverage floors, dependency audit at moderate severity plus registry signature
 verification, browser E2E, and production PWA tests. The production build is not
 a separate step - it runs inside the PWA suite, which is last, so browser E2E
@@ -83,9 +83,7 @@ exercises the dev server and only the PWA suite exercises the shipped bundle. Wo
 for the current platform, verifies its pinned release checksum before every
 extraction, and keeps the archive under ignored `node_modules/.cache/`. The
 launcher uses the standard `tar` executable included on supported developer
-systems and GitHub-hosted runners; ShellCheck and Pyflakes remain optional. The
-read-only `pq-web-src/` behavior oracle is excluded from modern lint and remains
-available separately through `npm run lint:legacy`.
+systems and GitHub-hosted runners; ShellCheck and Pyflakes remain optional.
 
 Adapter-backed Nexus review, routing, and voting are temporarily bypassed because exhausted providers can produce zero-token heuristic results. Claude subagents and the repository review skills are the interim review path; see upstream [#4350](https://github.com/nexus-substrate/nexus-agents/issues/4350) and [#4351](https://github.com/nexus-substrate/nexus-agents/issues/4351). As of 2026-08-04 Claude is the only routable adapter: Codex is quota-exhausted, and Gemini's replacement CLI `agy` has no adapter in nexus-agents 2.173.6, so `doctor`'s per-adapter `Capacity: 100% remaining` is a static placeholder rather than a live quota reading. Nexus's generic quality tool also assumes ESLint and pnpm instead of repository scripts; the canonical local and CI gate is `npm run quality` until upstream [#4355](https://github.com/nexus-substrate/nexus-agents/issues/4355) is fixed. The workflow-checker provenance decision and immutable-SHA input-validation limitation are recorded in [the workflow lint research note](docs/research/github-actions-workflow-lint-2026-08-04.md).
 
@@ -95,10 +93,9 @@ Adapter-backed Nexus review, routing, and voting are temporarily bypassed becaus
 - `src/data/` — authoritative game tables and item/spell descriptions.
 - `src/state/` — session, persistence, and validated save boundaries.
 - `src/components/` — React game surfaces and interaction modules.
-- `src/__tests__/` — Vitest unit, fidelity, and state contracts.
+- `src/__tests__/` — Vitest unit and state contracts, plus the recorded goldens in `goldens/`.
 - `e2e/` — Playwright browser and responsive behavior tests.
 - `e2e-pwa/` — production-build install, offline, update, rollback, and cache-safety tests.
-- `pq-web-src/` — read-only legacy reference implementation and behavior oracle.
 - `.agents/skills/` — repository workflow and review skills.
 
 See [`AGENTS.md`](./AGENTS.md) for the project’s correctness, TDD, typing, security, issue, and pull-request rules. It is less funny than this README because it has to be trusted with production code.
@@ -107,12 +104,12 @@ See [`AGENTS.md`](./AGENTS.md) for the project’s correctness, TDD, typing, sec
 
 The interface uses dense terminal-inspired composition, OKLCH semantic tokens, explicit overflow regions, and accessible focus states. Project copy follows the [editorial voice contract](docs/contracts/editorial-voice.md); research notes, other contracts, and the modernization backlog live in [`docs/`](./docs/).
 
-The legacy baseline in `pq-web-src/` is the functional reference, not a museum exhibit to be casually “cleaned up.” Changes to progression, serialization, or compatibility require tests and explicit review.
+The recorded goldens in `src/__tests__/fixtures/goldens/` are the functional reference, not a museum exhibit to be casually “cleaned up.” They were captured from the original web build while it was still checked out here and nothing in this repository can re-record them. Changes to progression, serialization, or compatibility require tests and explicit review.
 
 ## Credits and rights
 
-Eric Fredricksen is the original creator of *Progress Quest* and principal author of the retained web reference implementation, which also includes repository contributors and third-party material attributed in the project notices. This repository is an unofficial modernization directed and reviewed by William Zujkowski with AI-assisted research, implementation, and testing. “Zero developers” is the joke; these authorship and provenance statements are not.
+Eric Fredricksen is the original creator of *Progress Quest* and principal author of the web implementation this project's tables and recorded goldens derive from, which also includes repository contributors and third-party material attributed in the project notices. This repository is an unofficial modernization directed and reviewed by William Zujkowski with AI-assisted research, implementation, and testing. “Zero developers” is the joke; these authorship and provenance statements are not.
 
-The root MIT license covers only material the project has authority to license under MIT. Classic implementation, names, tables, prose, the `pq-web-src/` submodule, bundled fonts, icons, and other dependencies retain their own rights and terms. The official Progress Quest site publishes a permissive license for Progress Quest, while the web-port source also contains conflicting “all rights reserved” headers; the project does not claim that this documentation resolves that ambiguity.
+The root MIT license covers only material the project has authority to license under MIT. Classic implementation, names, tables, prose, the recorded goldens, bundled fonts, icons, and other dependencies retain their own rights and terms. The official Progress Quest site publishes a permissive license for Progress Quest, while the web-port source also contains conflicting “all rights reserved” headers; the project does not claim that this documentation resolves that ambiguity.
 
 See the [content provenance inventory](docs/content-provenance.md) and [third-party notices](public/THIRD_PARTY_NOTICES.txt) before reusing game data, legacy code, prose, or assets. No code or assets from prior unofficial sequel projects have been imported.

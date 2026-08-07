@@ -5,9 +5,9 @@ import { advanceGame } from '../../engine/transition';
 import type { CharacterSheet } from '../../engine/types';
 import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../../data/limits';
 import { activeCheckpointV1Schema, characterSheetSchema, MAX_PERSISTED_ITEMS } from '../../state/schemas';
-import oneKillFixture from '../fixtures/legacy/one-kill.json';
-import levelUpFixture from '../fixtures/legacy/xp-level-up.json';
-import questFixture from '../fixtures/legacy/quest-completion.json';
+import oneKillFixture from '../fixtures/goldens/one-kill.json';
+import levelUpFixture from '../fixtures/goldens/xp-level-up.json';
+import questFixture from '../fixtures/goldens/quest-completion.json';
 
 function stateFor(character: CharacterSheet) {
   const isSequence = character.Task.type === 'loading' || character.Task.type === 'prologue' || character.Task.type === 'cinematic' || character.Task.type === 'act_marker';
@@ -240,13 +240,12 @@ describe('advanceGame', () => {
     expect(characterSheetSchema.safeParse(firstRound.state.character).success).toBe(true);
   });
 
-  // Provenance: these values are oracle-derived, not copied from the port. The same scenario is
-  // captured as fixtures/legacy/random-star-interplot.json and compared against the live port by
-  // the parity suite, and scripts/test-legacy-oracle.mjs re-runs that fixture through the real
-  // pq-web-src code on every `npm test`. Worth stating, because the port genuinely orders its
-  // draws differently here - transition.ts computes loot between the cinematic's opening and its
-  // remainder, where legacy runs InterplotCinematic whole - and a reader could reasonably assume
-  // a single pinned seed was masking that. It is not: the oracle agrees on the observable surface.
+  // Provenance: these values were recorded from the original build, not copied from this engine.
+  // The same scenario is captured as fixtures/goldens/random-star-interplot.json, which the
+  // goldens suite replays. Worth stating, because the two genuinely order their draws differently
+  // here - transition.ts computes loot between the cinematic's opening and its remainder, where
+  // the original ran InterplotCinematic whole - and a reader could reasonably assume a single
+  // pinned seed was masking that. It is not: the recording agrees on the observable surface.
   it('awards random-star loot before generating the remaining nemesis cinematic', () => {
     const character = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 800);
     character.Plot = { act: 1, currentProgress: 10, maxProgress: 10 };

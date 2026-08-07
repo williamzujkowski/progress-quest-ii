@@ -29,8 +29,8 @@ same named quality gates locally and in CI.
 
 ### Accuracy
 
-- `pq-web-src/` is the behavior oracle, not production code.
-- A fixed seed and explicit input must produce a legacy-approved ordered trace.
+- The recorded goldens in `src/__tests__/fixtures/goldens/` are the behavioural baseline. They were captured from the original web build while it was checked out here; that copy is gone and they cannot be re-recorded, so they are edited only as a deliberate decision about how the game behaves.
+- A fixed seed and explicit input must produce the ordered trace those goldens record.
 - RNG continuation, task order, progression, loot, currency, and activity text are
   observable behavior.
 - Serialization changes require the repository's unanimous compatibility gate.

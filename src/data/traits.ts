@@ -208,8 +208,9 @@ export const ITEM_OFS: string[] = [
   'Dignard', 'Ra', 'the Bone', 'Diamonique', 'Electrum', 'Hydragyrum',
 ];
 
-// 'writ' appears twice, exactly as it does in the legacy table this mirrors. It is faithful
-// rather than careless, and deduplicating it would change the draw weights.
+// 'writ' appears twice, exactly as it did in the original table this mirrors. It is faithful
+// rather than careless, and deduplicating it would change the draw weights. Pinned as deliberate
+// by `src/__tests__/goldens/traitTables.test.ts`.
 export const BORING_ITEMS: string[] = [
   'nail', 'lunchpail', 'sock', 'I.O.U.', 'cookie', 'pint', 'toothpick',
   'writ', 'newspaper', 'letter', 'plank', 'hat', 'egg', 'coin', 'needle',
@@ -492,10 +493,11 @@ export const DEFENSE_BAD: [string, number][] = [
 /**
  * Ported faithfully, and unused — in this codebase and in the original.
  *
- * `K.MonMods` is declared in the legacy `config.js` and referenced nowhere else in that source
+ * `K.MonMods` was declared in the original `config.js` and referenced nowhere else in that source
  * either, so the modifiers it lists never reached a monster name in the game this one descends
- * from. It is kept because the fidelity suite compares it against the legacy table, and because
- * its absence would otherwise look like something this port lost.
+ * from. It is kept because its absence would look like something this project lost, and its shape
+ * is still asserted in `src/__tests__/goldens/traitTables.test.ts` so that a table nothing calls
+ * cannot quietly rot.
  *
  * Do not wire it up expecting to restore a missing behaviour; there is no behaviour to restore.
  */

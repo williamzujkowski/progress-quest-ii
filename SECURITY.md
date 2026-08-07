@@ -27,9 +27,9 @@ first response within a couple of weeks.
 
 ## What is not
 
-- The `pq-web-src/` submodule. It is an unmaintained read-only copy of the original 2000s web
-  client, kept as a behavioural oracle. It is never served, never bundled, and never executed
-  in the browser; findings there belong upstream.
+- The original 2000s web client. It used to be checked out here as the `pq-web-src/` submodule and
+  executed by a test-time oracle; both are gone, so this repository no longer fetches, ships, or
+  runs any of it. Findings in that code belong upstream.
 - Vulnerabilities in `devDependencies` that cannot reach the production bundle. These are
   tracked and fixed as hygiene, but they are not a user-facing risk — see the reachability
   analysis convention in issue #132 for how that judgement is recorded.

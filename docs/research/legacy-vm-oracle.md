@@ -1,5 +1,14 @@
 # Minimal deterministic legacy VM oracle
 
+> **Retired.** This note describes an approach the project no longer takes. The oracle it specifies
+> was built, used to record every fixture in `src/__tests__/fixtures/goldens/`, and then removed
+> along with the `pq-web-src` submodule it executed: this is a spiritual successor rather than a
+> port, and neither the test suite nor CI fetches or runs third-party code any more. The recordings
+> the oracle produced are still the behavioural baseline and are still checked on every `npm test`;
+> what is gone is the ability to produce new ones. The note is kept because it is the only
+> surviving record of how those numbers were obtained and what was deliberately excluded from them.
+> Every `pq-web-src/` path and line reference below points at a file this repository no longer has.
+
 Research for [issue #39](https://github.com/williamzujkowski/progress-quest-ii/issues/39), against the pinned legacy source at `pq-web-src` commit `3e9431b38cb54647530197501a29b8cce6c9f4f4`.
 
 ## Decision

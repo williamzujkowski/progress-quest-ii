@@ -1,3 +1,22 @@
+/**
+ * Golden-master harness for one completed task.
+ *
+ * `observeRecordedEncounterTransition` reads a fixture's `expected` block. `observeModernEncounterTransition`
+ * runs the same fixture's `input` through this project's engine. The test compares the two.
+ *
+ * The `expected` blocks were recorded from the original Progress Quest web build, which used to be
+ * checked out here as a submodule and re-executed on every `npm test`. That baseline is gone, and
+ * with it the ability to re-record: these files are now goldens in the ordinary sense — a snapshot
+ * of a behaviour this project once matched, kept because it is still the behaviour this project
+ * means to have. Nothing here executes third-party code, and the "legacy" names below describe the
+ * shape the recordings are stored in rather than anything still running.
+ *
+ * A failure is therefore a question before it is a bug: did we mean to change this? Where the
+ * answer is yes, the recorded value is the thing that moves, and the change should be explained in
+ * the commit that moves it. Where nobody can explain it, treat it as drift, which is what this
+ * suite exists to surface.
+ */
+
 import { EQUIP_SLOTS } from '../../data/traits';
 import { RandomGenerator } from '../../engine/prng';
 import { calculateEncumbrance } from '../../engine/sim';
@@ -32,7 +51,7 @@ interface LegacySheet {
   seed: AleaState;
 }
 
-interface LegacyExpected {
+interface RecordedExpectation {
   counters: { tasks: number; elapsedSeconds: number };
   character: { traits: CharacterTraits; stats: Pair<number>[] };
   task: { tag: string; caption: string; maxMs: number };
@@ -47,9 +66,9 @@ interface LegacyExpected {
   rng: AleaState;
 }
 
-export interface LegacyTransitionFixture {
+export interface RecordedTransitionFixture {
   input: { sheet: LegacySheet };
-  expected: LegacyExpected;
+  expected: RecordedExpectation;
 }
 
 export interface EncounterTransitionObservation {
@@ -62,14 +81,15 @@ export interface EncounterTransitionObservation {
   events: string[];
   /**
    * How many purchase narratives each side left out of `events`, which is the one class of message
-   * the two builds word differently on purpose — legacy says "Spent N gold", this one negotiates.
+   * the two builds word differently on purpose — the recording says "Spent N gold", this one
+   * negotiates.
    *
    * Counted rather than compared, because the texts are meant to diverge and asserting they match
    * would be asserting the rewrite never happened. What it does catch is the exemption widening:
-   * the legacy side drops by text prefix and the modern side by event type, so a future legacy
-   * line that merely begins "Spent " would vanish from the comparison with nothing to notice. If
-   * the two sides ever disagree about how many lines they set aside, they are no longer setting
-   * aside the same thing.
+   * the recorded side drops by text prefix and the modern side by event type, so a recorded line
+   * that merely begins "Spent " would vanish from the comparison with nothing to notice. If the
+   * two sides ever disagree about how many lines they set aside, they are no longer setting aside
+   * the same thing.
    */
   purchasesOmitted: number;
   rng: AleaState;
@@ -108,7 +128,7 @@ function lootFromLegacyTask(taskTag: string): ProgressTask['loot'] {
     : { type: 'fixed', item: `${monsterName} ${monsterDrop}`.toLowerCase() };
 }
 
-function typeFromLegacyTask(task: LegacyExpected['task']): ProgressTask['type'] {
+function typeFromLegacyTask(task: RecordedExpectation['task']): ProgressTask['type'] {
   if (task.tag.startsWith('kill|')) return 'kill';
   if (task.tag === 'sell') return 'selling';
   if (task.tag === 'buying' || task.tag === 'heading') return task.tag;
@@ -119,7 +139,7 @@ function typeFromLegacyTask(task: LegacyExpected['task']): ProgressTask['type'] 
 /** The legacy build's purchase line. Named so the exemption is a decision rather than a substring. */
 const isLegacyPurchaseLine = (line: string): boolean => line.startsWith('Spent ');
 
-export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixture): EncounterTransitionObservation {
+export function observeRecordedEncounterTransition(fixture: RecordedTransitionFixture): EncounterTransitionObservation {
   assertCompletedTask(fixture.input.sheet);
   const { expected } = fixture;
   return {
@@ -149,7 +169,7 @@ export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixtur
   };
 }
 
-export function observeModernEncounterTransition(fixture: LegacyTransitionFixture): EncounterTransitionObservation {
+export function observeModernEncounterTransition(fixture: RecordedTransitionFixture): EncounterTransitionObservation {
   const sheet = fixture.input.sheet;
   assertCompletedTask(sheet);
   const fixtureSnapshot = JSON.stringify(fixture);
