@@ -105,7 +105,7 @@ export const HeroBanner: React.FC = () => {
           <div className="stat-pill gold-pill">
             <Coins size={16} aria-hidden="true" />
             <ItemTooltip kind="inventory" name="Gold" quantity={character.Gold}>
-              <GameNumber value={character.Gold} />{' '}GP
+              <GameNumber value={character.Gold} />{' '}<span className="stat-unit">GP</span>
             </ItemTooltip>
           </div>
 
@@ -115,7 +115,7 @@ export const HeroBanner: React.FC = () => {
             <div className="stat-pill velocity-pill" title="Completed tasks per hour, averaged over the last few minutes">
               <Gauge size={16} aria-hidden="true" />
               <span>
-                <GameNumber value={velocity} />{' '}/hr
+                <GameNumber value={velocity} />{' '}<span className="stat-unit">/hr</span>
                 <span className="sr-only"> tasks filed per hour</span>
               </span>
             </div>
