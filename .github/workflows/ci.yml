@@ -90,7 +90,7 @@ jobs:
   # rule keeps meaning "everything passed" without knowing what everything is.
   quality:
     runs-on: ubuntu-latest
-    needs: [checks, browser-parity]
+    needs: [checks, browser-parity, dependency-review]
     # always(), and the results are read explicitly, because `needs` alone is not enough here. A
     # job whose dependency fails is *skipped*, not failed, and a skipped required check is not
     # reliably treated as blocking — the behaviour differs by how the skip arose and is not
@@ -102,10 +102,20 @@ jobs:
         env:
           CHECKS: ${{ needs.checks.result }}
           BROWSER_PARITY: ${{ needs.browser-parity.result }}
+          DEPENDENCY_REVIEW: ${{ needs.dependency-review.result }}
         run: |
-          echo "checks=$CHECKS browser-parity=$BROWSER_PARITY"
-          if [ "$CHECKS" != "success" ] || [ "$BROWSER_PARITY" != "success" ]; then
-            echo "::error::A required suite did not succeed."
+          echo "checks=$CHECKS browser-parity=$BROWSER_PARITY dependency-review=$DEPENDENCY_REVIEW"
+          for result in "$CHECKS" "$BROWSER_PARITY"; do
+            if [ "$result" != "success" ]; then
+              echo "::error::A required suite did not succeed."
+              exit 1
+            fi
+          done
+          # dependency-review is pull_request-only, so on a push to main it is skipped rather than
+          # run. Skipped is allowed; failed is not. Treating skipped as a failure would make every
+          # push to main red, and treating failure as acceptable is how it sat outside the gate.
+          if [ "$DEPENDENCY_REVIEW" != "success" ] && [ "$DEPENDENCY_REVIEW" != "skipped" ]; then
+            echo "::error::dependency-review did not succeed."
             exit 1
           fi
 
