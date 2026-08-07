@@ -442,7 +442,12 @@
 .equip-item > .tooltip-trigger { flex: 1 1 auto; }
 
 @media (max-width: 1024px) {
-  .main-grid > :last-child { grid-column: 1 / -1; }
+  /* Two columns and three panels, so one of them spans. It is the console, not whichever happens
+     to be last: at three columns the console is the widest because it is the only one made of
+     sentences, and that reasoning does not stop applying at two. Selecting it by name rather than
+     by position also means reordering the dashboard cannot silently hand the span to something
+     that does not want it — which is what happened when the loadout became the last child. */
+  .main-grid > .activity-card { grid-column: 1 / -1; }
   .hero-banner { grid-template-columns: minmax(0, 1fr) minmax(17rem, 1fr); }
   .hero-prime-stats,
   .hero-stats-quick { grid-column: 1 / -1; justify-content: flex-start; }
@@ -477,7 +482,7 @@
   .stat-pill { flex: 1 1 8rem; justify-content: center; }
   .hero-stat { padding-inline: var(--space-2); }
   .main-grid { gap: 0.75rem; }
-  .main-grid > :last-child { grid-column: auto; }
+  .main-grid > .activity-card { grid-column: auto; }
   .quest-column { gap: 0.75rem; }
   .card-header { align-items: flex-start; flex-wrap: wrap; }
   .progress-label { align-items: flex-start; }
