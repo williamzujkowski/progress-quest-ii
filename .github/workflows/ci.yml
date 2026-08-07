@@ -73,4 +73,10 @@ jobs:
           # Matches the threshold `npm run audit` enforces, so the two gates cannot disagree
           # about what is acceptable.
           fail-on-severity: moderate
-          comment-summary-in-pr: on-failure
+          # No comment-summary-in-pr. Posting one needs `pull-requests: write`, this job has
+          # `contents: read`, and the summary silently never appeared — protection that reads as
+          # working is worse than none. Granting the scope was the other option and is a poor
+          # trade: it would widen a token on a job that processes untrusted pull-request content,
+          # to buy a comment that fork PRs can never receive anyway, since GitHub caps their token
+          # read-only regardless. The failing check is the protection; the run log carries the
+          # detail.
