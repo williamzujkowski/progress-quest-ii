@@ -23,6 +23,8 @@
  * the player can read.
  */
 
+import { retainWithin } from './rollingWindow';
+
 export interface TrackSample {
   readonly atMs: number;
   readonly currentSeconds: number;
@@ -47,16 +49,8 @@ const MINIMUM_ELAPSED_SPAN = 45;
  */
 export const MAX_PROJECTED_SECONDS = 100 * 60 * 60;
 
-export function retainTrackWindow(
-  samples: readonly TrackSample[],
-  nowMs: number,
-): TrackSample[] {
-  const cutoff = nowMs - TRACK_WINDOW_MS;
-  const kept = samples.filter((sample) => sample.atMs >= cutoff);
-  // Keep one sample behind the cutoff so the window never briefly collapses to no span at all.
-  const oldest = samples.filter((sample) => sample.atMs < cutoff).at(-1);
-  return oldest && kept.length > 0 ? [oldest, ...kept] : kept;
-}
+export const retainTrackWindow = (samples: readonly TrackSample[], nowMs: number): TrackSample[] =>
+  retainWithin(samples, nowMs, TRACK_WINDOW_MS);
 
 /**
  * Seconds of play until the track fills at the observed rate, or null when there is nothing
