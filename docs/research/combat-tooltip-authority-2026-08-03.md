@@ -1,8 +1,12 @@
 # Combat tooltip authority — 2026-08-03
 
+> Line references below name files in the retired `pq-web-src` reference implementation.
+> That submodule was removed (ADR 0006) and the paths are not resolvable in this repository;
+> they are kept as a record of what each claim was checked against.
+
 ## Recommendation
 
-Reframe issue #58 around **truthful progression facts**, not an invented combat model. Canonical Progress Quest has no attack rolls, damage, armor mitigation, current HP/MP, spell casting, mana spending, or fail state. A kill is a timed task whose duration depends only on character level and opponent puissance. Equipment ratings describe generated equipment quality; spell levels describe repeated learning; loot occupies capacity and becomes gold at market. ([legacy encounter generation](../../pq-web-src/main.js#L205-L280), [legacy duration wiring](../../pq-web-src/main.js#L355-L359), [legacy completion/progression](../../pq-web-src/main.js#L906-L942))
+Reframe issue #58 around **truthful progression facts**, not an invented combat model. Canonical Progress Quest has no attack rolls, damage, armor mitigation, current HP/MP, spell casting, mana spending, or fail state. A kill is a timed task whose duration depends only on character level and opponent puissance. Equipment ratings describe generated equipment quality; spell levels describe repeated learning; loot occupies capacity and becomes gold at market. (legacy encounter generation (`main.js:205-280`), legacy duration wiring (`main.js:355-359`), legacy completion/progression (`main.js:906-942`))
 
 The smallest honest implementation is therefore:
 
@@ -13,7 +17,7 @@ The smallest honest implementation is therefore:
 
 ## What combat actually computes
 
-`MonsterTask` perturbs the requested character level, selects an NPC, quest monster, or nearby ordinary monster, adjusts the caption and quantity for the level difference, and returns an aggregate opponent level. None of the character’s equipment, spells, prime stats, HP Max, or MP Max is read by this algorithm. ([legacy opponent algorithm](../../pq-web-src/main.js#L205-L280))
+`MonsterTask` perturbs the requested character level, selects an NPC, quest monster, or nearby ordinary monster, adjusts the caption and quantity for the level difference, and returns an aggregate opponent level. None of the character’s equipment, spells, prime stats, HP Max, or MP Max is read by this algorithm. (legacy opponent algorithm (`main.js:205-280`))
 
 The task duration is:
 
@@ -22,9 +26,9 @@ floor(2 * 3 * aggregateOpponentLevel * 1000 / characterLevel)
 = floor(6000 * aggregateOpponentLevel / characterLevel) milliseconds
 ```
 
-The modern engine preserves that formula as `Math.floor((2 * 3 * opponentLevel * 1000) / characterLevel)`. Its generated task contract contains description, duration, type, and optional loot—not attacks, damage, defenses, HP changes, or spell casts. ([legacy duration](../../pq-web-src/main.js#L355-L359), [modern duration](../../src/engine/sim.ts#L355-L362), [modern task contract](../../src/engine/types.ts#L39-L45))
+The modern engine preserves that formula as `Math.floor((2 * 3 * opponentLevel * 1000) / characterLevel)`. Its generated task contract contains description, duration, type, and optional loot—not attacks, damage, defenses, HP changes, or spell casts. (legacy duration (`main.js:355-359`), [modern duration](../../src/engine/sim.ts#L355-L362), [modern task contract](../../src/engine/types.ts#L39-L45))
 
-Completing a kill advances experience, quest, and plot by the task’s duration in seconds. Level-up rewards may raise stats and teach a spell, but no combat result is resolved. The modern transition likewise advances progression by `task.durationMs / 1000`, then awards loot and starts another task. ([legacy progression](../../pq-web-src/main.js#L906-L942), [modern progression](../../src/engine/transition.ts#L39-L90), [modern kill reward](../../src/engine/transition.ts#L97-L159))
+Completing a kill advances experience, quest, and plot by the task’s duration in seconds. Level-up rewards may raise stats and teach a spell, but no combat result is resolved. The modern transition likewise advances progression by `task.durationMs / 1000`, then awards loot and starts another task. (legacy progression (`main.js:906-942`), [modern progression](../../src/engine/transition.ts#L39-L90), [modern kill reward](../../src/engine/transition.ts#L97-L159))
 
 ### Worked encounter
 
@@ -38,7 +42,7 @@ Changing a Stick to a Vorpal Bandyclef, learning Infinite Confusion XX, or raisi
 
 ## Equipment numbers: quality, not damage or armor
 
-The weapon, shield, and armor tables assign numeric **base qualities**. Positive and negative adjective tables assign additional values. The legacy upgrade generator chooses a random slot, samples six bases while retaining the one closest to character level, then spends the difference with at most two adjective values and a residual signed integer prefix. ([legacy quality tables](../../pq-web-src/config.js#L386-L489), [legacy negative modifiers](../../pq-web-src/config.js#L915-L940), [legacy upgrade generator](../../pq-web-src/main.js#L571-L621))
+The weapon, shield, and armor tables assign numeric **base qualities**. Positive and negative adjective tables assign additional values. The legacy upgrade generator chooses a random slot, samples six bases while retaining the one closest to character level, then spends the difference with at most two adjective values and a residual signed integer prefix. (legacy quality tables (`config.js:386-489`), legacy negative modifiers (`config.js:915-940`), legacy upgrade generator (`main.js:571-621`))
 
 The construction preserves this invariant for generated equipment:
 
@@ -56,17 +60,17 @@ Current tooltip code reconstructs `base + modifiers + explicit prefix` from the 
 - A possible level-10 upgrade named `+1 Vicious Longsword` has Longsword 6 + Vicious 3 + residual 1 = quality 10. ([Vicious value](../../src/data/traits.ts#L71-L83), [Longsword value](../../src/data/traits.ts#L139-L178))
 - A Vorpal Bandyclef has 7 + 15 = quality 22, but that 22 is still not added to a damage roll or used to shorten a task.
 
-Equipment is acquired as a quest reward, an act reward, or a market purchase. The purchase price is `5L² + 10L + 20`; legacy code starts buying only when gold is **strictly greater** than that price, then spends exactly the price. The modern formula is identical, although its gate currently uses `>=`. ([legacy price and purchase](../../pq-web-src/main.js#L291-L309), [legacy strict gate](../../pq-web-src/main.js#L343-L352), [modern price](../../src/engine/sim.ts#L16-L18), [modern gate and purchase](../../src/engine/sim.ts#L365-L383), [modern purchase completion](../../src/engine/transition.ts#L172-L179))
+Equipment is acquired as a quest reward, an act reward, or a market purchase. The purchase price is `5L² + 10L + 20`; legacy code starts buying only when gold is **strictly greater** than that price, then spends exactly the price. The modern formula is identical, although its gate currently uses `>=`. (legacy price and purchase (`main.js:291-309`), legacy strict gate (`main.js:343-352`), [modern price](../../src/engine/sim.ts#L16-L18), [modern gate and purchase](../../src/engine/sim.ts#L365-L383), [modern purchase completion](../../src/engine/transition.ts#L172-L179))
 
 At level 5, an upgrade costs `5×25 + 10×5 + 20 = 195` gold. Canonically 195 gold is not enough to initiate the purchase; 196 is, leaving 1 gold after the 195-gold transaction.
 
 ## Spell numbers: mastery and roster prestige only
 
-There are 48 canonical spell names and no spell-specific numeric data. `WinSpell` limits selection to the first `min(WIS + Level, 48)` names and selects the lower of two uniform indices, biasing learning toward earlier eligible names. Learning an existing name increments its Roman-numeral level; learning a new name creates level I. ([spell catalog](../../pq-web-src/config.js#L337-L384), [two-roll low selector](../../pq-web-src/main.js#L49-L55), [spell reward](../../pq-web-src/main.js#L566-L569), [Roman-level increment](../../pq-web-src/main.js#L840-L842))
+There are 48 canonical spell names and no spell-specific numeric data. `WinSpell` limits selection to the first `min(WIS + Level, 48)` names and selects the lower of two uniform indices, biasing learning toward earlier eligible names. Learning an existing name increments its Roman-numeral level; learning a new name creates level I. (spell catalog (`config.js:337-384`), two-roll low selector (`main.js:49-55`), spell reward (`main.js:566-569`), Roman-level increment (`main.js:840-842`))
 
-Level-up always teaches one spell; quest completion has a one-in-four reward branch that may teach one. The modern engine represents spells as `{name, level}`, uses the same `min(WIS + Level, catalog length)` two-roll selection, and increments mastery by one. ([legacy level reward](../../pq-web-src/main.js#L875-L883), [legacy quest reward](../../pq-web-src/main.js#L666-L672), [modern spell contract](../../src/engine/types.ts#L34-L37), [modern spell reward](../../src/engine/sim.ts#L158-L171))
+Level-up always teaches one spell; quest completion has a one-in-four reward branch that may teach one. The modern engine represents spells as `{name, level}`, uses the same `min(WIS + Level, catalog length)` two-roll selection, and increments mastery by one. (legacy level reward (`main.js:875-883`), legacy quest reward (`main.js:666-672`), [modern spell contract](../../src/engine/types.ts#L34-L37), [modern spell reward](../../src/engine/sim.ts#L158-L171))
 
-The only downstream legacy calculation involving a spell level chooses a `bestspell` for save/roster/brag display. It scores each learned-list row as `(zero-based learned-list position + 1) × mastery level`; it does not use canonical catalog position and does not affect gameplay. ([best-spell selector](../../pq-web-src/main.js#L1064-L1077), [roster display](../../pq-web-src/roster.html#L177), [brag payload](../../pq-web-src/main.js#L1307-L1308))
+The only downstream legacy calculation involving a spell level chooses a `bestspell` for save/roster/brag display. It scores each learned-list row as `(zero-based learned-list position + 1) × mastery level`; it does not use canonical catalog position and does not affect gameplay. (best-spell selector (`main.js:1064-1077`), roster display (`roster.html:177`), brag payload (`main.js:1307-1308`))
 
 ### Worked spell
 
@@ -78,13 +82,13 @@ The current tooltip is therefore directionally correct: it reports spell level a
 
 ### Fixed and random drops
 
-Every completed kill with a fixed monster drop adds one unit of `<monster> <drop>` to the matching inventory row. A `*` drop invokes `WinItem`: it either duplicates a randomly selected existing inventory row when `max(250, Random(999)) < Inventory.length()`, or generates exactly `<ItemAttrib> <Special> of <ItemOf>`. The inventory length includes the Gold row, so duplication is impossible through 250 rows; at 251 rows it occurs for 251 of 999 random results before the independent row pick. ([legacy kill award](../../pq-web-src/main.js#L297-L305), [legacy special-item grammar](../../pq-web-src/main.js#L646-L663), [special-item tables](../../pq-web-src/config.js#L491-L617))
+Every completed kill with a fixed monster drop adds one unit of `<monster> <drop>` to the matching inventory row. A `*` drop invokes `WinItem`: it either duplicates a randomly selected existing inventory row when `max(250, Random(999)) < Inventory.length()`, or generates exactly `<ItemAttrib> <Special> of <ItemOf>`. The inventory length includes the Gold row, so duplication is impossible through 250 rows; at 251 rows it occurs for 251 of 999 random results before the independent row pick. (legacy kill award (`main.js:297-305`), legacy special-item grammar (`main.js:646-663`), special-item tables (`config.js:491-617`))
 
 The modern fixed-drop representation is truthful, but its random `*` completion path currently uses a different 50/50 two-part-or-three-part generator and never applies the legacy duplicate threshold. This parity defect is tracked in [#138](https://github.com/williamzujkowski/progress-quest-ii/issues/138). ([modern random-loot helper](../../src/engine/sim.ts#L192-L200), [modern completion call](../../src/engine/transition.ts#L148-L159))
 
 ### Encumbrance
 
-Every non-Gold inventory unit weighs exactly one cubit, regardless of name or rarity. Gold weighs zero. Capacity is `STR + 10`; reaching capacity sends the character to market. ([legacy inventory recount](../../pq-web-src/main.js#L365-L394), [legacy initial capacity](../../pq-web-src/newguy.js#L133-L137), [legacy market trigger](../../pq-web-src/main.js#L343-L345), [modern load and capacity](../../src/engine/sim.ts#L71-L79), [modern capacity formula](../../src/engine/math.ts#L18-L20))
+Every non-Gold inventory unit weighs exactly one cubit, regardless of name or rarity. Gold weighs zero. Capacity is `STR + 10`; reaching capacity sends the character to market. (legacy inventory recount (`main.js:365-394`), legacy initial capacity (`newguy.js:133-137`), legacy market trigger (`main.js:343-345`), [modern load and capacity](../../src/engine/sim.ts#L71-L79), [modern capacity formula](../../src/engine/math.ts#L18-L20))
 
 With STR 12, capacity is 22 cubits. Four rat tails and two Arcane Orbs consume `4 + 2 = 6` cubits; 500 gold consumes zero. Truthful per-item tooltip facts are therefore “1 cubit each” and “stack load: quantity cubits.” Total load/capacity requires character context, which the current inventory tooltip does not receive. ([current inventory props](../../src/components/InventoryView.tsx#L20-L33), [current generic load copy](../../src/data/itemDetails.ts#L392-L422))
 
@@ -102,7 +106,7 @@ If its label contains ` of `, that base is multiplied by:
 (1 + RandomLow(10)) × (1 + RandomLow(characterLevel))
 ```
 
-Each `RandomLow(n)` is the minimum of two `Random(n)` rolls, so the multipliers are biased low rather than uniform. ([legacy market loop and valuation](../../pq-web-src/main.js#L310-L325), [RandomLow](../../pq-web-src/main.js#L49-L55), [` of ` detection](../../pq-web-src/main.js#L900-L902))
+Each `RandomLow(n)` is the minimum of two `Random(n)` rolls, so the multipliers are biased low rather than uniform. (legacy market loop and valuation (`main.js:310-325`), RandomLow (`main.js:49-55`), ` of ` detection (`main.js:900-902`))
 
 At level 5, three ordinary rat tails sell for exactly `3×5 = 15` gold. Three `Arcane Orbs of Danger` have the same 15-gold base and a possible range of `15×1×1 = 15` through `15×10×5 = 750` gold, with low values more likely.
 
