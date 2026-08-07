@@ -39,7 +39,7 @@ const SessionCheckpointStatus: React.FC<{ controller: SessionCheckpointControlle
   );
 };
 
-export const App: React.FC<AppProps> = ({ sessionCheckpoints }) => {
+const App: React.FC<AppProps> = ({ sessionCheckpoints }) => {
   const initialThemeReadError = useRef<unknown>(undefined);
   const [themeSelection, setThemeSelection] = useState<ThemeSelection>(() => {
     const storedTheme = readThemePreference();
