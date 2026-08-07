@@ -79,3 +79,10 @@ later does not silently fall outside the gate the way this one did.
 The alternative was to widen the protection rule to list both contexts. That needs a settings
 change, and it has to be edited by hand every time a job is added or renamed, which is the same
 failure with a longer fuse.
+
+The fan-in job runs unconditionally and reads each dependency's result, rather than relying on
+`needs` to stop it. A job whose dependency fails is *skipped* rather than failed, and whether a
+skipped required check blocks a merge is not consistent enough to rest a merge gate on. Asserting
+the results explicitly turns that ambiguity into a definite failure. This is the same defect as the
+one above, one layer down: a control that looks correct because the passing path was the only one
+exercised.
