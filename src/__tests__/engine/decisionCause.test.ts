@@ -68,9 +68,12 @@ describe('decision causes at the transition seam', () => {
       1000,
       new RandomGenerator('plain-cause'),
     );
-    for (const { event } of result.records) {
-      if (event.type === 'task_started') expect(event.reason).toBeUndefined();
-    }
+    // Collected first, and counted, because the interesting failure is the engine emitting no
+    // task start at all: a loop that only checks the starts it happens to find reports success
+    // loudest exactly when there is nothing left to check.
+    const starts = result.records.map(({ event }) => event).filter((event) => event.type === 'task_started');
+    expect(starts.length, 'expected the tick to start at least one task').toBeGreaterThan(0);
+    for (const start of starts) expect(start.reason).toBeUndefined();
   });
 
   it('refuses an elapsed span that is not a positive finite number', () => {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { MAX_PENDING_ELAPSED_MS } from '../../data/limits';
 import { creditClosedElapsed, describeAbsence } from '../../state/sessionCheckpoint';
 import { useGameStore } from '../../state/gameStore';
@@ -12,6 +12,16 @@ const session = (over: Partial<{ pendingElapsedMs: number; savedAtMs: number; is
   pendingElapsedMs: 0,
   isPaused: false,
   ...over,
+});
+
+// The store is a module singleton, so a test that starts a session leaves one running for
+// whatever comes next. Captured before any test touches it and put back after each one, as the
+// sibling suites do — the determinism test below drives thousands of ticks through it, and a
+// suite that only survives because that test is near the end of the file is not surviving.
+const originalState = useGameStore.getState();
+
+afterEach(() => {
+  useGameStore.setState(originalState, true);
 });
 
 describe('closed-app elapsed credit', () => {

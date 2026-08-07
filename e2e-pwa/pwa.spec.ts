@@ -1,5 +1,9 @@
-import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+// The strict-console fixture rather than a bare `test`. The service-worker suite is where a
+// swallowed console error matters most: registration, precache and activation all report failure
+// through the console long before anything visible changes, and a test that only asserts what it
+// went looking for would sail past the first sign that the worker never installed.
+import { expect, test } from '../e2e/fixtures/strictConsole';
 import { returningSessionStorageState } from '../e2e/fixtures/returningSession';
 
 test.use({ storageState: returningSessionStorageState('http://127.0.0.1:4173') });
@@ -68,21 +72,29 @@ test('loads the Pages-scoped app offline after one successful visit', async ({ p
   expect(offlineNotices).toContain('directed and reviewed by William Zujkowski');
 });
 
-test('keeps questing when service-worker registration fails', async ({ page, request }) => {
-  await request.post('./__test__/worker-mode/missing');
-  try {
-    await page.goto('./');
+test.describe('a worker that is not there', () => {
+  // The 404 is the point of the test: the server is told to stop serving sw.js, and the browser
+  // reports the failed registration on the console before anything visible happens. Declared
+  // narrowly rather than opting the test out of the guard, so a second, unrelated error raised
+  // on the way through this path still fails the test instead of hiding behind the first.
+  test.use({ expectedPageErrors: [/A bad HTTP response code \(404\) was received when fetching the script\./] });
 
-    await expect(page.locator('.pwa-status[role="status"]')).toHaveText('Offline mode is unavailable. Questing may require civilization.');
-    await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest III' })).toBeVisible();
-    await expect(page.locator('.pwa-status[role="status"]')).toHaveCount(1);
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze();
-    expect(results.violations).toEqual([]);
-  } finally {
-    await request.post('./__test__/worker-mode/normal');
-  }
+  test('keeps questing when service-worker registration fails', async ({ page, request }) => {
+    await request.post('./__test__/worker-mode/missing');
+    try {
+      await page.goto('./');
+
+      await expect(page.locator('.pwa-status[role="status"]')).toHaveText('Offline mode is unavailable. Questing may require civilization.');
+      await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest III' })).toBeVisible();
+      await expect(page.locator('.pwa-status[role="status"]')).toHaveCount(1);
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .analyze();
+      expect(results.violations).toEqual([]);
+    } finally {
+      await request.post('./__test__/worker-mode/normal');
+    }
+  });
 });
 
 test('reports a first-install precache failure without leaving a cache', async ({ page, request }) => {
