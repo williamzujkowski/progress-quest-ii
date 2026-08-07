@@ -1,5 +1,9 @@
 # Minimal deterministic legacy VM oracle
 
+> Line references below name files in the retired `pq-web-src` reference implementation.
+> That submodule was removed (ADR 0006) and the paths are not resolvable in this repository;
+> they are kept as a record of what each claim was checked against.
+
 > **Retired.** This note describes an approach the project no longer takes. The oracle it specifies
 > was built, used to record every fixture in `src/__tests__/fixtures/goldens/`, and then removed
 > along with the `pq-web-src` submodule it executed: this is a spiritual successor rather than a
@@ -22,17 +26,17 @@ The smallest faithful transition oracle should:
 5. force `TaskBar.position === TaskBar.max`, replace only the host-effect seams, and call the real `Timer1Timer()` exactly once; and
 6. return a deliberately selected, plain-JSON transition record rather than the whole mutable legacy object.
 
-This executes the authoritative task-completion order. `Timer1Timer()` records the completed task, advances XP, quest, and plot state, and only then calls `Dequeue()` to apply the completed task's reward and choose the next task ([`main.js:906-950`](../../pq-web-src/main.js#L906-L950)). Calling `Dequeue()` directly would omit those progression effects; emulating the formulas in the harness would merely create a second implementation.
+This executes the authoritative task-completion order. `Timer1Timer()` records the completed task, advances XP, quest, and plot state, and only then calls `Dequeue()` to apply the completed task's reward and choose the next task (`main.js:906-950` (`main.js:906-950`)). Calling `Dequeue()` directly would omit those progression effects; emulating the formulas in the harness would merely create a second implementation.
 
 The harness belongs under the fidelity-test layer, not `src/engine/`. It is an oracle for generating and checking legacy vectors, not production game code.
 
 ## Why these two scripts are sufficient
 
-`config.js` owns the canonical tables, the Alea implementation, `Random()`, and the resumable `randseed()` state seam ([`config.js:43-145`](../../pq-web-src/config.js#L43-L145)). It also adds the integer `Number.prototype.div` behavior used throughout progression and defines `LevelUpTime()` ([`config.js:298-307`](../../pq-web-src/config.js#L298-L307)).
+`config.js` owns the canonical tables, the Alea implementation, `Random()`, and the resumable `randseed()` state seam (`config.js:43-145` (`config.js:43-145`)). It also adds the integer `Number.prototype.div` behavior used throughout progression and defines `LevelUpTime()` (`config.js:298-307` (`config.js:298-307`)).
 
-`main.js` owns task selection and reward processing ([`main.js:205-360`](../../pq-web-src/main.js#L205-L360)), list/bar data behavior ([`main.js:365-547`](../../pq-web-src/main.js#L365-L547)), quest rewards and selection ([`main.js:566-729`](../../pq-web-src/main.js#L566-L729)), acts, logs, stats, levels, and the tick transition ([`main.js:795-950`](../../pq-web-src/main.js#L795-L950)).
+`main.js` owns task selection and reward processing (`main.js:205-360` (`main.js:205-360`)), list/bar data behavior (`main.js:365-547` (`main.js:365-547`)), quest rewards and selection (`main.js:566-729` (`main.js:566-729`)), acts, logs, stats, levels, and the tick transition (`main.js:795-950` (`main.js:795-950`)).
 
-Do not execute `newguy.js` in the transition oracle. It is useful as the authoritative sheet-shape reference—its constructed character includes traits, RNG state, counters, equipment, ordered inventory and spells, act/quest/task state, five bars, and a task queue ([`newguy.js:112-159`](../../pq-web-src/newguy.js#L112-L159))—but executing it would add unrelated character-roll and form behavior. Do not execute `sim.js` either. Its own comments describe it as a console simulation, and it exposes `require`, reads and writes host files, installs synthetic timers, and evaluates scripts in the host context ([`sim.js:1-12`](../../pq-web-src/sim.js#L1-L12), [`sim.js:78-128`](../../pq-web-src/sim.js#L78-L128)).
+Do not execute `newguy.js` in the transition oracle. It is useful as the authoritative sheet-shape reference—its constructed character includes traits, RNG state, counters, equipment, ordered inventory and spells, act/quest/task state, five bars, and a task queue (`newguy.js:112-159` (`newguy.js:112-159`))—but executing it would add unrelated character-roll and form behavior. Do not execute `sim.js` either. Its own comments describe it as a console simulation, and it exposes `require`, reads and writes host files, installs synthetic timers, and evaluates scripts in the host context (`sim.js:1-12` (`sim.js:1-12`), `sim.js:78-128` (`sim.js:78-128`)).
 
 ## Required globals and stubs
 
@@ -40,18 +44,18 @@ Create a fresh context per vector. The context needs only the following pre-load
 
 | Global | Minimal behavior | Evidence |
 | --- | --- | --- |
-| `document` | `null` | The legacy console simulator uses a null document, and `main.js` skips ready-handler/UI wiring when it is false ([`sim.js:51-76`](../../pq-web-src/sim.js#L51-L76), [`main.js:562-563`](../../pq-web-src/main.js#L562-L563)). |
-| `navigator` | `{ userAgent: "node-oracle" }` | `config.js` derives its iOS flags from `navigator.userAgent` ([`config.js:241-248`](../../pq-web-src/config.js#L241-L248)). |
-| `window` | An object containing `location.href` and a no-op/in-memory `localStorage` shape | `config.js` selects its storage adapter at evaluation time from `window.localStorage`/`openDatabase` ([`config.js:160-176`](../../pq-web-src/config.js#L160-L176), [`config.js:246-248`](../../pq-web-src/config.js#L246-L248)). `main.js` assigns `window.onerror` during evaluation ([`main.js:1190-1198`](../../pq-web-src/main.js#L1190-L1198)). |
-| `$` | A function returning `null`, plus `$.isFunction` and a jQuery-compatible `$.each` | The first-party simulator defines exactly this headless seam ([`sim.js:51-74`](../../pq-web-src/sim.js#L51-L74)). `$.each` must call the callback with both `(index, value)` and `this === value`, and stop on `false`, because progression uses all three semantics ([`main.js:626-643`](../../pq-web-src/main.js#L626-L643), [`main.js:886-888`](../../pq-web-src/main.js#L886-L888)). |
+| `document` | `null` | The legacy console simulator uses a null document, and `main.js` skips ready-handler/UI wiring when it is false (`sim.js:51-76` (`sim.js:51-76`), `main.js:562-563` (`main.js:562-563`)). |
+| `navigator` | `{ userAgent: "node-oracle" }` | `config.js` derives its iOS flags from `navigator.userAgent` (`config.js:241-248` (`config.js:241-248`)). |
+| `window` | An object containing `location.href` and a no-op/in-memory `localStorage` shape | `config.js` selects its storage adapter at evaluation time from `window.localStorage`/`openDatabase` (`config.js:160-176` (`config.js:160-176`), `config.js:246-248` (`config.js:246-248`)). `main.js` assigns `window.onerror` during evaluation (`main.js:1190-1198` (`main.js:1190-1198`)). |
+| `$` | A function returning `null`, plus `$.isFunction` and a jQuery-compatible `$.each` | The first-party simulator defines exactly this headless seam (`sim.js:51-74` (`sim.js:51-74`)). `$.each` must call the callback with both `(index, value)` and `this === value`, and stop on `false`, because progression uses all three semantics (`main.js:626-643` (`main.js:626-643`), `main.js:886-888` (`main.js:886-888`)). |
 | `alert` | Throw an error | It turns an unexpected legacy failure path into a failed contract instead of silently continuing. The intended one-task path does not alert. |
 
 Do **not** expose `process`, `require`, `module`, `Buffer`, filesystem functions, network APIs, `Worker`, `setTimeout`, `setInterval`, `setImmediate`, or `queueMicrotask`. Neither source script needs them for the synchronous transition when local storage is selected and the timer restart is replaced after loading.
 
 After both scripts load, replace exactly two effect seams:
 
-- `StartTimer = function () {}`. `Timer1Timer()` unconditionally calls it after the synchronous transition, while the real implementation creates and posts to a `Worker` ([`main.js:10-23`](../../pq-web-src/main.js#L10-L23), [`main.js:950`](../../pq-web-src/main.js#L950)). The no-op prevents a second transition; it does not alter the transition already performed.
-- `storage.addToRoster = function (_sheet, callback) { if (callback) callback(); }`. Threshold vectors can reach `CompleteQuest()` or `LevelUp()`, whose save/brag path updates save metadata before handing the sheet to storage ([`main.js:666-729`](../../pq-web-src/main.js#L666-L729), [`main.js:875-884`](../../pq-web-src/main.js#L875-L884), [`main.js:1089-1096`](../../pq-web-src/main.js#L1089-L1096), [`main.js:1292-1295`](../../pq-web-src/main.js#L1292-L1295)). Replacing only the final persistence call preserves those synchronous legacy effects without writing storage.
+- `StartTimer = function () {}`. `Timer1Timer()` unconditionally calls it after the synchronous transition, while the real implementation creates and posts to a `Worker` (`main.js:10-23` (`main.js:10-23`), `main.js:950` (`main.js:950`)). The no-op prevents a second transition; it does not alter the transition already performed.
+- `storage.addToRoster = function (_sheet, callback) { if (callback) callback(); }`. Threshold vectors can reach `CompleteQuest()` or `LevelUp()`, whose save/brag path updates save metadata before handing the sheet to storage (`main.js:666-729` (`main.js:666-729`), `main.js:875-884` (`main.js:875-884`), `main.js:1089-1096` (`main.js:1089-1096`), `main.js:1292-1295` (`main.js:1292-1295`)). Replacing only the final persistence call preserves those synchronous legacy effects without writing storage.
 
 Wrap, rather than replace, `Log`:
 
@@ -64,7 +68,7 @@ Log = function (line) {
 };
 ```
 
-The raw `game.log` object is keyed by `+new Date()` and can overwrite multiple messages emitted in the same millisecond ([`main.js:810-814`](../../pq-web-src/main.js#L810-L814)). Capturing arguments at the established logging seam preserves emission order and avoids making wall-clock timestamps part of a golden vector. The wrapper must be installed before the one transition and the timestamp-keyed `game.log`, `date`, and `stamp` fields must be excluded from normalized output.
+The raw `game.log` object is keyed by `+new Date()` and can overwrite multiple messages emitted in the same millisecond (`main.js:810-814` (`main.js:810-814`)). Capturing arguments at the established logging seam preserves emission order and avoids making wall-clock timestamps part of a golden vector. The wrapper must be installed before the one transition and the timestamp-keyed `game.log`, `date`, and `stamp` fields must be excluded from normalized output.
 
 ## Context construction and limits
 
@@ -104,9 +108,9 @@ The sheet should retain legacy representation rather than modern representation:
 - `task` is the legacy machine tag, `kill` is the displayed caption, and each bar is `{ position, max }`.
 - `tasks`, `elapsed`, `act`, `bestplot`, `bestquest`, `bestequip`, and `questmonster` fields are explicit.
 
-Those representations come directly from the new-character sheet ([`newguy.js:112-159`](../../pq-web-src/newguy.js#L112-L159)) and the legacy list accessors ([`main.js:824-865`](../../pq-web-src/main.js#L824-L865)). Do not map it through the modern `CharacterSheet` first: the modern type separates numeric `Gold`, names `Equip` singular, uses object inventory/spell entries, and replaces the five bars with nested task/quest/plot fields ([`src/engine/types.ts:27-65`](../../src/engine/types.ts#L27-L65)). Mapping before observation would hide precisely the fidelity gaps that issue #39 must reveal.
+Those representations come directly from the new-character sheet (`newguy.js:112-159` (`newguy.js:112-159`)) and the legacy list accessors (`main.js:824-865` (`main.js:824-865`)). Do not map it through the modern `CharacterSheet` first: the modern type separates numeric `Gold`, names `Equip` singular, uses object inventory/spell entries, and replaces the five bars with nested task/quest/plot fields ([`src/engine/types.ts:27-65`](../../src/engine/types.ts#L27-L65)). Mapping before observation would hide precisely the fidelity gaps that issue #39 must reveal.
 
-Pass the fixture into the context as a JSON string and run `game = JSON.parse(fixtureJson)`. Do not interpolate values into source. Immediately call `randseed(game.seed)` or `randseed(fixtureRng)` before the transition. The legacy Alea state is exactly `[s0, s1, s2, c]`, and `randseed()` both restores and returns it ([`config.js:101-139`](../../pq-web-src/config.js#L101-L139)). The modern PRNG already exposes the same four-number get/set state seam ([`src/engine/prng.ts:24-29`](../../src/engine/prng.ts#L24-L29), [`src/engine/prng.ts:92-98`](../../src/engine/prng.ts#L92-L98)), so the post-transition tuple can later be compared without inventing a seed conversion.
+Pass the fixture into the context as a JSON string and run `game = JSON.parse(fixtureJson)`. Do not interpolate values into source. Immediately call `randseed(game.seed)` or `randseed(fixtureRng)` before the transition. The legacy Alea state is exactly `[s0, s1, s2, c]`, and `randseed()` both restores and returns it (`config.js:101-139` (`config.js:101-139`)). The modern PRNG already exposes the same four-number get/set state seam ([`src/engine/prng.ts:24-29`](../../src/engine/prng.ts#L24-L29), [`src/engine/prng.ts:92-98`](../../src/engine/prng.ts#L92-L98)), so the post-transition tuple can later be compared without inventing a seed conversion.
 
 The four values must come from `randseed()`/`Alea.state()`, not arbitrary decimals. Alea-emitted `s0`, `s1`, and `s2` values are 2^-32-aligned; otherwise legacy `seed.uint32() % n` can return a fractional result. The harness rejects states that Alea could not have serialized.
 
@@ -116,9 +120,9 @@ Construct the real data facades after assigning `game`:
 - `ListBox` for `Traits`, `Stats`, `Spells`, `Equips`, `Inventory`, `Plots`, and `Quests`; and
 - `AllLists` in the same order as `FormCreate()`.
 
-`FormCreate()` is the authoritative wiring reference ([`main.js:953-976`](../../pq-web-src/main.js#L953-L976)), but calling it would immediately load storage and start browser lifecycle behavior ([`main.js:978-1013`](../../pq-web-src/main.js#L978-L1013)). Constructing the same facades directly avoids that effectful tail.
+`FormCreate()` is the authoritative wiring reference (`main.js:953-976` (`main.js:953-976`)), but calling it would immediately load storage and start browser lifecycle behavior (`main.js:978-1013` (`main.js:978-1013`)). Constructing the same facades directly avoids that effectful tail.
 
-Because `$()` returns `null`, all facade UI methods naturally no-op while their game-data methods remain real ([`main.js:398-439`](../../pq-web-src/main.js#L398-L439), [`main.js:453-547`](../../pq-web-src/main.js#L453-L547)). Add one narrow headless correction:
+Because `$()` returns `null`, all facade UI methods naturally no-op while their game-data methods remain real (`main.js:398-439` (`main.js:398-439`), `main.js:453-547` (`main.js:453-547`)). Add one narrow headless correction:
 
 ```js
 Inventory.rows = function () {
@@ -128,7 +132,7 @@ Inventory.rows = function () {
 };
 ```
 
-The rare `WinItem()` reuse branch selects an inventory DOM row and reads its first cell ([`main.js:658-663`](../../pq-web-src/main.js#L658-L663)). The correction supplies only that semantic label and permits vectors with more than 250 inventory rows; it must not reorder or filter entries.
+The rare `WinItem()` reuse branch selects an inventory DOM row and reads its first cell (`main.js:658-663` (`main.js:658-663`)). The correction supplies only that semantic label and permits vectors with more than 250 inventory rows; it must not reorder or filter entries.
 
 ## Advancing exactly one completed task
 
@@ -140,7 +144,7 @@ For every vector:
 4. Call `Timer1Timer()` once in a timeout-bounded VM script.
 5. Assert `game.tasks === beforeTasks + 1` before normalizing.
 
-The completion predicate is exactly `position >= max` ([`main.js:403-433`](../../pq-web-src/main.js#L403-L433)). In the completion branch the legacy engine adds `TaskBar.max / 1000` to XP, quest, plot, and total elapsed where applicable ([`main.js:906-940`](../../pq-web-src/main.js#L906-L940)). It then applies rewards and schedules one non-complete next task through `Dequeue()` ([`main.js:297-361`](../../pq-web-src/main.js#L297-L361)). A single call therefore represents one completed task even when plot cinematics append future queue entries.
+The completion predicate is exactly `position >= max` (`main.js:403-433` (`main.js:403-433`)). In the completion branch the legacy engine adds `TaskBar.max / 1000` to XP, quest, plot, and total elapsed where applicable (`main.js:906-940` (`main.js:906-940`)). It then applies rewards and schedules one non-complete next task through `Dequeue()` (`main.js:297-361` (`main.js:297-361`)). A single call therefore represents one completed task even when plot cinematics append future queue entries.
 
 Start with an ordinary offline kill vector whose XP, quest, plot, and encumbrance bars are not complete. Add independent boundary vectors by changing only fixture state:
 
@@ -204,11 +208,11 @@ Use this stable shape:
 }
 ```
 
-Preserve array order. Inventory index 0 is Gold and market logic sells index 1 ([`main.js:310-324`](../../pq-web-src/main.js#L310-L324)); quest history is appended and capped in order ([`main.js:719-723`](../../pq-web-src/main.js#L719-L723)); equipment slot order comes from `K.Equips` ([`config.js:325-335`](../../pq-web-src/config.js#L325-L335)); and spells are ordered list entries. Sorting any of them would discard observable behavior.
+Preserve array order. Inventory index 0 is Gold and market logic sells index 1 (`main.js:310-324` (`main.js:310-324`)); quest history is appended and capped in order (`main.js:719-723` (`main.js:719-723`)); equipment slot order comes from `K.Equips` (`config.js:325-335` (`config.js:325-335`)); and spells are ordered list entries. Sorting any of them would discard observable behavior.
 
-Keep raw units: task is milliseconds, XP/quest/plot/elapsed are seconds, and encumbrance is cubits. `savedRng` records the persisted `game.seed`: it remains the prior snapshot when no save occurs, or becomes the state captured by `SaveGame()` during a boundary transition. `rng` records the live state after `Dequeue()` finishes, so later random consumption remains observable. The `best` fields make persisted cache behavior observable: `SaveGame()` recalculates stat/spell metadata, while `WinEquip()` updates equipment metadata ([`main.js:618-620`](../../pq-web-src/main.js#L618-L620), [`main.js:1064-1095`](../../pq-web-src/main.js#L1064-L1095)).
+Keep raw units: task is milliseconds, XP/quest/plot/elapsed are seconds, and encumbrance is cubits. `savedRng` records the persisted `game.seed`: it remains the prior snapshot when no save occurs, or becomes the state captured by `SaveGame()` during a boundary transition. `rng` records the live state after `Dequeue()` finishes, so later random consumption remains observable. The `best` fields make persisted cache behavior observable: `SaveGame()` recalculates stat/spell metadata, while `WinEquip()` updates equipment metadata (`main.js:618-620` (`main.js:618-620`), `main.js:1064-1095` (`main.js:1064-1095`)).
 
-Exclude derived `percent`, `remaining`, `time`, and `hint` fields; `ProgressBar.reposition()` recomputes them from position/max and presentation templates ([`main.js:406-425`](../../pq-web-src/main.js#L406-L425)). Also exclude save timestamps, online fields, and the timestamp-keyed `game.log`. They are wall-clock data or outside the one-task fidelity contract.
+Exclude derived `percent`, `remaining`, `time`, and `hint` fields; `ProgressBar.reposition()` recomputes them from position/max and presentation templates (`main.js:406-425` (`main.js:406-425`)). Also exclude save timestamps, online fields, and the timestamp-keyed `game.log`. They are wall-clock data or outside the one-task fidelity contract.
 
 ## Minimality and acceptance check
 

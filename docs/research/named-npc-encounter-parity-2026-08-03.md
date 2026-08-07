@@ -1,23 +1,27 @@
 # Named NPC encounter parity — 2026-08-03
 
+> Line references below name files in the retired `pq-web-src` reference implementation.
+> That submodule was removed (ADR 0006) and the paths are not resolvable in this repository;
+> they are kept as a record of what each claim was checked against.
+
 ## Recommendation
 
 Restore the NPC branch inside the existing pure task generator, using the already-canonical `RACES`, `KLASSES`, `TITLES`, and `generateName` sources. Test both NPC forms through public `generateTaskDescription`; add one titled or passing fixture to the existing full-transition parity matrix. Do not export the private monster helper or introduce another encounter model.
 
 ## Authoritative behavior
 
-`MonsterTask(requestedLevel)` first runs exactly `requestedLevel` perturbation iterations for a positive integer character level. Every iteration consumes `Random(5)`; only results 0 or 1 consume `Random(2)`, producing -1 or +1 respectively. It then clamps the accumulated target level to at least 1. The next `Random(25)` enters the NPC branch only on 0, before any quest-monster or ordinary-monster selection. ([legacy task generator](../../pq-web-src/main.js#L205-L231), [Odds and RandSign](../../pq-web-src/main.js#L41-L50))
+`MonsterTask(requestedLevel)` first runs exactly `requestedLevel` perturbation iterations for a positive integer character level. Every iteration consumes `Random(5)`; only results 0 or 1 consume `Random(2)`, producing -1 or +1 respectively. It then clamps the accumulated target level to at least 1. The next `Random(25)` enters the NPC branch only on 0, before any quest-monster or ordinary-monster selection. (legacy task generator (`main.js:205-231`), Odds and RandSign (`main.js:41-50`))
 
 After the successful gate, both forms consume `Random(21)` to select the race name and then `Random(2)` to select the form:
 
 - **Passing, branch result 0:** consume `Random(18)` for the class. The raw monster is `passing <Race> <Class>|<level>|*`; the returned description is `a passing <Race> <Class>`.
 - **Titled, branch result 1:** `PickLow(K.Titles)` consumes two `Random(9)` calls and takes their smaller index. `GenerateName()` then consumes `Random(22), Random(14), Random(12)` twice. The raw monster is `<Title> <Name> the <Race>|<level>|*`; the returned description omits any article because `definite` is true.
 
-These table sizes and their ordering are defined by the legacy race, class, and title arrays; the six name picks cycle through the three legacy syllable arrays. ([NPC construction](../../pq-web-src/main.js#L214-L225), [PickLow](../../pq-web-src/main.js#L49-L55), [legacy name generator](../../pq-web-src/config.js#L143-L157), [legacy NPC tables](../../pq-web-src/config.js#L942-L994))
+These table sizes and their ordering are defined by the legacy race, class, and title arrays; the six name picks cycle through the three legacy syllable arrays. (NPC construction (`main.js:214-225`), PickLow (`main.js:49-55`), legacy name generator (`config.js:143-157`), legacy NPC tables (`config.js:942-994`))
 
-For an NPC, `lev` is assigned the perturbed target level. Consequently the difference is zero: quantity stays 1, no age/size/special caption branch consumes RNG, and the returned effective opponent level is exactly the perturbed/clamped target. The final call counts are therefore `requestedLevel + successfulPerturbations + 4` for passing NPCs and `requestedLevel + successfulPerturbations + 11` for titled NPCs. ([level, grammar, and return](../../pq-web-src/main.js#L224-L280))
+For an NPC, `lev` is assigned the perturbed target level. Consequently the difference is zero: quantity stays 1, no age/size/special caption branch consumes RNG, and the returned effective opponent level is exactly the perturbed/clamped target. The final call counts are therefore `requestedLevel + successfulPerturbations + 4` for passing NPCs and `requestedLevel + successfulPerturbations + 11` for titled NPCs. (level, grammar, and return (`main.js:224-280`))
 
-`Dequeue` turns the returned description into `Executing <description>`, and `Task` appends `...`. The `*` in kill-tag field 3 means that completing this newly generated encounter later calls `WinItem`; it does not consume that loot RNG while the NPC task is created. ([task wiring](../../pq-web-src/main.js#L297-L305), [caption and duration](../../pq-web-src/main.js#L355-L360), [ellipsis](../../pq-web-src/main.js#L816-L821))
+`Dequeue` turns the returned description into `Executing <description>`, and `Task` appends `...`. The `*` in kill-tag field 3 means that completing this newly generated encounter later calls `WinItem`; it does not consume that loot RNG while the NPC task is created. (task wiring (`main.js:297-305`), caption and duration (`main.js:355-360`), ellipsis (`main.js:816-821`))
 
 ## Reproducible level-one vectors
 
