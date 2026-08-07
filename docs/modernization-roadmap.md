@@ -96,7 +96,7 @@ to presentation effects such as sound.
 
 ### Phase 0 — make correctness observable
 
-1. Make the legacy baseline reproducible in fresh clones ([#38](https://github.com/williamzujkowski/progress-quest-iii/issues/38)).
+1. ~~Make the legacy baseline reproducible in fresh clones ([#38](https://github.com/williamzujkowski/progress-quest-iii/issues/38)).~~ Superseded: the baseline was retired in #381 and its behaviour now lives in self-owned goldens, so there is no longer a submodule for a fresh clone to reproduce.
 2. Add deterministic legacy trace and invariant contracts ([#39](https://github.com/williamzujkowski/progress-quest-iii/issues/39)).
 3. Fix the confirmed post-transition gold and immutable-inventory defects
    ([#40](https://github.com/williamzujkowski/progress-quest-iii/issues/40),
@@ -163,4 +163,4 @@ churn.
   user-exportable diagnostic report.
 - The deployed app installs, starts offline after one visit, and updates safely.
 - Desktop and mobile layouts keep growing content bounded and usable.
-- WCAG 2.2 AA, supported-browser, security, fidelity, and artifact gates pass.
+- WCAG 2.2 AA, supported-browser, security, golden, and artifact gates pass.

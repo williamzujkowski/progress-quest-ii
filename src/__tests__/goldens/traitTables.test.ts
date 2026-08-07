@@ -53,7 +53,7 @@ import {
  * a wholesale rewrite of the wording. Diffing against the original source was the only thing that
  * ever caught those, and nothing in this repository can do it now.
  *
- * That is not the whole picture, though. The fourteen transition goldens in
+ * That is not the whole picture, though. The fifteen transition goldens in
  * `src/__tests__/fixtures/goldens/` were recorded against the original build and reach specific
  * table entries through their pinned seeds — renaming a monster or a boring item that any of
  * those recorded runs happens to draw still fails `transitionParity.test.ts`. The coverage is
@@ -235,8 +235,25 @@ describe('trait table structure', () => {
     },
   );
 
-  it('derives the full stat list from the prime stats plus the two maxima', () => {
-    expect(ALL_STATS).toEqual([...PRIME_STATS, 'HP Max', 'MP Max']);
+  it('keeps the prime stats in the order everything else reads them in', () => {
+    // Pinned as a literal on purpose. ALL_STATS is *derived* from PRIME_STATS, so any assertion
+    // relating the two restates the derivation and cannot fail — the previous version here was
+    // `expect(ALL_STATS).toEqual([...PRIME_STATS, 'HP Max', 'MP Max'])`, a character-for-character
+    // copy of traits.ts:5, and reversing PRIME_STATS left all 71 assertions in this file green.
+    //
+    // The order is the contract: it decides the sequence stats appear in on the hero banner and in
+    // the character creator. A golden that pins a load-bearing literal is doing its job when
+    // editing the source line fails it. That is the opposite of the tautology it replaces, which
+    // could only fail when the source line was edited in a way that broke its own restatement.
+    expect(PRIME_STATS).toEqual(['STR', 'CON', 'DEX', 'INT', 'WIS', 'CHA']);
+  });
+
+  it('adds exactly the two maxima to the prime stats, and nothing else', () => {
+    // The structural half, which does not restate the derivation: the extras are these two, they
+    // come last, and nothing is repeated.
+    expect(ALL_STATS).toHaveLength(PRIME_STATS.length + 2);
+    expect(ALL_STATS.filter((stat) => !PRIME_STATS.includes(stat as never))).toEqual(['HP Max', 'MP Max']);
+    expect(new Set(ALL_STATS).size).toBe(ALL_STATS.length);
   });
 
   // `generateEquipUpgrade` branches on these two slots by name to choose which quality table an
