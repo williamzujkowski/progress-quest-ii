@@ -2,7 +2,7 @@
 
 Standalone guidance for AI coding agents (OpenCode, Codex CLI, Cursor, Aider, Cline, Continue, Goose, Claude Code) working in this repository. Self-contained — single source of truth for agent guidance in this project.
 
-**About this project:** `progress-quest-ii` is an unofficial spiritual successor to Eric Fredricksen's classic zero-player RPG *Progress Quest* (web edition) — a game for people who want to play games without playing them and watch numbers go up. It is inspired by the original rather than a port of it. It keeps the humour, the flavour, and the deterministic, hands-off progression; it is free to extend or refine the mechanics where that serves the goal, and it has already done so. See [ADR 0003](docs/adr/0003-spiritual-successor-not-a-port.md) for what that means in practice and which divergences are deliberate.
+**About this project:** `progress-quest-iii` is an unofficial spiritual successor to Eric Fredricksen's classic zero-player RPG *Progress Quest* (web edition) — a game for people who want to play games without playing them and watch numbers go up. It is inspired by the original rather than a port of it. It keeps the humour, the flavour, and the deterministic, hands-off progression; it is free to extend or refine the mechanics where that serves the goal, and it has already done so. See [ADR 0003](docs/adr/0003-spiritual-successor-not-a-port.md) for what that means in practice and which divergences are deliberate.
 
 ---
 
@@ -32,7 +32,7 @@ correctness > simplicity > performance > cleverness
 - **Cleverness**: Never. Obfuscated trickery creates technical debt.
 
 ### Core Disciplines
-- **Red/Green TDD** — Write a failing test first, then the minimum code to pass, then refactor. Never write production engine code without a corresponding test. This is enforced, not merely asked for: `vite.config.ts` sets a coverage floor that `npm test` fails against, with a deliberately higher bar for `src/engine/**` (93% statements, 86% branches, 95% functions, 94% lines). The global floors are lower because coverage counts every `src` file, and components are exercised by Playwright rather than Vitest. Raise a floor when coverage rises; never lower one to make a red run pass.
+- **Red/Green TDD** — Write a failing test first, then the minimum code to pass, then refactor. Never write production engine code without a corresponding test. This is enforced, not merely asked for: `vite.config.ts` sets a coverage floor that `npm test` fails against, with a deliberately higher bar for `src/engine/**` (93% statements, 86% branches, 95% functions, 94% lines). The global floors are lower because coverage describes only the code unit tests own: components verified entirely by Playwright are excluded from the denominator by an explicit reviewable list. Raise a floor when coverage rises; never lower one to make a red run pass.
 - **YAGNI (You Aren't Gonna Need It)** — Implement only what is required by a named feature or backlog issue. Avoid speculative abstractions, unused parameters, or "just in case" utility helpers.
 - **DRY (Don't Repeat Yourself)** — Every piece of game data or logic (stat tables, item generation formulas, level curves) must have a single, unambiguous, authoritative representation in `src/data/` or `src/engine/`.
 - **Zero `any` policy** — Strict TypeScript typing enforced. Use `unknown` + type guards or Zod schemas at external storage and string boundaries.
@@ -119,8 +119,8 @@ Always follow this layout — do not create duplicate or parallel module structu
 | **Game Data & Config** | `src/data/` | Data tables for races, classes, traits, spell names, equipment prefixes/suffixes, quest templates (`config.js` port). |
 | **State & Storage** | `src/state/` | Game loop state machine, character store, save game serialization/deserialization, LocalStorage/IndexedDB persistence. |
 | **UI Components** | `src/components/` | Modular UI components (`CharacterSheet`, `QuestLog`, `PlotBar`, `InventoryList`, `EquipmentView`, `Roster`, `CharacterCreator`). |
-| **Styles & Assets** | `src/assets/` | Modern & retro CSS styles, ProgrOS theme, images, sound effects. |
-| **Tests** | `src/__tests__/` | Unit tests for engine math/RNG, state persistence integration, and Playwright E2E browser tests. |
+| **Styles & Assets** | `src/App.css`, `src/index.css`, `public/` | Modern & retro CSS styles, ProgrOS theme, images, sound effects. |
+| **Tests** | `src/__tests__/`, `e2e/`, `e2e-pwa/` | Unit tests for engine math/RNG and state persistence integration in `src/__tests__/`; Playwright browser suites in `e2e/` and `e2e-pwa/`. |
 
 ---
 
