@@ -94,6 +94,46 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await context.close();
   });
 
+  test('draws the race and class controls it refused the platform version of', async ({ browser }) => {
+    // index.css sets `appearance: none` on every input so authored styles can beat WebKit's
+    // control painting. Radios were never given the replacement, so they computed to 0x0 with no
+    // border and no background: selection worked, and nothing on screen said which option was
+    // chosen. 225 e2e tests missed it because they all click the label and assert state — none
+    // asked whether the control could be seen.
+    const context = await browser.newContext({ baseURL: BASE_URL, storageState: { cookies: [], origins: [] } });
+    const page = await context.newPage();
+    await page.goto('/');
+
+    const creator = page.getByRole('dialog', { name: /New Character/i });
+    await expect(creator).toBeVisible();
+
+    const radios = creator.locator('input[type="radio"]');
+    const boxes = await radios.evaluateAll((nodes) => nodes.map((node) => {
+      const rect = node.getBoundingClientRect();
+      return { w: Math.round(rect.width), h: Math.round(rect.height) };
+    }));
+    expect(boxes.length, 'no race or class controls rendered').toBeGreaterThan(0);
+    expect(boxes.filter(({ w, h }) => w < 8 || h < 8), 'controls too small to see').toEqual([]);
+
+    // And the selection has to be visible on the row, not only in the DOM. Colour alone would not
+    // be enough, so the weight is asserted too.
+    const chosen = creator.getByText('Hob-Hobbit', { exact: true });
+    await chosen.click();
+    const [selected, other] = await creator.locator('.picker-option').evaluateAll((nodes) => {
+      const pick = (node: Element) => {
+        const style = getComputedStyle(node);
+        return { color: style.color, weight: style.fontWeight };
+      };
+      const chosenRow = nodes.find((node) => node.querySelector('input:checked'));
+      const plainRow = nodes.find((node) => !node.querySelector('input:checked'));
+      return [chosenRow ? pick(chosenRow) : null, plainRow ? pick(plainRow) : null];
+    });
+    expect(selected, 'nothing was selected').not.toBeNull();
+    expect(selected!.color, 'the selected row is not distinguished by colour').not.toBe(other!.color);
+    expect(selected!.weight, 'the selected row is not distinguished by weight').not.toBe(other!.weight);
+    await context.close();
+  });
+
   test('promotes the most recently saved roster character when no active checkpoint exists', async ({ browser }) => {
     const earlier = createNewCharacter('Earlier Roster', 'Half Orc', 'Robot Monk', 706);
     const latest = createNewCharacter('Latest Roster', 'Dung Elf', 'Vermineer', 707);

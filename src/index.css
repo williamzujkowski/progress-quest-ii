@@ -155,6 +155,49 @@ input[type='radio'] {
   touch-action: manipulation;
 }
 
+/*
+ * The radio has to be drawn, because the rule above refuses the one the platform would have drawn.
+ *
+ * `appearance: none` is set on every input so authored styles can win against WebKit's control
+ * painting. Radios were never given the replacement: they computed to 0x0, transparent, no border.
+ * Selection worked the whole time — clicking a label moved the checked state — but nothing on
+ * screen said so, and a control whose state is invisible is a control that does not work.
+ *
+ * Sized at 1rem rather than the platform default so it scales with the option text, and drawn with
+ * currentColor so it inherits whatever the theme gave the label. That keeps it correct across all
+ * five palettes without a per-theme rule, and means its contrast is the label's contrast, which is
+ * already measured.
+ */
+input[type='radio'] {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  display: grid;
+  place-content: center;
+}
+
+input[type='radio']::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+  transform: scale(0);
+}
+
+input[type='radio']:checked::before { transform: scale(1); }
+
+/* The row carries the selection too. The dot alone is a 16px target for a decision the whole
+   44px row is clickable for, and colour is not the only channel here — the label's weight
+   changes with it. */
+.picker-option:has(:checked) {
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
 :focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
