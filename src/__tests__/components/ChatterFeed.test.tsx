@@ -12,7 +12,6 @@ const entry = (id: number, channel: SocialChannel, speaker: 'cast' | 'hero' = 'c
   sceneId: `social:${id}:quest`,
   sceneKind: 'quest',
   sourceActivityId: id,
-  sourceEventType: 'quest_started',
   channel,
   speaker: speaker === 'hero'
     ? { id: 'hero', kind: 'hero', displayName: 'Hero', role: 'Automatic hero reply', fictional: true, automaticHero: true }

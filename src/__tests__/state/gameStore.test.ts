@@ -127,7 +127,6 @@ describe('Game Store State Machine', () => {
       sceneId: `existing:${scene}`,
       sceneKind: 'quest' as const,
       sourceActivityId: scene,
-      sourceEventType: 'quest_started' as const,
       channel: 'guild' as const,
       speaker: { id: 'fixture', kind: 'cast' as const, displayName: 'Fixture', role: 'Fixture', fictional: true as const, automaticHero: false },
       text: `Existing ${scene}:${line}`,

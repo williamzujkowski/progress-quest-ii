@@ -780,7 +780,6 @@ test.describe('Progress Quest III terminal dashboard', () => {
           sceneId: `fixture:${Math.floor(index / 3)}`,
           sceneKind: 'quest' as const,
           sourceActivityId: index,
-          sourceEventType: 'quest_started' as const,
           channel: 'guild' as const,
           speaker: {
             id: `fixture-${index}`,
