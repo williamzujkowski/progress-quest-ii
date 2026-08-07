@@ -70,7 +70,7 @@ Then open the local URL printed by Vite. The local app is the same game, only wi
 Run the same checks used by CI before opening a pull request:
 
 ```sh
-npx playwright install chromium
+npx playwright install chromium webkit
 npm run quality
 ```
 
