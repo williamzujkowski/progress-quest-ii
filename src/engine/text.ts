@@ -89,17 +89,39 @@ function describeScientificGameNumber(value: number): string {
   return `${mantissa} times 10 to the ${exponentValue < 0 ? 'negative ' : ''}${Math.abs(exponentValue)}`;
 }
 
-export function formatGameNumber(value: number): string {
-  if (!Number.isFinite(value)) return '—';
+/**
+ * The plain form, or null when the value genuinely has more magnitude than digits can carry.
+ *
+ * The second attempt is the point. A five-digit figure with a fraction — plot progress is one —
+ * exceeds the character budget on its decimals alone, and used to fall through to "1.53e4": longer
+ * to read than "15300", less precise than it, and printed beside a denominator still in plain
+ * digits. The budget is there to stop unreadable strings, not to demote ordinary numbers that
+ * happen to carry a remainder, so the remainder is what gets rounded away.
+ *
+ * Rounded, not truncated, and the difference is load-bearing at the top of the range: 999999.9999
+ * truncates to 999999, which reports a value below a threshold it has effectively reached and
+ * contradicts the spoken form's "1 million". Rounding carries it to 1000000, which is over budget,
+ * so it stays scientific — which is the answer that was already correct.
+ *
+ * Both callers go through here so the printed and spoken forms cannot disagree about which values
+ * are still writable.
+ */
+function plainGameNumber(value: number): string | null {
   const ordinary = ordinaryGameNumber(value);
   if (!shouldUseScientificNotation(value, ordinary)) return ordinary;
-  return scientificFormatter.format(value).replace('E', 'e');
+  const whole = ordinaryGameNumber(Math.round(value));
+  return shouldUseScientificNotation(value, whole) ? null : whole;
+}
+
+export function formatGameNumber(value: number): string {
+  if (!Number.isFinite(value)) return '—';
+  return plainGameNumber(value) ?? scientificFormatter.format(value).replace('E', 'e');
 }
 
 export function describeGameNumber(value: number): string {
   if (!Number.isFinite(value)) return 'unavailable';
-  const ordinary = ordinaryGameNumber(value);
-  if (!shouldUseScientificNotation(value, ordinary)) return ordinary;
+  const plain = plainGameNumber(value);
+  if (plain !== null) return plain;
   const spoken = spokenFormatter.format(value);
   return spoken.length <= MAX_SPOKEN_CHARACTERS ? spoken : describeScientificGameNumber(value);
 }
