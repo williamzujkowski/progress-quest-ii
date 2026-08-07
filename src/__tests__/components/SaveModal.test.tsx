@@ -241,4 +241,62 @@ describe('Save Manager recovery', () => {
     expect(useGameStore.getState().character).toBe(activeCharacter);
     expect(diagnostics.snapshot().at(-1)?.code).toBe('roster_write_failed');
   });
+
+  // #339: deleting a character is the only action in this modal that destroys player data, and it
+  // was the only roster-mutating path with no test. Every other one here has a negative case.
+
+  it('removes a character from the roster once the deletion is confirmed', async () => {
+    const doomed = createNewCharacter('Doomed Bureaucrat', 'Half Orc', 'Robot Monk', 701);
+    const spared = createNewCharacter('Spared Bureaucrat', 'Dung Elf', 'Vermineer', 702);
+    localStorage.setItem('progquest_roster_v1', JSON.stringify({
+      'Doomed Bureaucrat': doomed,
+      'Spared Bureaucrat': spared,
+    }));
+    const confirmed = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<SaveModal isOpen onClose={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Doomed Bureaucrat' }));
+
+    expect((await screen.findByRole('status')).textContent).toContain('Character removed from this browser.');
+    expect(confirmed).toHaveBeenCalledWith('Are you sure you want to delete Doomed Bureaucrat?');
+    const roster = JSON.parse(localStorage.getItem('progquest_roster_v1') ?? '{}');
+    expect(Object.keys(roster)).toEqual(['Spared Bureaucrat']);
+  });
+
+  it('deletes nothing when the confirmation is declined', async () => {
+    const doomed = createNewCharacter('Reprieved Bureaucrat', 'Half Orc', 'Robot Monk', 703);
+    const originalRoster = JSON.stringify({ 'Reprieved Bureaucrat': doomed });
+    localStorage.setItem('progquest_roster_v1', originalRoster);
+    const declined = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+
+    render(<SaveModal isOpen onClose={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Reprieved Bureaucrat' }));
+
+    expect(declined).toHaveBeenCalled();
+    // Not merely "the bytes are unchanged": a write that happened to rewrite the same value would
+    // satisfy that while still having taken the branch.
+    expect(setItem.mock.calls.filter(([key]) => key === 'progquest_roster_v1')).toHaveLength(0);
+    expect(localStorage.getItem('progquest_roster_v1')).toBe(originalRoster);
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('reports a failed deletion rather than appearing to have removed the character', async () => {
+    const doomed = createNewCharacter('Undeletable Bureaucrat', 'Half Orc', 'Robot Monk', 704);
+    const originalRoster = JSON.stringify({ 'Undeletable Bureaucrat': doomed });
+    localStorage.setItem('progquest_roster_v1', originalRoster);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementationOnce(() => {
+      throw new DOMException('Quota exceeded', 'QuotaExceededError');
+    });
+
+    render(<SaveModal isOpen onClose={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Undeletable Bureaucrat' }));
+
+    expect((await screen.findByRole('alert')).textContent).toBeTruthy();
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(localStorage.getItem('progquest_roster_v1')).toBe(originalRoster);
+    expect(diagnostics.snapshot().at(-1)?.code).toBe('roster_delete_failed');
+    setItem.mockRestore();
+  });
 });
