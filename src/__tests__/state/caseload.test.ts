@@ -178,6 +178,51 @@ describe('against the engine rather than a fixture', () => {
   });
 });
 
+describe('naming a target after an inherited property', () => {
+  it('tallies constructor as an ordinary own key rather than NaN', () => {
+    // `targets` is a plain object, so a bare read of `constructor` returns the inherited
+    // function and `?? 0` never fires. The tally must treat it as a fresh key.
+    const tally = mergeRecords(EMPTY_CASELOAD, [closed('fetch', 'constructor')]);
+    expect(tally.targets['constructor']).toBe(1);
+  });
+
+  it('tallies each hostile name the engine allows as a target', () => {
+    const tally = mergeRecords(EMPTY_CASELOAD, [
+      closed('fetch', 'constructor'), closed('fetch', 'toString'),
+      closed('fetch', 'valueOf'), closed('fetch', 'hasOwnProperty'),
+    ]);
+    expect(tally.targets).toEqual({ constructor: 1, toString: 1, valueOf: 1, hasOwnProperty: 1 });
+  });
+
+  it('keeps counting the same hostile target across completions', () => {
+    const tally = mergeRecords(EMPTY_CASELOAD, [
+      closed('fetch', 'constructor'), closed('fetch', 'constructor'),
+    ]);
+    expect(tally.targets['constructor']).toBe(2);
+  });
+
+  it('persists a ledger holding such a target instead of dropping the write', () => {
+    const storage = fakeStorage();
+    const tally = mergeRecords(EMPTY_CASELOAD, [closed('fetch', 'constructor')]);
+    writeCaseload(storage, tally);
+    expect(readCaseload(storage)).toEqual(tally);
+  });
+
+  it('recovers from a save wedged by an old NaN tally', () => {
+    // A pre-fix save serialized NaN as null, which zod refuses; the ledger must fail closed
+    // to "no casework on file" (the established corrupt-tally contract) rather than keep
+    // refusing every write and wedging the game permanently.
+    const wedged = fakeStorage({
+      [CASELOAD_STORAGE_KEY]: '{"kinds":{"fetch":3},"targets":{"constructor":null}}',
+    });
+    expect(readCaseload(wedged)).toEqual(EMPTY_CASELOAD);
+    // And once the wedge clears, a fresh tally persists normally.
+    const tally = mergeRecords(EMPTY_CASELOAD, [closed('fetch', 'Kobold')]);
+    writeCaseload(wedged, tally);
+    expect(readCaseload(wedged)).toEqual(tally);
+  });
+});
+
 describe('naming a target that is filed under a composite key', () => {
   it('shows the name out of the engine key rather than the key', () => {
     // The engine identifies an extermination target as name|level|item, which keeps two monsters

@@ -123,11 +123,15 @@ export function mergeRecords(caseload: Caseload, records: readonly GameTransitio
 
     const target = identity.target;
     if (target && target.length > 0 && target.length <= MAX_PERSISTED_DESCRIPTION_LENGTH) {
+      // Object.hasOwn rather than a bare read: `targets` is a plain object, so a target named
+      // after an inherited property (e.g. "constructor") would otherwise read as a function and
+      // `?? 0` would never fire, tallying NaN and wedging the ledger on every write.
+      const prior = Object.hasOwn(next.targets, target) ? (next.targets[target] ?? 0) : 0;
       next = {
         ...next,
         targets: boundTargets({
           ...next.targets,
-          [target]: Math.min(MAX_PERSISTED_VALUE, (next.targets[target] ?? 0) + 1),
+          [target]: Math.min(MAX_PERSISTED_VALUE, prior + 1),
         }),
       };
     }
