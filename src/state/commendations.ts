@@ -34,7 +34,7 @@ const exhibitEntrySchema = z.object({
   quality: z.number().finite(),
 }).strict();
 
-export const commendationsSchema = z.object({
+const commendationsSchema = z.object({
   highestLevel: z.number().int().min(0).max(MAX_PERSISTED_VALUE),
   largestSale: z.number().int().min(0).max(MAX_PERSISTED_GOLD),
   questsCompleted: z.number().int().min(0).max(MAX_PERSISTED_VALUE),

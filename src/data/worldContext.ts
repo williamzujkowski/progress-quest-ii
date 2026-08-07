@@ -1,4 +1,4 @@
-export const FIELD_NAMES = [
+const FIELD_NAMES = [
   'The Administrative Moor',
   'Pending Expanse',
   'Mild Peril Downs',
@@ -9,7 +9,7 @@ export const FIELD_NAMES = [
   'The Compliance Fen',
 ] as const;
 
-export const TOWN_NAMES = [
+const TOWN_NAMES = [
   'Receipton',
   'Pettifogger’s Rest',
   'New Requisition',
@@ -18,7 +18,7 @@ export const TOWN_NAMES = [
   'Certified Haven',
 ] as const;
 
-export const DUNGEON_NAMES = [
+const DUNGEON_NAMES = [
   'Vault of Deferred Maintenance',
   'Crypt of the Missing Signature',
   'The Unbudgeted Depths',
@@ -26,7 +26,7 @@ export const DUNGEON_NAMES = [
   'Subcommittee Catacombs',
 ] as const;
 
-export const RAID_NAMES = [
+const RAID_NAMES = [
   'Citadel of Necessary Meetings',
   'The Final Draft Eternal',
   'Fortress of Mandatory Attendance',

@@ -33,7 +33,7 @@ export interface TrackSample {
 }
 
 /** Long enough to average over a market trip, short enough to track a change in the task mix. */
-export const TRACK_WINDOW_MS = 5 * 60_000;
+const TRACK_WINDOW_MS = 5 * 60_000;
 
 /**
  * Game seconds, not real ones. The window is retained by wall clock so the buffer stays bounded,

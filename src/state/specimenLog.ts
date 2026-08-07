@@ -29,7 +29,7 @@ export const SPECIMEN_STORAGE_KEY = 'progquest_specimens_v1';
  */
 export const MAX_TRACKED_SPECIMENS = 300;
 
-export const specimenLogSchema = z.object({
+const specimenLogSchema = z.object({
   // Sorted on write so the stored form is stable, which keeps a round trip byte-identical and
   // makes a diff between two saves mean something.
   specimens: z.array(z.string().min(1).max(MAX_PERSISTED_DESCRIPTION_LENGTH)).max(MAX_TRACKED_SPECIMENS).default([]),
