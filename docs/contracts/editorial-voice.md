@@ -44,8 +44,8 @@ used sparingly and must not compete with it:
 - Now serving zero concurrent players across every supported viewport.
 - No players were interrupted during this deployment.
 
-The current title is deliberately outside this contract; issue #140 owns naming
-and repository/Pages migration.
+The current title is now covered by ADR 0005; naming shipped in #301 and the
+repository/Pages migration shipped in #306.
 
 ## Truth and credit boundary
 

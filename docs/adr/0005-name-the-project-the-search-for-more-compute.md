@@ -2,7 +2,7 @@
 
 Adopt **Progress Quest III: The Search for More Compute** as the project title, with the short
 form **Progress Quest III** for the masthead, browser tab, and anywhere the full title does not
-fit, and the slug `progress-quest-iii` reserved for a future repository and Pages move.
+fit, and the slug `progress-quest-iii` now used by the repository and Pages move.
 
 This supersedes ADR 0002, which chose *Progress Quest III: The Search for Progress Quest II*, and
 resolves ADR 0004, which reopened the question and deliberately decided nothing. The numeral is
@@ -88,8 +88,10 @@ defunct freeware directories.
   history and spending it on a joke leaves the title displayed nowhere. The numeral joke, in its
   truthful form — the second installment is oversubscribed, not absent — went to the README, where
   prose can carry it.
-- **The repository and Pages move.** Unchanged from #140: redirects planned before the URL moves,
-  and #111 already tracks the older `/progquest/` path.
+- ~~**The repository and Pages move.**~~ Resolved in #306, with the redirects-first precondition
+  waived. #140 required redirects before the URL moves; #306 shipped with saved
+  `/progress-quest-ii/` links accepted to break per the owner. #111 still tracks the older
+  `/progquest/` path.
 
 ## What does not change
 

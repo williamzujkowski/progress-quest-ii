@@ -76,4 +76,6 @@ that a general audience will not get. Both are real costs and neither is disqual
 The implementation constraints in #140 are unchanged and non-negotiable: save compatibility,
 storage keys, and `.pqw` terminology stay exactly as they are; the Pages URL move needs redirects
 planned first; and visible identity, manifest, metadata, README, tests, and deployment validation
-change atomically or not at all. A rename that costs someone their save is worse than any name.
+change atomically or not at all. The move shipped in #306 with the redirects-first precondition
+waived: saved `/progress-quest-ii/` links were accepted to break per the owner. A rename that
+costs someone their save is worse than any name.
