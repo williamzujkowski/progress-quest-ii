@@ -1232,6 +1232,51 @@ test.describe('Progress Quest III terminal dashboard', () => {
     });
   }
 
+  test('spends a wide viewport on the loadout rather than on the prose column', async ({ page }) => {
+    // The loadout measured 329px at 1280, 1806 and 2560 alike, because `.app-container` caps the
+    // whole dashboard at 1280 and centres it — the column ratios were never what held it there.
+    // So the cap moves at 1600, and the width it adds goes to the loadout alone.
+    await page.goto('/');
+    await loadDenseDashboard(page);
+
+    const columns = async () => {
+      const widths = await page.locator('.main-grid').evaluate((grid) =>
+        getComputedStyle(grid).gridTemplateColumns.split(' ').map((value) => Math.round(parseFloat(value))));
+      expect(widths).toHaveLength(3);
+      const [hero = 0, console_ = 0, loadout = 0] = widths;
+      return { hero, console: console_, loadout };
+    };
+
+    // One pixel below the breakpoint nothing has changed.
+    await page.setViewportSize({ width: 1599, height: 900 });
+    const narrow = await columns();
+    expect(narrow.loadout).toBeLessThan(340);
+
+    await page.setViewportSize({ width: 1600, height: 900 });
+    const wide = await columns();
+
+    // The loadout is the only column that grows, and it roughly doubles.
+    expect(wide.loadout).toBeGreaterThan(narrow.loadout * 1.8);
+    // The console keeps the measure it already had. Asserted as "no wider", because lengthening
+    // the only lines of prose on the page is the specific outcome this layout is avoiding — a
+    // change that fixed the loadout by growing the console would pass every other check here.
+    expect(wide.console).toBeLessThanOrEqual(narrow.console);
+    expect(wide.hero).toBeLessThanOrEqual(narrow.hero);
+
+    // Two columns inside the loadout at both widths: the extra room widens each cell, which is
+    // where names truncate, rather than adding a third column of narrower ones.
+    await expect(page.getByRole('region', { name: 'Equipment List' })).toHaveCSS('grid-template-columns', /^\S+\s+\S+$/);
+
+    for (const width of [1600, 2560]) {
+      await page.setViewportSize({ width, height: 900 });
+      const overflow = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
+    }
+  });
+
   for (const [label, width] of [['desktop', 1280], ['mobile', 375]] as const) {
     test(`reveals and dismisses a decision reason at ${label} width`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });

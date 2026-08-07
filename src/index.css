@@ -1153,6 +1153,27 @@ textarea.form-control { resize: vertical; }
   .console-tabs [role='tab'] > small { font-size: 0.52rem; white-space: nowrap; }
 }
 
+/* The loadout measured 329px at 1280, at 1806 and at 2560, and the column ratios were never the
+   reason. `.app-container` is `min(100%, 1280px)`, so the whole dashboard stops growing at 1280
+   and centres itself; at 2560 half the viewport is margin. Redistributing `fr` inside that fixed
+   width could only have moved space from one column to another, and the console is the column
+   that would have paid.
+
+   So the cap is what moves, and every pixel it adds goes to the loadout. The first two columns
+   are pinned to the widths they already had — 20.5rem and 34.25rem are the 328px and 548px they
+   compute to at the narrower cap — so the console keeps exactly the measure it was given, and the
+   loadout takes the remainder. Widening the console instead would lengthen the only lines of prose
+   on the page, which is the opposite of what wide viewports should buy here.
+
+   1600px because that is where the leftover is worth more than the symmetry: below it the margins
+   read as deliberate framing, above it as unused screen. The equipment grid stays two columns
+   (`.equipment-list` is `repeat(2, …)` from 1025px up), so this widens each cell rather than
+   adding a third — which is the whole point, since the cells are where item names truncate. */
+@media (min-width: 1600px) {
+  .app-container { width: min(100%, 1600px); }
+  .main-grid { grid-template-columns: 20.5rem 34.25rem minmax(16rem, 1fr); }
+}
+
 @media (max-width: 640px) {
   .main-grid { grid-template-columns: minmax(0, 1fr); }
   .picker-grid { grid-template-columns: minmax(0, 1fr); }
