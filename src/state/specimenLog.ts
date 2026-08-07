@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_STORED_PAYLOAD_LENGTH } from '../data/limits';
+import { readLedger, writeLedger } from './ledgerStorage';
+import { MAX_PERSISTED_DESCRIPTION_LENGTH } from '../data/limits';
 import type { GameTransitionEvent } from '../engine/transition';
 
 /**
@@ -80,36 +81,17 @@ export function mergeSpecimens(log: SpecimenLog, events: readonly GameTransition
   return { specimens: [...log.specimens, ...added].sort() };
 }
 
-/** Reads fail closed: anything unreadable is treated as no specimens, never as an error. */
+/**
+ * Reads fail closed; the shared reader owns that. Duplicates in a hostile file are collapsed on
+ * the way in: they would inflate the count without adding variety, which is the one number this
+ * ledger reports.
+ */
 export function readSpecimenLog(storage: Pick<Storage, 'getItem'> | undefined): SpecimenLog {
-  if (!storage) return EMPTY_SPECIMEN_LOG;
-  let raw: string | null;
-  try {
-    raw = storage.getItem(SPECIMEN_STORAGE_KEY);
-  } catch {
-    return EMPTY_SPECIMEN_LOG;
-  }
-  if (raw === null) return EMPTY_SPECIMEN_LOG;
-  if (raw.length > MAX_STORED_PAYLOAD_LENGTH) return EMPTY_SPECIMEN_LOG;
-  try {
-    const parsed = specimenLogSchema.safeParse(JSON.parse(raw));
-    if (!parsed.success) return EMPTY_SPECIMEN_LOG;
-    // Duplicates in a hostile file would inflate the count without adding variety, which is the
-    // one number this ledger reports.
-    return { specimens: [...new Set(parsed.data.specimens)].sort() };
-  } catch {
-    return EMPTY_SPECIMEN_LOG;
-  }
+  return readLedger(storage, SPECIMEN_STORAGE_KEY, specimenLogSchema, EMPTY_SPECIMEN_LOG,
+    (value) => ({ specimens: [...new Set(value.specimens)].sort() }));
 }
 
-/** Writes are best-effort. A ledger that cannot be saved must never interrupt play. */
+/** Writes are best-effort; the shared writer owns that. */
 export function writeSpecimenLog(storage: Pick<Storage, 'setItem'> | undefined, log: SpecimenLog): void {
-  if (!storage) return;
-  const parsed = specimenLogSchema.safeParse(log);
-  if (!parsed.success) return;
-  try {
-    storage.setItem(SPECIMEN_STORAGE_KEY, JSON.stringify(parsed.data));
-  } catch {
-    // Storage full or denied. The game continues; the collection simply stops growing on disk.
-  }
+  writeLedger(storage, SPECIMEN_STORAGE_KEY, specimenLogSchema, log);
 }
