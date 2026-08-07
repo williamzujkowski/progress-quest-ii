@@ -6,6 +6,7 @@ import { createNewCharacter } from '../src/engine/sim';
 import { DEFAULT_CHECKPOINT_INTERVAL_MS } from '../src/data/limits';
 import { archivedSessionStorageState } from './fixtures/archivedSession';
 import { returningSessionStorageState } from './fixtures/returningSession';
+import { expectVisibleFocusRing } from './fixtures/focusVisibility';
 
 // Origin comes from playwright.config.ts, which reserves a free port per invocation so runs
 // cannot borrow each other's dev server or a stale one from another branch.
@@ -666,7 +667,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
     }
 
     expect(reachedThemePicker).toBe(true);
-    await expect(themePicker).toHaveCSS('outline-style', 'solid');
+    await expectVisibleFocusRing(themePicker, 'theme picker');
   });
 
   test('labels activity events without substring false positives', async ({ page }) => {
@@ -915,7 +916,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
     const filter = page.getByRole('combobox', { name: 'Chatter channel' });
     await filter.focus();
     await expect(filter).toBeFocused();
-    expect(await filter.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('none');
+    await expectVisibleFocusRing(filter, 'log filter');
     const selectedColors = await chatterTab.evaluate((element) => ({
       tab: getComputedStyle(element).color,
       label: getComputedStyle(element.querySelector('span')!).color,
@@ -927,7 +928,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await page.keyboard.press('End');
     await expect(activityTab).toBeFocused();
     await expect(activityTab).toHaveAttribute('aria-selected', 'true');
-    expect(await activityTab.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('none');
+    await expectVisibleFocusRing(activityTab, 'activity tab');
     await page.keyboard.press('Home');
     await expect(chatterTab).toBeFocused();
     await expect(chatterTab).toHaveAttribute('aria-selected', 'true');
@@ -1393,12 +1394,12 @@ test.describe('Progress Quest III terminal dashboard', () => {
     const summary = page.getByRole('region', { name: 'Current world context' }).getByText('World filings');
     await summary.focus();
     await expect(summary).toBeFocused();
-    expect(await summary.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('none');
+    await expectVisibleFocusRing(summary, 'world filings summary');
     await page.keyboard.press('Enter');
     const notices = page.getByRole('region', { name: 'Derived world notices' });
     await notices.focus();
     await expect(notices).toBeFocused();
-    expect(await notices.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe('none');
+    await expectVisibleFocusRing(notices, 'world notices region');
     expect(await page.locator('.progress-bar-fill').first().evaluate((element) => parseFloat(getComputedStyle(element).animationDuration))).toBeLessThan(0.001);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     await expectNoViolations(page);
