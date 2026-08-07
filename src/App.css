@@ -487,7 +487,7 @@
   .navbar { align-items: flex-start; }
   .nav-actions { justify-content: flex-start; }
   .hero-banner { grid-template-columns: 1fr; gap: 1rem; }
-  .hero-prime-stats,
+  .hero-prime-stats { gap: 0.5rem; }
 }
 
 @media (max-width: 640px) {
