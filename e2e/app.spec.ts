@@ -1112,6 +1112,33 @@ test.describe('Progress Quest III terminal dashboard', () => {
     expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(760);
   });
 
+  test('marks every equipment slot with its own glyph and keeps the name spoken', async ({ page }) => {
+    // Regression for #343. The two-column grid below is what keeps the dashboard on one screen and
+    // it used to be paid for out of the slot label, which clipped all eleven times at 1806px —
+    // "Helm" included. The label is a glyph now, so the two assertions worth pinning are that the
+    // glyphs actually distinguish the slots, and that dropping the visible text did not drop the
+    // slot name from the accessible tree.
+    //
+    // Distinctness is the one that bites: before this, ten of the eleven slots rendered the same
+    // shield, so the marker identified nothing. A clipping assertion here would be decorative — an
+    // svg in a flex row shrinks rather than overflowing, so it cannot fail.
+    await page.goto('/');
+    await loadDenseDashboard(page);
+
+    const markers = await page.locator('.equip-slot-icon').evaluateAll((nodes) =>
+      nodes.map((node) => ({
+        spokenName: node.textContent?.trim(),
+        glyph: node.querySelector('svg')?.getAttribute('class'),
+      })));
+
+    expect(markers).toHaveLength(11);
+    expect(markers.map((marker) => marker.spokenName)).toEqual(
+      ['Weapon', 'Shield', 'Helm', 'Hauberk', 'Brassairts', 'Vambraces',
+        'Gauntlets', 'Gambeson', 'Cuisses', 'Greaves', 'Sollerets'],
+    );
+    expect(new Set(markers.map((marker) => marker.glyph)).size, 'slots share a glyph').toBe(11);
+  });
+
   test('keeps the compact equipment grid on wide, short screens', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 700 });
     await page.goto('/');

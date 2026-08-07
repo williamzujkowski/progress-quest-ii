@@ -1,7 +1,36 @@
-import { Shield, Sparkles, Sword } from 'lucide-react';
+import {
+  Bandage, Footprints, Grab, Hand, HardHat, PersonStanding, Ruler, Shield, Shirt, Sparkles, Sword, Watch,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import React from 'react';
 import { EQUIP_SLOTS } from '../data/traits';
 import type { EquipSlot } from '../engine/types';
+
+/**
+ * A glyph per slot, because the words did not fit.
+ *
+ * This column is ~145px at the desktop breakpoint, and the slot name was taking 34-43px of it —
+ * enough that every one of the eleven labels clipped, "Helm" included, while the item name got the
+ * remainder and clipped too. The names are the joke, so the label is what gives way.
+ *
+ * The glyphs are distinguishable rather than illustrative, and only some are literal: a hard hat
+ * for the helm and a wristwatch for the vambraces suit the register better than heraldry would,
+ * and no icon set has a brassairt. They identify a row; the slot name still reaches assistive
+ * technology through the adjacent sr-only text, and sighted readers get it from the title.
+ */
+const SLOT_ICONS: Record<EquipSlot, LucideIcon> = {
+  Weapon: Sword,
+  Shield,
+  Helm: HardHat,
+  Hauberk: Shirt,
+  Brassairts: Grab,
+  Vambraces: Watch,
+  Gauntlets: Hand,
+  Gambeson: Bandage,
+  Cuisses: PersonStanding,
+  Greaves: Ruler,
+  Sollerets: Footprints,
+};
 import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../state/gameStore';
 import { GameNumber } from './GameNumber';
@@ -43,9 +72,9 @@ export const CharacterSheetView: React.FC = () => {
           const equipName = character.Equip[slot] || '—';
           return (
             <div className="equip-item" key={slot}>
-              <span className="equip-slot" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                {slot === 'Weapon' ? <Sword size={12} /> : <Shield size={12} />}
-                {slot}
+              <span className="equip-slot-icon" title={slot}>
+                {React.createElement(SLOT_ICONS[slot], { size: 13, 'aria-hidden': true })}
+                <span className="sr-only">{slot}</span>
               </span>
               <ItemTooltip kind="equipment" name={equipName} slot={slot} />
             </div>

@@ -402,6 +402,18 @@
   letter-spacing: -0.025em;
 }
 
+/* Fixed and narrow on purpose: the glyph is the slot marker, so this reserves one glyph's width
+   and hands the rest of a ~145px cell to the item name. Sized in rem rather than by content so
+   every row's name starts on the same x — eleven ragged left edges read as a rendering fault. */
+.equip-slot-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.05rem;
+  color: var(--text-muted);
+}
+
 .equip-item,
 .progress-label { gap: 0.75rem; }
 .equip-item > :last-child,
