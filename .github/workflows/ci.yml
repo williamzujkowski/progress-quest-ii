@@ -31,13 +31,52 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Install Playwright browsers
-        # Both engines the suite runs against. WebKit earns its download: running it found
-        # unstyled controls inheriting the platform button face at 1.81:1, and tooltips that
-        # accumulated because it does not focus a button on tap - neither visible to Chromium.
-        run: npx playwright install --with-deps chromium webkit
+        # Chromium only in this job. WebKit is downloaded by the browser-parity job below, which
+        # is the whole point of the split: this gate no longer waits for a 100MB browser it does
+        # not run.
+        run: npx playwright install --with-deps chromium
 
       - name: Quality gate
         run: npm run quality
+
+  # WebKit, on its own runner and off the critical path.
+  #
+  # It is not optional and it is not slower by accident. Measured against the same suite, chromium
+  # sums 320s of test time against webkit's 1213s - roughly 4x, with a per-test median of 3.4x and
+  # no hot spot anywhere. That profile is uniform driver and engine cost, so there is nothing to
+  # optimise: no single test, fixture or helper whose repair moves the number. Both leads this
+  # issue proposed were measured and refuted - serving a production build cannot work while the
+  # suite makes 30 runtime `import('/src/...')` calls, and the axe scans cost the same 4.2x as the
+  # tests that run no scan at all.
+  #
+  # So the cost is real, permanent, and worth paying. WebKit is what caught unstyled controls
+  # inheriting the platform button face at 1.81:1, and tooltips accumulating because it does not
+  # focus a button on tap. Neither was visible to Chromium.
+  #
+  # Splitting it changes no coverage. It only stops every other check waiting behind it.
+  browser-parity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: 'npm'
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Install WebKit
+        run: npx playwright install --with-deps webkit
+
+      - name: WebKit browser suite
+        run: npm run test:e2e:webkit
 
   # Blocks a pull request that introduces a dependency with a known advisory, before it is
   # merged and before `npm audit` would catch it on main. Pull-request event only: it compares
