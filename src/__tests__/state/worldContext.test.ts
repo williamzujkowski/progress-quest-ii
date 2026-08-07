@@ -197,7 +197,7 @@ describe('world context projection', () => {
       source: source(
         45,
         { type: 'quest_completed', description: 'Opaque completed quest' },
-        snapshot({ spellRewards: [{ name: 'Rabbit Punch', level: 2, source: 'quest' }] }),
+        snapshot({ spellRewards: [{ name: 'Quick Win', level: 2, source: 'quest' }] }),
       ),
     });
 

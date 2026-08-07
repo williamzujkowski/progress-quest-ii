@@ -158,13 +158,25 @@ describe('item tooltip details', () => {
   });
 
   it('keeps spell flavor stable across levels without inventing a combat effect', () => {
-    const details = describeSpell('Rabbit Punch', 2);
+    const details = describeSpell('Quick Win', 2);
 
     expect(details.description).toContain('customary envelope');
-    expect(describeSpell('Rabbit Punch', 7).description).toBe(details.description);
+    expect(describeSpell('Quick Win', 7).description).toBe(details.description);
     expect(details.effect).toBe(
       'Spell rank: 2. Combat contribution: none; classic encounter time ignores spells.',
     );
+  });
+
+  it('gives every spell its own flavour rather than the unknown-spell fallback', () => {
+    // SPELL_FLAVOR is keyed by name, so renaming the table orphans all of it at once and every
+    // tooltip quietly degrades to "arrived without syllabus" — visible only to someone who opened
+    // one. This is the third name-keyed site in itemDetails, after the two drop-word lists, and
+    // the only one whose failure produces no error anywhere.
+    for (const spell of SPELLS) {
+      const { description } = describeSpell(spell, 3);
+      expect(description, `${spell} fell through to the unknown-spell fallback`)
+        .not.toContain('arrived without syllabus');
+    }
   });
 
   it('gives every canonical spell a distinct bounded description', () => {
