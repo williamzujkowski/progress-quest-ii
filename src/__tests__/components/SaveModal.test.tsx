@@ -293,7 +293,12 @@ describe('Save Manager recovery', () => {
     render(<SaveModal isOpen onClose={() => undefined} />);
     fireEvent.click(screen.getByRole('button', { name: 'Delete Undeletable Bureaucrat' }));
 
-    expect((await screen.findByRole('alert')).textContent).toBeTruthy();
+    // The wording, not merely its presence. findByRole already throws when the node is absent, so
+    // toBeTruthy() on its text passed for any non-empty string — including a message telling the
+    // user the deletion had succeeded, which is the one outcome this test's name forbids.
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/could not|failed|unavailable|full/i);
+    expect(alert.textContent).not.toMatch(/removed|deleted/i);
     expect(screen.queryByRole('status')).toBeNull();
     expect(localStorage.getItem('progquest_roster_v1')).toBe(originalRoster);
     expect(diagnostics.snapshot().at(-1)?.code).toBe('roster_delete_failed');

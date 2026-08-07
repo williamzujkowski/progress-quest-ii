@@ -73,21 +73,30 @@ describe('the digest against a real drain', () => {
   });
 
   it('reports totals that match the drained batch', () => {
-    // Counted independently from the same engine, so the assertion is not the implementation
-    // restated: a digest that agreed with itself would prove nothing.
+    // Counted from the raw events rather than through accumulateDigest, which is what makes this a
+    // parity check at all. The previous version built `expected` with accumulateDigest and then
+    // asserted describeDigest echoed the number accumulateDigest had produced — the digest agreeing
+    // with itself, which is exactly what the comment here claimed it was avoiding. Changing
+    // `levels + 1` to `levels + 2` survived it.
     const rng = new RandomGenerator('digest-parity');
     let state = {
       character: createNewCharacter('Parity', 'Half Daemon', 'Incident Paladin', rng),
       progression: { experience: { currentSeconds: 0, maxSeconds: levelUpTime(1) }, completedTasks: 0, elapsedSeconds: 0 },
     };
     let expected = EMPTY_DIGEST;
+    let observedLevelEvents = 0;
     for (let step = 0; step < 45 * 60 * 20; step += 1) {
       const result = advanceGame(state, 50, rng);
       state = result.state;
-      expected = accumulateDigest(expected, result.records.map(({ event }) => event));
+      const events = result.records.map(({ event }) => event);
+      observedLevelEvents += events.filter((event) => event.type === 'level_gained').length;
+      expected = accumulateDigest(expected, events);
     }
     expect(expected.levels).toBeGreaterThan(0);
-    expect(describeDigest(expected)).toContain(`${expected.levels} level`);
+    // The independent count: one per level_gained event the engine emitted, tallied here rather
+    // than by the function under test.
+    expect(expected.levels).toBe(observedLevelEvents);
+    expect(describeDigest(expected)).toContain(`${observedLevelEvents} level`);
   });
 });
 
