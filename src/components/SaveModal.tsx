@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { CharacterSheet } from '../engine/types';
 import { diagnostics, isDOMExceptionNamed } from '../state/diagnostics';
 import { useGameStore } from '../state/gameStore';
-import { decodePQWSave, encodePQWSave, loadRoster, removeFromRoster, saveToRoster } from '../state/saveManager';
+import { decodePQWSave, encodePQWSave, importToRoster, loadRoster, removeFromRoster, saveToRoster } from '../state/saveManager';
 import { GameNumber } from './GameNumber';
 import { useModalDialog } from './useModalDialog';
 
@@ -111,7 +111,21 @@ export const SaveModal: React.FC<SaveModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
-    const saved = saveToRoster(result.value);
+    // Imports insert; they do not replace. A collision means two different characters sharing a
+    // name, and the one already here represents elapsed time that cannot be re-earned. Deleting a
+    // character has always asked first — this asks for the same reason, and did not before.
+    let saved = importToRoster(result.value);
+    if (!saved.ok && saved.error.code === 'roster_name_taken') {
+      const replace = confirm(
+        `This browser already holds a character called ${result.value.Traits.Name}. `
+        + 'Loading this save will replace it permanently. Replace it?',
+      );
+      if (!replace) {
+        setFeedback({ kind: 'status', message: 'Nothing was changed.' });
+        return;
+      }
+      saved = saveToRoster(result.value);
+    }
     if (!saved.ok) {
       recordRosterFailure('roster_write_failed', 'write');
       setFeedback({ kind: 'alert', message: saved.error.message });
