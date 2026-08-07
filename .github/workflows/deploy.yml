@@ -27,6 +27,13 @@ jobs:
 
       - name: Verify legacy baseline
         run: |
+          # The URL first, and before anything reads the submodule. A pull request supplies its own
+          # .gitmodules, and scripts/legacy-oracle.mjs runs pq-web-src/config.js and main.js through
+          # vm.runInContext during npm test - so an unpinned URL is arbitrary code arriving from a
+          # repository that is not this one, and that CodeQL does not scan. The status check below
+          # cannot catch it: a fork changes the URL and the gitlink together and it still reports
+          # clean.
+          test "$(git config -f .gitmodules submodule.pq-web-src.url)" = "https://bitbucket.org/grumdrig/pq-web.git"
           test -f pq-web-src/main.js
           test "$(git submodule status --recursive | cut -c1)" = " "
 
@@ -38,7 +45,10 @@ jobs:
           package-manager-cache: false
 
       - name: Install dependencies
-        run: npm ci
+        # --ignore-scripts because a pull request supplies its own package.json, and a lifecycle
+        # hook would run before the suite a reviewer is actually reading. Nothing here needs one:
+        # the Playwright browsers are installed by the explicit step below.
+        run: npm ci --ignore-scripts
 
       - name: Install Playwright browsers
         # Both engines the suite runs against. WebKit earns its download: running it found
