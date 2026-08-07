@@ -9,7 +9,6 @@
     "lint": "oxlint --deny-warnings",
     "lint:workflows": "node scripts/run-actionlint.mjs",
     "lint:legacy": "oxlint --no-ignore -c .oxlintrc.legacy.json pq-web-src",
-    "preview": "vite preview",
     "test": "vitest run --coverage && node --test scripts/test-legacy-oracle.mjs scripts/test-actionlint.mjs scripts/test-production-notices.mjs scripts/test-editorial-contract.mjs scripts/test-theme-boot.mjs scripts/test-app-icons.mjs scripts/test-content-boundary.mjs scripts/verify-theme-dependency-boundary.mjs scripts/test-service-worker-message.mjs",
     "test:fidelity": "vitest run src/__tests__/fidelity && node --test scripts/test-legacy-oracle.mjs",
     "test:e2e": "playwright test",
