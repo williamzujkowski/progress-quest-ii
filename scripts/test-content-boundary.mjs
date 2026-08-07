@@ -47,17 +47,23 @@ async function* walk(directory) {
 
 test('no shipped or build file carries an excluded project origin', async () => {
   const offending = [];
+  let scanned = 0;
 
   for (const directory of SCANNED_DIRECTORIES) {
     for await (const path of walk(directory)) {
       // This file names the excluded projects in order to look for them.
       if (path.endsWith('test-content-boundary.mjs')) continue;
+      scanned += 1;
       const contents = (await readFile(path, 'utf8')).toLowerCase();
       for (const source of EXCLUDED_SOURCES) {
         if (contents.includes(source.toLowerCase())) offending.push(`${path}: ${source}`);
       }
     }
   }
+
+  // A renamed directory or a stale TEXT_FILE pattern scans nothing, and "found no offending
+  // material" then means "looked at no material". The gate has to prove it looked.
+  assert.ok(scanned > 0, 'Scanned no files; SCANNED_DIRECTORIES or TEXT_FILE has gone stale.');
 
   assert.deepEqual(
     offending,
