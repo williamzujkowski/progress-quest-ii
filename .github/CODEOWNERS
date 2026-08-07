@@ -1,0 +1,27 @@
+# Review routing is not the point here — there is one maintainer, and GitHub will
+# not ask him to review his own pull request. What this file does is mark the
+# paths where a change means more than it looks like, so that an assisted or
+# drive-by contribution to one of them is visible as such in the Files tab.
+#
+# Everything else is deliberately unowned. A list that covers the whole tree
+# marks nothing.
+
+# The legacy oracle and the parity suite encode a contract with a build this
+# project does not control. Changing them is a decision about fidelity, not a
+# refactor, and docs/content-provenance.md records that the rights position over
+# the derived material is unresolved.
+/pq-web-src                       @williamzujkowski
+/scripts/legacy-oracle.mjs        @williamzujkowski
+/scripts/test-legacy-oracle.mjs   @williamzujkowski
+/src/__tests__/fidelity/          @williamzujkowski
+/src/data/traits.ts               @williamzujkowski
+
+# CI decides what runs against untrusted pull-request content. The submodule URL
+# pin and --ignore-scripts both live here, and both are one line from absent.
+/.github/workflows/               @williamzujkowski
+
+# The boundary documents themselves. If these drift, every other guard in this
+# list is being measured against the wrong statement.
+/LICENSE                          @williamzujkowski
+/docs/content-provenance.md       @williamzujkowski
+/public/THIRD_PARTY_NOTICES.txt   @williamzujkowski
