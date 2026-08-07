@@ -228,7 +228,7 @@ describe('item tooltip details', () => {
   it('keeps all three drop shapes reachable from the monster table', () => {
     // itemDetails classifies a drop as wardrobe, anatomy or residue by matching hardcoded word
     // lists — the one place in that file that names vocabulary instead of resolving it by index,
-    // and so the one place a table rewrite can silently defeat. #401 replaced every adversary and
+    // and so the one place a table rewrite can silently defeat. A table rewrite replaced every adversary and
     // every drop; without this, all 232 would have fallen through to the generic ending and the
     // only symptom would have been blander tooltips nobody diffed.
     const shapes = { wardrobe: 0, anatomy: 0, residue: 0, document: 0, salvage: 0 };

@@ -452,7 +452,7 @@ describe('active session checkpoint boundary', () => {
 describe('the serialized payload cap', () => {
   // MAX_CHECKPOINT_SERIALIZED_LENGTH guards both directions and neither was exercised. The two
   // sibling ledgers each cover their cap; this is the module that decides whether a session can
-  // restore at all, so it was the wrong one to leave unexercised (#334).
+  // restore at all, so it was the wrong one to leave unexercised.
 
   const oversizedSession = () => {
     useGameStore.getState().startSession({ source: 'creation', name: 'Overstuffed', race: 'Half Daemon', klass: 'Robot Monk', seed: 11 });

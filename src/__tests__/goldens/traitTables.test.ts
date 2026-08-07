@@ -276,7 +276,7 @@ describe('trait table structure', () => {
  * What race and class are worth, held still while their names are free to change.
  *
  * These two tables are the ones nothing pins by content — deliberately, so the vocabulary can be
- * rewritten (#382, #384). But the entries are not only names: each grants stat bonuses at character
+ * rewritten. But the entries are not only names: each grants stat bonuses at character
  * creation, which this build applies and the original never did. So a rewrite that reaches for a
  * funnier word and takes a different `stats` array with it would rebalance the game, and the only
  * symptom would be characters quietly rolling differently.
@@ -323,7 +323,7 @@ describe('what race and class are worth', () => {
 
 describe('the compute-industrial trait catalogue', () => {
   // Written in the manner of the social catalogue's own guard. These tables moved from 2002 high
-  // fantasy to job titles that should not exist (#384), and the hazard the register brings with it
+  // fantasy to job titles that should not exist, and the hazard the register brings with it
   // is naming something real: a vendor, a product, a model, or a person. An invented Vermineer is
   // the joke; a real trademark in a shipped table is somebody else's property doing the work.
   const serialized = JSON.stringify([...RACES, ...KLASSES]).toLowerCase();

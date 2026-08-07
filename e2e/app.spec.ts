@@ -1159,7 +1159,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
   });
 
   test('marks every equipment slot with its own glyph and keeps the name spoken', async ({ page }) => {
-    // Regression for #343. The two-column grid below is what keeps the dashboard on one screen and
+    // The two-column grid below is what keeps the dashboard on one screen and
     // it used to be paid for out of the slot label, which clipped all eleven times at 1806px —
     // "Helm" included. The label is a glyph now, so the two assertions worth pinning are that the
     // glyphs actually distinguish the slots, and that dropping the visible text did not drop the
@@ -1311,7 +1311,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
   }
 
   test('keeps the console tabs usable when the centre column runs short', async ({ page }) => {
-    // #207: the chatter panel was flex: 1 with min-height: 0, which resolves to nothing when
+    // The chatter panel was flex: 1 with min-height: 0, which resolves to nothing when
     // the parent distributes no height. It measured 20px tall here — present in the
     // accessibility tree, unreachable in practice — so a region silently disappeared rather
     // than shrinking. The room existed; nothing was claiming it.

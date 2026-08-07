@@ -4,7 +4,7 @@
  * GitHub Pages cannot set response headers, so the `<meta http-equiv>` tag in index.html is not a
  * defence-in-depth extra — it is the application's entire XSS boundary. Everything else in
  * verify-production-build.mjs is checked at build time; this was not, which meant the one control
- * that cannot be restored by configuration was also the one nothing was watching (#311).
+ * that cannot be restored by configuration was also the one nothing was watching.
  *
  * The failure this exists to catch is mundane rather than adversarial: someone adds a conventional
  * inline no-flash `<script>` block — a completely natural thing to reach for, and precisely why

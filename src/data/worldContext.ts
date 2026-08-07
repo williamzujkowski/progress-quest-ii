@@ -33,7 +33,7 @@ const RAID_NAMES = [
   'Palace of Escalated Concern',
 ] as const;
 
-// Display-only escalation: the unanimous #152 UI vote reserves raid framing for double-digit Acts.
+// Display-only escalation: the unanimous UI vote reserves raid framing for double-digit Acts.
 export const RAID_ACT_THRESHOLD = 10;
 
 /**
