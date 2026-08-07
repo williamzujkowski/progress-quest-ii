@@ -39,4 +39,28 @@ describe('RuntimeErrorBoundary', () => {
       consoleError.mockRestore();
     }
   });
+
+  it('names the current project on the recovery screen', () => {
+    // This screen shipped "PROGRESS QUEST II RUNTIME RECOVERY" and "PQII_INTERFACE_EXCEPTION"
+    // through two renames. It survived because nothing asserted either string, and it is the one
+    // surface a player only ever sees when something has already gone wrong.
+    //
+    // ADR 0005 requires visible identity to change atomically or not at all; this is the assertion
+    // that makes that checkable rather than aspirational.
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const Exploding = () => { throw new Error('render exploded'); };
+
+    try {
+      render(
+        <RuntimeErrorBoundary>
+          <Exploding />
+        </RuntimeErrorBoundary>,
+      );
+
+      expect(screen.getByText('PROGRESS QUEST III RUNTIME RECOVERY')).toBeTruthy();
+      expect(screen.getByText('*** STOP: PQIII_INTERFACE_EXCEPTION ***')).toBeTruthy();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
 });

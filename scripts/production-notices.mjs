@@ -16,7 +16,18 @@ const REQUIRED_NOTICES = [
 // `fontPackages` is derived from package.json rather than listed here on purpose. A generic
 // "SIL OPEN FONT LICENSE" string was already satisfied by the existing entries, so adding a
 // third font family shipped it with no attribution and the gate stayed green.
+// Asserted positively, against the whole first line, rather than by looking for the old name.
+// "PROGRESS QUEST III" contains "PROGRESS QUEST II", so an absence check reads as a failure on the
+// correct string and passes on nothing useful. This file ships to users — the service worker
+// precaches it — so its masthead is a product surface, and it carried the previous name for two
+// renames because nothing here was watching it.
+const NOTICES_HEADER = 'PROGRESS QUEST III — THIRD-PARTY NOTICES';
+
 export function verifyProductionNotices(notices, worker, fontPackages = []) {
+  const [header] = notices.split('\n');
+  if (header?.trim() !== NOTICES_HEADER) {
+    throw new Error(`Production third-party notices are headed "${header?.trim()}" rather than "${NOTICES_HEADER}".`);
+  }
   for (const requiredNotice of REQUIRED_NOTICES) {
     if (!notices.includes(requiredNotice)) throw new Error(`Production third-party notices omit ${requiredNotice}.`);
   }
