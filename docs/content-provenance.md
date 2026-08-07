@@ -1,6 +1,6 @@
 # Content provenance and license boundaries
 
-Last audited: 2026-08-07. This is a conservative engineering inventory, not legal advice.
+Last audited: 2026-08-08. This is a conservative engineering inventory, not legal advice.
 
 ## Practical boundary
 
@@ -16,7 +16,8 @@ Do not import code, prose, data, screenshots, art, or assets from unofficial Pro
 | Alea deterministic PRNG | `src/engine/prng.ts` | TypeScript adaptation of Johannes Baagøe's Alea/Mash algorithm | MIT, copyright 2010 Johannes Baagøe; notice retained in source and the deployed notices file. |
 | Project documentation and tests | `README.md`, `AGENTS.md`, `.agents/`, `docs/`, `e2e/`, `e2e-pwa/`, `src/__tests__/` | Project commit history and cited research sources | Project-owned original expression is MIT; quotations and linked third-party material retain source rights. |
 | Simulated social cast and authored chatter | `src/data/socialCatalog.ts`, `src/state/socialProjection.ts` | Project-owned original names, persona profiles, and deterministic dialogue authored for this repository; external games and comedy research supplied only abstract techniques. Half the cast is deliberately named like software rather than like people; every such handle is invented, and real researchers, labs, and model names are rejected by the catalogue test alongside the researched-source list | Root MIT applies to contributor-owned original expression. Catalog tests reject researched source names, links, markup, bidirectional controls, unbounded copy, and unsupported mechanical claims. |
-| Classic game data, vocabulary, flavor text, and fidelity implementation | Primarily `src/data/traits.ts`, plus fidelity-sensitive strings and algorithms in `src/engine/` and tests | Ported or independently reimplemented against Eric Fredricksen's JavaScript web port, which this repository no longer keeps a copy of; the tables and their ordering are preserved deliberately | Progress Quest-derived expression and implementation. Removing the reference copy did not change this: the derivation stands regardless of whether the source it was derived from is checked out here. Do not assume the root MIT notice alone grants reuse rights. See “Progress Quest evidence” below. **`RACES` and `KLASSES` are no longer among them**: both tables were rewritten as original work in #384, positionally, so every entry's stat vector is unchanged while none of the names are inherited. That reduces the derived surface in this file rather than relabelling it. |
+| Classic game data, vocabulary, and flavour text | Primarily `src/data/traits.ts` | Every vocabulary table has been rewritten as original work — races and classes, the equipment and loot morphemes, the adversaries and their drops, and the spell book. Each rewrite was positional: an entry kept the index and numeric fields of the one it replaced, so the tables' *ordering and numbers* remain derived from Eric Fredricksen's JavaScript web port even though the words are not. The dead `MON_MODS` table was deleted rather than rewritten. | 45 strings still match the legacy tables, and they are functional rather than authored: the eight stat names, the eleven equipment slots (`Hauberk`, `Vambraces`, `Sollerets` — also save-format keys, so they cannot change without breaking every existing character), nine honorifics, and about a dozen names kept deliberately because they already fitted the register. No authored joke of Fredricksen's remains in the data. |
+| Engine implementation | `src/engine/` | Reimplemented against `main.js` and `newguy.js`, the two legacy files that carry `Copyright (c)2002-2010 Eric Fredricksen … all rights reserved`. Measured against them at the pinned revision: **1 of 68** function names identical (`toRoman`), 7 matching case-insensitively, and **0 of 52** legacy comments appearing verbatim. Data representation differs structurally — the legacy engine stores a monster as the string `"Grid Bug|1|carapace"` and splits it at each use, we store `{ name, level, item }`; it threads a global mutable `game` object, we pass snapshots and an explicit RNG through pure functions. | The distinction the older wording blurred: **mechanics are reproduced deliberately, expression is independent.** The behaviour must match — the recorded goldens pin an exact RNG call order, so this implementation performs the same operations in the same sequence, and that is the project's purpose rather than an accident. Copyright protects expression rather than mechanics, so those two halves carry very different weight and only one of them describes copied material. This is an engineering measurement, not a legal conclusion. |
 | Recorded behavioural goldens | `src/__tests__/fixtures/goldens/` | Captured output of Eric Fredricksen's JavaScript web port, recorded while it was checked out here, one completed task per file | Progress Quest-derived observed behaviour, not copied source. Kept as the regression baseline for `src/engine/`. Same reuse caution as the row above; they cannot be re-recorded here. |
 | Legacy web reference (retired) | Formerly the `pq-web-src/` git submodule, pinned at commit `3e9431b38cb54647530197501a29b8cce6c9f4f4` from `https://bitbucket.org/grumdrig/pq-web.git` | Eric Fredricksen's JavaScript web port; `main.js` and `newguy.js` contain all-rights-reserved headers | No longer present. The project is a spiritual successor rather than a port, and neither the test suite nor CI fetches or executes that code any more. Recorded here because the two rows above descend from it and repository-level permission for the web port was never explicit. Do not re-add it or copy its assets into the modern UI. |
 | Original Progress Quest license evidence | Official `https://progressquest.com/dl.php` links `https://progressquest.com/license.txt` and says the agreement applies before downloading any version | MIT-style grant, copyright 2002–2004 Eric Fredricksen | Strong evidence of permissive terms for Progress Quest, but the project has not established whether it supersedes the later web-port headers. Owner confirmation or qualified legal review remains required before representing the ambiguity as resolved. |
@@ -31,6 +32,23 @@ Do not import code, prose, data, screenshots, art, or assets from unofficial Pro
 The retired submodule also contained separately attributed jQuery, JSON2, and V8
 shell code plus binary art. None of it was ever copied into this repository or
 the Pages bundle, and with the submodule removed none of it is fetched at all.
+
+### How the engine measurement was taken
+
+Reproducible, so the claim above is checkable rather than asserted. The legacy files are public at
+the revision this project recorded from:
+
+- <https://bitbucket.org/grumdrig/pq-web/src/3e9431b38cb54647530197501a29b8cce6c9f4f4/main.js>
+- <https://bitbucket.org/grumdrig/pq-web/src/3e9431b38cb54647530197501a29b8cce6c9f4f4/newguy.js>
+- <https://bitbucket.org/grumdrig/pq-web/src/3e9431b38cb54647530197501a29b8cce6c9f4f4/config.js>
+
+Compare declared function names, and search this repository for each legacy comment body. One name
+matches; no comment does.
+
+Worth recording alongside it, because it bears on the unresolved question below rather than on this
+one: `main.js` and `newguy.js` carry all-rights-reserved headers, and **`config.js` carries no
+copyright header at all**. Every data table came from `config.js`. The two engine files are the ones
+with restrictive notices, and they are the ones this project reimplemented rather than copied.
 
 ## Direct dependency inventory
 
