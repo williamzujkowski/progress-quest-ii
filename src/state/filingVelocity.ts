@@ -10,6 +10,8 @@
  * exists, holds no authority, and its absence changes nothing about the simulation.
  */
 
+import { retainWithin } from './rollingWindow';
+
 export interface VelocitySample {
   readonly atMs: number;
   readonly completedTasks: number;
@@ -23,14 +25,8 @@ const MINIMUM_SPAN_MS = 20_000;
 
 const HOUR_MS = 60 * 60_000;
 
-export function retainWindow(samples: readonly VelocitySample[], nowMs: number): VelocitySample[] {
-  const cutoff = nowMs - VELOCITY_WINDOW_MS;
-  const kept = samples.filter((sample) => sample.atMs >= cutoff);
-  // Always keep one sample behind the cutoff, or the window would briefly have no span at all
-  // every time the oldest sample expires.
-  const oldest = samples.filter((sample) => sample.atMs < cutoff).at(-1);
-  return oldest && kept.length > 0 ? [oldest, ...kept] : kept;
-}
+export const retainWindow = (samples: readonly VelocitySample[], nowMs: number): VelocitySample[] =>
+  retainWithin(samples, nowMs, VELOCITY_WINDOW_MS);
 
 /**
  * Tasks per hour across the retained window, or null when there is not enough of one to say.
