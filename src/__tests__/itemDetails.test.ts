@@ -22,12 +22,12 @@ const withoutIdentityToken = (description: string, ...tokens: string[]): string 
 
 describe('item tooltip details', () => {
   it('reports generated equipment quality without inventing combat damage', () => {
-    const details = describeEquipment('Weaponized Short Sprint', 'Weapon');
+    const details = describeEquipment('Punitive Short Sprint', 'Weapon');
 
-    expect(details.description).toContain('Weaponized');
+    expect(details.description).toContain('Punitive');
     expect(details.description).toContain('Short Sprint');
     expect(details.effect).toBe(
-      'Generation quality: 9 (Short Sprint 5 + Weaponized +4). Combat contribution: none; classic encounter time ignores equipment.',
+      'Generation quality: 9 (Short Sprint 5 + Punitive +4). Combat contribution: none; classic encounter time ignores equipment.',
     );
   });
 
@@ -40,16 +40,16 @@ describe('item tooltip details', () => {
   });
 
   it('includes every canonical modifier in an accepted equipment name', () => {
-    const details = describeEquipment('Weaponized Mandatory Sticky Note', 'Weapon');
+    const details = describeEquipment('Punitive Binding Sticky Note', 'Weapon');
 
-    expect(details.description).toContain('Weaponized');
-    expect(details.description).toContain('Mandatory');
+    expect(details.description).toContain('Punitive');
+    expect(details.description).toContain('Binding');
     expect(details.effect).toContain('Generation quality: 7');
   });
 
   it('preserves canonical modifier order in an equipment micro-story', () => {
-    const originalOrder = describeEquipment('Weaponized Mandatory Sticky Note', 'Weapon');
-    const alternateOrder = describeEquipment('Mandatory Weaponized Sticky Note', 'Weapon');
+    const originalOrder = describeEquipment('Punitive Binding Sticky Note', 'Weapon');
+    const alternateOrder = describeEquipment('Binding Punitive Sticky Note', 'Weapon');
 
     expect(originalOrder.description).toBe(alternateOrder.description);
     expect(originalOrder.effect).toBe(alternateOrder.effect);
@@ -64,7 +64,7 @@ describe('item tooltip details', () => {
 
   it.each([
     ['accepted long equipment', 'X'.repeat(200), 'Helm' as const],
-    ['stacked canonical equipment', '+100 Under-Resourced Air Gap', 'Hauberk' as const],
+    ['stacked canonical equipment', '+100 Derated Air Gap', 'Hauberk' as const],
   ])('bounds %s flavor', (_case, name, slot) => {
     expect(describeEquipment(name, slot).description.length).toBeLessThanOrEqual(220);
   });
@@ -101,26 +101,26 @@ describe('item tooltip details', () => {
   });
 
   it('gives neighboring equipment bases meaning beyond the interpolated noun', () => {
-    const stick = withoutIdentityToken(describeEquipment('Peer-Reviewed Sticky Note', 'Weapon').description, 'Sticky Note');
-    const shiv = withoutIdentityToken(describeEquipment('Peer-Reviewed Shim', 'Weapon').description, 'Shim');
+    const stick = withoutIdentityToken(describeEquipment('Vetted Sticky Note', 'Weapon').description, 'Sticky Note');
+    const shiv = withoutIdentityToken(describeEquipment('Vetted Shim', 'Weapon').description, 'Shim');
 
     expect(stick).not.toBe(shiv);
   });
 
   it('gives neighboring equipment modifiers meaning beyond the interpolated adjective', () => {
-    const venomed = withoutIdentityToken(describeEquipment('Weaponized Short Sprint', 'Weapon').description, 'Weaponized');
-    const vicious = withoutIdentityToken(describeEquipment('Mandatory Short Sprint', 'Weapon').description, 'Mandatory');
+    const venomed = withoutIdentityToken(describeEquipment('Punitive Short Sprint', 'Weapon').description, 'Punitive');
+    const vicious = withoutIdentityToken(describeEquipment('Binding Short Sprint', 'Weapon').description, 'Binding');
 
     expect(venomed).not.toBe(vicious);
   });
 
   it('gives every canonical equipment base a distinct idea in the same context', () => {
     const weaponStories = WEAPONS.map(([base]) =>
-      withoutIdentityToken(describeEquipment(`Peer-Reviewed ${base}`, 'Weapon').description, base));
+      withoutIdentityToken(describeEquipment(`Vetted ${base}`, 'Weapon').description, base));
     const shieldStories = SHIELDS.map(([base]) =>
-      withoutIdentityToken(describeEquipment(`Provisionally Certified ${base}`, 'Shield').description, base));
+      withoutIdentityToken(describeEquipment(`Bonded ${base}`, 'Shield').description, base));
     const armorStories = ARMORS.map(([base]) =>
-      withoutIdentityToken(describeEquipment(`Provisionally Certified ${base}`, 'Hauberk').description, base));
+      withoutIdentityToken(describeEquipment(`Bonded ${base}`, 'Hauberk').description, base));
 
     expect(new Set(weaponStories).size).toBe(WEAPONS.length);
     expect(new Set(shieldStories).size).toBe(SHIELDS.length);
@@ -140,7 +140,7 @@ describe('item tooltip details', () => {
   it('keeps equipment stories to two sentences and bounds stacked imported modifiers', () => {
     const modifiers = [...OFFENSE_ATTRIB, ...OFFENSE_BAD].map(([modifier]) => modifier).join(' ');
     const stacked = describeEquipment(`+100 ${modifiers} Sticky Note`, 'Weapon').description;
-    const ordinary = describeEquipment('Peer-Reviewed Sticky Note', 'Weapon').description;
+    const ordinary = describeEquipment('Vetted Sticky Note', 'Weapon').description;
     const sentenceCount = (description: string): number => description.match(/[.!?](?:\s|$)/g)?.length ?? 0;
 
     expect([...stacked].length).toBeLessThanOrEqual(220);
@@ -148,7 +148,7 @@ describe('item tooltip details', () => {
   });
 
   it('bounds a retained safe mark combined with stacked modifiers and an unknown base', () => {
-    const prefix = '-9007199254700000 Peer-Reviewed Multi-Phase Signed-Off Sunset Weaponized Autonomous Mandatory Undocumented Flagged Unfunded Trial Redlined Punitive I8 ';
+    const prefix = '-9007199254700000 Vetted Phased Signed Sunset Punitive Scripted Binding Unlogged Flagged Unfunded Trial Redlined Enforced I8 ';
     const name = `${prefix}${'Q'.repeat(200 - prefix.length)}`;
     const details = describeEquipment(name, 'Weapon');
 

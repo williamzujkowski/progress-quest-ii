@@ -36,7 +36,7 @@ describe('legacy quest reward dispatcher', () => {
       kind: 'equipment',
       state: [0.6359334820881486, 0.37374331383034587, 0.28759220940992236, 1],
       reset: 85,
-      expected: { equipment: ['Vambraces', 'Hotfixed Disputed Framework'], effect: { type: 'equipment', slot: 'Vambraces', name: 'Hotfixed Disputed Framework' } },
+      expected: { equipment: ['Vambraces', 'Hotfixed Contested Framework'], effect: { type: 'equipment', slot: 'Vambraces', name: 'Hotfixed Contested Framework' } },
       rng: [0.062331163324415684, 0.7646989999338984, 0.471838767407462, 276700],
     },
     {

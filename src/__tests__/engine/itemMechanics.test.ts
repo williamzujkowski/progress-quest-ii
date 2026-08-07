@@ -5,15 +5,15 @@ describe('item mechanics', () => {
   it('explains every part of generated equipment quality without inventing combat damage', () => {
     expect(analyzeItemMechanics({
       kind: 'equipment',
-      name: '+2 Weaponized Mandatory Short Sprint',
+      name: '+2 Punitive Binding Short Sprint',
       slot: 'Weapon',
     })).toEqual({
       kind: 'equipment',
       quality: {
         base: { name: 'Short Sprint', value: 5 },
         modifiers: [
-          { name: 'Mandatory', value: 3 },
-          { name: 'Weaponized', value: 4 },
+          { name: 'Binding', value: 3 },
+          { name: 'Punitive', value: 4 },
         ],
         mark: { label: '+2', value: 2 },
         total: 14,

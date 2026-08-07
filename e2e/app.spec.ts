@@ -35,7 +35,7 @@ const loadDenseDashboard = async (page: Page) => {
         ...state.character,
         Equip: {
           ...state.character.Equip,
-          Weapon: '+100 Under-Resourced Diamond Sword of Administrative Finality',
+          Weapon: '+100 Derated Diamond Sword of Administrative Finality',
           Helm: 'Escrowed Tax Hat of Unscheduled Compliance',
         },
         Inventory: [
@@ -464,7 +464,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
       useGameStore.setState({
         character: {
           ...state.character,
-          Equip: { ...state.character.Equip, Weapon: 'Weaponized Short Sprint' },
+          Equip: { ...state.character.Equip, Weapon: 'Punitive Short Sprint' },
           Inventory: [{ name: 'Gold', qty: 0 }, { name: 'Certified Order of Forecast', qty: 3 }],
           Gold: 42,
           Spells: [{ name: 'Rabbit Punch', level: 2 }],
@@ -472,10 +472,10 @@ test.describe('Progress Quest III terminal dashboard', () => {
       });
     });
 
-    const weapon = page.locator('.tooltip-trigger', { hasText: 'Weaponized Short Sprint' });
+    const weapon = page.locator('.tooltip-trigger', { hasText: 'Punitive Short Sprint' });
     await weapon.focus();
     const tooltip = page.getByRole('tooltip');
-    await expect(tooltip).toContainText('Generation quality: 9 (Short Sprint 5 + Weaponized +4)');
+    await expect(tooltip).toContainText('Generation quality: 9 (Short Sprint 5 + Punitive +4)');
     await expect(tooltip).toContainText('Combat contribution: none');
     expect(await tooltip.evaluate((element) => element.parentElement === document.body)).toBe(true);
     const tooltipBox = await tooltip.boundingBox();
