@@ -14,7 +14,7 @@ describe('legacy quest generators', () => {
       form: 'passing',
       initialState: [0.8579177698120475, 0.8263699773233384, 0.24956287536770105, 1] as [number, number, number, number],
       expectedTask: {
-        description: 'Executing a passing Talking Pony Robot Monk...',
+        description: 'Executing a passing Talking Roadmap Robot Monk...',
         type: 'kill',
         durationMs: 6_000,
         loot: { type: 'random' },
@@ -28,7 +28,7 @@ describe('legacy quest generators', () => {
       form: 'titled',
       initialState: [0.1729756232816726, 0.18765057669952512, 0.41180504229851067, 1] as [number, number, number, number],
       expectedTask: {
-        description: 'Executing Mr. Midan the Half Halfling...',
+        description: 'Executing Mr. Midan the Rounding Error...',
         type: 'kill',
         durationMs: 6_000,
         loot: { type: 'random' },
@@ -37,7 +37,7 @@ describe('legacy quest generators', () => {
       finalState: [0.21785219269804657, 0.8072053005453199, 0.47258021542802453, 308334],
     },
   ])('matches the legacy $form named-NPC task and RNG continuation', ({ initialState, expectedTask, finalState }) => {
-    const character = createNewCharacter('NPC Oracle', 'Half Orc', 'Ur-Paladin', 'npc-character');
+    const character = createNewCharacter('NPC Oracle', 'Half Daemon', 'Incident Paladin', 'npc-character');
     const rng = new RandomGenerator('npc-vector');
     rng.setState(initialState);
 
@@ -88,7 +88,7 @@ describe('legacy quest generators', () => {
   });
 
   it('ignores invalid exterminate metadata without consuming the quest-target roll', () => {
-    const ordinary = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 'task-character');
+    const ordinary = createNewCharacter('Oracle', 'Half Daemon', 'Incident Paladin', 'task-character');
     ordinary.Quest = { ...ordinary.Quest, kind: 'exterminate' };
     const invalid = structuredClone(ordinary);
     invalid.Quest = { ...invalid.Quest, target: 'invented|999|nothing', targetIndex: 84 };

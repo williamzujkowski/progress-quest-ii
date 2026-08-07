@@ -52,7 +52,7 @@ If a cached shell ever becomes impressively confused, use the browser's site set
 Nothing on any of those surfaces asserts a mechanic the engine does not model. Equipment, spells,
 and loot have no combat contribution at any quality, and the copy says so where it matters.
 
-Existing `.pqw` saves and locally stored rosters remain compatible. The Roman numeral is branding, not an excuse to confiscate anybody's Hob-Hobbit.
+Existing `.pqw` saves and locally stored rosters remain compatible. The Roman numeral is branding, not an excuse to confiscate anybody's Sub-Subprocessor.
 
 ## Local development
 

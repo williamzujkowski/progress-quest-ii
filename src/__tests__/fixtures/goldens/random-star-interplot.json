@@ -3,8 +3,8 @@
     "sheet": {
       "Traits": {
         "Name": "Oracle",
-        "Race": "Half Orc",
-        "Class": "Ur-Paladin",
+        "Race": "Half Daemon",
+        "Class": "Incident Paladin",
         "Level": 1
       },
       "Stats": {
@@ -45,10 +45,10 @@
         "Test quest"
       ],
       "queue": [],
-      "task": "kill|passing Talking Pony Robot Monk|1|*",
+      "task": "kill|passing Talking Roadmap Robot Monk|1|*",
       "tasks": 0,
       "elapsed": 0,
-      "kill": "Executing passing Talking Pony Robot Monk...",
+      "kill": "Executing passing Talking Roadmap Robot Monk...",
       "bestplot": "Act I",
       "bestquest": "Test quest",
       "bestequip": "Sharp Rock",
@@ -86,8 +86,8 @@
   },
   "expected": {
     "completed": {
-      "tag": "kill|passing Talking Pony Robot Monk|1|*",
-      "caption": "Executing passing Talking Pony Robot Monk...",
+      "tag": "kill|passing Talking Roadmap Robot Monk|1|*",
+      "caption": "Executing passing Talking Roadmap Robot Monk...",
       "durationMs": 6000
     },
     "counters": {
@@ -97,8 +97,8 @@
     "character": {
       "traits": {
         "Name": "Oracle",
-        "Race": "Half Orc",
-        "Class": "Ur-Paladin",
+        "Race": "Half Daemon",
+        "Class": "Incident Paladin",
         "Level": 1
       },
       "stats": [

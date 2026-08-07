@@ -12,7 +12,7 @@ const Probe: React.FC<{ now: () => number }> = ({ now }) => {
 };
 
 const startSession = () => useGameStore.getState().startSession({
-  source: 'creation', name: 'Velocity Subject', race: 'Half Orc', klass: 'Ur-Paladin', seed: 77,
+  source: 'creation', name: 'Velocity Subject', race: 'Half Daemon', klass: 'Incident Paladin', seed: 77,
 });
 
 afterEach(() => { vi.useRealTimers(); shown = undefined; });

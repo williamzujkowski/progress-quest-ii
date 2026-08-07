@@ -24,7 +24,7 @@ const eventsOf = (result: ReturnType<typeof advanceGame>) => result.records.map(
 
 describe('advanceGame', () => {
   it('creates a new session at the canonical Act 0 prologue', () => {
-    const character = createNewCharacter('Prologue Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    const character = createNewCharacter('Prologue Oracle', 'Half Daemon', 'Incident Paladin', 800);
 
     expect(character).toMatchObject({
       Plot: { act: 0, currentProgress: 0, maxProgress: 26 },
@@ -41,7 +41,7 @@ describe('advanceGame', () => {
   });
 
   it('starts the first prologue step without advancing plot during initial loading', () => {
-    const character = createNewCharacter('Prologue Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    const character = createNewCharacter('Prologue Oracle', 'Half Daemon', 'Incident Paladin', 800);
 
     const result = advanceGame(stateFor(character), 2000, new RandomGenerator('unused-prologue-rng'));
 
@@ -56,7 +56,7 @@ describe('advanceGame', () => {
   });
 
   it('runs the complete prologue through the Act I marker without consuming RNG', () => {
-    const character = createNewCharacter('Prologue Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    const character = createNewCharacter('Prologue Oracle', 'Half Daemon', 'Incident Paladin', 800);
     const rng = new RandomGenerator('prologue-continuation');
     const initialRng = rng.getState();
 
@@ -77,7 +77,7 @@ describe('advanceGame', () => {
   });
 
   it('captures event-local post-task facts before later catch-up tasks run', () => {
-    const character = createNewCharacter('Context Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    const character = createNewCharacter('Context Oracle', 'Half Daemon', 'Incident Paladin', 800);
 
     const result = advanceGame(stateFor(character), 28_000, new RandomGenerator('unused-context-rng'));
     const taskRecords = result.records.filter(({ event }) => event.type === 'task_started');
@@ -111,7 +111,7 @@ describe('advanceGame', () => {
       expected: { description: 'Negotiating purchase of better equipment...', durationMs: 5000, type: 'buying' },
     },
   ])('schedules the canonical $condition route after an Act marker', ({ arrange, expected }) => {
-    const character = createNewCharacter('Route Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    const character = createNewCharacter('Route Oracle', 'Half Daemon', 'Incident Paladin', 800);
     character.Plot = { act: 1, currentProgress: 0, maxProgress: 21_600 };
     character.Task = { description: 'Loading Act I...', durationMs: 1000, elapsedMs: 0, type: 'act_marker' };
     character.PendingTasks = undefined;
@@ -123,7 +123,7 @@ describe('advanceGame', () => {
   });
 
   it('waits for the next kill after plot progress first reaches its maximum', () => {
-    const character = createNewCharacter('Patient Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    const character = createNewCharacter('Patient Oracle', 'Half Daemon', 'Incident Paladin', 800);
     character.Plot = { act: 1, currentProgress: 4, maxProgress: 5 };
     character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
     character.Task = { description: 'Executing a Rat...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
@@ -178,7 +178,7 @@ describe('advanceGame', () => {
       finalRng: [0.8845338865648955, 0.3499606167897582, 0.9144386406987906, 1343975],
     },
   ])('starts the canonical $branch interplot branch with legacy RNG order', ({ rngState, first, pending, finalRng }) => {
-    const character = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    const character = createNewCharacter('Oracle', 'Half Daemon', 'Incident Paladin', 800);
     character.Plot = { act: 1, currentProgress: 10, maxProgress: 10 };
     character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
     character.Task = { description: 'Executing a Rat...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
@@ -194,7 +194,7 @@ describe('advanceGame', () => {
   });
 
   it('keeps a maximum-Act nemesis sequence compact while replaying every canonical round', () => {
-    const character = createNewCharacter('Endless Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    const character = createNewCharacter('Endless Oracle', 'Half Daemon', 'Incident Paladin', 800);
     character.Plot = { act: MAX_PERSISTED_VALUE, currentProgress: 10, maxProgress: 10 };
     character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
     character.Task = { description: 'Executing a Rat...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
@@ -247,7 +247,7 @@ describe('advanceGame', () => {
   // the original ran InterplotCinematic whole - and a reader could reasonably assume a single
   // pinned seed was masking that. It is not: the recording agrees on the observable surface.
   it('awards random-star loot before generating the remaining nemesis cinematic', () => {
-    const character = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    const character = createNewCharacter('Oracle', 'Half Daemon', 'Incident Paladin', 800);
     character.Plot = { act: 1, currentProgress: 10, maxProgress: 10 };
     character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
     character.Task = { description: 'Executing a Black Dragon...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'random' } };
@@ -270,7 +270,7 @@ describe('advanceGame', () => {
   });
 
   it('uses the canonical three-part item table for random-star loot', () => {
-    const character = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    const character = createNewCharacter('Oracle', 'Half Daemon', 'Incident Paladin', 800);
     character.Plot = { act: 1, currentProgress: 10, maxProgress: 10 };
     character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
     character.Task = { description: 'Executing a Black Dragon...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'random' } };
@@ -285,7 +285,7 @@ describe('advanceGame', () => {
   });
 
   it('completes Act I with typed reward events in canonical RNG order', () => {
-    const character = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    const character = createNewCharacter('Oracle', 'Half Daemon', 'Incident Paladin', 800);
     character.Plot = { act: 1, currentProgress: 1000, maxProgress: 1000 };
     character.Task = { description: 'There is much to be done. You are chosen!...', durationMs: 1000, elapsedMs: 0, type: 'cinematic' };
     character.PendingTasks = [{ description: 'Loading', durationMs: 1000, elapsedMs: 0, type: 'act_marker' }];
@@ -321,7 +321,7 @@ describe('advanceGame', () => {
   });
 
   it('retires giant decimal Act markers for scientific notation', () => {
-    const character = createNewCharacter('Exponent Oracle', 'Half Orc', 'Ur-Paladin', 800);
+    const character = createNewCharacter('Exponent Oracle', 'Half Daemon', 'Incident Paladin', 800);
     character.Plot = { act: 999_999, currentProgress: 1, maxProgress: 1 };
     character.Task = { description: 'The decimals grow restless...', durationMs: 1000, elapsedMs: 0, type: 'cinematic' };
     character.PendingTasks = [{ description: 'Loading', durationMs: 1000, elapsedMs: 0, type: 'act_marker' }];
@@ -332,7 +332,7 @@ describe('advanceGame', () => {
   });
 
   it('advances an incomplete task without mutating the previous state', () => {
-    const character = createNewCharacter('Seam Tester', 'Dung Elf', 'Vermineer', 801);
+    const character = createNewCharacter('Seam Tester', 'Off-Prem Elf', 'Vermineer', 801);
     const state = {
       character,
       progression: {
@@ -466,7 +466,7 @@ describe('advanceGame', () => {
   });
 
   it('reports the actual fractional secondary-stat gain during level-up', () => {
-    const character = createNewCharacter('Fractional Hero', 'Half Orc', 'Robot Monk', 813);
+    const character = createNewCharacter('Fractional Hero', 'Half Daemon', 'Robot Monk', 813);
     character.Stats = { STR: 10, CON: 10, DEX: 10, INT: 10, WIS: 10, CHA: 10, 'HP Max': 10.5, 'MP Max': 10 };
     character.Task = { description: 'Executing a fraction...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'partial receipt' } };
     const state = stateFor(character);
@@ -531,7 +531,7 @@ describe('advanceGame', () => {
   });
 
   it('sells one ordinary stack at level value before scheduling the next stack', () => {
-    const character = createNewCharacter('Merchant', 'Half Orc', 'Robot Monk', 802);
+    const character = createNewCharacter('Merchant', 'Half Daemon', 'Robot Monk', 802);
     character.Traits.Level = 5;
     character.Gold = 10;
     character.Inventory = [{ name: 'rat tail', qty: 3 }, { name: 'old boot', qty: 2 }];
@@ -560,7 +560,7 @@ describe('advanceGame', () => {
   it('exposes an actual quest equipment mutation as a typed gained-equipment event', () => {
     let matched: ReturnType<typeof advanceGame> | undefined;
     for (let seed = 0; seed < 100 && !matched; seed += 1) {
-      const character = createNewCharacter('Quartermaster', 'Half Orc', 'Robot Monk', `quest-equipment:${seed}`);
+      const character = createNewCharacter('Quartermaster', 'Half Daemon', 'Robot Monk', `quest-equipment:${seed}`);
       character.Quest = { description: 'Complete opaque work', currentProgress: 1, maxProgress: 1, history: ['Complete opaque work'], kind: 'fetch' };
       character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
       const result = advanceGame(stateFor(character), 1, new RandomGenerator(`quest-equipment-transition:${seed}`));
@@ -576,7 +576,7 @@ describe('advanceGame', () => {
   it('marks only actual nemesis interplot openings with transient presentation metadata', () => {
     const observed = new Set<'nemesis' | 'other'>();
     for (let seed = 0; seed < 100 && observed.size < 2; seed += 1) {
-      const character = createNewCharacter('Cinematic Clerk', 'Half Orc', 'Robot Monk', `cinematic-role:${seed}`);
+      const character = createNewCharacter('Cinematic Clerk', 'Half Daemon', 'Robot Monk', `cinematic-role:${seed}`);
       character.Plot = { act: 1, currentProgress: 10, maxProgress: 10 };
       character.PendingTasks = undefined;
       character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
@@ -592,7 +592,7 @@ describe('advanceGame', () => {
   });
 
   it('applies both canonical RandomLow multipliers to an of-item stack', () => {
-    const character = createNewCharacter('Merchant', 'Half Orc', 'Robot Monk', 802);
+    const character = createNewCharacter('Merchant', 'Half Daemon', 'Robot Monk', 802);
     character.Traits.Level = 5;
     character.Gold = 10;
     character.Inventory = [{ name: 'Diadem of Foreboding', qty: 2 }, { name: 'old boot', qty: 2 }];
@@ -611,7 +611,7 @@ describe('advanceGame', () => {
   });
 
   it('starts the first one-second sale after reaching the market', () => {
-    const character = createNewCharacter('Merchant', 'Half Orc', 'Robot Monk', 802);
+    const character = createNewCharacter('Merchant', 'Half Daemon', 'Robot Monk', 802);
     character.Inventory = [{ name: 'rat tail', qty: 30 }, { name: 'old boot', qty: 2 }];
     character.Task = { description: 'Heading to market to sell loot...', durationMs: 4000, elapsedMs: 0, type: 'heading_to_market' };
     character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
@@ -628,7 +628,7 @@ describe('advanceGame', () => {
   });
 
   it('heads to market for four seconds when completed-task loot reaches encumbrance', () => {
-    const character = createNewCharacter('Merchant', 'Half Orc', 'Robot Monk', 802);
+    const character = createNewCharacter('Merchant', 'Half Daemon', 'Robot Monk', 802);
     character.Stats.STR = 10;
     character.Inventory = [{ name: 'old boot', qty: 19 }];
     character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
@@ -643,7 +643,7 @@ describe('advanceGame', () => {
   });
 
   it('keeps an accepted maximum gold balance valid when selling inventory', () => {
-    const character = createNewCharacter('Treasurer', 'Half Orc', 'Robot Monk', 810);
+    const character = createNewCharacter('Treasurer', 'Half Daemon', 'Robot Monk', 810);
     character.Traits.Level = MAX_PERSISTED_VALUE;
     character.Gold = MAX_PERSISTED_GOLD;
     character.Inventory = [{ name: 'Auditor bait of Excess', qty: MAX_PERSISTED_VALUE }];
@@ -660,7 +660,7 @@ describe('advanceGame', () => {
   });
 
   it('buys equipment before taking the four-second route out of town', () => {
-    const character = createNewCharacter('Buyer', 'Half Orc', 'Robot Monk', 803);
+    const character = createNewCharacter('Buyer', 'Half Daemon', 'Robot Monk', 803);
     character.Gold = 35;
     character.Inventory = [];
     character.Task = { description: 'Buying equipment...', durationMs: 1, elapsedMs: 0, type: 'buying' };
@@ -677,7 +677,7 @@ describe('advanceGame', () => {
   });
 
   it('starts the first real quest without rewarding the placeholder', () => {
-    const character = createNewCharacter('Initiate', 'Half Orc', 'Robot Monk', 804);
+    const character = createNewCharacter('Initiate', 'Half Daemon', 'Robot Monk', 804);
     const initialSheet = structuredClone(character);
     character.Quest = { description: 'Heading to the killing fields...', currentProgress: 0, maxProgress: 5 };
     character.Task = { description: 'Executing test monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
@@ -693,7 +693,7 @@ describe('advanceGame', () => {
   });
 
   it('caps quest history at the legacy 100-entry boundary', () => {
-    const character = createNewCharacter('Historian', 'Half Orc', 'Robot Monk', 805);
+    const character = createNewCharacter('Historian', 'Half Daemon', 'Robot Monk', 805);
     character.Quest = {
       description: 'Newest quest',
       currentProgress: 1,
@@ -711,7 +711,7 @@ describe('advanceGame', () => {
   });
 
   it('returns elapsed time left after the bounded 100-task catch-up', () => {
-    const character = createNewCharacter('Latecomer', 'Half Orc', 'Robot Monk', 806);
+    const character = createNewCharacter('Latecomer', 'Half Daemon', 'Robot Monk', 806);
     const rng = new RandomGenerator('bounded-catch-up');
 
     const result = advanceGame(stateFor(character), 1_000_000_000, rng);
@@ -726,7 +726,7 @@ describe('advanceGame', () => {
   it('bounds next-task RNG work above the last finite progression level', () => {
     const expectedRandomCalls = 7_150;
     const generateAtMaximumLevel = () => {
-      const character = createNewCharacter('Patient Hero', 'Half Orc', 'Robot Monk', 812);
+      const character = createNewCharacter('Patient Hero', 'Half Daemon', 'Robot Monk', 812);
       character.Traits.Level = MAX_PERSISTED_VALUE;
       character.Inventory = [];
       character.Gold = 0;
@@ -754,7 +754,7 @@ describe('advanceGame', () => {
   });
 
   it('keeps an accepted lower-bound character valid through level-up', () => {
-    const character = createNewCharacter('Boundary Hero', 'Half Orc', 'Robot Monk', 807);
+    const character = createNewCharacter('Boundary Hero', 'Half Daemon', 'Robot Monk', 807);
     character.Stats = { STR: 1, CON: 1, DEX: 1, INT: 1, WIS: 1, CHA: 1, 'HP Max': 0.5, 'MP Max': 1.5 };
     character.Task = { description: 'Executing boundary monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'boundary receipt' } };
     character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
@@ -770,7 +770,7 @@ describe('advanceGame', () => {
   });
 
   it('keeps an accepted maximum session valid through level-up and loot', () => {
-    const character = createNewCharacter('Boundary Hero', 'Half Orc', 'Robot Monk', 809);
+    const character = createNewCharacter('Boundary Hero', 'Half Daemon', 'Robot Monk', 809);
     character.Traits.Level = MAX_PERSISTED_VALUE;
     character.Stats = {
       STR: MAX_PERSISTED_VALUE,
@@ -838,7 +838,7 @@ describe('advanceGame', () => {
   });
 
   it('does not mutate the previous inventory when loot stacks', () => {
-    const character = createNewCharacter('Collector', 'Half Orc', 'Robot Monk', 808);
+    const character = createNewCharacter('Collector', 'Half Daemon', 'Robot Monk', 808);
     character.Inventory = [{ name: 'rat tail', qty: 1 }, { name: 'Unrelated Trinket', qty: 1 }];
     character.Quest = { ...character.Quest, currentProgress: 0, maxProgress: 99, history: [character.Quest.description] };
     character.Task = { description: 'Executing test monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
@@ -851,7 +851,7 @@ describe('advanceGame', () => {
   });
 
   it('keeps a full accepted inventory valid when new loot drops', () => {
-    const character = createNewCharacter('Collector', 'Half Orc', 'Robot Monk', 811);
+    const character = createNewCharacter('Collector', 'Half Daemon', 'Robot Monk', 811);
     character.Inventory = Array.from({ length: MAX_PERSISTED_ITEMS }, (_, index) => ({ name: `Item ${index}`, qty: 1 }));
     character.Task = { description: 'Executing test monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'one item too many' } };
     character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };

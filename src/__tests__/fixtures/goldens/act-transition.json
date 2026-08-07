@@ -1,7 +1,7 @@
 {
   "input": {
     "sheet": {
-      "Traits": { "Name": "Oracle", "Race": "Half Orc", "Class": "Ur-Paladin", "Level": 1 },
+      "Traits": { "Name": "Oracle", "Race": "Half Daemon", "Class": "Incident Paladin", "Level": 1 },
       "Stats": { "STR": 10, "CON": 10, "DEX": 10, "INT": 10, "WIS": 10, "CHA": 10, "HP Max": 10, "MP Max": 10 },
       "Equips": { "Weapon": "Sharp Rock", "Shield": "", "Helm": "", "Hauberk": "-3 Burlap", "Brassairts": "", "Vambraces": "", "Gauntlets": "", "Gambeson": "", "Cuisses": "", "Greaves": "", "Sollerets": "" },
       "Inventory": [["Gold", 0]],
@@ -33,7 +33,7 @@
     "completed": { "tag": "", "caption": "There is much to be done. You are chosen!...", "durationMs": 1000 },
     "counters": { "tasks": 1, "elapsedSeconds": 1 },
     "character": {
-      "traits": { "Name": "Oracle", "Race": "Half Orc", "Class": "Ur-Paladin", "Level": 1 },
+      "traits": { "Name": "Oracle", "Race": "Half Daemon", "Class": "Incident Paladin", "Level": 1 },
       "stats": [["STR", 10], ["CON", 10], ["DEX", 10], ["INT", 10], ["WIS", 10], ["CHA", 10], ["HP Max", 10], ["MP Max", 10]]
     },
     "task": { "tag": "", "caption": "Loading Act II...", "positionMs": 0, "maxMs": 1000, "queue": [] },

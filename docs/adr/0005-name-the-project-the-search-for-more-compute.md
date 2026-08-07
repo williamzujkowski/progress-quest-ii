@@ -96,5 +96,5 @@ defunct freeware directories.
 ## What does not change
 
 Save compatibility, storage keys, and `.pqw` terminology are untouched. A rename that costs
-somebody their Hob-Hobbit is worse than any name. Visible identity, manifest, metadata, README,
+somebody their Sub-Subprocessor is worse than any name. Visible identity, manifest, metadata, README,
 tests, and deployment validation change atomically or not at all.

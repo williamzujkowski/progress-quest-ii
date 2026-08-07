@@ -178,7 +178,7 @@ describe('against the engine rather than a fixture', () => {
 
     const rng = new RandomGenerator('caseload-engine');
     let state = {
-      character: createNewCharacter('Docket', 'Half Orc', 'Robot Monk', rng),
+      character: createNewCharacter('Docket', 'Half Daemon', 'Robot Monk', rng),
       progression: { experience: { currentSeconds: 0, maxSeconds: levelUpTime(1) }, completedTasks: 0, elapsedSeconds: 0 },
     };
 

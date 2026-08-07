@@ -12,7 +12,7 @@ import { projectWorld } from '../../state/worldContext';
 function harvest(seed: string, hours: number) {
   const rng = new RandomGenerator(seed);
   let state = {
-    character: createNewCharacter('Harvest', 'Half Orc', 'Robot Monk', rng),
+    character: createNewCharacter('Harvest', 'Half Daemon', 'Robot Monk', rng),
     progression: { experience: { currentSeconds: 0, maxSeconds: levelUpTime(1) }, completedTasks: 0, elapsedSeconds: 0 },
   };
   const byLabel = new Map<string, { items: number; notices: number; texts: string[] }>();
@@ -71,7 +71,7 @@ describe('opponent count exposure', () => {
   it('reports a count on encounters and on nothing else', async () => {
     const rng = new RandomGenerator('opponent-exposure');
     let state = {
-      character: createNewCharacter('Counter', 'Half Orc', 'Robot Monk', rng),
+      character: createNewCharacter('Counter', 'Half Daemon', 'Robot Monk', rng),
       progression: { experience: { currentSeconds: 0, maxSeconds: levelUpTime(1) }, completedTasks: 0, elapsedSeconds: 0 },
     };
     const seenByType = new Map<string, Set<number | undefined>>();
@@ -97,7 +97,7 @@ describe('opponent count exposure', () => {
     // constant 1 forever and the test above would still pass.
     const { generateTaskDescription } = await import('../../engine/sim');
     const rng = new RandomGenerator('crowd');
-    const character = createNewCharacter('Veteran', 'Half Orc', 'Robot Monk', rng);
+    const character = createNewCharacter('Veteran', 'Half Daemon', 'Robot Monk', rng);
     character.Traits.Level = 60;
     character.Inventory = [];
 

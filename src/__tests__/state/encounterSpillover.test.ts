@@ -11,7 +11,7 @@ import { projectWorld } from '../../state/worldContext';
  */
 function noticesFor(level: number, hours: number) {
   const rng = new RandomGenerator('spillover');
-  const character = createNewCharacter('Crowded', 'Half Orc', 'Robot Monk', rng);
+  const character = createNewCharacter('Crowded', 'Half Daemon', 'Robot Monk', rng);
   character.Traits.Level = level;
   let state = {
     character,

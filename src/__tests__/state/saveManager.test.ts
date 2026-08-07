@@ -32,7 +32,7 @@ function encodeTestValue(value: unknown): string {
 
 describe('Save Manager & Serialization', () => {
   it('encodes and decodes a character sheet to base64 .pqw format cleanly', () => {
-    const originalChar = createNewCharacter('Base64Hero', 'Demicanadian', 'Bastard Lunatic', 9999);
+    const originalChar = createNewCharacter('Base64Hero', 'Provisioned Ghoul', 'Interim Lunatic', 9999);
     const encoded = encodePQWSave(originalChar);
 
     expect(typeof encoded).toBe('string');
@@ -42,8 +42,8 @@ describe('Save Manager & Serialization', () => {
     expect(decoded.ok).toBe(true);
     if (!decoded.ok) return;
     expect(decoded.value.Traits.Name).toBe('Base64Hero');
-    expect(decoded.value.Traits.Race).toBe('Demicanadian');
-    expect(decoded.value.Traits.Class).toBe('Bastard Lunatic');
+    expect(decoded.value.Traits.Race).toBe('Provisioned Ghoul');
+    expect(decoded.value.Traits.Class).toBe('Interim Lunatic');
     expect(decoded.value.Stats.STR).toBe(originalChar.Stats.STR);
     expect(decoded.value.Quest).toEqual(originalChar.Quest);
     expect(decoded.value.Plot).toEqual(originalChar.Plot);
@@ -51,7 +51,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('preserves and resumes a partly consumed prologue through PQW and roster storage', () => {
-    const character = createNewCharacter('MidpointHero', 'Demicanadian', 'Bastard Lunatic', 9_997);
+    const character = createNewCharacter('MidpointHero', 'Provisioned Ghoul', 'Interim Lunatic', 9_997);
     const progression = { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 };
     const midpoint = advanceGame({ character, progression }, 7000, new RandomGenerator('unused-prologue-rng')).state;
     expect(midpoint.character.Task).toMatchObject({ type: 'prologue', elapsedMs: 5000 });
@@ -75,7 +75,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('preserves Unicode character names with the standards-based UTF-8 codec', () => {
-    const originalChar = createNewCharacter('Éowyn 🛡️', 'Demicanadian', 'Bastard Lunatic', 9998);
+    const originalChar = createNewCharacter('Éowyn 🛡️', 'Provisioned Ghoul', 'Interim Lunatic', 9998);
 
     const decoded = decodePQWSave(encodePQWSave(originalChar));
 
@@ -122,7 +122,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('rejects syntactically valid saves with unreasonable collection sizes', () => {
-    const character = createNewCharacter('Crowded', 'Dung Elf', 'Vermineer', 303);
+    const character = createNewCharacter('Crowded', 'Off-Prem Elf', 'Vermineer', 303);
     character.Inventory = Array.from({ length: 5_001 }, (_, index) => ({ name: `Item ${index}`, qty: 1 }));
 
     expect(decodePQWSave(encodePQWSave(character))).toMatchObject({
@@ -132,7 +132,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('rejects unknown keys at every object boundary in the modern PQW v0 profile', () => {
-    const character = createNewCharacter('StrictV0', 'Half Orc', 'Robot Monk', 305);
+    const character = createNewCharacter('StrictV0', 'Half Daemon', 'Robot Monk', 305);
     character.Spells = [{ name: 'Strictly Speaking', level: 1 }];
     character.Task.loot = { type: 'fixed', item: 'paperwork' };
     const candidates: unknown[] = [
@@ -159,7 +159,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('rejects invalid progress and task relationships while accepting completed boundaries', () => {
-    const character = createNewCharacter('RelationalV0', 'Half Orc', 'Robot Monk', 306);
+    const character = createNewCharacter('RelationalV0', 'Half Daemon', 'Robot Monk', 306);
     const invalid: unknown[] = [
       { ...character, Quest: { ...character.Quest, maxProgress: 0 } },
       { ...character, Quest: { ...character.Quest, currentProgress: 6, maxProgress: 5 } },
@@ -184,7 +184,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('requires positive HP and MP maxima while retaining finite fractional compatibility', () => {
-    const character = createNewCharacter('VitalV0', 'Half Orc', 'Robot Monk', 307);
+    const character = createNewCharacter('VitalV0', 'Half Daemon', 'Robot Monk', 307);
 
     for (const Stats of [
       { ...character.Stats, 'HP Max': 0 },
@@ -203,7 +203,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('rejects non-finite numeric values at the direct schema boundary', () => {
-    const character = createNewCharacter('FiniteV0', 'Half Orc', 'Robot Monk', 308);
+    const character = createNewCharacter('FiniteV0', 'Half Daemon', 'Robot Monk', 308);
 
     for (const value of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
       expect(characterSheetSchema.safeParse({
@@ -214,7 +214,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('requires every prime stat to be a positive integer', () => {
-    const character = createNewCharacter('PrimeV0', 'Half Orc', 'Robot Monk', 309);
+    const character = createNewCharacter('PrimeV0', 'Half Daemon', 'Robot Monk', 309);
 
     for (const stat of PRIME_STATS) {
       for (const value of [0, -1, 1.5]) {
@@ -232,7 +232,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('rejects duplicate exact inventory identities without normalizing accepted labels', () => {
-    const character = createNewCharacter('InventoryV0', 'Half Orc', 'Robot Monk', 310);
+    const character = createNewCharacter('InventoryV0', 'Half Daemon', 'Robot Monk', 310);
 
     for (const Inventory of [
       [{ name: 'Gold', qty: 0 }, { name: 'Rat tail', qty: 1 }, { name: 'Rat tail', qty: 2 }],
@@ -251,7 +251,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('keeps an accepted high-level save loadable with finite runtime progression', () => {
-    const character = createNewCharacter('Overflow', 'Dung Elf', 'Vermineer', 304);
+    const character = createNewCharacter('Overflow', 'Off-Prem Elf', 'Vermineer', 304);
     character.Traits.Level = MAX_FINITE_CHARACTER_LEVEL + 1;
 
     const decoded = decodePQWSave(encodePQWSave(character));
@@ -262,12 +262,12 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('keeps generated character output compatible with the save contract', () => {
-    const character = createNewCharacter('ContractHero', 'Half Orc', 'Robot Monk', 404);
+    const character = createNewCharacter('ContractHero', 'Half Daemon', 'Robot Monk', 404);
     expect(characterSheetSchema.safeParse(character).success).toBe(true);
   });
 
   it('accepts old sheets without a queue and rejects malformed pending sequences', () => {
-    const character = createNewCharacter('SequenceContractHero', 'Half Orc', 'Robot Monk', 408);
+    const character = createNewCharacter('SequenceContractHero', 'Half Daemon', 'Robot Monk', 408);
     const { PendingTasks: _pendingTasks, ...oldSheet } = character;
     const step = character.PendingTasks?.[0];
     if (!step) throw new Error('Expected the canonical prologue queue');
@@ -300,7 +300,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('validates explicit fixed and random task loot without accepting blank items', () => {
-    const character = createNewCharacter('LootContractHero', 'Half Orc', 'Robot Monk', 405);
+    const character = createNewCharacter('LootContractHero', 'Half Daemon', 'Robot Monk', 405);
 
     expect(characterSheetSchema.safeParse({
       ...character,
@@ -313,7 +313,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('accepts optional typed quest metadata while preserving legacy quest saves', () => {
-    const character = createNewCharacter('QuestMetadataHero', 'Half Orc', 'Robot Monk', 406);
+    const character = createNewCharacter('QuestMetadataHero', 'Half Daemon', 'Robot Monk', 406);
     const withMetadata = {
       ...character,
       Quest: {
@@ -330,7 +330,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('rejects quest metadata outside the bounded contract', () => {
-    const character = createNewCharacter('InvalidQuestMetadata', 'Half Orc', 'Robot Monk', 407);
+    const character = createNewCharacter('InvalidQuestMetadata', 'Half Daemon', 'Robot Monk', 407);
 
     expect(characterSheetSchema.safeParse({
       ...character,
@@ -347,8 +347,8 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('saves, loads, and removes character sheets from local storage roster', () => {
-    const char1 = createNewCharacter('RosterHero1', 'Half Orc', 'Robot Monk', 101);
-    const char2 = createNewCharacter('RosterHero2', 'Dung Elf', 'Vermineer', 202);
+    const char1 = createNewCharacter('RosterHero1', 'Half Daemon', 'Robot Monk', 101);
+    const char2 = createNewCharacter('RosterHero2', 'Off-Prem Elf', 'Vermineer', 202);
 
     saveToRoster(char1);
     saveToRoster(char2);
@@ -370,7 +370,7 @@ describe('Save Manager & Serialization', () => {
   it('rejects a roster with too many entries before validating every sheet', () => {
     const roster = Object.fromEntries(Array.from({ length: MAX_ROSTER_ENTRIES + 1 }, (_, index) => [
       `Hero${index}`,
-      createNewCharacter(`Hero${index}`, 'Half Orc', 'Robot Monk', index + 1),
+      createNewCharacter(`Hero${index}`, 'Half Daemon', 'Robot Monk', index + 1),
     ]));
     const raw = JSON.stringify(roster);
     expect(raw.length).toBeLessThan(MAX_ROSTER_SERIALIZED_LENGTH);
@@ -393,8 +393,8 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('returns a typed failure when browser storage rejects a write', () => {
-    const character = createNewCharacter('QuotaHero', 'Half Orc', 'Robot Monk', 505);
-    const existing = createNewCharacter('ExistingQuotaHero', 'Dung Elf', 'Vermineer', 504);
+    const character = createNewCharacter('QuotaHero', 'Half Daemon', 'Robot Monk', 505);
+    const existing = createNewCharacter('ExistingQuotaHero', 'Off-Prem Elf', 'Vermineer', 504);
     const originalRoster = JSON.stringify({ ExistingQuotaHero: existing });
     localStorage.setItem('progquest_roster_v1', originalRoster);
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementationOnce(() => {
@@ -446,7 +446,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('preserves corrupt roster bytes instead of overwriting them', () => {
-    const character = createNewCharacter('Preserver', 'Half Orc', 'Robot Monk', 606);
+    const character = createNewCharacter('Preserver', 'Half Daemon', 'Robot Monk', 606);
     const corruptRoster = '{not-json';
     localStorage.setItem('progquest_roster_v1', corruptRoster);
 
@@ -458,7 +458,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('treats an existing empty roster string as corrupt and preserves it', () => {
-    const character = createNewCharacter('EmptyPreserver', 'Half Orc', 'Robot Monk', 607);
+    const character = createNewCharacter('EmptyPreserver', 'Half Daemon', 'Robot Monk', 607);
     localStorage.setItem('progquest_roster_v1', '');
 
     expect(saveToRoster(character)).toMatchObject({
@@ -469,7 +469,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('rejects roster entries whose storage key does not match the character name', () => {
-    const character = createNewCharacter('ActualName', 'Half Orc', 'Robot Monk', 608);
+    const character = createNewCharacter('ActualName', 'Half Daemon', 'Robot Monk', 608);
     const mismatchedRoster = JSON.stringify({ Alias: character });
     localStorage.setItem('progquest_roster_v1', mismatchedRoster);
 
@@ -492,8 +492,8 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('returns a generic typed failure when storage rejects a write for another reason', () => {
-    const character = createNewCharacter('WriteFailure', 'Half Orc', 'Robot Monk', 609);
-    const existing = createNewCharacter('ExistingWriteHero', 'Dung Elf', 'Vermineer', 608);
+    const character = createNewCharacter('WriteFailure', 'Half Daemon', 'Robot Monk', 609);
+    const existing = createNewCharacter('ExistingWriteHero', 'Off-Prem Elf', 'Vermineer', 608);
     const originalRoster = JSON.stringify({ ExistingWriteHero: existing });
     localStorage.setItem('progquest_roster_v1', originalRoster);
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementationOnce(() => {
@@ -509,7 +509,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('preserves the previous roster when deleting fails', () => {
-    const existing = createNewCharacter('DeletePreserver', 'Dung Elf', 'Vermineer', 612);
+    const existing = createNewCharacter('DeletePreserver', 'Off-Prem Elf', 'Vermineer', 612);
     const originalRoster = JSON.stringify({ DeletePreserver: existing });
     localStorage.setItem('progquest_roster_v1', originalRoster);
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementationOnce(() => {
@@ -525,8 +525,8 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('preserves the previous roster when serialization fails', () => {
-    const existing = createNewCharacter('Existing', 'Dung Elf', 'Vermineer', 610);
-    const incoming = createNewCharacter('Incoming', 'Half Orc', 'Robot Monk', 611);
+    const existing = createNewCharacter('Existing', 'Off-Prem Elf', 'Vermineer', 610);
+    const incoming = createNewCharacter('Incoming', 'Half Daemon', 'Robot Monk', 611);
     const originalRoster = JSON.stringify({ Existing: existing });
     localStorage.setItem('progquest_roster_v1', originalRoster);
     const stringify = vi.spyOn(JSON, 'stringify').mockImplementationOnce(() => {
@@ -542,7 +542,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('stores prototype-like character names as ordinary roster keys', () => {
-    const character = createNewCharacter('__proto__', 'Half Orc', 'Robot Monk', 505);
+    const character = createNewCharacter('__proto__', 'Half Daemon', 'Robot Monk', 505);
 
     saveToRoster(character);
 
@@ -554,7 +554,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('round-trips and removes constructor as an ordinary own roster key', () => {
-    const character = createNewCharacter('constructor', 'Half Orc', 'Robot Monk', 506);
+    const character = createNewCharacter('constructor', 'Half Daemon', 'Robot Monk', 506);
 
     expect(saveToRoster(character)).toMatchObject({ ok: true });
     expect(Object.hasOwn(JSON.parse(localStorage.getItem('progquest_roster_v1') ?? '{}'), 'constructor')).toBe(true);
@@ -570,8 +570,8 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('replaces an exact duplicate name with the latest complete sheet', () => {
-    const first = createNewCharacter('Same Name', 'Half Orc', 'Robot Monk', 507);
-    const replacement = createNewCharacter('Same Name', 'Dung Elf', 'Vermineer', 508);
+    const first = createNewCharacter('Same Name', 'Half Daemon', 'Robot Monk', 507);
+    const replacement = createNewCharacter('Same Name', 'Off-Prem Elf', 'Vermineer', 508);
 
     saveToRoster(first);
     expect(saveToRoster(replacement)).toMatchObject({ ok: true });
@@ -584,9 +584,9 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('returns the most recently saved roster character, including an updated identity', () => {
-    const first = createNewCharacter('First Saved', 'Half Orc', 'Robot Monk', 520);
-    const second = createNewCharacter('Second Saved', 'Dung Elf', 'Vermineer', 521);
-    const updatedFirst = createNewCharacter('First Saved', 'Demicanadian', 'Bastard Lunatic', 522);
+    const first = createNewCharacter('First Saved', 'Half Daemon', 'Robot Monk', 520);
+    const second = createNewCharacter('Second Saved', 'Off-Prem Elf', 'Vermineer', 521);
+    const updatedFirst = createNewCharacter('First Saved', 'Provisioned Ghoul', 'Interim Lunatic', 522);
 
     saveToRoster(first);
     saveToRoster(second);
@@ -596,8 +596,8 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('tracks recency independently of numeric-like roster names', () => {
-    const named = createNewCharacter('Named First', 'Half Orc', 'Robot Monk', 523);
-    const numeric = createNewCharacter('2', 'Dung Elf', 'Vermineer', 524);
+    const named = createNewCharacter('Named First', 'Half Daemon', 'Robot Monk', 523);
+    const numeric = createNewCharacter('2', 'Off-Prem Elf', 'Vermineer', 524);
 
     saveToRoster(named);
     saveToRoster(numeric);
@@ -606,10 +606,10 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('restores the most recent remaining character after deleting the latest save', () => {
-    const first = createNewCharacter('First', 'Half Orc', 'Robot Monk', 525);
-    const second = createNewCharacter('Second', 'Dung Elf', 'Vermineer', 526);
-    const updatedFirst = createNewCharacter('First', 'Demicanadian', 'Bastard Lunatic', 527);
-    const latest = createNewCharacter('Latest', 'Half Orc', 'Robot Monk', 528);
+    const first = createNewCharacter('First', 'Half Daemon', 'Robot Monk', 525);
+    const second = createNewCharacter('Second', 'Off-Prem Elf', 'Vermineer', 526);
+    const updatedFirst = createNewCharacter('First', 'Provisioned Ghoul', 'Interim Lunatic', 527);
+    const latest = createNewCharacter('Latest', 'Half Daemon', 'Robot Monk', 528);
 
     saveToRoster(first);
     saveToRoster(second);
@@ -621,7 +621,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('reports a partial failure when roster recency cannot be persisted', () => {
-    const character = createNewCharacter('Partially Saved', 'Half Orc', 'Robot Monk', 529);
+    const character = createNewCharacter('Partially Saved', 'Half Daemon', 'Robot Monk', 529);
     const nativeSetItem = Storage.prototype.setItem;
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
       if (key === 'progquest_roster_recent_v1') throw new DOMException('Quota exceeded', 'QuotaExceededError');
@@ -643,7 +643,7 @@ describe('Save Manager & Serialization', () => {
 
   it('recovers stale history after a partial delete at the roster limit', () => {
     for (let index = 0; index < MAX_ROSTER_ENTRIES; index += 1) {
-      expect(saveToRoster(createNewCharacter(`Full Roster ${index}`, 'Half Orc', 'Robot Monk', 600 + index))).toMatchObject({ ok: true });
+      expect(saveToRoster(createNewCharacter(`Full Roster ${index}`, 'Half Daemon', 'Robot Monk', 600 + index))).toMatchObject({ ok: true });
     }
     const nativeSetItem = Storage.prototype.setItem;
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
@@ -653,14 +653,14 @@ describe('Save Manager & Serialization', () => {
     expect(removeFromRoster('Full Roster 99')).toMatchObject({ ok: false, error: { code: 'storage_failed' } });
     setItem.mockRestore();
 
-    const replacement = createNewCharacter('Roster Replacement', 'Dung Elf', 'Vermineer', 700);
+    const replacement = createNewCharacter('Roster Replacement', 'Off-Prem Elf', 'Vermineer', 700);
     expect(saveToRoster(replacement)).toMatchObject({ ok: true });
     expect(loadMostRecentRosterCharacter()).toEqual({ ok: true, value: replacement });
   });
 
   it('keeps names that differ only by case as distinct roster identities', () => {
-    saveToRoster(createNewCharacter('Hero', 'Half Orc', 'Robot Monk', 509));
-    saveToRoster(createNewCharacter('hero', 'Dung Elf', 'Vermineer', 510));
+    saveToRoster(createNewCharacter('Hero', 'Half Daemon', 'Robot Monk', 509));
+    saveToRoster(createNewCharacter('hero', 'Off-Prem Elf', 'Vermineer', 510));
 
     const loaded = loadRoster();
     expect(loaded.ok).toBe(true);
@@ -669,8 +669,8 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('keeps existing object-shaped roster JSON compatible across the next save', () => {
-    const legacyOne = createNewCharacter('Existing One', 'Half Orc', 'Robot Monk', 511);
-    const legacyTwo = createNewCharacter('Existing Two', 'Dung Elf', 'Vermineer', 512);
+    const legacyOne = createNewCharacter('Existing One', 'Half Daemon', 'Robot Monk', 511);
+    const legacyTwo = createNewCharacter('Existing Two', 'Off-Prem Elf', 'Vermineer', 512);
     const originalRoster = JSON.stringify({ 'Existing One': legacyOne, 'Existing Two': legacyTwo });
     localStorage.setItem('progquest_roster_v1', originalRoster);
 
@@ -680,7 +680,7 @@ describe('Save Manager & Serialization', () => {
     expect(Object.getPrototypeOf(loaded.value)).toBeNull();
     expect(localStorage.getItem('progquest_roster_v1')).toBe(originalRoster);
 
-    const next = createNewCharacter('Next Save', 'Half Orc', 'Robot Monk', 513);
+    const next = createNewCharacter('Next Save', 'Half Daemon', 'Robot Monk', 513);
     expect(saveToRoster(next)).toMatchObject({ ok: true });
     expect(Object.keys(JSON.parse(localStorage.getItem('progquest_roster_v1') ?? '{}'))).toEqual([
       'Existing One',
@@ -692,16 +692,16 @@ describe('Save Manager & Serialization', () => {
   it('accepts a character name at the persisted length boundary', () => {
     const boundaryName = 'N'.repeat(MAX_CHARACTER_NAME_LENGTH);
 
-    expect(saveToRoster(createNewCharacter(boundaryName, 'Half Orc', 'Robot Monk', 514))).toMatchObject({ ok: true });
+    expect(saveToRoster(createNewCharacter(boundaryName, 'Half Daemon', 'Robot Monk', 514))).toMatchObject({ ok: true });
     expect(loadRoster()).toMatchObject({ ok: true, value: { [boundaryName]: { Traits: { Name: boundaryName } } } });
   });
 
   it('rejects an overlength character name without changing existing roster bytes', () => {
-    const existing = createNewCharacter('ExistingName', 'Dung Elf', 'Vermineer', 506);
+    const existing = createNewCharacter('ExistingName', 'Off-Prem Elf', 'Vermineer', 506);
     const originalRoster = JSON.stringify({ ExistingName: existing });
     localStorage.setItem('progquest_roster_v1', originalRoster);
 
-    const overlength = createNewCharacter('N'.repeat(MAX_CHARACTER_NAME_LENGTH + 1), 'Half Orc', 'Robot Monk', 515);
+    const overlength = createNewCharacter('N'.repeat(MAX_CHARACTER_NAME_LENGTH + 1), 'Half Daemon', 'Robot Monk', 515);
 
     expect(saveToRoster(overlength)).toMatchObject({
       ok: false,
@@ -711,10 +711,10 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('validates the complete sheet before a roster write and preserves existing bytes on failure', () => {
-    const existing = createNewCharacter('ExistingValidSheet', 'Dung Elf', 'Vermineer', 516);
+    const existing = createNewCharacter('ExistingValidSheet', 'Off-Prem Elf', 'Vermineer', 516);
     const originalRoster = JSON.stringify({ ExistingValidSheet: existing });
     localStorage.setItem('progquest_roster_v1', originalRoster);
-    const invalid = createNewCharacter('InvalidProgressSheet', 'Half Orc', 'Robot Monk', 517);
+    const invalid = createNewCharacter('InvalidProgressSheet', 'Half Daemon', 'Robot Monk', 517);
     invalid.Quest.maxProgress = 0;
 
     expect(saveToRoster(invalid)).toMatchObject({

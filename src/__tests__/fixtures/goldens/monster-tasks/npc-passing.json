@@ -5,8 +5,8 @@
     "seed": [0.8579177698120475, 0.8263699773233384, 0.24956287536770105, 1]
   },
   "expected": {
-    "taskTag": "kill|passing Talking Pony Robot Monk|1|*",
-    "caption": "Executing a passing Talking Pony Robot Monk...",
+    "taskTag": "kill|passing Talking Roadmap Robot Monk|1|*",
+    "caption": "Executing a passing Talking Roadmap Robot Monk...",
     "opponentLevel": 1,
     "durationMs": 6000,
     "loot": { "type": "random" },

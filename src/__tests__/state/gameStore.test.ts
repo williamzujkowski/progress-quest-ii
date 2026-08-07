@@ -22,15 +22,15 @@ function fixedKillCharacter() {
 
 describe('Game Store State Machine', () => {
   beforeEach(() => {
-    useGameStore.getState().startSession({ source: 'creation', name: 'TestHero', race: 'Double Hobbit', klass: 'Ur-Paladin', seed: 'test-session' });
+    useGameStore.getState().startSession({ source: 'creation', name: 'TestHero', race: 'Double Tenant', klass: 'Incident Paladin', seed: 'test-session' });
   });
 
   it('initializes character with level 1 and valid stats', () => {
     const { character } = useGameStore.getState();
     expect(character.Traits.Name).toBe('TestHero');
     expect(character.Traits.Level).toBe(1);
-    expect(character.Traits.Race).toBe('Double Hobbit');
-    expect(character.Traits.Class).toBe('Ur-Paladin');
+    expect(character.Traits.Race).toBe('Double Tenant');
+    expect(character.Traits.Class).toBe('Incident Paladin');
     expect(character.Task).toBeDefined();
   });
 
@@ -155,14 +155,14 @@ describe('Game Store State Machine', () => {
   it('uses and defensively copies an accepted complete stat roll', () => {
     const acceptedStats: StatsMap = { STR: 18, CON: 17, DEX: 16, INT: 15, WIS: 14, CHA: 13, 'HP Max': 35, 'MP Max': 27 };
 
-    useGameStore.getState().startSession({ source: 'creation', name: 'RolledHero', race: 'Double Hobbit', klass: 'Ur-Paladin', seed: 'accepted-roll', stats: acceptedStats });
+    useGameStore.getState().startSession({ source: 'creation', name: 'RolledHero', race: 'Double Tenant', klass: 'Incident Paladin', seed: 'accepted-roll', stats: acceptedStats });
     acceptedStats.STR = 1;
 
     expect(useGameStore.getState().character.Stats).toEqual({ STR: 18, CON: 17, DEX: 16, INT: 15, WIS: 14, CHA: 13, 'HP Max': 35, 'MP Max': 27 });
   });
 
   it('replays creation deterministically from the explicit session seed', () => {
-    const request = { source: 'creation', name: 'ReplayHero', race: 'Dung Elf', klass: 'Vermineer', seed: 'replay-seed' } as const;
+    const request = { source: 'creation', name: 'ReplayHero', race: 'Off-Prem Elf', klass: 'Vermineer', seed: 'replay-seed' } as const;
     useGameStore.getState().startSession(request);
     const firstCharacter = structuredClone(useGameStore.getState().character);
     const firstRngState = useGameStore.getState().rng.getState();
@@ -174,7 +174,7 @@ describe('Game Store State Machine', () => {
   });
 
   it('loads a character through a complete fresh game session', () => {
-    const loaded = createNewCharacter('ImportedHero', 'Half Halfling', 'Ur-Paladin', new RandomGenerator('saved-character'));
+    const loaded = createNewCharacter('ImportedHero', 'Rounding Error', 'Incident Paladin', new RandomGenerator('saved-character'));
     const previousRng = useGameStore.getState().rng;
     const previousSessionGeneration = useGameStore.getState().sessionGeneration;
     useGameStore.getState().togglePause();
@@ -200,7 +200,7 @@ describe('Game Store State Machine', () => {
   });
 
   it('restores a validated complete session through one atomic store action', () => {
-    const character = createNewCharacter('RestoredHero', 'Dung Elf', 'Vermineer', 704);
+    const character = createNewCharacter('RestoredHero', 'Off-Prem Elf', 'Vermineer', 704);
     const rng = new RandomGenerator('restored-rng');
     rng.random(100);
     const rngState = rng.getState();

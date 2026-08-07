@@ -11,7 +11,10 @@ describe('legacy text grammar', () => {
     ['brush', 'brushes'],
     ['elf', 'elves'],
     ['caveman', 'cavemen'],
+    // A grammar fixture, not a trait reference. No race ends in -man any more, but the rule still
+    // applies to monster and item text, so it keeps explicit coverage here.
     ['Eel Man', 'Eel Men'],
+    ['Off-Prem Elf', 'Off-Prem Elves'],
     ['rat', 'rats'],
   ])('pluralizes %s as %s', (singular, expected) => {
     expect(plural(singular)).toBe(expected);

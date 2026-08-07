@@ -18,7 +18,7 @@ afterEach(() => {
 });
 
 const startBuying = () => {
-  const character = createNewCharacter('Market Subject', 'Half Orc', 'Ur-Paladin', 4242);
+  const character = createNewCharacter('Market Subject', 'Half Daemon', 'Incident Paladin', 4242);
   character.Gold = 5_000;
   character.Inventory = [];
   character.PendingTasks = undefined;

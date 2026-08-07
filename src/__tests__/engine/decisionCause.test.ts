@@ -11,7 +11,7 @@ import { advanceGame, type GameTransitionState } from '../../engine/transition';
 
 describe('decision causes at the transition seam', () => {
   it('attaches the encumbrance figures that sent the hero to market', () => {
-    const character = createNewCharacter('Cause Subject', 'Half Orc', 'Ur-Paladin', 606);
+    const character = createNewCharacter('Cause Subject', 'Half Daemon', 'Incident Paladin', 606);
     character.PendingTasks = undefined;
     character.Task = { description: 'Loading', durationMs: 1000, elapsedMs: 0, type: 'act_marker' };
     // Load the pack past capacity so the market branch is the one taken.
@@ -41,7 +41,7 @@ describe('decision causes at the transition seam', () => {
   });
 
   it('attaches the experience track that filled to a level', () => {
-    const character = createNewCharacter('Level Cause', 'Half Orc', 'Ur-Paladin', 707);
+    const character = createNewCharacter('Level Cause', 'Half Daemon', 'Incident Paladin', 707);
     character.PendingTasks = undefined;
     character.Task = { description: 'Executing a Rat...', durationMs: 1000, elapsedMs: 0, type: 'kill' };
 
@@ -60,7 +60,7 @@ describe('decision causes at the transition seam', () => {
   });
 
   it('leaves ordinary task starts without a cause', () => {
-    const character = createNewCharacter('Plain Subject', 'Half Orc', 'Ur-Paladin', 808);
+    const character = createNewCharacter('Plain Subject', 'Half Daemon', 'Incident Paladin', 808);
     character.PendingTasks = undefined;
     character.Task = { description: 'Executing a Rat...', durationMs: 1000, elapsedMs: 0, type: 'kill' };
     const result = advanceGame(
@@ -81,7 +81,7 @@ describe('decision causes at the transition seam', () => {
     // the elapsed argument is always a positive finite literal, so nothing exercised it — and the
     // game clock is what feeds it, which can produce a zero delta and has a history of
     // misbehaving across tab-visibility changes.
-    const character = createNewCharacter('Guard Subject', 'Half Orc', 'Ur-Paladin', 909);
+    const character = createNewCharacter('Guard Subject', 'Half Daemon', 'Incident Paladin', 909);
     const state: GameTransitionState = {
       character,
       progression: { experience: { currentSeconds: 0, maxSeconds: 1000 }, completedTasks: 0, elapsedSeconds: 0 },

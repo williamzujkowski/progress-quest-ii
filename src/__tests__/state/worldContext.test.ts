@@ -8,7 +8,7 @@ import { projectWorld, type IdentifiedGameTransitionRecord } from '../../state/w
 import { dungeonNamesAt, fieldNamesAt, raidNamesAt, substrateStage, townNamesAt } from '../../data/worldContext';
 
 const snapshot = (overrides: Partial<GamePresentationSnapshot> = {}): GamePresentationSnapshot => ({
-  hero: { name: 'Krg', race: 'Hob-Hobbit', className: 'Robot Monk', level: 7 },
+  hero: { name: 'Krg', race: 'Sub-Subprocessor', className: 'Robot Monk', level: 7 },
   act: 2,
   completedTask: 'kill',
   nextTask: 'kill',
@@ -162,7 +162,7 @@ describe('world context projection', () => {
   });
 
   it('announces the canonical kill-to-market encumbrance boundary', () => {
-    const character = createNewCharacter('Burdened Oracle', 'Half Orc', 'Robot Monk', 'world-market-boundary');
+    const character = createNewCharacter('Burdened Oracle', 'Half Daemon', 'Robot Monk', 'world-market-boundary');
     character.Plot = { act: 1, currentProgress: 0, maxProgress: 100 };
     character.PendingTasks = undefined;
     character.Inventory = [{ name: 'rat tail', qty: 100 }];
@@ -215,7 +215,7 @@ describe('world context projection', () => {
       source: source(
         46,
         { type: 'level_gained', level: 1_000_000_000 },
-        snapshot({ hero: { name: 'Krg', race: 'Hob-Hobbit', className: 'Robot Monk', level: 1_000_000_000 }, act: 1_000_000_000 }),
+        snapshot({ hero: { name: 'Krg', race: 'Sub-Subprocessor', className: 'Robot Monk', level: 1_000_000_000 }, act: 1_000_000_000 }),
       ),
     });
 
@@ -227,7 +227,7 @@ describe('world context projection', () => {
 
   it('leaves canonical state, event order, save bytes, and gameplay RNG identical when enabled', () => {
     const run = (enabled: boolean) => {
-      const character = createNewCharacter('Parity Oracle', 'Half Orc', 'Robot Monk', 'world-parity-character');
+      const character = createNewCharacter('Parity Oracle', 'Half Daemon', 'Robot Monk', 'world-parity-character');
       character.Plot = { act: 1, currentProgress: 1, maxProgress: 1 };
       character.Quest = { description: 'Typed assignment', currentProgress: 1, maxProgress: 1, history: ['Typed assignment'], kind: 'deliver' };
       character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
@@ -324,12 +324,25 @@ describe('sited substrate', () => {
     expect(substrateStage(Number.NaN)).toBe(0);
   });
 
-  it('changes what a projected location can be called, and stays deterministic', () => {
+  it('draws a projected location from the pool its act has unlocked, and stays deterministic', () => {
     const at = (act: number) => projectWorld({
       kind: 'transition',
       source: source(1, { type: 'level_gained', level: 7 }, snapshot({ act })),
     }).context;
     expect(at(1)).toEqual(at(1));
-    expect(at(30).location).not.toBe(at(1).location);
+
+    // This asserted `at(30).location !== at(1).location` until #384 renamed the races. The picked
+    // name is `choose(fieldNamesAt(act), '<name>:<race>:<class>:field:<level>')` — a hash of the
+    // hero's race string — so whether two acts happen to land on different entries is a property
+    // of that string, not of the substrate. One race name later, both acts hashed onto
+    // 'Provisional Badlands' and a passing test started failing without any behaviour changing.
+    //
+    // The pool tests above already prove acts widen what the world can be called. What belongs
+    // here is that the projection actually draws from the pool for its own act, which is the wiring
+    // the sampled comparison was standing in for and could only ever check by luck.
+    const entry = (act: number) => at(act).location.split(' // ')[0] ?? '';
+    expect(fieldNamesAt(1)).toContain(entry(1));
+    expect(fieldNamesAt(30)).toContain(entry(30));
+    expect(fieldNamesAt(30).length).toBeGreaterThan(fieldNamesAt(1).length);
   });
 });

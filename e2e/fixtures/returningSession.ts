@@ -3,7 +3,7 @@ import { RandomGenerator } from '../../src/engine/prng';
 import { createNewCharacter } from '../../src/engine/sim';
 
 const rng = new RandomGenerator('default-seed');
-const character = createNewCharacter('Krg', 'Hob-Hobbit', 'Robot Monk', rng);
+const character = createNewCharacter('Krg', 'Sub-Subprocessor', 'Robot Monk', rng);
 const activeSession = JSON.stringify({
   schemaVersion: 1,
   session: {
@@ -14,7 +14,7 @@ const activeSession = JSON.stringify({
     // Deliberately the pre-rename wording: this fixture stands in for a save written before the
     // title changed, and the log is stored text rather than something the app regenerates. Updating
     // it would quietly retire the one case that proves an older save still restores and renders.
-    log: ['Welcome to Progress Quest II! Krg the Hob-Hobbit Robot Monk sets out on an adventure.'],
+    log: ['Welcome to Progress Quest II! Krg the Sub-Subprocessor Robot Monk sets out on an adventure.'],
   },
 });
 

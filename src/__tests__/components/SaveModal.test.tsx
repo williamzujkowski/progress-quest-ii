@@ -183,7 +183,7 @@ describe('Save Manager recovery', () => {
       await waitFor(() => expect((screen.getByRole('button', { name: 'Copying…' }) as HTMLButtonElement).disabled).toBe(true));
       view.rerender(<SaveModal isOpen={false} onClose={() => undefined} />);
       act(() => {
-        useGameStore.setState({ character: createNewCharacter('Reopened', 'Dung Elf', 'Vermineer', 613) });
+        useGameStore.setState({ character: createNewCharacter('Reopened', 'Off-Prem Elf', 'Vermineer', 613) });
       });
       view.rerender(<SaveModal isOpen onClose={() => undefined} />);
       const reopenedCopy = screen.getByRole('button', { name: 'Copy Base64 .pqw Save String' }) as HTMLButtonElement;
@@ -201,8 +201,8 @@ describe('Save Manager recovery', () => {
   });
 
   it('does not replace the active session or roster bytes when importing cannot persist', async () => {
-    const existing = createNewCharacter('ExistingImportHero', 'Dung Elf', 'Vermineer', 614);
-    const imported = createNewCharacter('RejectedImportHero', 'Half Orc', 'Robot Monk', 615);
+    const existing = createNewCharacter('ExistingImportHero', 'Off-Prem Elf', 'Vermineer', 614);
+    const imported = createNewCharacter('RejectedImportHero', 'Half Daemon', 'Robot Monk', 615);
     const originalRoster = JSON.stringify({ ExistingImportHero: existing });
     localStorage.setItem('progquest_roster_v1', originalRoster);
     const activeCharacter = useGameStore.getState().character;
@@ -246,8 +246,8 @@ describe('Save Manager recovery', () => {
   // was the only roster-mutating path with no test. Every other one here has a negative case.
 
   it('removes a character from the roster once the deletion is confirmed', async () => {
-    const doomed = createNewCharacter('Doomed Bureaucrat', 'Half Orc', 'Robot Monk', 701);
-    const spared = createNewCharacter('Spared Bureaucrat', 'Dung Elf', 'Vermineer', 702);
+    const doomed = createNewCharacter('Doomed Bureaucrat', 'Half Daemon', 'Robot Monk', 701);
+    const spared = createNewCharacter('Spared Bureaucrat', 'Off-Prem Elf', 'Vermineer', 702);
     localStorage.setItem('progquest_roster_v1', JSON.stringify({
       'Doomed Bureaucrat': doomed,
       'Spared Bureaucrat': spared,
@@ -264,7 +264,7 @@ describe('Save Manager recovery', () => {
   });
 
   it('deletes nothing when the confirmation is declined', async () => {
-    const doomed = createNewCharacter('Reprieved Bureaucrat', 'Half Orc', 'Robot Monk', 703);
+    const doomed = createNewCharacter('Reprieved Bureaucrat', 'Half Daemon', 'Robot Monk', 703);
     const originalRoster = JSON.stringify({ 'Reprieved Bureaucrat': doomed });
     localStorage.setItem('progquest_roster_v1', originalRoster);
     const declined = vi.spyOn(window, 'confirm').mockReturnValue(false);
@@ -282,7 +282,7 @@ describe('Save Manager recovery', () => {
   });
 
   it('reports a failed deletion rather than appearing to have removed the character', async () => {
-    const doomed = createNewCharacter('Undeletable Bureaucrat', 'Half Orc', 'Robot Monk', 704);
+    const doomed = createNewCharacter('Undeletable Bureaucrat', 'Half Daemon', 'Robot Monk', 704);
     const originalRoster = JSON.stringify({ 'Undeletable Bureaucrat': doomed });
     localStorage.setItem('progquest_roster_v1', originalRoster);
     vi.spyOn(window, 'confirm').mockReturnValue(true);

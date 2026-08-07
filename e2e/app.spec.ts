@@ -117,7 +117,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
 
     // And the selection has to be visible on the row, not only in the DOM. Colour alone would not
     // be enough, so the weight is asserted too.
-    const chosen = creator.getByText('Hob-Hobbit', { exact: true });
+    const chosen = creator.getByText('Sub-Subprocessor', { exact: true });
     await chosen.click();
     const [selected, other] = await creator.locator('.picker-option').evaluateAll((nodes) => {
       const pick = (node: Element) => {
@@ -135,8 +135,8 @@ test.describe('Progress Quest III terminal dashboard', () => {
   });
 
   test('promotes the most recently saved roster character when no active checkpoint exists', async ({ browser }) => {
-    const earlier = createNewCharacter('Earlier Roster', 'Half Orc', 'Robot Monk', 706);
-    const latest = createNewCharacter('Latest Roster', 'Dung Elf', 'Vermineer', 707);
+    const earlier = createNewCharacter('Earlier Roster', 'Half Daemon', 'Robot Monk', 706);
+    const latest = createNewCharacter('Latest Roster', 'Off-Prem Elf', 'Vermineer', 707);
     const context = await browser.newContext({
       baseURL: BASE_URL,
       storageState: {
