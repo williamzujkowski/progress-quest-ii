@@ -23,6 +23,7 @@ interface FocusRing {
   style: string;
   width: number;
   outline: [number, number, number, number];
+  shadow: [number, number, number, number] | null;
   behind: [number, number, number];
 }
 
@@ -56,7 +57,14 @@ const readFocusRing = (element: Element): FocusRing => {
     node = node.parentElement;
   }
 
+  // A ring is not always an outline. A two-tone indicator draws its inner band with box-shadow,
+  // and measuring only the outline reports such a change as no change at all — which is how an
+  // earlier attempt at this looked like it had done nothing. The shadow's colour is whatever
+  // precedes its first length, which is the form every ring-shaped shadow takes.
+  const shadowColour = styles.boxShadow === 'none' ? null : styles.boxShadow.replace(/\s*[\d.]+px.*$/, '').trim();
+
   return {
+    shadow: shadowColour ? paint(shadowColour) : null,
     style: styles.outlineStyle,
     width: Number.parseFloat(styles.outlineWidth) || 0,
     outline: paint(styles.outlineColor),
@@ -92,9 +100,18 @@ export const expectVisibleFocusRing = async (locator: Locator, context: string):
   // The assertion the previous checks were missing entirely.
   expect(ring.outline[3], `${context}: outline-color alpha`).toBeGreaterThan(0);
 
-  const ratio = contrast([ring.outline[0], ring.outline[1], ring.outline[2]], ring.behind);
+  // Every band the ring is made of, against the backdrop and against each other. One band that
+  // contrasts is enough to locate the control, which is the point of a two-tone indicator: it
+  // carries its own contrast so it survives a backdrop the page does not choose.
+  const bands: [number, number, number][] = [[ring.outline[0], ring.outline[1], ring.outline[2]]];
+  if (ring.shadow && ring.shadow[3] > 0) bands.push([ring.shadow[0], ring.shadow[1], ring.shadow[2]]);
+
+  const candidates = bands.map((band) => contrast(band, ring.behind));
+  if (bands.length > 1) candidates.push(contrast(bands[0]!, bands[1]!));
+  const ratio = Math.max(...candidates);
+
   expect(
     ratio,
-    `${context}: focus ring contrast against its backdrop was ${ratio.toFixed(2)}:1`,
+    `${context}: the strongest edge in the focus ring reached only ${ratio.toFixed(2)}:1`,
   ).toBeGreaterThanOrEqual(FOCUS_RING_MIN_CONTRAST);
 };
