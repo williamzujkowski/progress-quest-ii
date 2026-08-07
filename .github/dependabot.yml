@@ -20,8 +20,8 @@ updates:
         dependency-type: production
         update-types: [minor, patch]
     ignore:
-      # The engine is pinned to a legacy behavioural oracle and a major React change is a
-      # deliberate migration, not a dependency bump. Majors are surfaced by hand.
+      # A major React change is a deliberate migration, not a dependency bump. Majors are
+      # surfaced by hand. (This once also cited a pinned legacy oracle; that was retired in #381.)
       - dependency-name: react
         update-types: [version-update:semver-major]
       - dependency-name: react-dom
