@@ -70,9 +70,9 @@ export class RuntimeErrorBoundary extends React.Component<RuntimeErrorBoundaryPr
     return (
       <main className="recovery-shell">
         <section className="recovery-panel" aria-labelledby="recovery-title">
-          <p className="eyebrow">PROGRESS QUEST II RUNTIME RECOVERY</p>
+          <p className="eyebrow">PROGRESS QUEST III RUNTIME RECOVERY</p>
           <h1 id="recovery-title" ref={this.headingRef} tabIndex={-1}>The quest process encountered an enthusiasm.</h1>
-          <p className="recovery-code">*** STOP: PQII_INTERFACE_EXCEPTION ***</p>
+          <p className="recovery-code">*** STOP: PQIII_INTERFACE_EXCEPTION ***</p>
           <p>The interface stopped, which is dramatic. Your locally saved characters were not deleted.</p>
           <p>No report has been transmitted. You may download a deliberately boring, redacted diagnostic file.</p>
           <div className="recovery-actions">
