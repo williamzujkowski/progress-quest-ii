@@ -6,7 +6,7 @@ Treat both earlier projects as **lineage and feature inspiration, not donor code
 
 - **DragonII's 2012 Windows game:** no source or license grant was found. “Free game” describes price, not permission to copy. Reuse no executable code, extracted resources, Russian text, screenshots, or generated data.
 - **`nbollom/pq2`:** the repository is explicitly GPLv3. Directly copying its code into this MIT project would require GPLv3-compatible distribution of the resulting covered work; do not import it unless the project deliberately accepts that licensing change. Its classic Progress Quest tables and `pq.png` have no separate provenance notices, so do not import those assets/data even as isolated files.
-- High-level mechanics and UI ideas may be independently implemented, but the canonical `pq-web-src/` baseline—not either sequel—must remain the behavior oracle.
+- High-level mechanics and UI ideas may be independently implemented, but the behavioural baseline—not either sequel—governs. That baseline was the `pq-web-src/` submodule when this note was written and is now the recorded goldens in `src/__tests__/fixtures/goldens/`; see [ADR 0006](../adr/0006-retire-the-legacy-oracle-and-submodule.md). The rule about not importing from the sequels is unchanged.
 
 This is a conservative engineering assessment, not legal advice.
 

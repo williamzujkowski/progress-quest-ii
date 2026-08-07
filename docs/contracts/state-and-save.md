@@ -40,20 +40,20 @@ Owner: `src/engine/transition.ts`; shared limits: `src/data/limits.ts`
 - Level, stats, spell levels, inventory quantities, completed-task count, and adventure elapsed use the shared finite limit, `MAX_PERSISTED_VALUE` (1e9). Gold does not: it saturates at `MAX_PERSISTED_GOLD` (1e12), a thousand times higher. Anything adding new saturating logic must pick the right one of the two. Quest and plot progress remain capped by their accepted per-track maxima.
 - Inventory and spell collections do not append beyond the existing 5,000-row limit. Existing rows may still advance until their value ceiling.
 - Saturation consumes the same RNG calls as the corresponding ordinary transition. A gain event or reward effect is emitted only when persisted state actually changes.
-- Monster-task perturbation retains the exact legacy roll count through the last level with a finite progression interval, then reuses that bounded roll budget for higher accepted levels.
+- Monster-task perturbation retains the exact roll count the original build made, through the last level with a finite progression interval, then reuses that bounded roll budget for higher accepted levels.
 - Every completed Act advances to the next accepted Act, resets duration to `min(1,000,000,000, 3600 * (1 + 5 * nextAct))`, and—after Act I—grants one canonical item roll plus one equipment roll at the hero's current level. At the persistence ceiling the numeric Act remains saturated, but later transitions, rewards, and saves continue.
 - Inter-Act nemesis loops consume at most the 95 materialized-round budget synchronously. Longer loops persist a compact replay cursor tied to the current Act and checkpoint RNG state, keeping every later narration step and canonical post-loop continuation while allowing Acts to scale to the persistence ceiling.
 - Ordinary legacy-sized cinematics consume RNG in the canonical eager order. The bounded synthetic-high-Act exception changes only *when* entropy after round 95 is consumed: one round is replayed when its narration task begins instead of materializing an enormous queue up front. Mid-fight RNG state therefore intentionally differs from an unbounded legacy queue; exact narration, per-round draws, and post-fight continuation reconverge when the cursor finishes.
 - A kill that both drops random loot and crosses the plot threshold resolves its loot *between*
-  the cinematic's opening and its remainder. Legacy runs `InterplotCinematic` whole and resolves
-  the loot afterwards. This is a deliberate divergence in draw order, not an oversight: the two
-  agree on the observable surface — the same item is awarded and the same narration queue is
-  produced — and the oracle fixture `random-star-interplot.json` is re-run through the real
-  legacy code on every `npm test` to keep that true. The clause above about canonical eager order
+  the cinematic's opening and its remainder. The original ran `InterplotCinematic` whole and
+  resolved the loot afterwards. This is a deliberate divergence in draw order, not an oversight:
+  the two agree on the observable surface — the same item is awarded and the same narration queue
+  is produced — and the golden `random-star-interplot.json`, recorded from that original build,
+  is replayed on every `npm test` to keep that true. The clause above about canonical eager order
   does not extend to this interaction.
 - Market arrival schedules one ordered inventory stack per one-second selling task. Ordinary stacks pay `quantity * level`; names containing ` of ` apply the two canonical `RandomLow` multipliers. Gold and sale events report only the amount actually credited at the persistence ceiling. Market exit buys for five seconds only when Gold is strictly greater than the level price; equality takes the four-second route back to the killing fields.
 
-Verified by: `src/__tests__/engine/actSoak.test.ts`, `src/__tests__/engine/transition.test.ts`, `src/__tests__/engine/reward.test.ts`, and `src/__tests__/fidelity/transitionParity.test.ts`.
+Verified by: `src/__tests__/engine/actSoak.test.ts`, `src/__tests__/engine/transition.test.ts`, `src/__tests__/engine/reward.test.ts`, and `src/__tests__/goldens/transitionParity.test.ts`.
 
 ## Session entry
 
@@ -106,7 +106,7 @@ Owner: `src/engine/prng.ts`
 
 After dependencies and the Chromium and WebKit Playwright browsers are installed,
 `npm run quality` is the canonical local, CI, and deployment gate. It runs full Nexus installation verification,
-warning-clean modern lint, typecheck, unit and legacy-oracle tests under enforced
+warning-clean modern lint, typecheck, unit and golden-master tests under enforced
 coverage floors, dependency
 audit at moderate severity plus registry signature verification, Playwright E2E,
 and production PWA tests. There is no standalone build step: the production build
@@ -122,6 +122,6 @@ while still failing hard installation/configuration errors. Nexus's generic
 quality tool remains bypassed until upstream issue #4355 stops assuming ESLint
 and pnpm instead of repository-declared scripts.
 
-Run the deterministic legacy data and isolated transition-oracle contracts separately with `npm run test:fidelity`.
+Run the trait-table structure checks and the recorded transition goldens separately with `npm run test:goldens`.
 
 PR handoff gates: independent Claude standards/spec/security review through `.agents/skills/code-review` and `git diff --check`. Adapter-backed Nexus review remains bypassed until upstream issues #4350 and #4351 are fixed and verified locally; `consensus_vote` is exempt while it routes to Claude, per the adapter status note in AGENTS.md.

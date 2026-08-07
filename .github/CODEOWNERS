@@ -6,18 +6,16 @@
 # Everything else is deliberately unowned. A list that covers the whole tree
 # marks nothing.
 
-# The legacy oracle and the parity suite encode a contract with a build this
-# project does not control. Changing them is a decision about fidelity, not a
-# refactor, and docs/content-provenance.md records that the rights position over
-# the derived material is unresolved.
-/pq-web-src                       @williamzujkowski
-/scripts/legacy-oracle.mjs        @williamzujkowski
-/scripts/test-legacy-oracle.mjs   @williamzujkowski
-/src/__tests__/fidelity/          @williamzujkowski
+# The goldens encode a contract with a build this project no longer keeps a copy
+# of, so nothing can re-record them. Changing a recorded value is a decision
+# about how the game behaves, not a refactor, and docs/content-provenance.md
+# records that the rights position over the derived material is unresolved.
+/src/__tests__/goldens/           @williamzujkowski
+/src/__tests__/fixtures/goldens/  @williamzujkowski
 /src/data/traits.ts               @williamzujkowski
 
-# CI decides what runs against untrusted pull-request content. The submodule URL
-# pin and --ignore-scripts both live here, and both are one line from absent.
+# CI decides what runs against untrusted pull-request content. --ignore-scripts
+# lives here, and it is one line from absent.
 /.github/workflows/               @williamzujkowski
 
 # The boundary documents themselves. If these drift, every other guard in this

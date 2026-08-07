@@ -30,8 +30,9 @@ const EXCLUDED_SOURCES = ['nbollom', 'DragonII'];
  * notes and the provenance inventory have to name these projects in order to exclude them, and a
  * check that forbade discussing a boundary would be unusable.
  *
- * `pq-web-src/` is absent for a different reason - it is the sanctioned read-only oracle, with its
- * own separate provenance record.
+ * Everything else in the tree is now in scope. The original web port used to be checked out here
+ * as a submodule and was exempt on the grounds that it had its own provenance record; it is gone,
+ * and no directory is exempt for that reason any more.
  */
 const SCANNED_DIRECTORIES = ['src', 'e2e', 'e2e-pwa', 'scripts', 'public'];
 

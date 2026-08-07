@@ -10,7 +10,7 @@ Standalone guidance for AI coding agents (OpenCode, Codex CLI, Cursor, Aider, Cl
 
 Build and maintain a modern, fully-typed, responsive, and tested web application for **Progress Quest III**.
 
-- **Reference Baseline:** `pq-web-src/` contains the legacy JavaScript/HTML source (`main.js`, `config.js`, `newguy.js`, `roster.js`, `sim.js`, `cheat.js`, `clock.js`, `main.css`, `progros.css`). It is the behavioural reference for anything this project has not deliberately changed, and the oracle harness exists to catch *unintended* drift. A parity failure is a question — did we mean this? — not an automatic bug. An unexplained divergence is still far likelier to be a mistake than a choice, so treat it as one until someone explains it.
+- **Reference Baseline:** the recorded goldens in `src/__tests__/fixtures/goldens/`. Each file captures one completed task as the original web build resolved it, recorded while that build was still checked out here as a submodule. The submodule is gone — this is a spiritual successor, not a port, and neither the suite nor CI fetches or executes third-party code any more — so the goldens cannot be re-recorded and are the whole of the behavioural baseline. They exist to catch *unintended* drift. A failure is a question — did we mean this? — not an automatic bug, but an unexplained divergence is still far likelier to be a mistake than a choice, so treat it as one until someone explains it. Never regenerate a golden from this project's own engine; that produces a test that cannot fail.
 - **Modernization Goals:**
   1. **Strict TypeScript & Modular Engine:** Decouple core game simulation logic (`src/engine/`) from UI rendering (`src/components/`). Zero UI dependencies in engine code.
   2. **Modern Web UI & Design System:** Implement a responsive visual design system (supporting retro ProgrOS / Windows classic themes alongside sleek modern dark/light modes) with smooth animations and progress bars.
@@ -84,7 +84,7 @@ A comment is read by someone who was not there and cannot check. Write only what
 
 For any non-trivial task (new features, architectural refactoring, UI redesign):
 
-1. **Research** — Inspect `pq-web-src/` baseline files and existing codebase to ground implementation details in empirical evidence.
+1. **Research** — Inspect the recorded goldens, the research notes in `docs/`, and the existing codebase to ground implementation details in empirical evidence.
 2. **Plan** — Outline the step-by-step implementation plan, listing files created/modified and target test cases.
 3. **Implement** — Execute changes incrementally using TDD and the Ponytail 7-rung decision ladder.
 4. **Verify** — Run lint, type-check, unit tests (`npm test`), and E2E build validation before concluding work.
@@ -114,7 +114,7 @@ Always follow this layout — do not create duplicate or parallel module structu
 
 | Layer | Canonical Location | Description |
 | :--- | :--- | :--- |
-| **Legacy Baseline** | `pq-web-src/` | Original web JS/HTML/CSS implementation (Read-only reference). |
+| **Behavioural Goldens** | `src/__tests__/goldens/`, `src/__tests__/fixtures/goldens/` | Recorded output of the original web build, plus the harness that replays it against this engine. Not regenerable. |
 | **Game Engine** | `src/engine/` | Pure JS/TS game logic: tick clock, character stats, inventory, quest generator, equipment, monster encounters, EXP & leveling curves. Zero UI dependencies. |
 | **Game Data & Config** | `src/data/` | Data tables for races, classes, traits, spell names, equipment prefixes/suffixes, quest templates (`config.js` port). |
 | **State & Storage** | `src/state/` | Game loop state machine, character store, save game serialization/deserialization, LocalStorage/IndexedDB persistence. |
@@ -221,7 +221,7 @@ Most of these are imported. `.agents/skills/PROVENANCE.md` records where each ca
 Agents working in this codebase MUST perform periodic checks to maintain high code quality and accuracy:
 - **Code & Security Reviews (`code-review` / `diagnosing-bugs`)**: Before submitting a PR or merging major features, run a code and security audit verifying type safety, error boundaries, and input validation.
 - **Architecture & Vestigial Code Audits (`improve-codebase-architecture`)**: Periodically inspect module boundaries and remove deprecated, unused, or vestigial code.
-- **Accuracy Verification (`to-spec` / `domain-modeling`)**: Verify game formulas and data structures against the canonical `pq-web-src/` baseline.
+- **Accuracy Verification (`to-spec` / `domain-modeling`)**: Verify game formulas and data structures against the recorded goldens and the contracts in `docs/contracts/`.
 
 ---
 

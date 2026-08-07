@@ -1,5 +1,11 @@
 # A spiritual successor, not a port
 
+**Status: in force, except for the paragraph below about keeping `pq-web-src/` and the oracle
+harness, which [ADR 0006](0006-retire-the-legacy-oracle-and-submodule.md) supersedes. The submodule
+and `scripts/legacy-oracle.mjs` are gone; the recorded goldens they produced remain the baseline
+and are still checked on every run. Everything else here — the divergences, and the rule about how
+to treat an unexplained one — is unchanged.**
+
 This project is inspired by Progress Quest. It is no longer trying to reproduce it. The goal is
 a game for people who want to play games without playing them and watch numbers go up, and where
 that goal and exact legacy behaviour disagree, the goal wins.

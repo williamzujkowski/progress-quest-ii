@@ -16,19 +16,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          submodules: recursive
-
-      - name: Verify legacy baseline
-        run: |
-          # The URL first, and before anything reads the submodule. A pull request supplies its own
-          # .gitmodules, and scripts/legacy-oracle.mjs runs pq-web-src/config.js and main.js through
-          # vm.runInContext during npm test - so an unpinned URL is arbitrary code arriving from a
-          # repository that is not this one, and that CodeQL does not scan. The status check below
-          # cannot catch it: a fork changes the URL and the gitlink together and it still reports
-          # clean.
-          test "$(git config -f .gitmodules submodule.pq-web-src.url)" = "https://bitbucket.org/grumdrig/pq-web.git"
-          test -f pq-web-src/main.js
-          test "$(git submodule status --recursive | cut -c1)" = " "
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -65,7 +52,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          submodules: false
 
       - name: Review dependency changes
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
