@@ -345,4 +345,35 @@ describe('sited substrate', () => {
     expect(fieldNamesAt(30)).toContain(entry(30));
     expect(fieldNamesAt(30).length).toBeGreaterThan(fieldNamesAt(1).length);
   });
+
+  it.each([
+    ['field', fieldNamesAt, 'kill'],
+    ['town', townNamesAt, 'selling'],
+  ] as const)('reaches %s names that only a late act unlocks', (label, pool, nextTask) => {
+    // One venue per naming function. townName and milestoneName had no wiring assertion at all —
+    // fieldName was the only one the sampled comparison ever touched, and it could not see the act
+    // being ignored either.
+    const lateOnly = pool(30).filter((name) => !pool(0).includes(name));
+    expect(lateOnly.length, `act 30 unlocks no ${label} names of its own`).toBeGreaterThan(0);
+
+    const drawn = new Set<string>();
+    for (let index = 0; index < 60; index += 1) {
+      const context = projectWorld({
+        kind: 'transition',
+        source: source(1, { type: 'level_gained', level: 7 }, snapshot({
+          act: 30,
+          nextTask,
+          completedTask: nextTask,
+          hero: { name: `Hero ${index}`, race: 'Sub-Subprocessor', className: 'Robot Monk', level: 7 },
+        })),
+      }).context;
+      drawn.add(context.location.split(' // ')[0] ?? '');
+    }
+
+    expect(
+      lateOnly.some((name) => drawn.has(name)),
+      `sixty heroes at act 30 drew only ${[...drawn].join(', ')}, none unlocked by that act`,
+    ).toBe(true);
+  });
+
 });
