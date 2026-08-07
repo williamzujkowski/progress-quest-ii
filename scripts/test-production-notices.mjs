@@ -51,6 +51,48 @@ test('production notice verification rejects missing project credit', () => {
   );
 });
 
+test('production notice verification rejects a shipped dependency the notices do not attribute', () => {
+  // The case this gate was extended for. `remarque-tokens` was a production dependency emitting
+  // custom properties into the CSS bundle while appearing in neither the notices nor the
+  // provenance inventory (#326). The font-only version of this check could not see it.
+  assert.throws(
+    () => verifyProductionNotices(completeNotices, 'const files = ["./THIRD_PARTY_NOTICES.txt"]', ['remarque-tokens']),
+    /omit the shipped dependency remarque-tokens/,
+  );
+  assert.doesNotThrow(
+    () => verifyProductionNotices(
+      `${completeNotices}\nremarque-tokens 0.26.0 — MIT`,
+      'const files = ["./THIRD_PARTY_NOTICES.txt"]',
+      ['remarque-tokens'],
+    ),
+  );
+});
+
+test('production notice verification rejects a dependency with no attribution decision recorded', () => {
+  // A new production dependency has no marker, so it cannot be checked, so it fails. Passing an
+  // unrecognised package silently is the exact behaviour that let #326 happen: the gate reported
+  // green on a list that had never been asked about the package at all.
+  assert.throws(
+    () => verifyProductionNotices(completeNotices, 'const files = ["./THIRD_PARTY_NOTICES.txt"]', ['some-new-package']),
+    /some-new-package has no attribution recorded/,
+  );
+});
+
+test('production notice verification does not mistake inherited object keys for markers', () => {
+  // NOTICE_MARKERS is a plain object literal, so `markers[name]` for `constructor` or `toString`
+  // returns a function rather than undefined. Read with a lookup that ignores the prototype, a
+  // package with one of those names is unrecorded and fails; read with plain indexing it resolves
+  // to `Function.prototype.toString` and `notices.includes(fn)` decides attribution. Same defect
+  // class as #308.
+  for (const inherited of ['constructor', 'toString', 'valueOf', '__proto__']) {
+    assert.throws(
+      () => verifyProductionNotices(completeNotices, 'const files = ["./THIRD_PARTY_NOTICES.txt"]', [inherited]),
+      /has no attribution recorded/,
+      `expected the inherited key ${inherited} to be treated as unrecorded`,
+    );
+  }
+});
+
 test('production notice verification rejects a notice omitted from the offline shell', () => {
   assert.throws(
     () => verifyProductionNotices(completeNotices, 'const files = []'),

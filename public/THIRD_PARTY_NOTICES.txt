@@ -53,6 +53,12 @@ DIRECT RUNTIME SOFTWARE
   Copyright (c) 2026 William Zujkowski
 - React and React DOM 19.2.8 — MIT
   Copyright (c) Meta Platforms, Inc. and affiliates.
+- remarque-tokens 0.26.0 — MIT
+  Copyright (c) 2026 William Zujkowski
+  The design-token stylesheet imported by src/index.css at its `core`
+  entrypoint. Its custom properties are emitted into the production CSS
+  bundle, so this is distributed material rather than a build-time tool.
+  https://github.com/williamzujkowski/remarque
 - Scheduler 0.27.0 — MIT
   Copyright (c) Meta Platforms, Inc. and affiliates.
 - Zod 4.4.3 — MIT
