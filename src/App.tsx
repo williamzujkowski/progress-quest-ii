@@ -122,12 +122,12 @@ export const App: React.FC<AppProps> = ({ sessionCheckpoints }) => {
       <HeroBanner />
 
       <main className="main-grid" id="game-dashboard">
-        <CharacterSheetView />
         <div className="quest-column">
           <QuestLog />
-          <LogFeed />
+          <InventoryView />
         </div>
-        <InventoryView />
+        <LogFeed />
+        <CharacterSheetView />
       </main>
 
       <SaveModal

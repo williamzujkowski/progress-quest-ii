@@ -415,7 +415,17 @@ input[type='radio'] {
 
 .main-grid {
   display: grid;
-  grid-template-columns: minmax(16rem, 0.9fr) minmax(20rem, 1.35fr) minmax(17rem, 0.95fr);
+  /* Widest in the middle, flanked by two equal columns, and ordered the way the dashboard is read:
+     what the hero is doing, then what is happening, then what they are carrying.
+
+     The console earns the width because it is the only column made of sentences. It used to sit
+     stacked under the quest panel while the item list — short strings and a count — had a column
+     to itself, so prose was the thing being squeezed. It now has both the width and a full column
+     of height, rather than the two event rows it was previously guaranteed.
+
+     The minimums travel with their panels rather than staying put: the loadout needs 16rem for its
+     two-column equipment grid, and the quest column needs more than that for a task line. */
+  grid-template-columns: minmax(18rem, 0.9fr) minmax(21rem, 1.5fr) minmax(16rem, 0.9fr);
   gap: var(--space-3);
 }
 
