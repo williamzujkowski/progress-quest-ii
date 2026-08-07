@@ -387,6 +387,26 @@
 .hero-stats-quick { flex-wrap: wrap; }
 .stat-pill { border-radius: 0.35rem; }
 
+/*
+ * The unit, quieter than the figure it belongs to. A dashboard whose whole content is numbers
+ * should let the numbers carry the emphasis, and "GP" set at the same size as the balance competes
+ * with it for attention.
+ *
+ * Demoted by scale alone, deliberately. Dimming the colour would be the obvious way and it moves
+ * the contrast ratio, which every theme is measured against at AA in e2e/contrast.spec.ts — and
+ * these pills are small text, so they need 4.5:1 rather than the large-text 3:1. Same colour, less
+ * room: the effect is the same and nothing has to be re-measured.
+ *
+ * The literal space before it stays. Replacing it with a margin was the tidier-looking version and
+ * it changed the accessible name from "42 GP" to "42GP" — caught by app.spec.ts:446, which finds
+ * this control by that name, and which a screen reader would have read out.
+ */
+.stat-unit {
+  font-size: 0.8em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
 .card {
   border-radius: 0.5rem;
   box-shadow: 0 10px 28px var(--shadow-color);
