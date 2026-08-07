@@ -99,28 +99,26 @@ export const HeroBanner: React.FC = () => {
           </div>
         </div>
 
-        <div className="hero-stats-quick">
-          {/* Gold reads once, here. Carried weight lives on the inventory panel, where the
-              bag it describes is. The tooltip is what teaches that Gold weighs nothing. */}
-          <div className="stat-pill gold-pill">
-            <Coins size={16} aria-hidden="true" />
-            <ItemTooltip kind="inventory" name="Gold" quantity={character.Gold}>
-              <GameNumber value={character.Gold} />{' '}<span className="stat-unit">GP</span>
-            </ItemTooltip>
-          </div>
-
-          {/* The rate, not the total. Absent until the window is long enough to mean something,
-              because a wild first figure is worse than no figure on a dashboard made of numbers. */}
-          {velocity !== null && (
-            <div className="stat-pill velocity-pill" title="Completed tasks per hour, averaged over the last few minutes">
-              <Gauge size={16} aria-hidden="true" />
-              <span>
-                <GameNumber value={velocity} />{' '}<span className="stat-unit">/hr</span>
-                <span className="sr-only"> tasks filed per hour</span>
-              </span>
-            </div>
-          )}
+        {/* Gold reads once, here. Carried weight lives on the inventory panel, where the
+            bag it describes is. The tooltip is what teaches that Gold weighs nothing. */}
+        <div className="stat-pill gold-pill">
+          <Coins size={16} aria-hidden="true" />
+          <ItemTooltip kind="inventory" name="Gold" quantity={character.Gold}>
+            <GameNumber value={character.Gold} />{' '}<span className="stat-unit">GP</span>
+          </ItemTooltip>
         </div>
+
+        {/* The rate, not the total. Absent until the window is long enough to mean something,
+            because a wild first figure is worse than no figure on a dashboard made of numbers. */}
+        {velocity !== null && (
+          <div className="stat-pill velocity-pill" title="Completed tasks per hour, averaged over the last few minutes">
+            <Gauge size={16} aria-hidden="true" />
+            <span>
+              <GameNumber value={velocity} />{' '}<span className="stat-unit">/hr</span>
+              <span className="sr-only"> tasks filed per hour</span>
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="hero-prime-stats" data-testid="hero-prime-stats" aria-label="Prime stats">
