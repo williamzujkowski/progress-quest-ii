@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RandomGenerator } from '../../engine/prng';
 import { createNewCharacter } from '../../engine/sim';
 import { advanceGame } from '../../engine/transition';
-import { MAX_PENDING_ELAPSED_MS } from '../../data/limits';
+import { MAX_PENDING_ELAPSED_MS, MAX_PERSISTED_ITEMS } from '../../data/limits';
 import { createActivityEntries, useGameStore } from '../../state/gameStore';
 import { activeCheckpointV1Schema } from '../../state/schemas';
 import { diagnostics } from '../../state/diagnostics';
@@ -16,6 +16,7 @@ const FIXED_SAVED_AT = 1_700_000_000_000;
 import {
   ACTIVE_CHECKPOINT_KEY,
   ACTIVE_CHECKPOINT_LKG_KEY,
+  MAX_CHECKPOINT_SERIALIZED_LENGTH,
   captureActiveSession,
   loadActiveCheckpoint,
   repairActiveCheckpoint,
@@ -445,5 +446,151 @@ describe('active session checkpoint boundary', () => {
       checkpoint: { session: { savedAtMs: FIXED_SAVED_AT + 5_000 } },
     });
     controller.dispose();
+  });
+});
+
+describe('the serialized payload cap', () => {
+  // MAX_CHECKPOINT_SERIALIZED_LENGTH guards both directions and neither was exercised. The two
+  // sibling ledgers each cover their cap; this is the module that decides whether a session can
+  // restore at all, so it was the wrong one to leave unexercised (#334).
+
+  const oversizedSession = () => {
+    useGameStore.getState().startSession({ source: 'creation', name: 'Overstuffed', race: 'Half Orc', klass: 'Robot Monk', seed: 11 });
+    const checkpoint = captureActiveSession(FIXED_SAVED_AT);
+    // Schema-valid and over the cap at the same time, which is the only combination that reaches
+    // the guard: an invalid checkpoint is refused earlier by safeParse for a different reason.
+    // MAX_PERSISTED_ITEMS is 5,000 and an item name may be 200 characters, so the inventory alone
+    // can carry about 1.1 MB while satisfying every bound the schema states.
+    checkpoint.session.character.Inventory = Array.from({ length: MAX_PERSISTED_ITEMS }, (_unused, index) => ({
+      name: `${index}`.padEnd(200, 'x'),
+      qty: 1,
+    }));
+    return checkpoint;
+  };
+
+  it('refuses to write a checkpoint that serializes past the cap, and writes nothing at all', () => {
+    const checkpoint = oversizedSession();
+    expect(activeCheckpointV1Schema.safeParse(checkpoint).success).toBe(true);
+    expect(JSON.stringify(checkpoint).length).toBeGreaterThan(MAX_CHECKPOINT_SERIALIZED_LENGTH);
+
+    const written: string[] = [];
+    const storage = { getItem: () => null, setItem: (key: string) => { written.push(key); } };
+
+    const result = writeActiveCheckpoint(storage, checkpoint, null);
+    expect(result).toEqual({
+      ok: false,
+      error: { code: 'invalid_schema', message: 'The active session is too large and was not checkpointed.' },
+    });
+    // The refusal has to happen before the last-known-good copy is touched. A guard that rejected
+    // the write after rotating LKG would spend the recovery copy on a checkpoint it then refused.
+    expect(written).toEqual([]);
+  });
+
+  /**
+   * A checkpoint that serializes to exactly `target` bytes, built by padding one inventory item.
+   *
+   * Needed because the write guard's boundary is otherwise unpinned: with only an oversized case
+   * and an ordinary case, flipping `<=` to `<` passes every test. Item names are plain `x`, so no
+   * JSON escaping perturbs the length while it is being tuned.
+   */
+  const checkpointOfExactly = (target: number) => {
+    useGameStore.getState().startSession({ source: 'creation', name: 'Exact', race: 'Half Orc', klass: 'Robot Monk', seed: 13 });
+    const checkpoint = captureActiveSession(FIXED_SAVED_AT);
+    const inventory: { name: string; qty: number }[] = [];
+    checkpoint.session.character.Inventory = inventory;
+    checkpoint.session.log = [];
+    const length = () => JSON.stringify(checkpoint).length;
+
+    // Index-prefixed and padded to a fixed 200: the schema requires inventory names to be unique,
+    // so identical filler fails that refinement rather than the size guard being measured. padEnd
+    // never truncates, so every name is exactly 200 characters whatever the index, which is what
+    // makes the per-item cost below a constant rather than an estimate.
+    const filler = (index: number) => ({ name: `${index}`.padEnd(200, 'x'), qty: 1 });
+
+    // Two costs, not one: the first element joins an empty array, every later element also pays
+    // for the comma in front of it. Measuring only the first and multiplying overstates nothing
+    // and understates by exactly one byte per item, which is a few kilobytes at this scale.
+    const base = length();
+    inventory.push(filler(0));
+    const firstItem = length() - base;
+    inventory.push(filler(1));
+    const perItem = length() - base - firstItem;
+    inventory.length = 0;
+
+    // Solved rather than searched. Re-serializing after every push walks a structure that grows
+    // toward a megabyte, so the obvious loop is quadratic — it passed alone and then timed out at
+    // five seconds once the suite ran it under load.
+    const count = Math.ceil((target - base - firstItem - 900) / perItem) + 1;
+    expect(count).toBeLessThanOrEqual(MAX_PERSISTED_ITEMS);
+    for (let index = 0; index < count; index += 1) inventory.push(filler(index));
+    expect(length()).toBe(base + firstItem + (count - 1) * perItem);
+
+    // Whatever is left is under 900, so one log entry finishes the job inside a description's own
+    // 1,000-character cap. Its shape cost is measured, not assumed.
+    const before = length();
+    checkpoint.session.log = [''];
+    checkpoint.session.log = ['x'.repeat(target - before - (length() - before))];
+    return checkpoint;
+  };
+
+  it('writes a checkpoint of exactly the cap, and refuses one a single byte over', () => {
+    // Pins <= against <, the same way the read path's exact-length case pins > against >=.
+    const exact = checkpointOfExactly(MAX_CHECKPOINT_SERIALIZED_LENGTH);
+    expect(JSON.stringify(exact).length).toBe(MAX_CHECKPOINT_SERIALIZED_LENGTH);
+    expect(activeCheckpointV1Schema.safeParse(exact).success).toBe(true);
+    expect(writeActiveCheckpoint({ getItem: () => null, setItem: () => {} }, exact, null).ok).toBe(true);
+
+    const over = checkpointOfExactly(MAX_CHECKPOINT_SERIALIZED_LENGTH + 1);
+    expect(JSON.stringify(over).length).toBe(MAX_CHECKPOINT_SERIALIZED_LENGTH + 1);
+    expect(writeActiveCheckpoint({ getItem: () => null, setItem: () => {} }, over, null).ok).toBe(false);
+  });
+
+  it('writes a checkpoint that sits just under the cap', () => {
+    // The negative above only proves something is refused; without this it would still pass if the
+    // guard refused every write.
+    useGameStore.getState().startSession({ source: 'creation', name: 'Ordinary', race: 'Half Orc', klass: 'Robot Monk', seed: 12 });
+    const checkpoint = captureActiveSession(FIXED_SAVED_AT);
+    expect(JSON.stringify(checkpoint).length).toBeLessThan(MAX_CHECKPOINT_SERIALIZED_LENGTH);
+    expect(writeActiveCheckpoint(localStorage, checkpoint, null).ok).toBe(true);
+  });
+
+  it('refuses an over-long stored payload before parsing it, and degrades rather than throwing', () => {
+    const oversized = `{"padding":"${'x'.repeat(MAX_CHECKPOINT_SERIALIZED_LENGTH)}"}`;
+    const parse = vi.spyOn(JSON, 'parse').mockImplementation(() => {
+      throw new Error('parse must not be reached for an oversized payload');
+    });
+
+    const load = loadActiveCheckpoint({ getItem: (key) => (key === ACTIVE_CHECKPOINT_KEY ? oversized : null) });
+
+    expect(load).toEqual({
+      status: 'corrupt',
+      canPersist: false,
+      canRepair: true,
+      expectedPrimaryRaw: oversized,
+      message: 'The saved session is too large to process. Automatic checkpoints are paused.',
+    });
+    // The cap exists so that an enormous payload is never handed to the parser. Asserting the
+    // status alone would still pass if the guard ran after JSON.parse had already walked 1 MB.
+    expect(parse).not.toHaveBeenCalled();
+  });
+
+  it('applies the cap to the last known good copy as well as the primary', () => {
+    // The recovery path calls parseCheckpoint a second time on a different key. A guard placed on
+    // only the primary read would leave the backup as an unbounded parse.
+    const oversized = `{"padding":"${'x'.repeat(MAX_CHECKPOINT_SERIALIZED_LENGTH)}"}`;
+    const load = loadActiveCheckpoint({ getItem: (key) => (key === ACTIVE_CHECKPOINT_LKG_KEY ? oversized : null) });
+    expect(load).toMatchObject({ status: 'corrupt', canPersist: false, canRepair: false });
+  });
+
+  it('admits a payload of exactly the cap', () => {
+    // Pins > against >=. A payload at exactly the limit is allowed through the size guard and then
+    // refused by the parser instead, so the two rejections carry different messages. Without this
+    // the boundary could drift by one character in either direction unnoticed.
+    const exact = 'x'.repeat(MAX_CHECKPOINT_SERIALIZED_LENGTH);
+    expect(exact.length).toBe(MAX_CHECKPOINT_SERIALIZED_LENGTH);
+    expect(loadActiveCheckpoint({ getItem: (key) => (key === ACTIVE_CHECKPOINT_KEY ? exact : null) })).toMatchObject({
+      status: 'corrupt',
+      message: 'The saved session is unreadable. Automatic checkpoints are paused.',
+    });
   });
 });
