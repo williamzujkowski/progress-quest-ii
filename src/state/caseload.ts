@@ -5,10 +5,11 @@ import type { GameTransitionRecord } from '../engine/transition';
 /**
  * What the casework has consisted of, rather than how much of it there has been.
  *
- * The engine assigns every quest one of five kinds and then uses that classification for nothing
- * but a scope string. Counting them turns a field the simulation already decides into the one
- * summary a watcher actually forms over hours: not how many quests closed, but what kind of
- * institution this has been.
+ * The engine assigns every quest one of five kinds and branches on the `exterminate`
+ * classification when deciding whether a kill can target the quest monster, which changes the
+ * encounter, its duration, and its loot. Counting them still turns a classification the simulation
+ * already decides into the one summary a watcher actually forms over hours: not how many quests
+ * closed, but what kind of institution this has been.
  *
  * Kept outside the checkpoint for the same reason the commendation ledger is. That envelope
  * governs whether a session can restore at all, and a tally has no business gating it. A corrupt
