@@ -51,29 +51,18 @@
   font-weight: 600;
 }
 
-.hero-stats-quick {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
 .stat-pill {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  background: var(--bg-color);
-  padding: var(--space-2) var(--space-3);
-  border-radius: 9999px;
   font-size: 0.875rem;
   font-weight: 600;
-  border: 1px solid var(--panel-border);
 }
 
-.stat-pill.gold-pill {
-  background: var(--surface-subtle);
-  color: var(--accent-warning);
-  border-color: color-mix(in oklch, var(--accent-warning) 60%, var(--panel-border));
-}
+/* Colour is what still separates gold from the rate now that the geometry is shared. The border
+   tint went with the pill shape; the figure itself carries the signal, which is where it was
+   doing the work anyway. */
+.stat-pill.gold-pill { color: var(--accent-warning); }
 
 .log-tag {
   display: inline-block;
@@ -240,8 +229,14 @@
   position: relative;
   /* Three regions, not four. Gold and the filing rate are resource readings and now sit with
      HP and MP; as their own trailing column they were pushed to the far edge with a gap between
-     them and everything they belong with. */
-  grid-template-columns: minmax(11rem, 1fr) minmax(13rem, 1fr) minmax(16rem, 1.3fr);
+     them and everything they belong with.
+
+     The stats had the widest share and the least to say with it. Measured at 1440px they were
+     three 148px cells holding "CON 101" — roughly seventy each of nothing — while the two meters
+     beside them sat at 166px with the gold and rate pills wrapping underneath. The readings that
+     change are the ones worth the room, so about eighty pixels move from the stats to the
+     meters. */
+  grid-template-columns: minmax(11rem, 0.95fr) minmax(15rem, 1.2fr) minmax(15rem, 1.05fr);
   overflow: hidden;
   border-radius: 0.5rem;
   padding-top: 1.5rem;
@@ -265,18 +260,49 @@
 .progress-label span:first-child,
 .equip-item span:last-child { overflow-wrap: anywhere; }
 
+/*
+ * Four readings, one strip, drawn the same way as the prime stats beside it.
+ *
+ * HP and MP were bordered boxes and gold and the rate were rounded pills, in a separate flex row
+ * that spanned beneath them. Two shapes at two heights in two layout systems, for four figures
+ * that are the same kind of thing — a current reading about the hero. They read as unrelated
+ * because they were built as unrelated.
+ *
+ * Same rule as .hero-prime-stats: the grid takes the border colour, the cells take the surface
+ * colour, and a 1px gap leaves one hairline wherever two meet. The pills keep their class names
+ * because their colour still distinguishes them; only the geometry is shared.
+ */
 .hero-meters {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-content: center;
-  gap: var(--space-3);
+  gap: 1px;
+  background: var(--panel-border);
+  border: 1px solid var(--panel-border);
+  border-radius: 0.35rem;
+  overflow: hidden;
 }
 
-/* The pills sit under the two meters and span both, so the four readings read as one block
-   rather than as a row that happens to be followed by another row. */
-.hero-meters .hero-stats-quick {
-  grid-column: 1 / -1;
+/* space-between on every cell, so the four figures land in the same two columns the labels do —
+   the same reading order the prime stats beside them use. Without it the meters right-align their
+   value and the pills left-align theirs, and four numbers sit at three different x positions. */
+.hero-meters > * {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--progress-bg);
+  border: 0;
+  border-radius: 0;
 }
+
+.hero-meters > .meter-group { flex-direction: row; }
+.hero-meters > .meter-group > .meter-header { flex: 1 1 auto; }
+
+/* Velocity is withheld until its window means something, so gold is sometimes the last of three.
+   Spanning keeps the strip rectangular rather than leaving a hole where a reading will appear. */
+.hero-meters > :nth-child(3):last-child { grid-column: 1 / -1; }
 
 /*
  * One strip divided by hairlines, rather than six boxes with six borders.
@@ -385,23 +411,12 @@
 .tooltip-effect { color: var(--text-muted); }
 
 .meter-group,
-.stat-pill {
-  min-width: 0;
-  background: var(--progress-bg);
-  border: 1px solid var(--panel-border);
-}
-
-.meter-group {
-  padding: var(--space-2) var(--space-3);
-  border-radius: 0.35rem;
-}
+.stat-pill { min-width: 0; }
 
 .meter-header { align-items: center; gap: 0.75rem; }
 .meter-header strong { font-family: var(--font-mono); font-size: 1rem; }
 .meter-health { color: var(--accent-danger); }
 .meter-magic { color: var(--accent-primary); }
-.hero-stats-quick { flex-wrap: wrap; }
-.stat-pill { border-radius: 0.35rem; }
 
 /*
  * The unit, quieter than the figure it belongs to. A dashboard whose whole content is numbers
@@ -465,16 +480,14 @@
      that does not want it — which is what happened when the loadout became the last child. */
   .main-grid > .activity-card { grid-column: 1 / -1; }
   .hero-banner { grid-template-columns: minmax(0, 1fr) minmax(17rem, 1fr); }
-  .hero-prime-stats,
-  .hero-stats-quick { grid-column: 1 / -1; justify-content: flex-start; }
+  .hero-prime-stats { grid-column: 1 / -1; }
 }
 
 @media (max-width: 760px) {
   .navbar { align-items: flex-start; }
   .nav-actions { justify-content: flex-start; }
   .hero-banner { grid-template-columns: 1fr; gap: 1rem; }
-  .hero-prime-stats,
-  .hero-stats-quick { grid-column: auto; }
+  .hero-prime-stats { gap: 0.5rem; }
 }
 
 @media (max-width: 640px) {
@@ -494,8 +507,6 @@
   .btn { min-width: 0; justify-content: center; padding-inline: 0.55rem; overflow-wrap: anywhere; }
   .hero-meters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hero-prime-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .hero-stats-quick { gap: 0.5rem; }
-  .stat-pill { flex: 1 1 8rem; justify-content: center; }
   .hero-stat { padding-inline: var(--space-2); }
   .main-grid { gap: 0.75rem; }
   .main-grid > .activity-card { grid-column: auto; }
