@@ -45,7 +45,6 @@ export const commendationsSchema = z.object({
 
 export type Commendations = z.infer<typeof commendationsSchema>;
 
-export type ExhibitEntry = z.infer<typeof exhibitEntrySchema>;
 
 export const EMPTY_COMMENDATIONS: Commendations = {
   highestLevel: 0,
