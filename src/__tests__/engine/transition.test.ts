@@ -448,7 +448,7 @@ describe('advanceGame', () => {
 
     expect(result.state.character.Traits.Level).toBe(2);
     expect(result.state.character.Stats).toEqual({ STR: 10, CON: 10, DEX: 10, INT: 11, WIS: 10, CHA: 10, 'HP Max': 17, 'MP Max': 15 });
-    expect(result.state.character.Spells).toEqual([{ name: 'Slime Finger', level: 1 }]);
+    expect(result.state.character.Spells).toEqual([{ name: 'Wet Signature', level: 1 }]);
     expect(result.state.progression.experience).toEqual({ currentSeconds: 0, maxSeconds: 1279 });
     expect(eventsOf(result)).toEqual([
       // The level carries the experience track that filled to cause it — the same figure the
@@ -519,7 +519,7 @@ describe('advanceGame', () => {
       target: 'Swamp Ticket|1|lilypad',
       targetIndex: 84,
     });
-    expect(result.state.character.Spells).toEqual([{ name: 'Rabbit Punch', level: 1 }]);
+    expect(result.state.character.Spells).toEqual([{ name: 'Quick Win', level: 1 }]);
     expect(eventsOf(result)).toEqual([
       { type: 'quest_completed', description: 'Test quest' },
       { type: 'quest_started', description: 'Exterminate the Swamp Tickets' },

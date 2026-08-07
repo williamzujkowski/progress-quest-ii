@@ -12,7 +12,6 @@ import {
   ITEM_OFS,
   KLASSES,
   MONSTERS,
-  MON_MODS,
   OFFENSE_ATTRIB,
   OFFENSE_BAD,
   PRIME_STATS,
@@ -73,7 +72,6 @@ const COUNTS: [string, readonly unknown[], number][] = [
   ['ARMORS', ARMORS, 20],
   ['KLASSES', KLASSES, 18],
   ['SHIELDS', SHIELDS, 16],
-  ['MON_MODS', MON_MODS, 16],
   ['DEFENSE_BAD', DEFENSE_BAD, 14],
   ['IMPRESSIVE_TITLES', IMPRESSIVE_TITLES, 14],
   ['EQUIP_SLOTS', EQUIP_SLOTS, 11],
@@ -91,7 +89,6 @@ const NAME_TABLES: [string, readonly string[]][] = [
   ['ITEM_ATTRIB', ITEM_ATTRIB],
   ['ITEM_OFS', ITEM_OFS],
   ['BORING_ITEMS', BORING_ITEMS],
-  ['MON_MODS', MON_MODS],
   ['TITLES', TITLES],
   ['IMPRESSIVE_TITLES', IMPRESSIVE_TITLES],
   ['EQUIP_SLOTS', EQUIP_SLOTS],
@@ -177,7 +174,6 @@ describe('trait table structure', () => {
     ['SPECIALS', SPECIALS],
     ['ITEM_ATTRIB', ITEM_ATTRIB],
     ['ITEM_OFS', ITEM_OFS],
-    ['MON_MODS', MON_MODS],
     ['TITLES', TITLES],
     ['IMPRESSIVE_TITLES', IMPRESSIVE_TITLES],
     ['EQUIP_SLOTS', EQUIP_SLOTS],
@@ -263,12 +259,13 @@ describe('trait table structure', () => {
     expect(EQUIP_SLOTS.slice(0, 2)).toEqual(['Weapon', 'Shield']);
   });
 
-  // MON_MODS is declared here and read nowhere, in this codebase and in the one it descends from
-  // — see the comment above the table. The shape is still asserted so that a table nothing calls
-  // cannot quietly rot into something that would break if anything ever did call it.
-  it('formats every unused monster modifier as a signed adjustment around a name slot', () => {
-    expect(MON_MODS.filter((modifier) => !/^[+-]\d+ \S.*$/.test(modifier))).toEqual([]);
-    expect(MON_MODS.filter((modifier) => !modifier.includes('*'))).toEqual([]);
+  it('declares no monster-modifier table', async () => {
+    // MON_MODS was sixteen entries read by nothing, here or in the implementation it descended
+    // from, and every one of them was inherited wording. A table nothing calls cannot be justified
+    // by fidelity to behaviour it never took part in, so it is gone rather than rewritten. This
+    // asserts the absence so it cannot drift back in as a copy.
+    const traits = await import('../../data/traits') as Record<string, unknown>;
+    expect(Object.keys(traits)).not.toContain('MON_MODS');
   });
 });
 

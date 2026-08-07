@@ -467,7 +467,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
           Equip: { ...state.character.Equip, Weapon: 'Punitive Short Sprint' },
           Inventory: [{ name: 'Gold', qty: 0 }, { name: 'Certified Order of Forecast', qty: 3 }],
           Gold: 42,
-          Spells: [{ name: 'Rabbit Punch', level: 2 }],
+          Spells: [{ name: 'Quick Win', level: 2 }],
         },
       });
     });
@@ -487,7 +487,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
     expect(tooltipBox.x + tooltipBox.width).toBeLessThanOrEqual(1280);
     await page.locator('.tooltip-trigger', { hasText: 'Certified Order of Forecast' }).focus();
     await expect(page.getByRole('tooltip')).toContainText('Encumbrance: +3 cubits');
-    await page.locator('.tooltip-trigger', { hasText: 'Rabbit Punch' }).focus();
+    await page.locator('.tooltip-trigger', { hasText: 'Quick Win' }).focus();
     await expect(page.getByRole('tooltip')).toContainText('Spell rank: 2');
     await page.locator('.gold-pill').getByRole('button', { name: '42 GP' }).focus();
     await expect(page.getByRole('tooltip')).toContainText('Encumbrance: +0 cubits');
@@ -1101,7 +1101,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
           Plot: { act: 1_000_000_000, currentProgress: 500_000_000, maxProgress: 1_000_000_000 },
           Quest: { ...character.Quest, currentProgress: 1_000_000, maxProgress: 2_000_000 },
           Inventory: [{ name: 'Gold', qty: 0 }, { name: 'nit tail', qty: 1_000_000_000 }],
-          Spells: [{ name: 'Infinite Confusion', level: 1_000_000_000 }],
+          Spells: [{ name: 'Infinite Deferral', level: 1_000_000_000 }],
         },
       });
     });

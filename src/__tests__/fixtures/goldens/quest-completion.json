@@ -43,8 +43,8 @@
     "plot": { "act": 1, "caption": "Act I", "positionSeconds": 6, "maxSeconds": 1000 },
     "inventory": [["Gold", 0], ["nit tail", 1]],
     "equipment": [["Weapon", "Sharp Rock"], ["Shield", ""], ["Helm", ""], ["Hauberk", "-3 Boilerplate"], ["Brassairts", ""], ["Vambraces", ""], ["Gauntlets", ""], ["Gambeson", ""], ["Cuisses", ""], ["Greaves", ""], ["Sollerets", ""]],
-    "spells": [["Rabbit Punch", "I", 1]],
-    "best": { "stat": "STR 10", "spell": "Rabbit Punch I", "equipment": "Sharp Rock" },
+    "spells": [["Quick Win", "I", 1]],
+    "best": { "stat": "STR 10", "spell": "Quick Win I", "equipment": "Sharp Rock" },
     "log": ["Quest completed: Test quest", "Commencing quest: Exterminate the Swamp Tickets", "Saving game: Oracle", "Gained a nit tail", "Executing an undernourished Nomination..."],
     "savedRng": [0.6819270721171051, 0.6659698141738772, 0.12020091176964343, 1908704],
     "rng": [0.02940695872530341, 0.6457716124132276, 0.03624980035237968, 1812947]

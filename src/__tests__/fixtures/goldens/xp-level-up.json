@@ -43,8 +43,8 @@
     "plot": { "act": 1, "caption": "Act I", "positionSeconds": 6, "maxSeconds": 1000 },
     "inventory": [["Gold", 0], ["nit tail", 1]],
     "equipment": [["Weapon", "Sharp Rock"], ["Shield", ""], ["Helm", ""], ["Hauberk", "-3 Boilerplate"], ["Brassairts", ""], ["Vambraces", ""], ["Gauntlets", ""], ["Gambeson", ""], ["Cuisses", ""], ["Greaves", ""], ["Sollerets", ""]],
-    "spells": [["Slime Finger", "I", 1]],
-    "best": { "stat": "INT 11", "spell": "Slime Finger I", "equipment": "Sharp Rock" },
+    "spells": [["Wet Signature", "I", 1]],
+    "best": { "stat": "INT 11", "spell": "Wet Signature I", "equipment": "Sharp Rock" },
     "log": ["Gained a Level", "Gained 6 HP Maxes", "Gained 5 MP Maxes", "Gained an INT", "Gained a HP Max", "Saving game: Oracle", "Gained a nit tail", "Executing a Tech Debt Grub..."],
     "savedRng": [0.9330190639011562, 0.6226149452850223, 0.21023443923331797, 852663],
     "rng": [0.3527631377801299, 0.9299049850087613, 0.13719435315579176, 1487883]

@@ -29,7 +29,7 @@ describe('legacy quest reward dispatcher', () => {
       kind: 'spell',
       state: [0.578806129284203, 0.5098025279585272, 0.04669409594498575, 1],
       reset: 57,
-      expected: { spells: [{ name: 'Rabbit Punch', level: 1 }] },
+      expected: { spells: [{ name: 'Quick Win', level: 1 }] },
       rng: [0.8500585230067372, 0.1923965464811772, 0.23654911993071437, 990286],
     },
     {
@@ -92,7 +92,7 @@ describe('legacy quest reward dispatcher', () => {
   });
 
   it.each([
-    ['spell', [0.578806129284203, 0.5098025279585272, 0.04669409594498575, 1], (character: ReturnType<typeof createNewCharacter>) => { character.Spells = [{ name: 'Rabbit Punch', level: 1_000_000_000 }]; }, (character: ReturnType<typeof createNewCharacter>) => character.Spells[0]?.level],
+    ['spell', [0.578806129284203, 0.5098025279585272, 0.04669409594498575, 1], (character: ReturnType<typeof createNewCharacter>) => { character.Spells = [{ name: 'Quick Win', level: 1_000_000_000 }]; }, (character: ReturnType<typeof createNewCharacter>) => character.Spells[0]?.level],
     ['stat', [0.7377883812878281, 0.3013112908229232, 0.7470456755254418, 1], (character: ReturnType<typeof createNewCharacter>) => { character.Stats.CHA = 1_000_000_000; }, (character: ReturnType<typeof createNewCharacter>) => character.Stats.CHA],
   ] as const)('keeps the %s reward within accepted save bounds', (_kind, state, arrange, readValue) => {
     const character = createNewCharacter('Boundary', 'Half Daemon', 'Incident Paladin', 'reward-boundary');
@@ -160,7 +160,7 @@ describe('legacy spell reward', () => {
     const spell = generateSpellReward(rng, 1, 10);
 
     expect([spell, rng.getState()]).toEqual([
-      'Cone of Annoyance',
+      'Cone of Reminders',
       [0.1777116870507598, 0.3775933461729437, 0.8863792216870934, 802657],
     ]);
   });
