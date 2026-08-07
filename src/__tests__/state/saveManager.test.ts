@@ -52,6 +52,28 @@ describe('importing a character that is already in the roster', () => {
     expect(loadRoster()).toMatchObject({ ok: true, value: { Krg: { Traits: { Level: 300 } } } });
   });
 
+  it('re-imports an identical save of the stored character without refusing', () => {
+    // Exporting your own character and importing the backup is what the feature is for, and it
+    // replaces the entry with itself. Refusing there would be a false alarm, and a confirmation
+    // that fires when nothing is at stake is one people learn to click through.
+    const character = createNewCharacter('Krg', 'Half Daemon', 'Robot Monk', 905);
+    expect(saveToRoster(character)).toMatchObject({ ok: true });
+
+    expect(importToRoster(character)).toMatchObject({ ok: true });
+  });
+
+  it('still refuses when the stored character differs only slightly', () => {
+    // The boundary the case above must not widen: same name, one field apart, still two different
+    // characters and still a destructive replace.
+    const stored = createNewCharacter('Krg', 'Half Daemon', 'Robot Monk', 906);
+    stored.Traits.Level = 40;
+    expect(saveToRoster(stored)).toMatchObject({ ok: true });
+
+    const incoming = createNewCharacter('Krg', 'Half Daemon', 'Robot Monk', 906);
+    incoming.Traits.Level = 39;
+    expect(importToRoster(incoming)).toMatchObject({ ok: false, error: { code: 'roster_name_taken' } });
+  });
+
   it('inserts when the name is free', () => {
     // Without this the refusal above would pass on a function that refused everything.
     const first = createNewCharacter('Borgfang', 'Half Daemon', 'Robot Monk', 902);

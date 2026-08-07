@@ -200,10 +200,24 @@ export function importToRoster(sheet: CharacterSheet): SaveResult<Record<string,
 
   // Own-property only: a character named `constructor` must not read as already present.
   if (Object.hasOwn(loaded.value, sheet.Traits.Name)) {
-    return saveFailure(
-      'roster_name_taken',
-      `This browser already holds a character called ${sheet.Traits.Name}. Nothing was changed.`,
-    );
+    // A name collision is only destructive when the two characters differ. Re-importing a save of
+    // the character already stored — the common case, since exporting and re-importing your own
+    // backup is what the feature is for — replaces the entry with itself and loses nothing.
+    //
+    // Warning there would be a false alarm, and false alarms are how a confirmation stops being
+    // read. Both sides are compared through the same schema so key order cannot make identical
+    // characters look different.
+    const stored = characterSheetSchema.safeParse(loaded.value[sheet.Traits.Name]);
+    const incoming = characterSheetSchema.safeParse(sheet);
+    const unchanged = stored.success && incoming.success
+      && JSON.stringify(stored.data) === JSON.stringify(incoming.data);
+
+    if (!unchanged) {
+      return saveFailure(
+        'roster_name_taken',
+        `This browser already holds a different character called ${sheet.Traits.Name}. Nothing was changed.`,
+      );
+    }
   }
 
   return saveToRoster(sheet);
