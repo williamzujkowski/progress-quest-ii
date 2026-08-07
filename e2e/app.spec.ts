@@ -1100,7 +1100,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
           Gold: 1_000_000_000_000,
           Plot: { act: 1_000_000_000, currentProgress: 500_000_000, maxProgress: 1_000_000_000 },
           Quest: { ...character.Quest, currentProgress: 1_000_000, maxProgress: 2_000_000 },
-          Inventory: [{ name: 'Gold', qty: 0 }, { name: 'rat tail', qty: 1_000_000_000 }],
+          Inventory: [{ name: 'Gold', qty: 0 }, { name: 'nit tail', qty: 1_000_000_000 }],
           Spells: [{ name: 'Infinite Confusion', level: 1_000_000_000 }],
         },
       });
@@ -1112,7 +1112,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await expect(page.locator('.hero-sub [aria-hidden="true"]')).toHaveText('1.00e9');
     await expect(page.locator('.gold-pill span[aria-hidden="true"]')).toHaveText('1.00e12');
     await expect(page.locator('.inventory-list .equip-item span[aria-hidden="true"]')).toHaveText('1.00e9');
-    await page.getByRole('button', { name: 'rat tail' }).hover();
+    await page.getByRole('button', { name: 'nit tail' }).hover();
     await expect(page.getByRole('tooltip')).toContainText('Quantity: 1.00e9');
 
     for (const width of [320, 1440]) {

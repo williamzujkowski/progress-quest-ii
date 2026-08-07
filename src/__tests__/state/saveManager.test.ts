@@ -32,7 +32,7 @@ function encodeTestValue(value: unknown): string {
 
 describe('Save Manager & Serialization', () => {
   it('encodes and decodes a character sheet to base64 .pqw format cleanly', () => {
-    const originalChar = createNewCharacter('Base64Hero', 'Provisioned Ghoul', 'Interim Lunatic', 9999);
+    const originalChar = createNewCharacter('Base64Hero', 'Provisioned Ghosted Candidate', 'Interim Lunatic', 9999);
     const encoded = encodePQWSave(originalChar);
 
     expect(typeof encoded).toBe('string');
@@ -42,7 +42,7 @@ describe('Save Manager & Serialization', () => {
     expect(decoded.ok).toBe(true);
     if (!decoded.ok) return;
     expect(decoded.value.Traits.Name).toBe('Base64Hero');
-    expect(decoded.value.Traits.Race).toBe('Provisioned Ghoul');
+    expect(decoded.value.Traits.Race).toBe('Provisioned Ghosted Candidate');
     expect(decoded.value.Traits.Class).toBe('Interim Lunatic');
     expect(decoded.value.Stats.STR).toBe(originalChar.Stats.STR);
     expect(decoded.value.Quest).toEqual(originalChar.Quest);
@@ -51,7 +51,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('preserves and resumes a partly consumed prologue through PQW and roster storage', () => {
-    const character = createNewCharacter('MidpointHero', 'Provisioned Ghoul', 'Interim Lunatic', 9_997);
+    const character = createNewCharacter('MidpointHero', 'Provisioned Ghosted Candidate', 'Interim Lunatic', 9_997);
     const progression = { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 };
     const midpoint = advanceGame({ character, progression }, 7000, new RandomGenerator('unused-prologue-rng')).state;
     expect(midpoint.character.Task).toMatchObject({ type: 'prologue', elapsedMs: 5000 });
@@ -75,7 +75,7 @@ describe('Save Manager & Serialization', () => {
   });
 
   it('preserves Unicode character names with the standards-based UTF-8 codec', () => {
-    const originalChar = createNewCharacter('Éowyn 🛡️', 'Provisioned Ghoul', 'Interim Lunatic', 9998);
+    const originalChar = createNewCharacter('Éowyn 🛡️', 'Provisioned Ghosted Candidate', 'Interim Lunatic', 9998);
 
     const decoded = decodePQWSave(encodePQWSave(originalChar));
 
@@ -235,7 +235,7 @@ describe('Save Manager & Serialization', () => {
     const character = createNewCharacter('InventoryV0', 'Half Daemon', 'Robot Monk', 310);
 
     for (const Inventory of [
-      [{ name: 'Gold', qty: 0 }, { name: 'Rat tail', qty: 1 }, { name: 'Rat tail', qty: 2 }],
+      [{ name: 'Gold', qty: 0 }, { name: 'Nit tail', qty: 1 }, { name: 'Nit tail', qty: 2 }],
       [{ name: 'Gold', qty: 0 }, { name: '', qty: 1 }, { name: '', qty: 2 }],
     ]) {
       expect(decodePQWSave(encodeTestValue({ ...character, Inventory }))).toMatchObject({
@@ -246,7 +246,7 @@ describe('Save Manager & Serialization', () => {
 
     expect(decodePQWSave(encodeTestValue({
       ...character,
-      Inventory: [{ name: 'Gold', qty: 0 }, { name: '', qty: 1 }, { name: 'rat tail', qty: 1 }, { name: 'Rat tail', qty: 1 }],
+      Inventory: [{ name: 'Gold', qty: 0 }, { name: '', qty: 1 }, { name: 'nit tail', qty: 1 }, { name: 'Nit tail', qty: 1 }],
     }))).toMatchObject({ ok: true });
   });
 
@@ -319,7 +319,7 @@ describe('Save Manager & Serialization', () => {
       Quest: {
         ...character.Quest,
         kind: 'exterminate' as const,
-        target: 'Swamp Elf|1|lilypad',
+        target: 'Swamp Ticket|1|lilypad',
         targetIndex: 84,
         history: ['Old quest', character.Quest.description],
       },
@@ -586,7 +586,7 @@ describe('Save Manager & Serialization', () => {
   it('returns the most recently saved roster character, including an updated identity', () => {
     const first = createNewCharacter('First Saved', 'Half Daemon', 'Robot Monk', 520);
     const second = createNewCharacter('Second Saved', 'Off-Prem Elf', 'Vermineer', 521);
-    const updatedFirst = createNewCharacter('First Saved', 'Provisioned Ghoul', 'Interim Lunatic', 522);
+    const updatedFirst = createNewCharacter('First Saved', 'Provisioned Ghosted Candidate', 'Interim Lunatic', 522);
 
     saveToRoster(first);
     saveToRoster(second);
@@ -608,7 +608,7 @@ describe('Save Manager & Serialization', () => {
   it('restores the most recent remaining character after deleting the latest save', () => {
     const first = createNewCharacter('First', 'Half Daemon', 'Robot Monk', 525);
     const second = createNewCharacter('Second', 'Off-Prem Elf', 'Vermineer', 526);
-    const updatedFirst = createNewCharacter('First', 'Provisioned Ghoul', 'Interim Lunatic', 527);
+    const updatedFirst = createNewCharacter('First', 'Provisioned Ghosted Candidate', 'Interim Lunatic', 527);
     const latest = createNewCharacter('Latest', 'Half Daemon', 'Robot Monk', 528);
 
     saveToRoster(first);

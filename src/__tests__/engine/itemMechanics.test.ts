@@ -31,7 +31,7 @@ describe('item mechanics', () => {
   });
 
   it('reports the exact encumbrance contributed by an inventory stack', () => {
-    expect(analyzeItemMechanics({ kind: 'inventory', name: 'rat tail', quantity: 3 })).toEqual({
+    expect(analyzeItemMechanics({ kind: 'inventory', name: 'nit tail', quantity: 3 })).toEqual({
       kind: 'inventory',
       quantity: 3,
       encumbranceCubits: 3,

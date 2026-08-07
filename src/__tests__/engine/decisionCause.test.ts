@@ -43,7 +43,7 @@ describe('decision causes at the transition seam', () => {
   it('attaches the experience track that filled to a level', () => {
     const character = createNewCharacter('Level Cause', 'Half Daemon', 'Incident Paladin', 707);
     character.PendingTasks = undefined;
-    character.Task = { description: 'Executing a Rat...', durationMs: 1000, elapsedMs: 0, type: 'kill' };
+    character.Task = { description: 'Executing a Nit...', durationMs: 1000, elapsedMs: 0, type: 'kill' };
 
     const maxSeconds = 1_000;
     const result = advanceGame(
@@ -62,7 +62,7 @@ describe('decision causes at the transition seam', () => {
   it('leaves ordinary task starts without a cause', () => {
     const character = createNewCharacter('Plain Subject', 'Half Daemon', 'Incident Paladin', 808);
     character.PendingTasks = undefined;
-    character.Task = { description: 'Executing a Rat...', durationMs: 1000, elapsedMs: 0, type: 'kill' };
+    character.Task = { description: 'Executing a Nit...', durationMs: 1000, elapsedMs: 0, type: 'kill' };
     const result = advanceGame(
       { character, progression: { experience: { currentSeconds: 0, maxSeconds: 10_000 }, completedTasks: 0, elapsedSeconds: 0 } },
       1000,
