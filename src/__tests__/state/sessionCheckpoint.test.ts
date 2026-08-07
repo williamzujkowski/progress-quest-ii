@@ -100,7 +100,6 @@ describe('active session checkpoint boundary', () => {
     });
     const checkpoint = captureActiveSession(FIXED_SAVED_AT);
     expect(checkpoint.session.log).toEqual(['Newest event', 'Older event']);
-    expect(checkpoint.session.log.every((entry) => typeof entry === 'string')).toBe(true);
 
     expect(writeActiveCheckpoint(localStorage, checkpoint, null)).toMatchObject({ ok: true });
     const loaded = loadActiveCheckpoint(localStorage);
@@ -215,6 +214,7 @@ describe('active session checkpoint boundary', () => {
       { ...checkpoint, schemaVersion: 2 },
       { ...checkpoint, surprise: true },
       { ...checkpoint, session: { ...checkpoint.session, rngState: [0.1, 0.2, 0.3, -1] } },
+      { ...checkpoint, session: { ...checkpoint.session, rngState: [0.123456789, 0.2, 0.3, 1] } },
     ]) {
       localStorage.setItem(ACTIVE_CHECKPOINT_KEY, JSON.stringify(candidate));
       expect(loadActiveCheckpoint(localStorage).canPersist).toBe(false);

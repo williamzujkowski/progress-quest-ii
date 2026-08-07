@@ -1,6 +1,7 @@
 import { devices, type Page } from '@playwright/test';
 import { appReady, expect, test, watchForErrors } from './fixtures/strictConsole';
 import { expectNoViolations } from './fixtures/accessibility';
+import { DEFAULT_CHECKPOINT_INTERVAL_MS } from '../src/data/limits';
 import { readFile } from 'node:fs/promises';
 import { createNewCharacter } from '../src/engine/sim';
 import { archivedSessionStorageState } from './fixtures/archivedSession';
@@ -69,7 +70,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await expect(creator).toBeVisible();
     await creator.click({ position: { x: 2, y: 2 } });
     await expect(creator).toBeVisible();
-    await page.waitForTimeout(1_100);
+    await page.waitForTimeout(DEFAULT_CHECKPOINT_INTERVAL_MS + 100);
     expect(await page.evaluate(() => localStorage.getItem('progquest_active_session_v1'))).toBeNull();
 
     await creator.getByRole('textbox', { name: 'Character Name' }).fill('First Bureaucrat');
@@ -173,7 +174,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await page.reload({ waitUntil: 'networkidle' });
 
     await expect(page.getByRole('alert')).toContainText('Recovered the last known good session');
-    await page.waitForTimeout(1_100);
+    await page.waitForTimeout(DEFAULT_CHECKPOINT_INTERVAL_MS + 100);
     expect(await page.evaluate(() => localStorage.getItem('progquest_active_session_v1'))).toBe('{unreadable');
     await page.getByRole('button', { name: 'Replace unreadable checkpoint' }).click();
     await expect(page.locator('.session-status[role="status"]')).toContainText('Automatic checkpoints resumed');
@@ -347,7 +348,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
     });
 
     await page.getByRole('button', { name: /Roster & Saves/i }).click();
-    await page.waitForTimeout(350);
+    await page.waitForTimeout(Math.round(DEFAULT_CHECKPOINT_INTERVAL_MS / 3));
     expect(await page.evaluate(() => (window as Window & { __rosterWrites?: number }).__rosterWrites)).toBe(0);
     const fallback = page.getByRole('textbox', { name: 'Current save text' });
     await expect(fallback).toHaveAttribute('readonly', '');

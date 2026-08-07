@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GameTransitionEvent } from '../../engine/transition';
-import { MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_STORED_PAYLOAD_LENGTH } from '../../data/limits';
+import { MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE, MAX_STORED_PAYLOAD_LENGTH } from '../../data/limits';
 import { EQUIP_SLOTS } from '../../data/traits';
 import {
   COMMENDATIONS_STORAGE_KEY, EMPTY_COMMENDATIONS, isEmpty,
@@ -39,6 +39,32 @@ describe('commendation ledger', () => {
     const records = mergeEvents(EMPTY_COMMENDATIONS, events);
     expect(records.questsCompleted).toBe(2);
     expect(records.actsCompleted).toBe(1);
+  });
+
+  it('caps maxima and counters at persisted limits', () => {
+    const records = mergeEvents(EMPTY_COMMENDATIONS, [
+      { type: 'level_gained', level: MAX_PERSISTED_VALUE + 1 },
+      { type: 'inventory_sold', gold: MAX_PERSISTED_GOLD + 1 },
+      { type: 'quest_completed', description: 'a' },
+      { type: 'act_completed', act: 1 },
+    ]);
+
+    expect(records.highestLevel).toBe(MAX_PERSISTED_VALUE);
+    expect(records.largestSale).toBe(MAX_PERSISTED_GOLD);
+    expect(records.questsCompleted).toBe(1);
+    expect(records.actsCompleted).toBe(1);
+
+    const nearCap = {
+      ...EMPTY_COMMENDATIONS,
+      questsCompleted: MAX_PERSISTED_VALUE - 1,
+      actsCompleted: MAX_PERSISTED_VALUE - 1,
+    };
+    const capped = mergeEvents(nearCap, [
+      { type: 'quest_completed', description: 'b' },
+      { type: 'act_completed', act: 2 },
+    ]);
+    expect(capped.questsCompleted).toBe(MAX_PERSISTED_VALUE);
+    expect(capped.actsCompleted).toBe(MAX_PERSISTED_VALUE);
   });
 
   it('returns the same object when nothing changed, so callers can skip work', () => {

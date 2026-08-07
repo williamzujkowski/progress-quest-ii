@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../e2e/fixtures/strictConsole';
 import AxeBuilder from '@axe-core/playwright';
 import { returningSessionStorageState } from '../e2e/fixtures/returningSession';
 

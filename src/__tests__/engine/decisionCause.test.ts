@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { calculateEncumbranceMax } from '../../engine/math';
 import { RandomGenerator } from '../../engine/prng';
 import { calculateEncumbrance, createNewCharacter } from '../../engine/sim';
-import { advanceGame, type GameTransitionState } from '../../engine/transition';
+import { advanceGame, type GameTransitionEvent, type GameTransitionState } from '../../engine/transition';
 
 /**
  * The reasons attached at the transition seam must be the figures the engine actually compared,
@@ -68,8 +68,10 @@ describe('decision causes at the transition seam', () => {
       1000,
       new RandomGenerator('plain-cause'),
     );
-    for (const { event } of result.records) {
-      if (event.type === 'task_started') expect(event.reason).toBeUndefined();
-    }
+    const started = result.records
+      .map(({ event }) => event)
+      .filter((event): event is Extract<GameTransitionEvent, { type: 'task_started' }> => event.type === 'task_started');
+    expect(started.length).toBeGreaterThan(0);
+    for (const event of started) expect(event.reason).toBeUndefined();
   });
 });

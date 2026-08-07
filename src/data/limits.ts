@@ -7,6 +7,7 @@ export const MAX_PENDING_TASKS = 100;
 export const MAX_WORLD_NOTICES = 40;
 // Three-line scenes divide evenly; whole-scene retention may use slightly less.
 export const MAX_SOCIAL_ENTRIES = 48;
+export const DEFAULT_CHECKPOINT_INTERVAL_MS = 1_000;
 // ponytail: about 11.5 days is ample scheduler debt; saturation keeps checkpoints finite and catch-up work bounded.
 export const MAX_PENDING_ELAPSED_MS = 1_000_000_000;
 

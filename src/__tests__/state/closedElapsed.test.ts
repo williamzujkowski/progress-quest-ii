@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { MAX_PENDING_ELAPSED_MS } from '../../data/limits';
 import { creditClosedElapsed, describeAbsence } from '../../state/sessionCheckpoint';
 import { useGameStore } from '../../state/gameStore';
@@ -12,6 +12,12 @@ const session = (over: Partial<{ pendingElapsedMs: number; savedAtMs: number; is
   pendingElapsedMs: 0,
   isPaused: false,
   ...over,
+});
+
+const originalState = useGameStore.getState();
+
+afterEach(() => {
+  useGameStore.setState(originalState, true);
 });
 
 describe('closed-app elapsed credit', () => {

@@ -1,4 +1,4 @@
-import { MAX_PENDING_ELAPSED_MS, MAX_STORED_PAYLOAD_LENGTH } from '../data/limits';
+import { DEFAULT_CHECKPOINT_INTERVAL_MS, MAX_PENDING_ELAPSED_MS, MAX_STORED_PAYLOAD_LENGTH } from '../data/limits';
 import { useGameStore } from './gameStore';
 import { activeCheckpointV1Schema, type ActiveCheckpointV1 } from './schemas';
 import { diagnostics, isDOMExceptionNamed } from './diagnostics';
@@ -283,7 +283,7 @@ export function startSessionCheckpoints({
   storage = defaultStorage(),
   visibilityTarget = typeof document === 'undefined' ? undefined : document,
   pagehideTarget = typeof window === 'undefined' ? undefined : window,
-  intervalMs = 1_000,
+  intervalMs = DEFAULT_CHECKPOINT_INTERVAL_MS,
   // Injectable so tests can pin the boundary where wall-clock enters. Everything downstream of
   // this call takes elapsed milliseconds, never a clock.
   now = () => Date.now(),
