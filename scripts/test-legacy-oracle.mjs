@@ -9,6 +9,13 @@ const fixtureNames = (await readdir(fixtureDirectory))
   .sort();
 const baseFixture = JSON.parse(await readFile(new URL('one-kill.json', fixtureDirectory), 'utf8'));
 const monsterTaskDirectory = new URL('monster-tasks/', fixtureDirectory);
+const monsterTaskNames = (await readdir(monsterTaskDirectory)).filter((name) => name.endsWith('.json')).sort();
+
+// Both suites below are generated from a directory listing, so an empty listing defines no tests
+// at all and `node --test` calls that success. These are the vectors that pin RNG determinism
+// against the legacy build; losing them silently is the one failure this file cannot afford.
+assert.ok(fixtureNames.length > 0, 'Expected legacy transition fixtures in src/__tests__/fixtures/legacy/');
+assert.ok(monsterTaskNames.length > 0, 'Expected monster-task fixtures in src/__tests__/fixtures/legacy/monster-tasks/');
 
 for (const fixtureName of fixtureNames) {
   const fixture = JSON.parse(await readFile(new URL(fixtureName, fixtureDirectory), 'utf8'));
@@ -21,7 +28,7 @@ for (const fixtureName of fixtureNames) {
   });
 }
 
-for (const fixtureName of (await readdir(monsterTaskDirectory)).filter((name) => name.endsWith('.json')).sort()) {
+for (const fixtureName of monsterTaskNames) {
   const fixture = JSON.parse(await readFile(new URL(fixtureName, monsterTaskDirectory), 'utf8'));
   test(`legacy oracle emits deterministic ${fixtureName.replace('.json', '')} monster-task vector`, () => {
     const first = runLegacyMonsterTask(fixture.input);

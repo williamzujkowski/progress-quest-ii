@@ -1406,7 +1406,12 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await expect(page.getByRole('dialog', { name: /Character Roster/i })).toBeVisible();
     await expect(page.getByRole('alert')).toContainText('Invalid Character Sheet Schema');
     await expect(page.locator('.hero-name > span:not(.badge)')).toHaveText(activeName);
-    for (const value of await page.getByRole('progressbar').evaluateAll((bars) => bars.map((bar) => bar.getAttribute('aria-valuenow')))) {
+    const progressValues = await page.getByRole('progressbar')
+      .evaluateAll((bars) => bars.map((bar) => bar.getAttribute('aria-valuenow')));
+    // Without this the loop body never runs when nothing rendered, and a test about NaN progress
+    // bars passes having seen no progress bars.
+    expect(progressValues.length, 'no progress bars rendered to check for NaN').toBeGreaterThan(0);
+    for (const value of progressValues) {
       expect(value).toMatch(/^\d+$/);
     }
   });
@@ -1509,7 +1514,7 @@ test.describe('WCAG 2.2 criteria the automated floor can reach', () => {
     // the assertion means what the criterion means.
     await page.goto('/');
 
-    const failures = await page.evaluate(() => {
+    const { failures, scanned } = await page.evaluate(() => {
       const selector = 'button, a[href], select, input, [role="tab"], summary';
       const rendered = [...document.querySelectorAll<HTMLElement>(selector)].flatMap((element) => {
         const rect = element.getBoundingClientRect();
@@ -1523,7 +1528,7 @@ test.describe('WCAG 2.2 criteria the automated floor can reach', () => {
         }];
       });
 
-      return rendered.flatMap((target) => {
+      const measured = rendered.flatMap((target) => {
         if (target.rect.width >= 24 && target.rect.height >= 24) return [];
 
         // Circles of 24px diameter, so two intersect when their centres are closer than 24px.
@@ -1540,8 +1545,13 @@ test.describe('WCAG 2.2 criteria the automated floor can reach', () => {
           height: Math.round(target.rect.height),
         }];
       });
+
+      return { failures: measured, scanned: rendered.length };
     });
 
+    // A selector that stops matching scans nothing, and "no undersized targets" then means "no
+    // targets". The count is what separates a clean pass from a vacuous one.
+    expect(scanned, 'no pointer targets matched; the selector has gone stale').toBeGreaterThan(0);
     expect(failures, `undersized and crowded targets: ${JSON.stringify(failures)}`).toEqual([]);
   });
 

@@ -235,5 +235,8 @@ test('never runtime-caches query or user-derived data', async ({ page }) => {
     const names = await caches.keys();
     return (await Promise.all(names.map(async (name) => (await caches.open(name)).keys()))).flat().map((request) => request.url);
   });
+  // A worker that failed to register or precache leaves this empty, and "nothing cached carries
+  // private data" is then true for the wrong reason. The privacy claim needs something to hold on.
+  expect(cachedUrls.length, 'nothing was cached, so the privacy assertion has nothing to check').toBeGreaterThan(0);
   expect(cachedUrls.some((url) => url.includes('?') || url.includes('PRIVATE-ROSTER-MARKER'))).toBe(false);
 });
