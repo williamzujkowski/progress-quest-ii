@@ -1,7 +1,9 @@
 import { access, readdir, readFile } from 'node:fs/promises';
+import { verifyProductionCsp } from './production-csp.mjs';
 import { verifyProductionNotices } from './production-notices.mjs';
 
 const assetDirectory = new URL('../dist/assets/', import.meta.url);
+const documentUrl = new URL('../dist/index.html', import.meta.url);
 const noticeUrl = new URL('../dist/THIRD_PARTY_NOTICES.txt', import.meta.url);
 const workerUrl = new URL('../dist/sw.js', import.meta.url);
 const assetNames = await readdir(assetDirectory);
@@ -54,6 +56,10 @@ for (const name of cssFiles) {
 
 if (fontUrls.length === 0) throw new Error('Production CSS declares no font assets to verify.');
 await Promise.all(fontUrls.map((fontUrl) => access(fontUrl)));
+
+// Asserted against the built document rather than the source: the question is what Pages serves,
+// and a plugin that injected a script or rewrote the meta tag would be invisible in index.html.
+verifyProductionCsp(await readFile(documentUrl, 'utf8'));
 
 /**
  * A ceiling on what gets shipped, so a regression is a failed build rather than a discovery.
