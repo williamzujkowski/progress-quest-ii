@@ -115,18 +115,37 @@ test('inline script detection reports every offending body', () => {
   assert.deepEqual(bodies, ['a()', 'b()']);
 });
 
-test('an end tag with whitespace before its bracket still closes the element', () => {
-  // The HTML tokenizer accepts `</script >`, so it closes the element — but a regex looking for
-  // the literal `</script>` runs past it. The first version of this check matched exactly, and an
-  // inline script closed that way was invisible to it: the gate against inline scripts could be
-  // walked around with a space. CodeQL's js/bad-tag-filter caught it on the introducing PR.
-  assert.deepEqual(findInlineScripts('<script>evil()</script >'), ['evil()']);
-  assert.deepEqual(findInlineScripts('<script>evil()</script\n>'), ['evil()']);
-  assert.deepEqual(findInlineScripts('<script>evil()</script\t>'), ['evil()']);
-  assert.throws(
-    () => verifyProductionCsp(shell(POLICY, '<script>evil()</script >')),
-    /contains 1 inline <script> element/,
-  );
-  // The supported pattern keeps passing in the same spelling.
-  assert.doesNotThrow(() => verifyProductionCsp(shell(POLICY, '<script src="./theme-boot.js"></script >')));
+test('every spelling of a script end tag the tokenizer accepts still closes the element', () => {
+  // Two CodeQL js/bad-tag-filter findings on the introducing PR, both correct. The tokenizer
+  // accepts whitespace before an end tag's bracket, and it also parses and discards attributes on
+  // an end tag. A regex stopping short of either does not just miss that tag — the lazy body match
+  // runs past it, so the inline script becomes invisible and the gate reports green.
+  for (const endTag of ['</script>', '</script >', '</script\n>', '</script\t>', '</script foo>', '</script\t\n bar>', '</script/>']) {
+    assert.deepEqual(
+      findInlineScripts(`<script>evil()${endTag}`),
+      ['evil()'],
+      `expected ${JSON.stringify(endTag)} to close the element`,
+    );
+    assert.throws(
+      () => verifyProductionCsp(shell(POLICY, `<script>evil()${endTag}`)),
+      /contains 1 inline <script> element/,
+      `expected the gate to refuse an inline script closed by ${JSON.stringify(endTag)}`,
+    );
+  }
+});
+
+test('a tag whose name merely starts with script is not a script tag', () => {
+  // `\b` rather than `\s` is what carries this: there is no word boundary between `t` and `f`, so
+  // the name has to be exactly `script`. Without it the pattern would swallow unrelated markup and
+  // report bodies that are not scripts.
+  assert.deepEqual(findInlineScripts('<scriptfoo>x</scriptfoo>'), []);
+});
+
+test('the supported src-only spelling keeps passing under those same end tags', () => {
+  for (const endTag of ['</script>', '</script >', '</script foo>']) {
+    assert.doesNotThrow(
+      () => verifyProductionCsp(shell(POLICY, `<script src="./theme-boot.js">${endTag}`)),
+      `expected a src-only script closed by ${JSON.stringify(endTag)} to pass`,
+    );
+  }
 });

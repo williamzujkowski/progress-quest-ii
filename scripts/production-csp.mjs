@@ -71,15 +71,27 @@ export function extractCsp(html) {
  * tag with anything non-whitespace between it and its closing tag is exactly what `script-src
  * 'self'` refuses to run.
  *
- * The end tag is `<\/script\s*>` rather than `<\/script>`. The HTML tokenizer accepts whitespace
- * between an end tag's name and its `>`, so `</script >` closes the element — but a regex looking
- * for the exact string does not stop there, and the lazy body match runs past it to the next
- * literal `</script>` or fails to match at all. An inline script written that way was invisible to
- * this function, which means the check added to catch inline scripts could be walked around by a
- * space. Found by CodeQL's js/bad-tag-filter on the pull request that introduced it.
+ * Both tags are matched as "the name, a word boundary, then anything up to `>`", which took two
+ * corrections to get right. CodeQL's js/bad-tag-filter rejected `</script>` first and then
+ * `</script\s*>`, and both rejections were correct:
+ *
+ *   - The tokenizer allows whitespace before an end tag's `>`, so `</script >` closes the element.
+ *   - It also parses attributes on an end tag and discards them, so `</script foo>` closes it too.
+ *
+ * A regex that stops short of either does not merely miss that tag; the lazy body match runs past
+ * it to the next literal end tag or fails entirely, so the inline script becomes invisible. The
+ * check written to catch inline scripts could be walked around with a space, which is a worse
+ * position than not having written it, because it reports green.
+ *
+ * `\b` rather than `\s` is what makes `</scriptfoo>` correctly *not* an end tag: there is no word
+ * boundary between `t` and `f`, so the name has to be exactly `script`.
+ *
+ * An attribute value containing a literal `>` would end the match early. That is the safe
+ * direction here — the captured body gets shorter, never longer, so an inline script is still
+ * reported — and this reads a build artifact rather than hostile input.
  */
 export function findInlineScripts(html) {
-  return [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)]
+  return [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/gi)]
     .map((match) => match[1])
     .filter((body) => body.trim().length > 0);
 }
