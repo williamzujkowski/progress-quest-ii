@@ -20,3 +20,13 @@ export const MAX_PENDING_ELAPSED_MS = 1_000_000_000;
  * would have accepted.
  */
 export const MAX_STORED_PAYLOAD_LENGTH = 1_000_000;
+
+/**
+ * How long the checkpoint scheduler waits before flushing a dirty session to storage.
+ *
+ * Lives here rather than as a literal default argument because the end-to-end suite has to
+ * outwait it to prove a checkpoint was *not* written. A test that hard-codes its own copy of
+ * this number stops proving anything the moment the interval is raised: the wait finishes
+ * before the flush would have happened, and the absence it asserts is its own impatience.
+ */
+export const DEFAULT_CHECKPOINT_INTERVAL_MS = 1_000;

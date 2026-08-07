@@ -3,6 +3,7 @@ import { appReady, expect, test, watchForErrors } from './fixtures/strictConsole
 import { expectNoViolations } from './fixtures/accessibility';
 import { readFile } from 'node:fs/promises';
 import { createNewCharacter } from '../src/engine/sim';
+import { DEFAULT_CHECKPOINT_INTERVAL_MS } from '../src/data/limits';
 import { archivedSessionStorageState } from './fixtures/archivedSession';
 import { returningSessionStorageState } from './fixtures/returningSession';
 
@@ -11,6 +12,11 @@ import { returningSessionStorageState } from './fixtures/returningSession';
 const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:5173';
 
 const returningStorageState = returningSessionStorageState(BASE_URL);
+
+// Long enough that a checkpoint flush would have happened by now, so "nothing was written" is a
+// finding rather than a race the test won. Derived from the scheduler's own interval: hard-coding
+// it turns every one of these waits into a no-op the day that interval is raised.
+const PAST_ONE_CHECKPOINT_MS = DEFAULT_CHECKPOINT_INTERVAL_MS + 100;
 
 const openActivityTab = async (page: Page) => {
   const tab = page.getByRole('tab', { name: 'Activity' });
@@ -69,7 +75,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await expect(creator).toBeVisible();
     await creator.click({ position: { x: 2, y: 2 } });
     await expect(creator).toBeVisible();
-    await page.waitForTimeout(1_100);
+    await page.waitForTimeout(PAST_ONE_CHECKPOINT_MS);
     expect(await page.evaluate(() => localStorage.getItem('progquest_active_session_v1'))).toBeNull();
 
     await creator.getByRole('textbox', { name: 'Character Name' }).fill('First Bureaucrat');
@@ -173,7 +179,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await page.reload({ waitUntil: 'networkidle' });
 
     await expect(page.getByRole('alert')).toContainText('Recovered the last known good session');
-    await page.waitForTimeout(1_100);
+    await page.waitForTimeout(PAST_ONE_CHECKPOINT_MS);
     expect(await page.evaluate(() => localStorage.getItem('progquest_active_session_v1'))).toBe('{unreadable');
     await page.getByRole('button', { name: 'Replace unreadable checkpoint' }).click();
     await expect(page.locator('.session-status[role="status"]')).toContainText('Automatic checkpoints resumed');

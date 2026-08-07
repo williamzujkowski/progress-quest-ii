@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GameTransitionEvent } from '../../engine/transition';
-import { MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_STORED_PAYLOAD_LENGTH } from '../../data/limits';
+import { MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE, MAX_STORED_PAYLOAD_LENGTH } from '../../data/limits';
 import { EQUIP_SLOTS } from '../../data/traits';
 import {
   COMMENDATIONS_STORAGE_KEY, EMPTY_COMMENDATIONS, isEmpty,
@@ -39,6 +39,38 @@ describe('commendation ledger', () => {
     const records = mergeEvents(EMPTY_COMMENDATIONS, events);
     expect(records.questsCompleted).toBe(2);
     expect(records.actsCompleted).toBe(1);
+  });
+
+  it('clamps every filed figure to what the ledger schema will accept', () => {
+    // Seeded at the cap, not one below it. One below is the trap: the counters would land exactly
+    // on the maximum on their own, Math.min would be comparing the cap with the cap, and the test
+    // would pass with every clamp deleted. At the cap the unclamped arithmetic overshoots by one,
+    // which is the only arrangement in which the clamps are what produces the answer.
+    const atCap = {
+      ...EMPTY_COMMENDATIONS,
+      highestLevel: MAX_PERSISTED_VALUE,
+      largestSale: MAX_PERSISTED_GOLD,
+      questsCompleted: MAX_PERSISTED_VALUE,
+      actsCompleted: MAX_PERSISTED_VALUE,
+    };
+    const records = mergeEvents(atCap, [
+      // Each of these clears the "is this a new best" guard, so the clamp is the only thing
+      // standing between the event's figure and the ledger.
+      { type: 'level_gained', level: MAX_PERSISTED_VALUE + 1 },
+      { type: 'inventory_sold', gold: MAX_PERSISTED_GOLD + 1 },
+      { type: 'quest_completed', description: 'one past the filing cabinet' },
+      { type: 'act_completed', act: 2 },
+    ]);
+
+    expect(records.highestLevel).toBe(MAX_PERSISTED_VALUE);
+    expect(records.largestSale).toBe(MAX_PERSISTED_GOLD);
+    expect(records.questsCompleted).toBe(MAX_PERSISTED_VALUE);
+    expect(records.actsCompleted).toBe(MAX_PERSISTED_VALUE);
+    // The clamps exist to keep the ledger writable. An over-cap figure is refused by the schema
+    // on the way out, which would silently cost the player every record they had.
+    const storage = fakeStorage();
+    writeCommendations(storage, records);
+    expect(readCommendations(storage)).toEqual(records);
   });
 
   it('returns the same object when nothing changed, so callers can skip work', () => {

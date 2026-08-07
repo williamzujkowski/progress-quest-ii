@@ -100,7 +100,6 @@ describe('active session checkpoint boundary', () => {
     });
     const checkpoint = captureActiveSession(FIXED_SAVED_AT);
     expect(checkpoint.session.log).toEqual(['Newest event', 'Older event']);
-    expect(checkpoint.session.log.every((entry) => typeof entry === 'string')).toBe(true);
 
     expect(writeActiveCheckpoint(localStorage, checkpoint, null)).toMatchObject({ ok: true });
     const loaded = loadActiveCheckpoint(localStorage);
@@ -215,6 +214,12 @@ describe('active session checkpoint boundary', () => {
       { ...checkpoint, schemaVersion: 2 },
       { ...checkpoint, surprise: true },
       { ...checkpoint, session: { ...checkpoint.session, rngState: [0.1, 0.2, 0.3, -1] } },
+      // The 32-bit alignment refine on its own. The counter is in range and the other two
+      // fractions are exact multiples of 2^-32, so the only thing wrong with this state is that
+      // Alea could not have produced 0.123456789 - which is what a fraction hand-edited or
+      // round-tripped through a lossy encoder looks like. Without the isolated case the refine
+      // could be deleted and every remaining negative case would still fail, for other reasons.
+      { ...checkpoint, session: { ...checkpoint.session, rngState: [0.123456789, 0.5, 0.25, 1] } },
     ]) {
       localStorage.setItem(ACTIVE_CHECKPOINT_KEY, JSON.stringify(candidate));
       expect(loadActiveCheckpoint(localStorage).canPersist).toBe(false);
