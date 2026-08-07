@@ -86,6 +86,26 @@ describe('caseload tally', () => {
     expect(isEmpty(EMPTY_CASELOAD)).toBe(true);
     expect(isEmpty(mergeRecords(EMPTY_CASELOAD, [closed('seek', 'Amulet')]))).toBe(false);
   });
+
+  it('tallies a target named after an inherited property like any other', () => {
+    // An imported save picks this key. Reading the tally without hasOwn returns Object.prototype's
+    // member rather than undefined, the nullish guard does not fire, and the count becomes NaN —
+    // which the schema then refuses to persist, on every subsequent tick, silently.
+    for (const inherited of ['constructor', 'toString', 'valueOf', 'hasOwnProperty', '__proto__']) {
+      const tally = mergeRecords(EMPTY_CASELOAD, [closed('exterminate', inherited), closed('exterminate', inherited)]);
+      expect(tally.targets[inherited]).toBe(2);
+    }
+  });
+
+  it('keeps persisting after a quest target named after an inherited property', () => {
+    // The failure this guards is not the wrong number, it is the write that stops happening. A NaN
+    // fails the schema on the way out, so the ledger goes unsaved for the rest of the session
+    // while the caller retries it every tick — which is why this asserts through storage.
+    const tally = mergeRecords(EMPTY_CASELOAD, [closed('fetch', 'constructor'), closed('fetch', 'Kobold')]);
+    const storage = fakeStorage();
+    writeCaseload(storage, tally);
+    expect(readCaseload(storage)).toEqual(tally);
+  });
 });
 
 describe('caseload persistence', () => {

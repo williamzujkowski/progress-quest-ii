@@ -123,11 +123,17 @@ export function mergeRecords(caseload: Caseload, records: readonly GameTransitio
 
     const target = identity.target;
     if (target && target.length > 0 && target.length <= MAX_PERSISTED_DESCRIPTION_LENGTH) {
+      // hasOwn rather than a bare read, because an imported save chooses this key. For one
+      // inherited from Object.prototype — `constructor`, `toString`, `valueOf` — the read returns
+      // a function rather than undefined, so `?? 0` never fires and the tally becomes NaN. Nothing
+      // downstream shouts: the schema quietly refuses to persist a NaN while the caller keeps
+      // retrying the same write, so the ledger simply stops saving for the rest of the session.
+      const filed = Object.hasOwn(next.targets, target) ? next.targets[target] ?? 0 : 0;
       next = {
         ...next,
         targets: boundTargets({
           ...next.targets,
-          [target]: Math.min(MAX_PERSISTED_VALUE, (next.targets[target] ?? 0) + 1),
+          [target]: Math.min(MAX_PERSISTED_VALUE, filed + 1),
         }),
       };
     }
