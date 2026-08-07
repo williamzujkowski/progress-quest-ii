@@ -679,10 +679,20 @@ input[type='radio']:checked::before { transform: scale(1); }
   padding-top: var(--space-2);
 }
 
+/* `display: list-item`, not flex. A summary is a list item by default and that is what draws the
+   disclosure triangle; setting any other display silently removes it. This one had been flex, so
+   the Case archive rendered as a muted label with nothing beneath it — indistinguishable from a
+   dead section header, and easy to read as a broken panel. That is precisely the failure
+   ClosedCasework gates itself to avoid, and QuestLog's comment names the triangle as the thing
+   that keeps inviting a reader in when the contents are hidden.
+
+   The sibling disclosure in the world console never set `display`, so it kept its marker. The two
+   diverged by accident rather than by choice. `align-content` gives the vertical centring the
+   flexbox was there for. */
 .records-details > summary {
-  display: flex;
+  display: list-item;
   min-height: 1.75rem;
-  align-items: center;
+  align-content: center;
   color: var(--text-muted);
   font-size: 0.8rem;
   font-variant-caps: all-small-caps;
