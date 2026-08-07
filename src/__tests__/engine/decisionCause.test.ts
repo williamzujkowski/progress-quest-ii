@@ -72,4 +72,25 @@ describe('decision causes at the transition seam', () => {
       if (event.type === 'task_started') expect(event.reason).toBeUndefined();
     }
   });
+
+  it('refuses an elapsed span that is not a positive finite number', () => {
+    // The caller-facing guard at transition.ts:229. Across the suite's 84 advanceGame call sites
+    // the elapsed argument is always a positive finite literal, so nothing exercised it — and the
+    // game clock is what feeds it, which can produce a zero delta and has a history of
+    // misbehaving across tab-visibility changes.
+    const character = createNewCharacter('Guard Subject', 'Half Orc', 'Ur-Paladin', 909);
+    const state: GameTransitionState = {
+      character,
+      progression: { experience: { currentSeconds: 0, maxSeconds: 1000 }, completedTasks: 0, elapsedSeconds: 0 },
+    };
+
+    for (const refused of [0, -1, -1000, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      const result = advanceGame(state, refused, new RandomGenerator('guard'));
+      // Returned untouched, not merely unchanged-looking: the same object back is what tells the
+      // caller nothing happened, and it is what lets the store skip a write and a render.
+      expect(result.state, `${refused} should advance nothing`).toBe(state);
+      expect(result.records).toEqual([]);
+      expect(result.remainingElapsedMs).toBe(0);
+    }
+  });
 });
