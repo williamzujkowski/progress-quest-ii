@@ -1,6 +1,6 @@
 # Content provenance and license boundaries
 
-Last audited: 2026-08-04. This is a conservative engineering inventory, not legal advice.
+Last audited: 2026-08-07. This is a conservative engineering inventory, not legal advice.
 
 ## Practical boundary
 
@@ -40,7 +40,7 @@ Production dependencies at the audit commit:
 | `@fontsource-variable/inter` | 5.3.0 | OFL-1.1 |
 | `@fontsource-variable/jetbrains-mono` | 5.3.0 | OFL-1.1 |
 | `@williamzujkowski/oklch-terminal-themes` | 0.7.0 | MIT |
-| `@fontsource-variable/newsreader` | see `package-lock.json` | SIL Open Font License 1.1; the masthead face, shipped like the other two |
+| `@fontsource-variable/newsreader` | 5.3.0 | SIL Open Font License 1.1; the masthead face, shipped like the other two |
 | `lucide-react` | 1.28.0 | ISC, with upstream Feather-derived icons under MIT |
 | `react`, `react-dom` (and bundled `scheduler`) | 19.2.8 (scheduler 0.27.0) | MIT |
 | `zod` | 4.4.3 | MIT |
