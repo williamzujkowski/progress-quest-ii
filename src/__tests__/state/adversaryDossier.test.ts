@@ -24,30 +24,30 @@ describe('adversary dossier', () => {
 
   it('states the count plainly beside the flourish', () => {
     // The joke decorates a fact; it never stands in for one.
-    expect(adversaryDossier('Kobold', 14)?.summary).toMatch(/^14 dockets on file\. /);
-    expect(adversaryDossier('Imp', 1)?.summary).toMatch(/^1 docket on file\. /);
+    expect(adversaryDossier('Kickoff Meeting', 14)?.summary).toMatch(/^14 dockets on file\. /);
+    expect(adversaryDossier('Interim Policy', 1)?.summary).toMatch(/^1 docket on file\. /);
   });
 
   it('says so rather than reporting a bare zero', () => {
-    expect(adversaryDossier('Rat', 0)?.summary).toMatch(/^Nothing previously filed\. /);
+    expect(adversaryDossier('Nit', 0)?.summary).toMatch(/^Nothing previously filed\. /);
   });
 
   it('holds still for one adversary and differs between them', () => {
-    expect(adversaryDossier('Kobold', 14)).toEqual(adversaryDossier('Kobold', 14));
+    expect(adversaryDossier('Kickoff Meeting', 14)).toEqual(adversaryDossier('Kickoff Meeting', 14));
     const summaries = new Set(
-      ['Kobold', 'Imp', 'Gorgosaurus', 'fruit fly', 'Duke'].map((t) => adversaryDossier(t, 14)?.summary),
+      ['Kickoff Meeting', 'Interim Policy', 'Green-Screen App', 'fruit fly', 'Duke'].map((t) => adversaryDossier(t, 14)?.summary),
     );
     expect(summaries.size).toBeGreaterThan(1);
   });
 
   it('refuses a count that is not a count', () => {
     for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, -5]) {
-      const dossier = adversaryDossier('Kobold', bad);
+      const dossier = adversaryDossier('Kickoff Meeting', bad);
       expect(dossier?.dockets).toBe(0);
       expect(dossier?.summary).toMatch(/^Nothing previously filed\./);
     }
     // A fractional count is floored rather than rendered with a decimal point.
-    expect(adversaryDossier('Kobold', 3.7)?.dockets).toBe(3);
+    expect(adversaryDossier('Kickoff Meeting', 3.7)?.dockets).toBe(3);
   });
 
   it('never implies the adversary is more dangerous for being familiar', () => {
@@ -55,7 +55,7 @@ describe('adversary dossier', () => {
     // A long history must not read as a threat rating.
     const forbidden = /danger|tough|stronger|harder|weaker|damage|resist|threat level/i;
     for (const dockets of [0, 1, 8, 25, 500]) {
-      expect(adversaryDossier('Kobold', dockets)!.summary).not.toMatch(forbidden);
+      expect(adversaryDossier('Kickoff Meeting', dockets)!.summary).not.toMatch(forbidden);
     }
   });
 });

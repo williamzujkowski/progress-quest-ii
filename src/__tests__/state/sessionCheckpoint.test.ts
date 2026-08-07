@@ -345,7 +345,7 @@ describe('active session checkpoint boundary', () => {
     const character = createNewCharacter('Continuation', 'Half Daemon', 'Robot Monk', 703);
     character.Quest.history = [character.Quest.description];
     character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
-    character.Task = { description: 'Executing rat...', durationMs: 100, elapsedMs: 75, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.Task = { description: 'Executing rat...', durationMs: 100, elapsedMs: 75, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } };
     character.PendingTasks = undefined;
     const rng = new RandomGenerator('continuation-rng');
     useGameStore.setState({ character, rng, isPaused: false, log: activityLog('Before'), progression: { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 } });

@@ -200,29 +200,56 @@ describe('item tooltip details', () => {
   });
 
   it('names the monster in a recovered-item incident report', () => {
-    const description = describeInventoryItem('Gelatinous Cube item', 1).description;
+    const description = describeInventoryItem('Gelatinous Sprint item', 1).description;
 
-    expect(description).toContain('Gelatinous Cube');
+    expect(description).toContain('Gelatinous Sprint');
     expect(description.length).toBeLessThanOrEqual(220);
   });
 
   it('recognizes the canonical monster and drop in live fixed loot', () => {
-    const description = describeInventoryItem('gelatinous cube jam', 1).description;
+    const description = describeInventoryItem('gelatinous sprint jam', 1).description;
 
-    expect(description).toContain('Gelatinous Cube');
+    expect(description).toContain('Gelatinous Sprint');
     expect(description).toContain('jam');
   });
 
   it('gives neighboring monster drops meaning beyond the interpolated remains', () => {
-    const rat = withoutIdentityToken(describeInventoryItem('rat tail', 1).description, 'Rat', 'tail');
+    const rat = withoutIdentityToken(describeInventoryItem('nit tail', 1).description, 'Nit', 'tail');
     const scout = withoutIdentityToken(
-      describeInventoryItem('Cub Scout neckerchief', 1).description,
-      'Cub Scout',
-      'neckerchief',
+      describeInventoryItem('Intern lanyard', 1).description,
+      'Intern',
+      'lanyard',
     );
 
     expect(rat).not.toBe(scout);
     expect(scout).toContain('wardrobe');
+  });
+
+  it('keeps all three drop shapes reachable from the monster table', () => {
+    // itemDetails classifies a drop as wardrobe, anatomy or residue by matching hardcoded word
+    // lists — the one place in that file that names vocabulary instead of resolving it by index,
+    // and so the one place a table rewrite can silently defeat. #401 replaced every adversary and
+    // every drop; without this, all 232 would have fallen through to the generic ending and the
+    // only symptom would have been blander tooltips nobody diffed.
+    const shapes = { wardrobe: 0, anatomy: 0, residue: 0, document: 0, salvage: 0 };
+    for (const { name, item } of MONSTERS) {
+      if (item === '*') continue;
+      const { description } = describeInventoryItem(`${name} ${item}`, 1);
+      if (description.includes('wardrobe')) shapes.wardrobe += 1;
+      else if (description.includes('filed as anatomy')) shapes.anatomy += 1;
+      else if (description.includes('a labor grievance')) shapes.residue += 1;
+      else if (description.includes('never read again')) shapes.document += 1;
+      else shapes.salvage += 1;
+    }
+    expect(shapes.wardrobe).toBeGreaterThan(0);
+    expect(shapes.anatomy).toBeGreaterThan(0);
+    expect(shapes.residue).toBeGreaterThan(0);
+    // The register moved: most of what an institution's adversaries drop is paperwork, which the
+    // original three shapes had no category for at all.
+    expect(shapes.document).toBeGreaterThan(0);
+    // The generic ending is the fallback, not the norm. If a rewrite bypassed every list this
+    // would be all 232, which is exactly the failure the assertions above cannot see on their own.
+    expect(shapes.salvage).toBeLessThan(MONSTERS.length / 2);
   });
 
   it('does not invent monster provenance for an accepted unknown item', () => {
@@ -451,13 +478,13 @@ describe('provenance acquires an industrial edge as acts accumulate', () => {
   });
 
   it('stays deterministic and defaults to the era the archive started in', () => {
-    expect(describeInventoryItem('Rat Tail', 1, 30)).toEqual(describeInventoryItem('Rat Tail', 1, 30));
-    expect(describeInventoryItem('Rat Tail', 1)).toEqual(describeInventoryItem('Rat Tail', 1, 0));
+    expect(describeInventoryItem('Nit Tail', 1, 30)).toEqual(describeInventoryItem('Nit Tail', 1, 30));
+    expect(describeInventoryItem('Nit Tail', 1)).toEqual(describeInventoryItem('Nit Tail', 1, 0));
   });
 
   it('leaves the mechanical effect alone at every act', () => {
     for (const act of [0, 5, 12, 30]) {
-      expect(describeInventoryItem('Rat Tail', 1, act).effect).toBe(describeInventoryItem('Rat Tail', 1, 0).effect);
+      expect(describeInventoryItem('Nit Tail', 1, act).effect).toBe(describeInventoryItem('Nit Tail', 1, 0).effect);
       expect(describeEquipment('Provisional Waiver Sword', 'Weapon', act).effect).toBe(describeEquipment('Provisional Waiver Sword', 'Weapon', 0).effect);
     }
   });

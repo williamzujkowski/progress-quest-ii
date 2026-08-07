@@ -22,10 +22,10 @@
       "Plots": ["Act I"],
       "Quests": ["Test quest"],
       "queue": [],
-      "task": "kill|Rat|0|tail",
+      "task": "kill|Nit|0|tail",
       "tasks": 0,
       "elapsed": 0,
-      "kill": "Executing a Rat...",
+      "kill": "Executing a Nit...",
       "bestplot": "Act I",
       "bestquest": "Test quest",
       "bestequip": "Sharp Rock",
@@ -43,8 +43,8 @@
   },
   "expected": {
     "completed": {
-      "tag": "kill|Rat|0|tail",
-      "caption": "Executing a Rat...",
+      "tag": "kill|Nit|0|tail",
+      "caption": "Executing a Nit...",
       "durationMs": 6000
     },
     "counters": { "tasks": 1, "elapsedSeconds": 6 },
@@ -62,7 +62,7 @@
       ]
     },
     "task": {
-      "tag": "kill|Grid Bug|1|carapace",
+      "tag": "kill|Grid Bug|1|trace",
       "caption": "Executing a Grid Bug...",
       "positionMs": 0,
       "maxMs": 6000,
@@ -84,7 +84,7 @@
       "positionSeconds": 6,
       "maxSeconds": 1000
     },
-    "inventory": [["Gold", 0], ["rat tail", 1]],
+    "inventory": [["Gold", 0], ["nit tail", 1]],
     "equipment": [
       ["Weapon", "Sharp Rock"],
       ["Shield", ""],
@@ -100,7 +100,7 @@
     ],
     "spells": [],
     "best": { "stat": "STR 10", "spell": "", "equipment": "Sharp Rock" },
-    "log": ["Gained a rat tail", "Executing a Grid Bug..."],
+    "log": ["Gained a nit tail", "Executing a Grid Bug..."],
     "savedRng": [0.0011501498520374298, 0.8276778745930642, 0.24009850597940385, 1],
     "rng": [0.04499438125640154, 0.8823704484384507, 0.9573474917560816, 1714361]
   }

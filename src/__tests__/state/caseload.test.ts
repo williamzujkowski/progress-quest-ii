@@ -23,7 +23,7 @@ const closed = (kind?: string, target?: string): GameTransitionRecord => ({
 
 const other = (): GameTransitionRecord => ({
   event: { type: 'level_gained', level: 4 },
-  post: { completedQuest: { kind: 'fetch', target: 'Kobold' } },
+  post: { completedQuest: { kind: 'fetch', target: 'Kickoff Meeting' } },
 } as unknown as GameTransitionRecord);
 
 afterEach(() => { vi.restoreAllMocks(); });
@@ -31,7 +31,7 @@ afterEach(() => { vi.restoreAllMocks(); });
 describe('caseload tally', () => {
   it('counts each kind the engine classified', () => {
     const tally = mergeRecords(EMPTY_CASELOAD, [
-      closed('exterminate', 'Kobold'), closed('exterminate', 'Imp'), closed('placate', 'Duke'),
+      closed('exterminate', 'Kickoff Meeting'), closed('exterminate', 'Interim Policy'), closed('placate', 'Duke'),
     ]);
     expect(tally.kinds).toEqual({ exterminate: 2, placate: 1 });
   });
@@ -44,7 +44,7 @@ describe('caseload tally', () => {
 
   it('returns the same object when nothing was filed', () => {
     // Identity is the signal the caller uses to skip a write and a render.
-    const tally = mergeRecords(EMPTY_CASELOAD, [closed('fetch', 'Rat')]);
+    const tally = mergeRecords(EMPTY_CASELOAD, [closed('fetch', 'Nit')]);
     expect(mergeRecords(tally, [other()])).toBe(tally);
     expect(mergeRecords(tally, [])).toBe(tally);
   });
@@ -54,19 +54,19 @@ describe('caseload tally', () => {
     // category. It is simply not evidence about the mix.
     expect(mergeRecords(EMPTY_CASELOAD, [closed(undefined, undefined)])).toBe(EMPTY_CASELOAD);
     expect(mergeRecords(EMPTY_CASELOAD, [closed('deliver', undefined)]).targets).toEqual({});
-    expect(mergeRecords(EMPTY_CASELOAD, [closed(undefined, 'Kobold')]).kinds).toEqual({});
+    expect(mergeRecords(EMPTY_CASELOAD, [closed(undefined, 'Kickoff Meeting')]).kinds).toEqual({});
   });
 
   it('ignores a kind the engine does not define', () => {
-    expect(mergeRecords(EMPTY_CASELOAD, [closed('litigate', 'Kobold')]).kinds).toEqual({});
+    expect(mergeRecords(EMPTY_CASELOAD, [closed('litigate', 'Kickoff Meeting')]).kinds).toEqual({});
   });
 
   it('names the most frequently filed against, breaking ties stably', () => {
     const tally = mergeRecords(EMPTY_CASELOAD, [
-      closed('fetch', 'Kobold'), closed('fetch', 'Kobold'), closed('seek', 'Imp'), closed('seek', 'Imp'),
+      closed('fetch', 'Kickoff Meeting'), closed('fetch', 'Kickoff Meeting'), closed('seek', 'Interim Policy'), closed('seek', 'Interim Policy'),
     ]);
     // Equal counts resolve alphabetically rather than by insertion, so a reload cannot change it.
-    expect(mostLitigated(tally)).toEqual({ target: 'Imp', count: 2 });
+    expect(mostLitigated(tally)).toEqual({ target: 'Interim Policy', count: 2 });
     expect(mostLitigated(EMPTY_CASELOAD)).toBeNull();
   });
 
@@ -101,7 +101,7 @@ describe('caseload tally', () => {
     // The failure this guards is not the wrong number, it is the write that stops happening. A NaN
     // fails the schema on the way out, so the ledger goes unsaved for the rest of the session
     // while the caller retries it every tick — which is why this asserts through storage.
-    const tally = mergeRecords(EMPTY_CASELOAD, [closed('fetch', 'constructor'), closed('fetch', 'Kobold')]);
+    const tally = mergeRecords(EMPTY_CASELOAD, [closed('fetch', 'constructor'), closed('fetch', 'Kickoff Meeting')]);
     const storage = fakeStorage();
     writeCaseload(storage, tally);
     expect(readCaseload(storage)).toEqual(tally);
@@ -202,14 +202,14 @@ describe('naming a target that is filed under a composite key', () => {
   it('shows the name out of the engine key rather than the key', () => {
     // The engine identifies an extermination target as name|level|item, which keeps two monsters
     // of the same name apart and is not a sentence. Verified against real engine output:
-    // "Gnoll|2|collar" is what actually lands in the tally.
-    expect(displayTarget('Gnoll|2|collar')).toBe('Gnoll');
-    expect(displayTarget('Stun Worm|2|trode')).toBe('Stun Worm');
+    // "Nagging Bot|2|collar" is what actually lands in the tally.
+    expect(displayTarget('Nagging Bot|2|collar')).toBe('Nagging Bot');
+    expect(displayTarget('Status Worm|2|trode')).toBe('Status Worm');
   });
 
   it('leaves a plain name alone', () => {
     // Not every quest kind sets a composite target, and a name with no delimiter must survive.
-    expect(displayTarget('Kobold')).toBe('Kobold');
+    expect(displayTarget('Kickoff Meeting')).toBe('Kickoff Meeting');
   });
 
   it('falls back to the key rather than rendering nothing', () => {

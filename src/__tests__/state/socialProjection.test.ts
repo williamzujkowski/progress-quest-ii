@@ -16,7 +16,7 @@ const snapshot = (overrides: Partial<GamePresentationSnapshot> = {}): GamePresen
   nextTask: 'kill',
   completedTasks: 42,
   elapsedSeconds: 3671,
-  activeQuest: { kind: 'exterminate', target: 'Rat|1|tail', targetIndex: 0 },
+  activeQuest: { kind: 'exterminate', target: 'Nit|1|tail', targetIndex: 0 },
   ...overrides,
 });
 
@@ -214,8 +214,8 @@ describe('deterministic social batch projection', () => {
   it('leaves authoritative state, records, saves, and gameplay RNG byte-identical', () => {
     const run = (enabled: boolean) => {
       const character = createNewCharacter('Social Parity Oracle', 'Half Daemon', 'Robot Monk', 'social-parity-character');
-      character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
-      character.Inventory = [{ name: 'rat tail', qty: 100 }];
+      character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } };
+      character.Inventory = [{ name: 'nit tail', qty: 100 }];
       const rng = new RandomGenerator('social-parity-transition');
       const result = advanceGame({
         character,
@@ -249,9 +249,9 @@ describe('deterministic social batch projection', () => {
     const character = createNewCharacter('Catch-up Oracle', 'Half Daemon', 'Robot Monk', 'social-catch-up-character');
     character.Plot = { act: 1, currentProgress: 1, maxProgress: 1 };
     character.Quest = { description: 'Typed assignment', currentProgress: 1, maxProgress: 1, history: ['Typed assignment'], kind: 'deliver' };
-    character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } };
     character.PendingTasks = undefined;
-    character.Inventory = [{ name: 'rat tail', qty: 50 }, { name: 'old boot', qty: 50 }];
+    character.Inventory = [{ name: 'nit tail', qty: 50 }, { name: 'old boot', qty: 50 }];
     character.Gold = 1_000_000;
     const result = advanceGame({
       character,

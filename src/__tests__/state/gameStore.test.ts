@@ -15,7 +15,7 @@ function fixedKillCharacter() {
     durationMs: 1,
     elapsedMs: 0,
     type: 'kill',
-    loot: { type: 'fixed', item: 'rat tail' },
+    loot: { type: 'fixed', item: 'nit tail' },
   };
   return character;
 }
@@ -58,9 +58,9 @@ describe('Game Store State Machine', () => {
 
     const updated = useGameStore.getState();
     expect(notifications).toBe(1);
-    expect(updated.character.Inventory).toEqual([{ name: 'rat tail', qty: 1 }]);
+    expect(updated.character.Inventory).toEqual([{ name: 'nit tail', qty: 1 }]);
     expect(updated.log[0]?.message).toBe(updated.character.Task.description);
-    expect(updated.log[1]?.message).toBe('Gained a rat tail');
+    expect(updated.log[1]?.message).toBe('Gained a nit tail');
     expect(new Set(updated.log.map(({ id }) => id)).size).toBe(updated.log.length);
   });
 

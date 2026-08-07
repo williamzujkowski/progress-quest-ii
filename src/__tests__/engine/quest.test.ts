@@ -67,7 +67,7 @@ describe('legacy quest generators', () => {
     const rng = new RandomGenerator('placate');
     const quest = generatePlacateQuest(rng, 1);
 
-    expect(quest).toEqual({ kind: 'placate', description: 'Placate the Swamp Elves' });
+    expect(quest).toEqual({ kind: 'placate', description: 'Placate the Swamp Tickets' });
     expect('target' in quest).toBe(false);
     expect(rng.getState()).toEqual(stateAfterPicks('placate', 2));
   });
@@ -79,11 +79,11 @@ describe('legacy quest generators', () => {
     });
 
     expect(outputs).toEqual([
-      [{ kind: 'exterminate', description: 'Exterminate the Piercers', target: 'Piercer|3|tip', targetIndex: 169 }, [0.7386679488699883, 0.1321149712894112, 0.25837940047495067, 1859545]],
+      [{ kind: 'exterminate', description: 'Exterminate the Pierced SLAs', target: 'Pierced SLA|3|tip', targetIndex: 169 }, [0.7386679488699883, 0.1321149712894112, 0.25837940047495067, 1859545]],
       [{ kind: 'seek', description: 'Seek the Precedent Amendment' }, [0.440847976366058, 0.36323591391555965, 0.49511508364230394, 179019]],
       [{ kind: 'deliver', description: 'Deliver this I.O.U.' }, [0.31013343250378966, 0.797919366043061, 0.5409550939220935, 1914968]],
       [{ kind: 'fetch', description: 'Fetch me a sticky note' }, [0.9172258146572858, 0.4534230341669172, 0.2273825639858842, 134543]],
-      [{ kind: 'placate', description: 'Placate the Mariliths' }, [0.685977301094681, 0.4743830212391913, 0.5976645925547928, 215245]],
+      [{ kind: 'placate', description: 'Placate the Matrix Managers' }, [0.685977301094681, 0.4743830212391913, 0.5976645925547928, 215245]],
     ]);
   });
 

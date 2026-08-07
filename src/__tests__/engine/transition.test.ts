@@ -126,7 +126,7 @@ describe('advanceGame', () => {
     const character = createNewCharacter('Patient Oracle', 'Half Daemon', 'Incident Paladin', 800);
     character.Plot = { act: 1, currentProgress: 4, maxProgress: 5 };
     character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
-    character.Task = { description: 'Executing a Rat...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.Task = { description: 'Executing a Nit...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } };
     character.PendingTasks = undefined;
     const rng = new RandomGenerator('plot-edge');
 
@@ -155,9 +155,9 @@ describe('advanceGame', () => {
       rngState: [0.8487152096349746, 0.6674839127808809, 0.22826107195578516, 1] as [number, number, number, number],
       first: 'Your quarry is in sight, but a mighty enemy bars your path!...',
       pending: [
-        'A desperate struggle commences with Oomuz the Hell Hound',
-        'Oomuz the Hell Hound seems to have the upper hand',
-        'Victory! Oomuz the Hell Hound is slain! Exhausted, you lose consciousness',
+        'A desperate struggle commences with Oomuz the Helpdesk Hound',
+        'Oomuz the Helpdesk Hound seems to have the upper hand',
+        'Victory! Oomuz the Helpdesk Hound is slain! Exhausted, you lose consciousness',
         'You awake in a friendly place, but the road awaits',
         'Loading',
       ],
@@ -166,12 +166,12 @@ describe('advanceGame', () => {
     {
       branch: 'double-dealer',
       rngState: [0.6487525827251375, 0.627493878826499, 0.8949407478794456, 1] as [number, number, number, number],
-      first: "Oh sweet relief! You've reached the kind protection of King Frudem of Krabgrout...",
+      first: "Oh sweet relief! You've reached the kind protection of Chair Frudem of Krabgrout...",
       pending: [
-        'There is rejoicing, and an unnerving encounter with King Frudem of Krabgrout in private',
+        'There is rejoicing, and an unnerving encounter with Chair Frudem of Krabgrout in private',
         'You forget your toner cartridge and go back to get it',
         "What's this!? You overhear something shocking!",
-        'Could King Frudem of Krabgrout be a dirty double-dealer?',
+        'Could Chair Frudem of Krabgrout be a dirty double-dealer?',
         'Who can possibly be trusted with this news!? -- Oh yes, of course',
         'Loading',
       ],
@@ -181,7 +181,7 @@ describe('advanceGame', () => {
     const character = createNewCharacter('Oracle', 'Half Daemon', 'Incident Paladin', 800);
     character.Plot = { act: 1, currentProgress: 10, maxProgress: 10 };
     character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
-    character.Task = { description: 'Executing a Rat...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.Task = { description: 'Executing a Nit...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } };
     character.PendingTasks = [];
     const rng = new RandomGenerator('interplot-oracle');
     rng.setState(rngState);
@@ -197,7 +197,7 @@ describe('advanceGame', () => {
     const character = createNewCharacter('Endless Oracle', 'Half Daemon', 'Incident Paladin', 800);
     character.Plot = { act: MAX_PERSISTED_VALUE, currentProgress: 10, maxProgress: 10 };
     character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
-    character.Task = { description: 'Executing a Rat...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.Task = { description: 'Executing a Nit...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } };
     character.PendingTasks = undefined;
     const rng = new RandomGenerator('endless-cinematic-oracle');
     rng.setState([0.8487152096349746, 0.6674839127808809, 0.22826107195578516, 1]);
@@ -250,7 +250,7 @@ describe('advanceGame', () => {
     const character = createNewCharacter('Oracle', 'Half Daemon', 'Incident Paladin', 800);
     character.Plot = { act: 1, currentProgress: 10, maxProgress: 10 };
     character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
-    character.Task = { description: 'Executing a Black Dragon...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'random' } };
+    character.Task = { description: 'Executing a Basic Support...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'random' } };
     character.PendingTasks = undefined;
     const rng = new RandomGenerator('random-star-cinematic');
     rng.setState([0.8487152096349746, 0.6674839127808809, 0.22826107195578516, 1]);
@@ -259,10 +259,10 @@ describe('advanceGame', () => {
 
     expect(result.state.character.Inventory).toContainEqual({ name: 'Customary Tariff of Governance', qty: 1 });
     expect(result.state.character.PendingTasks?.map(({ description }) => description)).toEqual([
-      'A desperate struggle commences with Zouvjaen the Wraith',
-      'Zouvjaen the Wraith seems to have the upper hand',
-      'Locked in grim combat with Zouvjaen the Wraith',
-      'Victory! Zouvjaen the Wraith is slain! Exhausted, you lose consciousness',
+      'A desperate struggle commences with Zouvjaen the Wrap-Up Wraith',
+      'Zouvjaen the Wrap-Up Wraith seems to have the upper hand',
+      'Locked in grim combat with Zouvjaen the Wrap-Up Wraith',
+      'Victory! Zouvjaen the Wrap-Up Wraith is slain! Exhausted, you lose consciousness',
       'You awake in a friendly place, but the road awaits',
       'Loading',
     ]);
@@ -273,7 +273,7 @@ describe('advanceGame', () => {
     const character = createNewCharacter('Oracle', 'Half Daemon', 'Incident Paladin', 800);
     character.Plot = { act: 1, currentProgress: 10, maxProgress: 10 };
     character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
-    character.Task = { description: 'Executing a Black Dragon...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'random' } };
+    character.Task = { description: 'Executing a Basic Support...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'random' } };
     character.PendingTasks = undefined;
     const rng = new RandomGenerator('random-star-item-oracle');
     rng.setState([0, 0, 0, 0]);
@@ -372,7 +372,7 @@ describe('advanceGame', () => {
         durationMs: sheet.TaskBar.max,
         elapsedMs: 0,
         type: 'kill',
-        loot: { type: 'fixed', item: 'rat tail' },
+        loot: { type: 'fixed', item: 'nit tail' },
       },
     };
     const state = {
@@ -395,7 +395,7 @@ describe('advanceGame', () => {
       elapsedSeconds: 6,
     });
     expect(result.state.character).toMatchObject({
-      Inventory: [{ name: 'rat tail', qty: 1 }],
+      Inventory: [{ name: 'nit tail', qty: 1 }],
       Quest: { currentProgress: 6, maxProgress: 100 },
       Plot: { currentProgress: 6, maxProgress: 1000 },
       Task: {
@@ -403,11 +403,11 @@ describe('advanceGame', () => {
         durationMs: 6000,
         elapsedMs: 100,
         type: 'kill',
-        loot: { type: 'fixed', item: 'grid bug carapace' },
+        loot: { type: 'fixed', item: 'grid bug trace' },
       },
     });
     expect(eventsOf(result)).toEqual([
-      { type: 'item_gained', name: 'rat tail', quantity: 1 },
+      { type: 'item_gained', name: 'nit tail', quantity: 1 },
       { type: 'task_started', task: { ...result.state.character.Task, elapsedMs: 0 } },
     ]);
     expect(result.remainingElapsedMs).toBe(0);
@@ -417,7 +417,7 @@ describe('advanceGame', () => {
     if (!taskEvent) throw new Error('Expected task-started event');
     taskEvent.task.elapsedMs = 999;
     if (taskEvent.task.loot?.type === 'fixed') taskEvent.task.loot.item = 'tampered';
-    expect(result.state.character.Task).toMatchObject({ elapsedMs: 100, loot: { item: 'grid bug carapace' } });
+    expect(result.state.character.Task).toMatchObject({ elapsedMs: 100, loot: { item: 'grid bug trace' } });
   });
 
   it('emits structured legacy level-up facts without producing side effects', () => {
@@ -431,7 +431,7 @@ describe('advanceGame', () => {
       Gold: 0,
       Plot: { act: sheet.act, currentProgress: sheet.PlotBar.position, maxProgress: sheet.PlotBar.max },
       Quest: { description: sheet.bestquest, currentProgress: sheet.QuestBar.position, maxProgress: sheet.QuestBar.max, history: [...sheet.Quests] },
-      Task: { description: sheet.kill, durationMs: sheet.TaskBar.max, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } },
+      Task: { description: sheet.kill, durationMs: sheet.TaskBar.max, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } },
     };
     const state = {
       character,
@@ -459,7 +459,7 @@ describe('advanceGame', () => {
       { type: 'stat_gained', stat: 'INT', amount: 1 },
       { type: 'stat_gained', stat: 'HP Max', amount: 1 },
       { type: 'save_requested', characterName: 'Oracle' },
-      { type: 'item_gained', name: 'rat tail', quantity: 1 },
+      { type: 'item_gained', name: 'nit tail', quantity: 1 },
       { type: 'task_started', task: result.state.character.Task },
     ]);
     expect(rng.getState()).toEqual(levelUpFixture.expected.rng);
@@ -495,7 +495,7 @@ describe('advanceGame', () => {
       Gold: 0,
       Plot: { act: sheet.act, currentProgress: sheet.PlotBar.position, maxProgress: sheet.PlotBar.max },
       Quest: { description: sheet.bestquest, currentProgress: sheet.QuestBar.position, maxProgress: sheet.QuestBar.max, history: [...sheet.Quests] },
-      Task: { description: sheet.kill, durationMs: sheet.TaskBar.max, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } },
+      Task: { description: sheet.kill, durationMs: sheet.TaskBar.max, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } },
     };
     const state = {
       character,
@@ -511,20 +511,20 @@ describe('advanceGame', () => {
     const result = advanceGame(state, sheet.TaskBar.max, rng);
 
     expect(result.state.character.Quest).toEqual({
-      description: 'Exterminate the Swamp Elves',
+      description: 'Exterminate the Swamp Tickets',
       currentProgress: 0,
       maxProgress: 138,
-      history: ['Test quest', 'Exterminate the Swamp Elves'],
+      history: ['Test quest', 'Exterminate the Swamp Tickets'],
       kind: 'exterminate',
-      target: 'Swamp Elf|1|lilypad',
+      target: 'Swamp Ticket|1|lilypad',
       targetIndex: 84,
     });
     expect(result.state.character.Spells).toEqual([{ name: 'Rabbit Punch', level: 1 }]);
     expect(eventsOf(result)).toEqual([
       { type: 'quest_completed', description: 'Test quest' },
-      { type: 'quest_started', description: 'Exterminate the Swamp Elves' },
+      { type: 'quest_started', description: 'Exterminate the Swamp Tickets' },
       { type: 'save_requested', characterName: 'Oracle' },
-      { type: 'item_gained', name: 'rat tail', quantity: 1 },
+      { type: 'item_gained', name: 'nit tail', quantity: 1 },
       { type: 'task_started', task: result.state.character.Task },
     ]);
     expect(rng.getState()).toEqual(questFixture.expected.rng);
@@ -534,8 +534,8 @@ describe('advanceGame', () => {
     const character = createNewCharacter('Merchant', 'Half Daemon', 'Robot Monk', 802);
     character.Traits.Level = 5;
     character.Gold = 10;
-    character.Inventory = [{ name: 'rat tail', qty: 3 }, { name: 'old boot', qty: 2 }];
-    character.Task = { description: 'Selling 3 rat tails...', durationMs: 1000, elapsedMs: 0, type: 'selling' };
+    character.Inventory = [{ name: 'nit tail', qty: 3 }, { name: 'old boot', qty: 2 }];
+    character.Task = { description: 'Selling 3 nit tails...', durationMs: 1000, elapsedMs: 0, type: 'selling' };
     character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
     character.PendingTasks = undefined;
     const state = {
@@ -562,7 +562,7 @@ describe('advanceGame', () => {
     for (let seed = 0; seed < 100 && !matched; seed += 1) {
       const character = createNewCharacter('Quartermaster', 'Half Daemon', 'Robot Monk', `quest-equipment:${seed}`);
       character.Quest = { description: 'Complete opaque work', currentProgress: 1, maxProgress: 1, history: ['Complete opaque work'], kind: 'fetch' };
-      character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+      character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } };
       const result = advanceGame(stateFor(character), 1, new RandomGenerator(`quest-equipment-transition:${seed}`));
       if (eventsOf(result).some(({ type }) => type === 'equipment_gained')) matched = result;
     }
@@ -579,7 +579,7 @@ describe('advanceGame', () => {
       const character = createNewCharacter('Cinematic Clerk', 'Half Daemon', 'Robot Monk', `cinematic-role:${seed}`);
       character.Plot = { act: 1, currentProgress: 10, maxProgress: 10 };
       character.PendingTasks = undefined;
-      character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+      character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } };
       const result = advanceGame(stateFor(character), 1, new RandomGenerator(`cinematic-role-transition:${seed}`));
       const opening = result.records.find(({ event }) => event.type === 'task_started' && event.task.type === 'cinematic');
       if (!opening || opening.event.type !== 'task_started') continue;
@@ -612,7 +612,7 @@ describe('advanceGame', () => {
 
   it('starts the first one-second sale after reaching the market', () => {
     const character = createNewCharacter('Merchant', 'Half Daemon', 'Robot Monk', 802);
-    character.Inventory = [{ name: 'rat tail', qty: 30 }, { name: 'old boot', qty: 2 }];
+    character.Inventory = [{ name: 'nit tail', qty: 30 }, { name: 'old boot', qty: 2 }];
     character.Task = { description: 'Heading to market to sell loot...', durationMs: 4000, elapsedMs: 0, type: 'heading_to_market' };
     character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
     character.PendingTasks = undefined;
@@ -622,7 +622,7 @@ describe('advanceGame', () => {
     const result = advanceGame(stateFor(character), 4000, rng);
 
     expect(result.state.character.Inventory).toEqual(character.Inventory);
-    expect(result.state.character.Task).toMatchObject({ description: 'Selling 30 rat tails...', durationMs: 1000, type: 'selling' });
+    expect(result.state.character.Task).toMatchObject({ description: 'Selling 30 nit tails...', durationMs: 1000, type: 'selling' });
     expect(eventsOf(result)).toEqual([{ type: 'task_started', task: result.state.character.Task }]);
     expect(rng.getState()).toEqual(initialRng);
   });
@@ -633,12 +633,12 @@ describe('advanceGame', () => {
     character.Inventory = [{ name: 'old boot', qty: 19 }];
     character.Quest = { description: 'Test quest', currentProgress: 0, maxProgress: 100, history: ['Test quest'] };
     character.Plot = { act: 1, currentProgress: 0, maxProgress: 100 };
-    character.Task = { description: 'Executing a Rat...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.Task = { description: 'Executing a Nit...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } };
     character.PendingTasks = undefined;
 
     const result = advanceGame(stateFor(character), 1000, new RandomGenerator('market-threshold'));
 
-    expect(result.state.character.Inventory).toEqual([{ name: 'old boot', qty: 19 }, { name: 'rat tail', qty: 1 }]);
+    expect(result.state.character.Inventory).toEqual([{ name: 'old boot', qty: 19 }, { name: 'nit tail', qty: 1 }]);
     expect(result.state.character.Task).toMatchObject({ description: 'Heading to market to sell loot...', durationMs: 4000, type: 'heading_to_market' });
   });
 
@@ -680,7 +680,7 @@ describe('advanceGame', () => {
     const character = createNewCharacter('Initiate', 'Half Daemon', 'Robot Monk', 804);
     const initialSheet = structuredClone(character);
     character.Quest = { description: 'Heading to the killing fields...', currentProgress: 0, maxProgress: 5 };
-    character.Task = { description: 'Executing test monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.Task = { description: 'Executing test monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } };
 
     const result = advanceGame(stateFor(character), 1, new RandomGenerator('first-quest'));
 
@@ -700,7 +700,7 @@ describe('advanceGame', () => {
       maxProgress: 1,
       history: Array.from({ length: 100 }, (_, index) => `Quest ${index}`),
     };
-    character.Task = { description: 'Executing test monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.Task = { description: 'Executing test monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } };
 
     const result = advanceGame(stateFor(character), 1, new RandomGenerator('quest-history-cap'));
     const history = result.state.character.Quest.history ?? [];
@@ -783,7 +783,7 @@ describe('advanceGame', () => {
       'MP Max': MAX_PERSISTED_VALUE,
     };
     character.Inventory = [
-      { name: 'rat tail', qty: MAX_PERSISTED_VALUE },
+      { name: 'nit tail', qty: MAX_PERSISTED_VALUE },
       { name: 'bureaucratic ballast', qty: MAX_PERSISTED_VALUE },
     ];
     character.Spells = Array.from({ length: MAX_PERSISTED_ITEMS }, () => ({ name: 'Already Accounted For', level: MAX_PERSISTED_VALUE }));
@@ -796,7 +796,7 @@ describe('advanceGame', () => {
     };
     character.Plot = { act: MAX_PERSISTED_VALUE, currentProgress: MAX_PERSISTED_VALUE, maxProgress: MAX_PERSISTED_VALUE };
     character.PendingTasks = undefined;
-    character.Task = { description: 'Executing a boundary condition...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.Task = { description: 'Executing a boundary condition...', durationMs: 1000, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } };
     const state = {
       character,
       progression: {
@@ -820,7 +820,7 @@ describe('advanceGame', () => {
     });
     expect(parsed.success, parsed.error?.issues.map(({ path, message }) => `${path.join('.')}: ${message}`).join('\n')).toBe(true);
     expect(eventsOf(result).filter(({ type }) => type === 'level_gained' || type === 'stat_gained')).toEqual([]);
-    expect(eventsOf(result).some((event) => event.type === 'item_gained' && event.name === 'rat tail')).toBe(false);
+    expect(eventsOf(result).some((event) => event.type === 'item_gained' && event.name === 'nit tail')).toBe(false);
 
     const headroomState = structuredClone(state);
     headroomState.character.Traits.Level = MAX_PERSISTED_VALUE - 1;
@@ -839,15 +839,15 @@ describe('advanceGame', () => {
 
   it('does not mutate the previous inventory when loot stacks', () => {
     const character = createNewCharacter('Collector', 'Half Daemon', 'Robot Monk', 808);
-    character.Inventory = [{ name: 'rat tail', qty: 1 }, { name: 'Unrelated Trinket', qty: 1 }];
+    character.Inventory = [{ name: 'nit tail', qty: 1 }, { name: 'Unrelated Trinket', qty: 1 }];
     character.Quest = { ...character.Quest, currentProgress: 0, maxProgress: 99, history: [character.Quest.description] };
-    character.Task = { description: 'Executing test monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.Task = { description: 'Executing test monster...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } };
     const snapshot = structuredClone(character.Inventory);
 
     const result = advanceGame(stateFor(character), 1, new RandomGenerator('stacked-loot'));
 
     expect(character.Inventory).toEqual(snapshot);
-    expect(result.state.character.Inventory).toEqual([{ name: 'rat tail', qty: 2 }, { name: 'Unrelated Trinket', qty: 1 }]);
+    expect(result.state.character.Inventory).toEqual([{ name: 'nit tail', qty: 2 }, { name: 'Unrelated Trinket', qty: 1 }]);
   });
 
   it('keeps a full accepted inventory valid when new loot drops', () => {

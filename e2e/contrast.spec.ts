@@ -186,8 +186,8 @@ const SEEDED_PAIRS = [
 test.describe('theme contrast on surfaces that need a session', () => {
   test.use({
     storageState: archivedSessionStorageState(BASE_URL, {
-      history: ['Placate the Duke of the Kobolds', 'Fetch me 6 kobold spleens'],
-      log: ['Defeated a kobold.', 'Quest completed: placate the Duke of the Kobolds'],
+      history: ['Placate the Duke of the Kickoff Meetings', 'Fetch me 6 kobold spleens'],
+      log: ['Defeated a kobold.', 'Quest completed: placate the Duke of the Kickoff Meetings'],
     }),
   });
 

@@ -44,7 +44,7 @@ import {
  * - Empty or whitespace-only names, which is what a botched find-and-replace tends to leave.
  * - Accidental deduplication or accidental duplication. Two duplicates in these tables are
  *   deliberate and are pinned as such: `BORING_ITEMS` carries 'writ' twice, and `MONSTERS` lists
- *   'Rat' at two different levels. Removing either would change draw weights.
+ *   'Nit' at two different levels. Removing either would change draw weights.
  * - The equipment ladders being sorted, reversed, or otherwise reordered. `WEAPONS`, `SHIELDS`,
  *   `ARMORS`, and `OFFENSE_ATTRIB` ascend by quality; the other modifier tables deliberately do
  *   not, so they are not held to it.
@@ -211,11 +211,11 @@ describe('trait table structure', () => {
     ).toEqual([]);
   });
 
-  // Names repeat where levels differ — 'Rat' is both a level 0 and a level 1 encounter, and the
+  // Names repeat where levels differ — 'Nit' is both a level 0 and a level 1 encounter, and the
   // quest system addresses monsters by index, so collapsing the two would shift every later index.
   it('lists every monster entry once, allowing a repeated name at a different level', () => {
     expect(duplicatesOf(MONSTERS.map((monster) => JSON.stringify(monster)))).toEqual([]);
-    expect(duplicatesOf(MONSTERS.map(({ name }) => name))).toEqual(['Rat']);
+    expect(duplicatesOf(MONSTERS.map(({ name }) => name))).toEqual(['Nit']);
   });
 
   it.each([

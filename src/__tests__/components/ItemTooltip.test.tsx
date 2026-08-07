@@ -16,7 +16,7 @@ describe('item tooltip reads the act it is describing', () => {
   const describedAt = (act: number): string => {
     cleanup();
     useGameStore.setState((state) => ({ character: { ...state.character, Plot: { ...state.character.Plot, act } } }));
-    render(<ItemTooltip kind="inventory" name="Rat Tail" quantity={1}>tail</ItemTooltip>);
+    render(<ItemTooltip kind="inventory" name="Nit Tail" quantity={1}>tail</ItemTooltip>);
     // Focus opens it in every browser; the pointer path is what the component's own
     // one-at-a-time logic is about and is not what this test is checking.
     fireEvent.focus(screen.getByRole('button'));

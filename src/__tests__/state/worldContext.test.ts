@@ -14,7 +14,7 @@ const snapshot = (overrides: Partial<GamePresentationSnapshot> = {}): GamePresen
   nextTask: 'kill',
   completedTasks: 42,
   elapsedSeconds: 3671,
-  activeQuest: { kind: 'exterminate', target: 'Rat|1|tail', targetIndex: 0 },
+  activeQuest: { kind: 'exterminate', target: 'Nit|1|tail', targetIndex: 0 },
   ...overrides,
 });
 
@@ -148,7 +148,7 @@ describe('world context projection', () => {
     const transitions = [
       source(200, { type: 'task_started', task: { description: 'x', durationMs: 1, elapsedMs: 0, type: 'heading_to_market' } }, snapshot({ completedTask: 'act_marker', nextTask: 'heading_to_market' })),
       source(201, { type: 'task_started', task: { description: 'x', durationMs: 1, elapsedMs: 0, type: 'selling' } }, snapshot({ completedTask: 'heading_to_market', nextTask: 'selling' })),
-      source(202, { type: 'inventory_sold', gold: 15 }, snapshot({ completedTask: 'selling', nextTask: 'selling', marketSale: { name: 'rat tail', quantity: 3, gold: 15 } })),
+      source(202, { type: 'inventory_sold', gold: 15 }, snapshot({ completedTask: 'selling', nextTask: 'selling', marketSale: { name: 'nit tail', quantity: 3, gold: 15 } })),
       source(203, { type: 'inventory_sold', gold: 10 }, snapshot({ completedTask: 'selling', nextTask: 'buying', marketSale: { name: 'old boot', quantity: 2, gold: 10 } })),
       source(204, { type: 'task_started', task: { description: 'x', durationMs: 1, elapsedMs: 0, type: 'buying' } }, snapshot({ completedTask: 'selling', nextTask: 'buying' })),
       source(205, { type: 'task_started', task: { description: 'x', durationMs: 1, elapsedMs: 0, type: 'heading' } }, snapshot({ completedTask: 'buying', nextTask: 'heading' })),
@@ -157,7 +157,7 @@ describe('world context projection', () => {
     const filings = transitions.flatMap((record) => projectWorld({ kind: 'transition', source: record }).notices);
 
     expect(filings.map(({ kind }) => kind)).toEqual(['departure', 'arrival', 'commerce', 'commerce', 'commerce', 'departure', 'arrival']);
-    expect(filings[2]?.text).toContain('3× rat tail');
+    expect(filings[2]?.text).toContain('3× nit tail');
     expect(filings[3]?.text).toContain('2× old boot');
   });
 
@@ -165,8 +165,8 @@ describe('world context projection', () => {
     const character = createNewCharacter('Burdened Oracle', 'Half Daemon', 'Robot Monk', 'world-market-boundary');
     character.Plot = { act: 1, currentProgress: 0, maxProgress: 100 };
     character.PendingTasks = undefined;
-    character.Inventory = [{ name: 'rat tail', qty: 100 }];
-    character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+    character.Inventory = [{ name: 'nit tail', qty: 100 }];
+    character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } };
     const result = advanceGame({ character, progression: { experience: { currentSeconds: 0, maxSeconds: 10 }, completedTasks: 0, elapsedSeconds: 0 } }, 1, new RandomGenerator('world-market-transition'));
     const record = result.records.find(({ event }) => event.type === 'task_started' && event.task.type === 'heading_to_market');
     expect(record).toBeDefined();
@@ -230,9 +230,9 @@ describe('world context projection', () => {
       const character = createNewCharacter('Parity Oracle', 'Half Daemon', 'Robot Monk', 'world-parity-character');
       character.Plot = { act: 1, currentProgress: 1, maxProgress: 1 };
       character.Quest = { description: 'Typed assignment', currentProgress: 1, maxProgress: 1, history: ['Typed assignment'], kind: 'deliver' };
-      character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
+      character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'nit tail' } };
       character.PendingTasks = undefined;
-      character.Inventory = [{ name: 'rat tail', qty: 50 }, { name: 'old boot', qty: 50 }];
+      character.Inventory = [{ name: 'nit tail', qty: 50 }, { name: 'old boot', qty: 50 }];
       character.Gold = 1_000_000;
       const rng = new RandomGenerator('world-parity-transition');
       const result = advanceGame({

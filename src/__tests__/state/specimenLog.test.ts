@@ -32,15 +32,15 @@ describe('specimen identity', () => {
 
 describe('specimen log', () => {
   it('counts variety, not volume', () => {
-    const log = mergeSpecimens(EMPTY_SPECIMEN_LOG, [gained('rat tail'), gained('rat tail'), gained('bent fork')]);
+    const log = mergeSpecimens(EMPTY_SPECIMEN_LOG, [gained('nit tail'), gained('nit tail'), gained('bent fork')]);
     expect(log.specimens).toHaveLength(2);
     expect(isEmpty(EMPTY_SPECIMEN_LOG)).toBe(true);
   });
 
   it('returns the same object when nothing was new', () => {
     // The signal a caller uses to skip a write and a render, and a specimen is new only once.
-    const log = mergeSpecimens(EMPTY_SPECIMEN_LOG, [gained('rat tail')]);
-    expect(mergeSpecimens(log, [gained('rat tail')])).toBe(log);
+    const log = mergeSpecimens(EMPTY_SPECIMEN_LOG, [gained('nit tail')]);
+    expect(mergeSpecimens(log, [gained('nit tail')])).toBe(log);
     expect(mergeSpecimens(log, [])).toBe(log);
   });
 

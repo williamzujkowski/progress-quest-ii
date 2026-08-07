@@ -385,16 +385,27 @@ const specialAttributeStory = (attribute: string, object: string, stage = 0): st
   return `The ${subject} was ${dossierBeat(attributeIndex, attribute, 0, stage)}; ${specialObjectClause(object, stage)}.`;
 };
 
+/**
+ * Three drop shapes, matched against the vocabulary the monster table actually carries.
+ *
+ * These lists are the one place in this file that names item vocabulary rather than resolving it
+ * by index, so they are the one place a table rewrite can silently defeat. #401 replaced the
+ * adversaries and their drops; every word below was re-derived from the new table rather than
+ * translated from the old one, and traitTables.test.ts now asserts that each list still matches
+ * something so a future rewrite fails loudly instead of falling through to the generic ending.
+ */
 const monsterLootStory = ({ monster, drop }: { monster: string; drop: string }, stage = 0): string => {
   const finding = drop === 'item'
     ? `Whatever ${monster} dropped was logged as “item” after anatomy declined jurisdiction.`
-    : /^(?:shirt|robe|hat|boot|pants|bra|thong|pajamas|leathers|neckerchief|merit badge|collar|sash|jerkin|drawers)$/i.test(drop)
+    : /^(?:apparel|boot|collar|jerkin|lanyard|medal|nameplate|pajamas|robe|sandal|shirt|sticker|tartan|crown|fob)$/i.test(drop)
       ? `The ${drop} from ${monster} went from evidence to wardrobe without laundering the custody chain.`
-      : /^(?:ass|ear|eye|eyelid|eyestalk|face|follicle|forearm|frenum|gills?|gyrum|head|hoof|horn|hump|jaw|larynx|leg|muscle|neck|patella|penis|rib|skin|tail|teeth|tentacle|testicle|thumb|tooth|tongue|tusk|wattle|wing)$/i.test(drop)
+      : /^(?:antler|beak|beard|belly|blood|clavicle|claw|corpse|dendrite|ear|eye|feather|finger|forehead|frenum|fur|gills?|heart|hide|hoof|jaw|lung|nucleus|organ|pancreas|paw|proboscis|protrusion|snout|spike|stinger|tail|talon|teeth|tentacle|thigh|tooth|tusk|wart|web|webbing|wing)$/i.test(drop)
         ? `The ${drop} recovered from ${monster} was filed as anatomy after the jar objected.`
-        : /^(?:condensation|curd|drops|fluid|foam|gel|gravy|lube|saliva|sample|slime|snow|spore|vomit)$/i.test(drop)
+        : /^(?:blob|chaff|cinder|dung|dust|gauze|grain|gravel|gravy|jam|mulch|sample|shard|shavings|spore|trace|wisp|glass|shag)$/i.test(drop)
           ? `The ${drop} left by ${monster} is stored as a liquid, a solid, and a labor grievance.`
-          : `The guild logged ${monster}’s ${drop} as field salvage and immediately lost the field.`;
+          : /^(?:agenda|artifact|backlog|blocker|burndown|calendar|card|certificate|checklist|comment|contract|core dump|coupon|covenant|drilldown|egress bill|epic|estimate|exception|extract|filing|finding|footnote|frameset|funnel|gantt|gavel|iframe|invoice|job log|label|layer|lemma|letter|map|markup|merge key|minute|module|no-show|node|notice|opt-out|order|org chart|page|pager|patch|patchset|permit|plan|playbook|preflight|proxy|redline|reminder|req|resume|rider|rubric|ruling|runbook|schedule|scorecard|security|siren|sitemap|slide|stack trace|stamp|stub|submodule|tally|tape|term sheet|terminal|tickbox|ticket|timesheet|token|transcript|triage note|variance|waiver|wallet|workaround|penalty|flake|retry|reel|bit|booty)$/i.test(drop)
+            ? `The ${drop} obtained from ${monster} was filed, indexed, and never read again.`
+            : `The guild logged ${monster}’s ${drop} as field salvage and immediately lost the field.`;
   const monsterIndex = MONSTERS.findIndex(({ name }) => name === monster);
   const consequence = choose([
     'The donor remains unavailable for a satisfaction survey.',

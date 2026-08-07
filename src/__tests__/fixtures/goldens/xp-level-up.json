@@ -10,10 +10,10 @@
       "Plots": ["Act I"],
       "Quests": ["Test quest"],
       "queue": [],
-      "task": "kill|Rat|0|tail",
+      "task": "kill|Nit|0|tail",
       "tasks": 0,
       "elapsed": 0,
-      "kill": "Executing a Rat...",
+      "kill": "Executing a Nit...",
       "bestplot": "Act I",
       "bestquest": "Test quest",
       "bestequip": "Sharp Rock",
@@ -30,22 +30,22 @@
     }
   },
   "expected": {
-    "completed": { "tag": "kill|Rat|0|tail", "caption": "Executing a Rat...", "durationMs": 6000 },
+    "completed": { "tag": "kill|Nit|0|tail", "caption": "Executing a Nit...", "durationMs": 6000 },
     "counters": { "tasks": 1, "elapsedSeconds": 6 },
     "character": {
       "traits": { "Name": "Oracle", "Race": "Half Daemon", "Class": "Incident Paladin", "Level": 2 },
       "stats": [["STR", 10], ["CON", 10], ["DEX", 10], ["INT", 11], ["WIS", 10], ["CHA", 10], ["HP Max", 17], ["MP Max", 15]]
     },
-    "task": { "tag": "kill|Rot Grub|1|eggsac", "caption": "Executing a Rot Grub...", "positionMs": 0, "maxMs": 3000, "queue": [] },
+    "task": { "tag": "kill|Tech Debt Grub|1|eggsac", "caption": "Executing a Tech Debt Grub...", "positionMs": 0, "maxMs": 3000, "queue": [] },
     "xp": { "positionSeconds": 0, "maxSeconds": 1279 },
     "encumbrance": { "positionCubits": 1, "maxCubits": 20 },
     "quest": { "caption": "Test quest", "positionSeconds": 6, "maxSeconds": 100, "history": ["Test quest"], "monster": "", "monsterIndex": null },
     "plot": { "act": 1, "caption": "Act I", "positionSeconds": 6, "maxSeconds": 1000 },
-    "inventory": [["Gold", 0], ["rat tail", 1]],
+    "inventory": [["Gold", 0], ["nit tail", 1]],
     "equipment": [["Weapon", "Sharp Rock"], ["Shield", ""], ["Helm", ""], ["Hauberk", "-3 Boilerplate"], ["Brassairts", ""], ["Vambraces", ""], ["Gauntlets", ""], ["Gambeson", ""], ["Cuisses", ""], ["Greaves", ""], ["Sollerets", ""]],
     "spells": [["Slime Finger", "I", 1]],
     "best": { "stat": "INT 11", "spell": "Slime Finger I", "equipment": "Sharp Rock" },
-    "log": ["Gained a Level", "Gained 6 HP Maxes", "Gained 5 MP Maxes", "Gained an INT", "Gained a HP Max", "Saving game: Oracle", "Gained a rat tail", "Executing a Rot Grub..."],
+    "log": ["Gained a Level", "Gained 6 HP Maxes", "Gained 5 MP Maxes", "Gained an INT", "Gained a HP Max", "Saving game: Oracle", "Gained a nit tail", "Executing a Tech Debt Grub..."],
     "savedRng": [0.9330190639011562, 0.6226149452850223, 0.21023443923331797, 852663],
     "rng": [0.3527631377801299, 0.9299049850087613, 0.13719435315579176, 1487883]
   }

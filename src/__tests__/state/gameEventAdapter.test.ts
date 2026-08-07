@@ -16,7 +16,7 @@ describe('game event presentation adapter', () => {
     [{ type: 'quest_completed', description: 'Acquire forms' }, 'Quest completed: Acquire forms', 'quest_complete'],
     [{ type: 'quest_started', description: 'Misfile forms' }, 'Commencing quest: Misfile forms', undefined],
     [{ type: 'save_requested', characterName: 'Oracle' }, 'Saving game: Oracle', undefined],
-    [{ type: 'item_gained', name: 'rat tail', quantity: 1 }, 'Gained a rat tail', undefined],
+    [{ type: 'item_gained', name: 'nit tail', quantity: 1 }, 'Gained a nit tail', undefined],
     [{ type: 'gold_received', amount: 1 }, 'Got paid a gold piece', undefined],
     [{ type: 'gold_received', amount: 0.5 }, 'Got paid 0.5 gold pieces', undefined],
     [{ type: 'inventory_sold', gold: 47 }, 'Got paid 47 gold pieces', 'market'],
