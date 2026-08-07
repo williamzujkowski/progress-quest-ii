@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE, MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_STORED_PAYLOAD_LENGTH } from '../data/limits';
+import { readLedger, writeLedger } from './ledgerStorage';
+import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE, MAX_PERSISTED_DESCRIPTION_LENGTH } from '../data/limits';
 import { EQUIP_SLOTS } from '../data/traits';
 import type { GameTransitionEvent } from '../engine/transition';
 import type { EquipmentClassification } from './worldContext';
@@ -110,37 +111,13 @@ export function mergeEvents(records: Commendations, events: readonly GameTransit
   return next;
 }
 
-/** Reads fail closed: anything unreadable is treated as no records, never as an error. */
+/** Reads fail closed; the shared reader owns that. The schema says everything, so nothing is
+ *  normalised on the way in. */
 export function readCommendations(storage: Pick<Storage, 'getItem'> | undefined): Commendations {
-  if (!storage) return EMPTY_COMMENDATIONS;
-  let raw: string | null;
-  try {
-    raw = storage.getItem(COMMENDATIONS_STORAGE_KEY);
-  } catch {
-    return EMPTY_COMMENDATIONS;
-  }
-  if (raw === null) return EMPTY_COMMENDATIONS;
-  // Refused unparsed: JSON.parse on a hostile blob is the expensive step, and it runs before any
-  // validation could reject the contents. This read happens once at module load rather than on the
-  // tick path, so the exposure here is small — the cap is shared because storage readers that
-  // disagree about their defences are how the next one gets written without any.
-  if (raw.length > MAX_STORED_PAYLOAD_LENGTH) return EMPTY_COMMENDATIONS;
-  try {
-    const parsed = commendationsSchema.safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data : EMPTY_COMMENDATIONS;
-  } catch {
-    return EMPTY_COMMENDATIONS;
-  }
+  return readLedger(storage, COMMENDATIONS_STORAGE_KEY, commendationsSchema, EMPTY_COMMENDATIONS);
 }
 
-/** Writes are best-effort. A ledger that cannot be saved must never interrupt play. */
+/** Writes are best-effort; the shared writer owns that. */
 export function writeCommendations(storage: Pick<Storage, 'setItem'> | undefined, records: Commendations): void {
-  if (!storage) return;
-  const parsed = commendationsSchema.safeParse(records);
-  if (!parsed.success) return;
-  try {
-    storage.setItem(COMMENDATIONS_STORAGE_KEY, JSON.stringify(parsed.data));
-  } catch {
-    // Storage full or denied. The game continues; the filing cabinet simply does not update.
-  }
+  writeLedger(storage, COMMENDATIONS_STORAGE_KEY, commendationsSchema, records);
 }

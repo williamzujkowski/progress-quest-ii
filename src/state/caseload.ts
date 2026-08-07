@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import { MAX_PERSISTED_VALUE, MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_STORED_PAYLOAD_LENGTH } from '../data/limits';
+import { MAX_PERSISTED_VALUE, MAX_PERSISTED_DESCRIPTION_LENGTH } from '../data/limits';
 import type { GameTransitionRecord } from '../engine/transition';
+import { readLedger, writeLedger } from './ledgerStorage';
 
 /**
  * What the casework has consisted of, rather than how much of it there has been.
@@ -143,38 +144,16 @@ export function mergeRecords(caseload: Caseload, records: readonly GameTransitio
   return next;
 }
 
-/** Reads fail closed: anything unreadable is treated as no casework, never as an error. */
+/**
+ * Reads fail closed; the shared reader owns that. The bound is applied on the way in as well as on
+ * the way out, because a hostile file can hold more targets than the merge path would ever produce.
+ */
 export function readCaseload(storage: Pick<Storage, 'getItem'> | undefined): Caseload {
-  if (!storage) return EMPTY_CASELOAD;
-  let raw: string | null;
-  try {
-    raw = storage.getItem(CASELOAD_STORAGE_KEY);
-  } catch {
-    return EMPTY_CASELOAD;
-  }
-  if (raw === null) return EMPTY_CASELOAD;
-  // Refused unparsed: parsing is the expensive step and it runs before validation could reject
-  // the contents. The same cap every storage reader is held to.
-  if (raw.length > MAX_STORED_PAYLOAD_LENGTH) return EMPTY_CASELOAD;
-  try {
-    const parsed = caseloadSchema.safeParse(JSON.parse(raw));
-    if (!parsed.success) return EMPTY_CASELOAD;
-    // A hostile file can hold more targets than the merge path would ever produce, so the bound
-    // is applied on the way in as well as on the way out.
-    return { ...parsed.data, targets: boundTargets(parsed.data.targets) };
-  } catch {
-    return EMPTY_CASELOAD;
-  }
+  return readLedger(storage, CASELOAD_STORAGE_KEY, caseloadSchema, EMPTY_CASELOAD,
+    (value) => ({ ...value, targets: boundTargets(value.targets) }));
 }
 
-/** Writes are best-effort. A tally that cannot be saved must never interrupt play. */
+/** Writes are best-effort; the shared writer owns that. */
 export function writeCaseload(storage: Pick<Storage, 'setItem'> | undefined, caseload: Caseload): void {
-  if (!storage) return;
-  const parsed = caseloadSchema.safeParse(caseload);
-  if (!parsed.success) return;
-  try {
-    storage.setItem(CASELOAD_STORAGE_KEY, JSON.stringify(parsed.data));
-  } catch {
-    // Storage full or denied. The game continues; the tally simply does not update.
-  }
+  writeLedger(storage, CASELOAD_STORAGE_KEY, caseloadSchema, caseload);
 }
