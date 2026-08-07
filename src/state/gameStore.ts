@@ -217,7 +217,12 @@ export const useGameStore = create<GameStore>((set, get) => {
         const event = source.record.event;
         // The classification belongs to the equipment this record awarded, so pair them here
         // rather than trying to reconstruct which item it described later.
-        if (event.type === 'equipment_gained' && projection.equipment) {
+        //
+        // Purchases count too. The exhibit is the best thing ever worn in each slot, and a bought
+        // upgrade is worn exactly like a found one — transition.ts writes it straight into Equip.
+        // Listening only for equipment_gained left the market out of a record that claims to cover
+        // everything, so a hero who bought their best breastplate had a case with a gap in it.
+        if ((event.type === 'equipment_gained' || event.type === 'equipment_purchased') && projection.equipment) {
           nextCommendations = mergeExhibit(nextCommendations, event.slot, event.name, projection.equipment);
         }
       }

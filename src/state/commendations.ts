@@ -20,8 +20,11 @@ import type { EquipmentClassification } from './worldContext';
 export const COMMENDATIONS_STORAGE_KEY = 'progquest_commendations_v1';
 
 /**
- * The best thing ever worn in each slot, kept after it is sold — which is where equipment
- * currently vanishes forever. `label` and `quality` are the classification worldContext already
+ * The best thing ever worn in each slot, kept after the item itself is gone.
+ *
+ * Equipment is never sold — the market sells inventory. It vanishes by being overwritten: a better
+ * breastplate replaces the one in the slot and the old one is simply not there any more. This is
+ * the only place that remembers it. `label` and `quality` are the classification worldContext already
  * computes; they are prestige, not power, and CONTEXT.md is explicit that equipment has no
  * combat contribution at all.
  */
