@@ -33,17 +33,23 @@ describe('Progress Quest Engine Math', () => {
   });
 
   it('generates initial stats with race and class bonuses applied', () => {
-    const rng = new RandomGenerator(12345);
-    const stats = generateInitialStats(rng, 'Hob-Hobbit', 'Robot Monk');
-    
-    expect(stats.STR).toBeGreaterThan(0);
-    expect(stats.CON).toBeGreaterThan(0);
-    expect(stats.DEX).toBeGreaterThan(0);
-    expect(stats.INT).toBeGreaterThan(0);
-    expect(stats.WIS).toBeGreaterThan(0);
-    expect(stats.CHA).toBeGreaterThan(0);
-    expect(stats['HP Max']).toBeGreaterThan(0);
-    expect(stats['MP Max']).toBeGreaterThan(0);
+    // Measured against the same seed with no race and no class, so the difference IS the bonus.
+    // The previous version asserted only that each stat exceeded zero, which roll3d6 already
+    // guarantees at three — it passed with both bonus loops deleted.
+    const rolled = generateInitialStats(new RandomGenerator(12345), 'no-such-race', 'no-such-class');
+    const stats = generateInitialStats(new RandomGenerator(12345), 'Hob-Hobbit', 'Robot Monk');
+
+    // Hob-Hobbit raises DEX and CON; Robot Monk raises STR. Two points each, and nothing else.
+    expect(stats.DEX - rolled.DEX).toBe(2);
+    expect(stats.CON - rolled.CON).toBe(2);
+    expect(stats.STR - rolled.STR).toBe(2);
+    for (const untouched of ['INT', 'WIS', 'CHA', 'HP Max', 'MP Max'] as const) {
+      expect(stats[untouched] - rolled[untouched], `${untouched} should carry no bonus`).toBe(0);
+    }
+
+    // An unknown race or class is not an error, it simply grants nothing — which is what makes
+    // the comparison above valid rather than a coincidence.
+    expect(rolled.STR).toBeGreaterThanOrEqual(3);
   });
 
   it('produces deterministic output with a fixed PRNG seed', () => {
