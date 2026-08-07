@@ -83,7 +83,10 @@ for (const [kind, files] of [['js', jsFiles], ['css', cssFiles]]) {
 const notices = await readFile(noticeUrl, 'utf8');
 const worker = await readFile(workerUrl, 'utf8');
 const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
-const fontPackages = Object.keys(manifest.dependencies ?? {}).filter((name) => name.startsWith('@fontsource'));
-verifyProductionNotices(notices, worker, fontPackages);
+// Every production dependency, not the `@fontsource` subset this once filtered for. package.json is
+// the list of what ships; the notices are the list of what has been attributed. Deriving one from
+// the other is what makes a new dependency visible here at all.
+const productionDependencies = Object.keys(manifest.dependencies ?? {});
+verifyProductionNotices(notices, worker, productionDependencies);
 
 console.log(`Verified ${fontUrls.length} local font asset(s) across ${cssFiles.length} production CSS asset(s), within size budget.`);
