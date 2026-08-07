@@ -24,15 +24,25 @@ function Mash() {
   return mash;
 }
 
-export interface PRNG {
+/**
+ * Trimmed to what this port calls. The upstream Alea surface also carried `fract53` and `args`;
+ * neither had a call site here or anywhere else, and an unused member of a fidelity-critical file
+ * is a thing a reader has to rule out before trusting the rest.
+ *
+ * Removing them cannot move the RNG sequence, which is the only property that matters in this
+ * file: `fract53` advances state only when invoked and was never invoked, and `args` was a stored
+ * reference nothing read. The goldens are the proof rather than the reasoning.
+ *
+ * Not exported. Both this and `Alea` are used only inside this module — every importer takes
+ * `RandomGenerator`, `PRNGSeed` or `PRNGState`.
+ */
+interface PRNG {
   (): number;
   uint32: () => number;
-  fract53: () => number;
-  args: PRNGSeed[];
   state: (newState?: PRNGState) => PRNGState;
 }
 
-export function Alea(...initialArgs: PRNGSeed[]): PRNG {
+function Alea(...initialArgs: PRNGSeed[]): PRNG {
   let s0 = 0;
   let s1 = 0;
   let s2 = 0;
@@ -62,8 +72,6 @@ export function Alea(...initialArgs: PRNGSeed[]): PRNG {
   }) as PRNG;
 
   random.uint32 = () => random() * 0x100000000; // 2^32
-  random.fract53 = () => random() + ((random() * 0x200000) | 0) * 1.1102230246251565e-16;
-  random.args = args;
   random.state = (newState?: [number, number, number, number]) => {
     if (newState) {
       s0 = newState[0];

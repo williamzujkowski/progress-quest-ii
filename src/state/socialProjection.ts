@@ -1,6 +1,5 @@
 import { SOCIAL_PERSONAS, type SocialPersona, type SocialSeat } from '../data/socialCatalog';
 import { boundCodePoints, MAX_TEXT_CODE_POINTS, formatGameNumber, stableIndex, stableChoice } from '../engine/text';
-import type { GameTransitionEvent } from '../engine/transition';
 import { projectWorld, type IdentifiedGameTransitionRecord } from './worldContext';
 
 export type SocialChannel = 'guild' | 'world' | 'party' | 'raid' | 'whisper' | 'system' | 'hero';
@@ -20,7 +19,6 @@ export interface SocialEntry {
   readonly sceneId: string;
   readonly sceneKind: SocialSceneKind;
   readonly sourceActivityId: number;
-  readonly sourceEventType: GameTransitionEvent['type'];
   readonly channel: SocialChannel;
   readonly speaker: SocialSpeaker;
   readonly text: string;
@@ -338,7 +336,6 @@ function projectScene(candidate: SceneCandidate): readonly SocialEntry[] {
     sceneId,
     sceneKind: candidate.kind,
     sourceActivityId: candidate.source.activityId,
-    sourceEventType: candidate.source.record.event.type,
     channel: line.channel,
     speaker: speakerFor(line, cast),
     text: bound(line.text),
@@ -358,7 +355,6 @@ export function projectSocialBatch(sources: readonly IdentifiedGameTransitionRec
     sceneId,
     sceneKind: 'catch_up',
     sourceActivityId: first.source.activityId,
-    sourceEventType: first.source.record.event.type,
     channel: 'system',
     speaker: SYSTEM_SPEAKER,
     text: `${suppressed} routine social scene${suppressed === 1 ? ' was' : 's were'} consolidated during accelerated progress.`,
