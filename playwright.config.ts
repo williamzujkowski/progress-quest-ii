@@ -31,6 +31,16 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
+  // Playwright's default is 30s, which was never a decision here — it was simply never set, and
+  // the number only ever got checked against isolated local runs where the heaviest spec finishes
+  // in about 6s. That comparison is the wrong one. Measured under the CI settings below (four
+  // workers pinned to four cores), the same spec takes 11.8s and the suite's slowest takes 20.5s,
+  // seven of its eight slowest being webkit. Under 1.5x headroom, on a machine faster per core
+  // than a hosted runner — so on CI the margin is gone, and app.spec.ts:52 has timed out twice at
+  // two different lines, each time having spent the budget before reaching them rather than
+  // failing anything it asserted. Sixty seconds costs nothing on a passing run; what it buys is
+  // that runner contention stops being reported as a product defect.
+  timeout: 60000,
   // Was one worker, from the original harness setup and never revisited as the suite grew to
   // three browser projects. Parallelism roughly halves the wall clock. A fixed count on CI rather
   // than a share of the cores, because a hosted runner's core count is not ours to rely on.

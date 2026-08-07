@@ -1,6 +1,7 @@
 import { ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, WEAPONS } from './traits';
 import { analyzeItemMechanics } from '../engine/itemMechanics';
 import { formatGameNumber, stableIndex } from '../engine/text';
+import { substrateStage } from './worldContext';
 import type { EquipSlot } from '../engine/types';
 
 export interface ItemDetails {
@@ -16,33 +17,66 @@ const boundedLabel = (name: string, fallback: string, limit = 60): string => {
   return characters.length > limit ? `${characters.slice(0, limit - 1).join('')}…` : name || fallback;
 };
 
-// The last entries in each list came later than the rest and are a shade more industrial than the
-// candlelight the others were written by. Provenance is provenance whichever century files it, and
-// an object that passed through this operation late in its run picked up the vocabulary of the
-// place. Nothing here is a measurement: the beat says a thing was handled, never how much of
-// anything it drew, because the engine models none of that.
-const DOSSIER_ACTIONS = [
-  'approved', 'condemned', 'misfiled', 'insured', 'quarantined',
-  'audited', 'reclassified', 'appealed', 'redacted', 'outsourced',
-  'backdated', 'witnessed', 'repossessed', 'sanctified', 'returned',
-  'de-provisioned', 'derated',
+/**
+ * Provenance vocabulary, in three eras.
+ *
+ * The base list is the one the archive was keeping before any of this. The later two are a shade
+ * more industrial, and only reach the grid once enough acts have accumulated for the operation to
+ * have acquired the vocabulary honestly — an object filed early cannot have been derated by a
+ * facility that did not exist yet.
+ *
+ * Gated on the same schedule as the sited place names, and by the same function, so the map and
+ * the objects on it acquire their industrial edge together rather than on two clocks.
+ *
+ * Nothing here is a measurement. A beat says a thing was handled, never how much of anything it
+ * drew, because the engine models none of that.
+ */
+const DOSSIER_ACTION_ERAS = [
+  [
+    'approved', 'condemned', 'misfiled', 'insured', 'quarantined',
+    'audited', 'reclassified', 'appealed', 'redacted', 'outsourced',
+    'backdated', 'witnessed', 'repossessed', 'sanctified', 'returned',
+  ],
+  ['de-provisioned'],
+  ['derated'],
 ] as const;
 
-const DOSSIER_CONDITIONS = [
-  'at intake', 'by candlelight', 'under protest', 'after lunch', 'without jurisdiction',
-  'for tax purposes', 'during the evacuation', 'by correspondence', 'pending weather', 'in triplicate',
-  'on clerical advice', 'after the witness vanished', 'with ceremonial urgency', 'before testing', 'by the night shift',
-  'during the brownout', 'while the coolant held', 'pending thermal review',
+const DOSSIER_CONDITION_ERAS = [
+  [
+    'at intake', 'by candlelight', 'under protest', 'after lunch', 'without jurisdiction',
+    'for tax purposes', 'during the evacuation', 'by correspondence', 'pending weather', 'in triplicate',
+    'on clerical advice', 'after the witness vanished', 'with ceremonial urgency', 'before testing', 'by the night shift',
+  ],
+  ['during the brownout'],
+  ['while the coolant held', 'pending thermal review'],
 ] as const;
 
-const dossierBeat = (index: number, fallbackKey: string, salt = 0): string => {
-  const catalogIndex = index >= 0 ? index : stableIndex(fallbackKey, DOSSIER_ACTIONS.length * DOSSIER_CONDITIONS.length);
-  const position = (catalogIndex + salt) % (DOSSIER_ACTIONS.length * DOSSIER_CONDITIONS.length);
-  return `${DOSSIER_ACTIONS[position % DOSSIER_ACTIONS.length]} ${DOSSIER_CONDITIONS[Math.floor(position / DOSSIER_ACTIONS.length)]}`;
+/** Built once per era rather than per call: an item tooltip is cheap and there are a lot of them. */
+function accumulate(eras: readonly (readonly string[])[]): readonly (readonly string[])[] {
+  const pools: string[][] = [];
+  for (const era of eras) pools.push([...(pools[pools.length - 1] ?? []), ...era]);
+  return pools;
+}
+
+const DOSSIER_ACTION_POOLS = accumulate(DOSSIER_ACTION_ERAS);
+const DOSSIER_CONDITION_POOLS = accumulate(DOSSIER_CONDITION_ERAS);
+
+const actionsAt = (stage: number): readonly string[] =>
+  DOSSIER_ACTION_POOLS[Math.max(0, Math.min(stage, DOSSIER_ACTION_POOLS.length - 1))]!;
+const conditionsAt = (stage: number): readonly string[] =>
+  DOSSIER_CONDITION_POOLS[Math.max(0, Math.min(stage, DOSSIER_CONDITION_POOLS.length - 1))]!;
+
+const dossierBeat = (index: number, fallbackKey: string, salt = 0, stage = 0): string => {
+  const actions = actionsAt(stage);
+  const conditions = conditionsAt(stage);
+  const grid = actions.length * conditions.length;
+  const catalogIndex = index >= 0 ? index : stableIndex(fallbackKey, grid);
+  const position = (catalogIndex + salt) % grid;
+  return `${actions[position % actions.length]} ${conditions[Math.floor(position / actions.length)]}`;
 };
 
 // ponytail: lexical families cover the finite legacy catalog; add per-item exceptions only when the copy needs them.
-const equipmentOpening = (base: string, slot: EquipSlot): string => {
+const equipmentOpening = (base: string, slot: EquipSlot, stage = 0): string => {
   if (slot === 'Weapon') {
     const family = /shiv|knife|sword|hatchet|tomahawk|adze|ax|baselard|poachard|whinyard/i.test(base)
       ? 'blade'
@@ -75,7 +109,7 @@ const equipmentOpening = (base: string, slot: EquipSlot): string => {
     } as const;
     const opening = choose(openings[family], `${base}:opening`);
     const baseIndex = WEAPONS.findIndex(([label]) => label === base);
-    return `${opening.slice(0, -1)}; its intake file was ${dossierBeat(baseIndex, base)}.`;
+    return `${opening.slice(0, -1)}; its intake file was ${dossierBeat(baseIndex, base, 0, stage)}.`;
   }
 
   if (slot === 'Shield') {
@@ -92,7 +126,7 @@ const equipmentOpening = (base: string, slot: EquipSlot): string => {
       ];
     const opening = choose(openings, `${base}:opening`);
     const baseIndex = SHIELDS.findIndex(([label]) => label === base);
-    return `${opening.slice(0, -1)}; its intake file was ${dossierBeat(baseIndex, base, 41)}.`;
+    return `${opening.slice(0, -1)}; its intake file was ${dossierBeat(baseIndex, base, 41, stage)}.`;
   }
 
   const armorFamily = /Lace|Macrame|Burlap|Canvas|Flannel|Chamois|Pleathers|Leathers|Bearskin/i.test(base)
@@ -126,10 +160,10 @@ const equipmentOpening = (base: string, slot: EquipSlot): string => {
   } as const;
   const opening = choose(openings[armorFamily], `${slot}:${base}:opening`);
   const baseIndex = ARMORS.findIndex(([label]) => label === base);
-  return `${opening.slice(0, -1)}; its intake file was ${dossierBeat(baseIndex, base, 82)}.`;
+  return `${opening.slice(0, -1)}; its intake file was ${dossierBeat(baseIndex, base, 82, stage)}.`;
 };
 
-const equipmentAssessment = (modifier: string, modifierValue: number, slot: EquipSlot, explicitLabel: string | undefined, stacked: boolean): string => {
+const equipmentAssessment = (modifier: string, modifierValue: number, slot: EquipSlot, explicitLabel: string | undefined, stacked: boolean, stage = 0): string => {
   const label = boundedLabel(modifier, 'unnamed modifier');
   const table = slot === 'Weapon' ? [...OFFENSE_ATTRIB, ...OFFENSE_BAD] : [...DEFENSE_ATTRIB, ...DEFENSE_BAD];
   const modifierIndex = table.findIndex(([candidate]) => candidate === modifier);
@@ -160,7 +194,7 @@ const equipmentAssessment = (modifier: string, modifierValue: number, slot: Equi
   // Carried inside the existing sentence rather than added after it, because equipment stories
   // are held to two sentences and a length bound, both of which are tested.
   const custody = stacked ? 'its warranties were countersigned and' : 'its warranty was';
-  return `${choose(assessments, `${modifier}:assessment`)}; ${custody} ${dossierBeat(modifierIndex, modifier, 123)}${mark}.`;
+  return `${choose(assessments, `${modifier}:assessment`)}; ${custody} ${dossierBeat(modifierIndex, modifier, 123, stage)}${mark}.`;
 };
 
 const boundEquipmentStory = (
@@ -169,6 +203,7 @@ const boundEquipmentStory = (
   modifier: string,
   slot: EquipSlot,
   explicitLabel?: string,
+  stage = 0,
 ): string => {
   if (Array.from(story).length <= 220) return story;
   const baseTable = slot === 'Weapon' ? WEAPONS : slot === 'Shield' ? SHIELDS : ARMORS;
@@ -176,10 +211,11 @@ const boundEquipmentStory = (
   const baseIndex = baseTable.findIndex(([candidate]) => candidate === base);
   const modifierIndex = modifierTable.findIndex(([candidate]) => candidate === modifier);
   const mark = explicitLabel ? `; ${explicitLabel} mark retained` : '';
-  return `This ${boundedLabel(base, 'equipment', 42)} ${slot.toLowerCase()} was ${dossierBeat(baseIndex, base)}. Its ${boundedLabel(modifier, 'unmodified', 20)} file was ${dossierBeat(modifierIndex, modifier, 123)}${mark}.`;
+  return `This ${boundedLabel(base, 'equipment', 42)} ${slot.toLowerCase()} was ${dossierBeat(baseIndex, base, 0, stage)}. Its ${boundedLabel(modifier, 'unmodified', 20)} file was ${dossierBeat(modifierIndex, modifier, 123, stage)}${mark}.`;
 };
 
-export function describeEquipment(name: string, slot: EquipSlot): ItemDetails {
+export function describeEquipment(name: string, slot: EquipSlot, act = 0): ItemDetails {
+  const stage = substrateStage(act);
   const mechanics = analyzeItemMechanics({ kind: 'equipment', name, slot });
   if (!mechanics.quality) {
     return { description: 'An empty slot. The void remains undefeated.', effect: 'No combat effect.' };
@@ -190,11 +226,11 @@ export function describeEquipment(name: string, slot: EquipSlot): ItemDetails {
   const modifier = modifiers.map(({ name: modifierName }) => modifierName).join(' and ');
   const modifierTotal = modifiers.reduce((sum, part) => sum + part.value, 0);
   const explicitLabel = mark ? signedGameNumber(mark.value) : undefined;
-  const opening = equipmentOpening(base, slot);
+  const opening = equipmentOpening(base, slot, stage);
   const story = modifier
-    ? `${opening} ${equipmentAssessment(modifier, modifierTotal, slot, explicitLabel, modifiers.length >= 2)}`
+    ? `${opening} ${equipmentAssessment(modifier, modifierTotal, slot, explicitLabel, modifiers.length >= 2, stage)}`
     : `${opening} It carries ${explicitLabel ? `a ${explicitLabel} assessor’s mark and no` : 'no'} named modifier, which procurement calls restraint.`;
-  const description = boundEquipmentStory(story, base, modifier, slot, explicitLabel);
+  const description = boundEquipmentStory(story, base, modifier, slot, explicitLabel, stage);
   const qualityParts = [
     basePart ? `${basePart.name} ${formatGameNumber(basePart.value)}` : 'uncatalogued base 0',
     ...modifiers.map((part) => `${part.name} ${signedGameNumber(part.value)}`),
@@ -264,6 +300,11 @@ const SPELL_CLOSERS = [
   'Side effects include confidence, paperwork, and avoidable eye contact.',
 ];
 
+/**
+ * No act, and no provenance beat. A spell was never an object that arrived somewhere and got an
+ * intake file, so it has no custody history to acquire an industrial edge. Giving it one would be
+ * the joke asserting something the rest of the model does not agree with.
+ */
 export function describeSpell(name: string, level: number): ItemDetails {
   const premise = SPELL_FLAVOR[name]
     ?? `The incantation “${boundedLabel(name, 'unnamed spell')}” arrived without syllabus, sponsor, or declared learning outcome.`;
@@ -294,7 +335,7 @@ function monsterLootParts(name: string): { monster: string; drop: string } | und
   return generated ? { monster: generated.name, drop: 'item' } : undefined;
 }
 
-const specialConceptStory = (concept: string): string => {
+const specialConceptStory = (concept: string, stage = 0): string => {
   const conceptIndex = ITEM_OFS.indexOf(concept);
   const family = /Happiness|Pleasure|Joy|Comfort|Patience|Loyalty|Awe|Dignard/i.test(concept)
     ? `The promised ${concept}`
@@ -305,10 +346,10 @@ const specialConceptStory = (concept: string): string => {
         : /Danger|Hurting|Suffering|Acrimony|Worry|Fear|Despair|Cruelty|Petulance|Frenzy/i.test(concept)
           ? `The included ${concept}`
           : `Its connection to ${concept}`;
-  return `${family} was ${dossierBeat(conceptIndex, concept, 74)}.`;
+  return `${family} was ${dossierBeat(conceptIndex, concept, 74, stage)}.`;
 };
 
-const specialObjectClause = (object: string): string => {
+const specialObjectClause = (object: string, stage = 0): string => {
   const objectIndex = SPECIALS.indexOf(object);
   const subject = /Diadem|Tiara|Laurel|Hood/i.test(object)
     ? `${object} fitting`
@@ -325,10 +366,10 @@ const specialObjectClause = (object: string): string => {
               : /Sceptre|Ankh|Talisman/i.test(object)
                 ? `${object} authority`
                 : `${object} purpose`;
-  return `the ${subject} was ${dossierBeat(objectIndex, object, 37)}`;
+  return `the ${subject} was ${dossierBeat(objectIndex, object, 37, stage)}`;
 };
 
-const specialAttributeStory = (attribute: string, object: string): string => {
+const specialAttributeStory = (attribute: string, object: string, stage = 0): string => {
   const attributeIndex = ITEM_ATTRIB.indexOf(attribute);
   const subject = /Golden|Gilded|Crystalline|Iron|Ormolu/i.test(attribute)
     ? `${attribute} finish`
@@ -341,10 +382,10 @@ const specialAttributeStory = (attribute: string, object: string): string => {
           : /Cruciate|Fearsome|Deadly/i.test(attribute)
             ? `${attribute} warning`
             : `${attribute} provenance`;
-  return `The ${subject} was ${dossierBeat(attributeIndex, attribute)}; ${specialObjectClause(object)}.`;
+  return `The ${subject} was ${dossierBeat(attributeIndex, attribute, 0, stage)}; ${specialObjectClause(object, stage)}.`;
 };
 
-const monsterLootStory = ({ monster, drop }: { monster: string; drop: string }): string => {
+const monsterLootStory = ({ monster, drop }: { monster: string; drop: string }, stage = 0): string => {
   const finding = drop === 'item'
     ? `Whatever ${monster} dropped was logged as “item” after anatomy declined jurisdiction.`
     : /^(?:shirt|robe|hat|boot|pants|bra|thong|pajamas|leathers|neckerchief|merit badge|collar|sash|jerkin|drawers)$/i.test(drop)
@@ -362,10 +403,10 @@ const monsterLootStory = ({ monster, drop }: { monster: string; drop: string }):
     'A second sample was requested by nobody sober enough to sign.',
     'The evidence bag has begun negotiating overtime.',
   ], `${monster}:${drop}:aftermath`);
-  return `${finding.slice(0, -1)}; evidence was ${dossierBeat(monsterIndex, monster)}. ${consequence}`;
+  return `${finding.slice(0, -1)}; evidence was ${dossierBeat(monsterIndex, monster, 0, stage)}. ${consequence}`;
 };
 
-const mundaneLootStory = (name: string): string => {
+const mundaneLootStory = (name: string, stage = 0): string => {
   const history = /I\.O\.U\.|writ|newspaper|letter/i.test(name)
     ? `The ${name} began as paperwork and became treasure when everybody stopped reading it.`
     : /cookie|pint|egg|chicken|carrot/i.test(name)
@@ -377,10 +418,11 @@ const mundaneLootStory = (name: string): string => {
           : /lunchpail|bucket|canoe|inkwell|planter box|casket|credenza/i.test(name)
             ? `The ${name} once held something useful; as treasure it contains only appraised potential.`
             : `The ${name} was reassigned as treasure after its original department denied ownership.`;
-  return `${history} Its promotion was ${dossierBeat(BORING_ITEMS.indexOf(name), name, 100)}.`;
+  return `${history} Its promotion was ${dossierBeat(BORING_ITEMS.indexOf(name), name, 100, stage)}.`;
 };
 
-export function describeInventoryItem(name: string, quantity: number): ItemDetails {
+export function describeInventoryItem(name: string, quantity: number, act = 0): ItemDetails {
+  const stage = substrateStage(act);
   const mechanics = analyzeItemMechanics({ kind: 'inventory', name, quantity });
   const special = specialItemParts(name);
   const monsterLoot = monsterLootParts(name);
@@ -393,17 +435,17 @@ export function describeInventoryItem(name: string, quantity: number): ItemDetai
   const description = name === 'Gold'
     ? 'Gold is weightless in the pack and ruinously heavy in the quarterly ledger. Every coin has been counted twice and trusted once.'
     : special
-    ? `${specialAttributeStory(special.attribute, special.object)} ${special.concept
-      ? specialConceptStory(special.concept)
+    ? `${specialAttributeStory(special.attribute, special.object, stage)} ${special.concept
+      ? specialConceptStory(special.concept, stage)
       : choose([
         'It has failed every practical-use hearing with distinction.',
         'Its former ceremonial purpose remains sealed pending a less embarrassing century.',
         'The market accepts it under a policy nobody admits to writing.',
       ], `${name}:warning`)}`
     : monsterLoot
-      ? monsterLootStory(monsterLoot)
+      ? monsterLootStory(monsterLoot, stage)
     : BORING_ITEMS.includes(name)
-      ? mundaneLootStory(name)
+      ? mundaneLootStory(name, stage)
     : `The label “${label}” is all that survived the encounter and subsequent filing error. ${choose(closer, `${name}:closer`)}`;
 
   return {
