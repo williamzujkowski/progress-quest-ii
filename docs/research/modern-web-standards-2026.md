@@ -71,7 +71,7 @@ Implement the smallest complete slice:
 - Generate a content-versioned same-origin worker at build time. Precache only the built app shell/fonts/icons required to start; use cache-first for immutable hashed assets and navigation fallback to the cached shell. Clean old named caches on activation.
 - Keep saves in the existing validated storage boundary; do not put user save data in Cache Storage. Test a fresh online visit, reload offline, installed `start_url`, update from build A to B, and recovery from a deliberately stale cache.
 - Surface “update available” and apply it only through a user action. Document a kill switch/unregister path.
-- Test deployment from the real `/progress-quest-ii/` base path, not only Vite's root dev URL.
+- Test deployment from the real `/progress-quest-iii/` base path, not only Vite's root dev URL.
 
 OWASP advises treating service workers as security-sensitive: same-origin HTTPS scripts, restricted scope, cache-busting/versioning, no sensitive-response caching, and a documented kill switch ([OWASP HTML5 Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html)). Prefer a native worker at this size. Add Workbox or `vite-plugin-pwa` only if cache-routing/update complexity demonstrably exceeds the small explicit implementation.
 
@@ -155,7 +155,7 @@ The phase is complete when:
 - A fixed seed reproduces a legacy-approved multi-step game trace.
 - Invalid/corrupt saves and storage/capability failures never partially mutate or silently destroy the active session.
 - Unexpected render and promise failures show a useful recovery screen and produce a bounded, redacted, user-exportable diagnostic report.
-- The deployed `/progress-quest-ii/` app installs and starts offline after one successful visit, updates safely, and has a tested unregister/rollback route.
+- The deployed `/progress-quest-iii/` app installs and starts offline after one successful visit, updates safely, and has a tested unregister/rollback route.
 - Keyboard-only use, both modals, 320 px reflow, pause behavior, target sizes, and focus visibility meet the WCAG 2.2 AA contract across themes.
 - Production-preview performance has versioned budgets and no Core Web Vital is knowingly outside the “good” threshold without a tracked disposition.
 - Pull requests cannot introduce a known high-severity dependency, mutable Action reference, type error, failed fidelity vector, accessibility regression, or broken browser/offline smoke flow.

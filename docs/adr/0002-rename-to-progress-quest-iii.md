@@ -1,15 +1,16 @@
 **Superseded by ADR 0005.** The numeral and its reasoning survive; the subtitle does not. See
 `0005-name-the-project-the-search-for-more-compute.md` for why the Spaceballs structure's two
-halves were separated.
+halves were separated. The repository and Pages move shipped in #306; the redirects-first
+precondition from #140 was waived by the owner for that move.
 
 # Rename to Progress Quest III: The Search for Progress Quest II
 
 Adopt **Progress Quest III: The Search for Progress Quest II** as the project title, with
 the short form **Progress Quest III** for the masthead, browser tab, and anywhere the full
-title does not fit, and the slug `progress-quest-iii` reserved for a future repository and
+title does not fit, and the slug `progress-quest-iii` now used by the repository and
 Pages move. This decision records the name only. No code, storage key, `.pqw` terminology,
-repository name, or deployed URL changes as part of it; #140 remains the tracking issue for
-implementation and must be worked separately.
+repository name, or deployed URL changes as part of it; #140 tracked the implementation and
+the repository and Pages move shipped in #306.
 
 The current name collides with prior art, which #140 documents: DragonII published a Russian
 Windows game titled *Progress Quest 2 v1.02* by February 2012, and `nbollom/pq2` has called
