@@ -14,6 +14,7 @@ import {
   loadMostRecentRosterCharacter,
   loadRoster,
   removeFromRoster,
+  importToRoster,
   saveToRoster,
 } from '../../state/saveManager';
 import { characterSheetSchema, MAX_CHARACTER_NAME_LENGTH } from '../../state/schemas';
@@ -29,6 +30,73 @@ function encodeTestValue(value: unknown): string {
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary);
 }
+
+describe('importing a character that is already in the roster', () => {
+  // The gap this closes: saveToRoster's replace-by-name is correct for saving the character you
+  // are playing, and the import path reached the same call, where a name collision means two
+  // different characters instead of one. It was tested only for save-over-self, so the
+  // destructive reading had no coverage at all.
+
+  it('refuses rather than replacing, and leaves the stored character byte-identical', () => {
+    const existing = createNewCharacter('Krg', 'Half Daemon', 'Robot Monk', 900);
+    existing.Traits.Level = 300;
+    expect(saveToRoster(existing)).toMatchObject({ ok: true });
+    const before = localStorage.getItem('progquest_roster_v1');
+
+    const incoming = createNewCharacter('Krg', 'Off-Prem Elf', 'Vermineer', 901);
+    const result = importToRoster(incoming);
+
+    expect(result).toMatchObject({ ok: false, error: { code: 'roster_name_taken' } });
+    // Byte-identical, not merely "still a Krg": a partial write would satisfy a shallower check.
+    expect(localStorage.getItem('progquest_roster_v1')).toBe(before);
+    expect(loadRoster()).toMatchObject({ ok: true, value: { Krg: { Traits: { Level: 300 } } } });
+  });
+
+  it('re-imports an identical save of the stored character without refusing', () => {
+    // Exporting your own character and importing the backup is what the feature is for, and it
+    // replaces the entry with itself. Refusing there would be a false alarm, and a confirmation
+    // that fires when nothing is at stake is one people learn to click through.
+    const character = createNewCharacter('Krg', 'Half Daemon', 'Robot Monk', 905);
+    expect(saveToRoster(character)).toMatchObject({ ok: true });
+
+    expect(importToRoster(character)).toMatchObject({ ok: true });
+  });
+
+  it('still refuses when the stored character differs only slightly', () => {
+    // The boundary the case above must not widen: same name, one field apart, still two different
+    // characters and still a destructive replace.
+    const stored = createNewCharacter('Krg', 'Half Daemon', 'Robot Monk', 906);
+    stored.Traits.Level = 40;
+    expect(saveToRoster(stored)).toMatchObject({ ok: true });
+
+    const incoming = createNewCharacter('Krg', 'Half Daemon', 'Robot Monk', 906);
+    incoming.Traits.Level = 39;
+    expect(importToRoster(incoming)).toMatchObject({ ok: false, error: { code: 'roster_name_taken' } });
+  });
+
+  it('inserts when the name is free', () => {
+    // Without this the refusal above would pass on a function that refused everything.
+    const first = createNewCharacter('Borgfang', 'Half Daemon', 'Robot Monk', 902);
+    expect(saveToRoster(first)).toMatchObject({ ok: true });
+
+    const second = createNewCharacter('Gorzog', 'Off-Prem Elf', 'Vermineer', 903);
+    expect(importToRoster(second)).toMatchObject({ ok: true });
+    expect(loadRoster()).toMatchObject({ ok: true, value: { Borgfang: {}, Gorzog: {} } });
+  });
+
+  it('imports a character whose name matches an Object.prototype member', () => {
+    // What this does and does not prove. It asserts the behaviour — a character called
+    // constructor imports into an empty roster — and that is worth pinning.
+    //
+    // It does not distinguish `Object.hasOwn` from `in`, and the first version of this comment
+    // wrongly claimed it did. readRoster builds the roster with Object.create(null), so there is
+    // no prototype for `in` to walk and both readings agree. The guard uses Object.hasOwn anyway,
+    // because it stays correct if that null prototype is ever lost, but a test cannot demonstrate
+    // that while the prototype is absent.
+    const inherited = createNewCharacter('constructor', 'Half Daemon', 'Robot Monk', 904);
+    expect(importToRoster(inherited)).toMatchObject({ ok: true });
+  });
+});
 
 describe('Save Manager & Serialization', () => {
   it('encodes and decodes a character sheet to base64 .pqw format cleanly', () => {

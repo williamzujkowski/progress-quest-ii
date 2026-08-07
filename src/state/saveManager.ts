@@ -18,6 +18,7 @@ export type SaveErrorCode =
   | 'storage_unavailable'
   | 'storage_corrupt'
   | 'storage_full'
+  | 'roster_name_taken'
   | 'roster_too_large'
   | 'storage_failed';
 
@@ -176,6 +177,50 @@ export function loadMostRecentRosterCharacter(storage?: Storage): SaveResult<Cha
     if (Object.hasOwn(loaded.value, name) && character) return { ok: true, value: character };
   }
   return { ok: true, value: Object.values(loaded.value).at(-1) ?? null };
+}
+
+/**
+ * Adds a character that is not already in the roster.
+ *
+ * `saveToRoster` replaces by name, which is right for the caller it was written for: saving the
+ * character you are playing is meant to overwrite the earlier copy of that same character. It is
+ * wrong for an import, where a name collision means two different characters and replacing one
+ * destroys progress that cannot be re-earned. The two operations were the same call, so the
+ * destructive reading was the default and nothing at the call site said so.
+ *
+ * Refusing is the whole function. A caller that genuinely wants to replace can still say so by
+ * calling `saveToRoster`, but it now has to say it.
+ */
+export function importToRoster(sheet: CharacterSheet): SaveResult<Record<string, CharacterSheet>> {
+  const storage = getStorage();
+  if (!storage.ok) return storage;
+
+  const loaded = readRoster(storage.value);
+  if (!loaded.ok) return loaded;
+
+  // Own-property only: a character named `constructor` must not read as already present.
+  if (Object.hasOwn(loaded.value, sheet.Traits.Name)) {
+    // A name collision is only destructive when the two characters differ. Re-importing a save of
+    // the character already stored — the common case, since exporting and re-importing your own
+    // backup is what the feature is for — replaces the entry with itself and loses nothing.
+    //
+    // Warning there would be a false alarm, and false alarms are how a confirmation stops being
+    // read. Both sides are compared through the same schema so key order cannot make identical
+    // characters look different.
+    const stored = characterSheetSchema.safeParse(loaded.value[sheet.Traits.Name]);
+    const incoming = characterSheetSchema.safeParse(sheet);
+    const unchanged = stored.success && incoming.success
+      && JSON.stringify(stored.data) === JSON.stringify(incoming.data);
+
+    if (!unchanged) {
+      return saveFailure(
+        'roster_name_taken',
+        `This browser already holds a different character called ${sheet.Traits.Name}. Nothing was changed.`,
+      );
+    }
+  }
+
+  return saveToRoster(sheet);
 }
 
 export function saveToRoster(sheet: CharacterSheet): SaveResult<Record<string, CharacterSheet>> {
