@@ -359,8 +359,15 @@ describe('the compute-industrial trait catalogue', () => {
     // keeps that a property of the table rather than something noticed in a screenshot.
     for (const { name } of RACES) {
       const plural = pluralize(name);
-      expect(plural.startsWith(name.slice(0, Math.max(1, name.length - 2))), `${name} -> ${plural}`).toBe(true);
-      expect(plural).not.toBe(name);
+      expect(plural, `${name} pluralizes to itself`).not.toBe(name);
+
+      // The rules plural() applies that produce nonsense on a name shaped like these. A prefix
+      // comparison cannot express this: the previous version dropped the last two characters
+      // before comparing, so "Standby" -> "Standbies" and "Nimbus" -> "Nimbi" both passed it, and
+      // those are precisely the outputs it was written to forbid. Naming the endings states the
+      // constraint directly, and stays true for a name nobody has written yet.
+      expect(name.endsWith('y'), `${name} would print as ${plural}`).toBe(false);
+      expect(name.endsWith('us'), `${name} would print as ${plural}`).toBe(false);
     }
   });
 

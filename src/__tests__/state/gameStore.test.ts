@@ -5,6 +5,7 @@ import { createNewCharacter } from '../../engine/sim';
 import type { StatsMap } from '../../engine/types';
 import { createActivityEntries, useGameStore } from '../../state/gameStore';
 import { MAX_SOCIAL_ENTRIES, MAX_WORLD_NOTICES } from '../../data/limits';
+import { PRIME_STATS } from '../../data/traits';
 
 function fixedKillCharacter() {
   const character = structuredClone(useGameStore.getState().character);
@@ -32,6 +33,14 @@ describe('Game Store State Machine', () => {
     expect(character.Traits.Race).toBe('Double Tenant');
     expect(character.Traits.Class).toBe('Incident Paladin');
     expect(character.Task).toBeDefined();
+    // "valid stats" was asserted via toBeDefined() on Task, a field the constructor always sets, so
+    // zeroing every stat survived it. These are the bounds a 3d6 roll cannot leave.
+    for (const stat of PRIME_STATS) {
+      const value = character.Stats[stat];
+      expect(Number.isInteger(value), `${stat} is ${value}`).toBe(true);
+      expect(value, `${stat} is ${value}`).toBeGreaterThanOrEqual(3);
+      expect(value, `${stat} is ${value}`).toBeLessThanOrEqual(18);
+    }
   });
 
   it('does not advance tick when paused', () => {
