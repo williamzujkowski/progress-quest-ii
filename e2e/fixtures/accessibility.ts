@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page } from '@playwright/test';
 
 /**
- * The single way this suite runs an accessibility audit.
+ * The single way *both* suites run an accessibility audit — `e2e/` and `e2e-pwa/` alike.
  *
  * It exists because the same defect has now been found three times in three different costumes:
  * an axe pass measuring colours from mid-cross-fade. Themes transition over 200ms, so an audit
@@ -10,9 +10,15 @@ import { expect, type Page } from '@playwright/test';
  * of contrast violations that are not real — or, worse, passes while the page is momentarily
  * showing the previous palette.
  *
- * Each time it was fixed at one call site. There are nine, and the next person to add a tenth
- * would have had no way to know. So the guard lives here instead of in the tests: disabling
- * transitions is not an argument the caller can forget to make.
+ * Each time it was fixed at one call site. There are twelve, and the next person to add a
+ * thirteenth would have had no way to know. So the guard lives here instead of in the tests:
+ * disabling transitions is not an argument the caller can forget to make.
+ *
+ * The PWA suite is named explicitly because it had already drifted: three audits in
+ * `e2e-pwa/pwa.spec.ts` were built inline with their own `AxeBuilder` and their own copy of the
+ * tag list, and so carried neither guard below (#310). "This suite" was read as the directory
+ * this file sits in. It is not — `e2e-pwa/` imports across the boundary for other fixtures too,
+ * and any suite auditing this application belongs here.
  *
  * `expectNoViolations` is deliberately the exported shape rather than a builder — returning
  * results would let a caller collect them and forget to assert, which is the vacuous-pass
