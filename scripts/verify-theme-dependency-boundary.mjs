@@ -16,7 +16,7 @@ import { build } from 'vite';
  * real path, before anything is minified — which is the difference between asking whether the
  * evidence is visible and asking what happened.
  *
- * Upstream is expected to fix the boundary at source (#178, tracking their issue 169). Until
+ * Upstream is expected to fix the boundary at source; docs/content-provenance.md records the upstream tracking issue. Until
  * then this holds the line from here.
  */
 

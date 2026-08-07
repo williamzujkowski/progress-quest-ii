@@ -5,7 +5,7 @@ import { applyTheme, getTerminalThemeVariables, getThemeColor } from '../theme';
 /**
  * applyTheme is the only function in the theme module that mutates the document, and it had no
  * unit coverage in either layer: theme.test.ts runs without a DOM and covers its building blocks,
- * while e2e/theme-boot.spec.ts passed in full with the boot script deleted (#332) — so the one
+ * while e2e/theme-boot.spec.ts passed in full with the boot script deleted — so the one
  * place this ran was not holding it either.
  *
  * The switching cases are the ones worth having. Applying a theme to a clean root is the easy

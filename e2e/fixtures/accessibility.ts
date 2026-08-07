@@ -16,7 +16,7 @@ import { expect, type Page } from '@playwright/test';
  *
  * The PWA suite is named explicitly because it had already drifted: three audits in
  * `e2e-pwa/pwa.spec.ts` were built inline with their own `AxeBuilder` and their own copy of the
- * tag list, and so carried neither guard below (#310). "This suite" was read as the directory
+ * tag list, and so carried neither guard below. "This suite" was read as the directory
  * this file sits in. It is not — `e2e-pwa/` imports across the boundary for other fixtures too,
  * and any suite auditing this application belongs here.
  *

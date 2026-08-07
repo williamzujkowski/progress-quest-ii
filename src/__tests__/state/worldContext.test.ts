@@ -331,7 +331,7 @@ describe('sited substrate', () => {
     }).context;
     expect(at(1)).toEqual(at(1));
 
-    // This asserted `at(30).location !== at(1).location` until #384 renamed the races. The picked
+    // This asserted `at(30).location !== at(1).location` until the races were renamed. The picked
     // name is `choose(fieldNamesAt(act), '<name>:<race>:<class>:field:<level>')` — a hash of the
     // hero's race string — so whether two acts happen to land on different entries is a property
     // of that string, not of the substrate. One race name later, both acts hashed onto

@@ -11,7 +11,7 @@ import { MAX_STORED_PAYLOAD_LENGTH } from '../data/limits';
  * because parsing is the expensive step and it happens before validation could reject anything.
  *
  * Written once because the invariants live here rather than in any one ledger. Storage readers
- * that disagree about their defences are how the next one gets written without any — and #308 was
+ * that disagree about their defences are how the next one gets written without any — and the defect that prompted this was
  * a bug in exactly one of three near-identical copies of a different piece of ledger code.
  */
 

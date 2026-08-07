@@ -19,7 +19,7 @@ const REQUIRED_NOTICES = [
 // so adding a third font family shipped it with no attribution and the gate stayed green. That is
 // a fact about lists maintained by hand, not a fact about fonts: `remarque-tokens` was added as a
 // production dependency, shipped its custom properties into the bundle, and appeared in neither
-// the notices nor the provenance inventory, for exactly the same reason (#326).
+// the notices nor the provenance inventory, for exactly the same reason.
 //
 // So the direction of the check is inverted. package.json names the packages, and each one must
 // map to a string this file expects to find in the notices. A dependency with no entry in

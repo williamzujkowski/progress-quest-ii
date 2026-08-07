@@ -1,7 +1,7 @@
 import { expect, test } from './fixtures/strictConsole';
 
 /**
- * #126: the shell used to paint its static dark fallback until React mounted, so a stored light
+ * The shell once painted its static dark fallback until React mounted, so a stored light
  * or alternate palette flashed the wrong background on every cold load — worst on a slow mobile
  * PWA start, which is exactly when it is most visible.
  *

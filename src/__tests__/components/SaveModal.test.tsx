@@ -242,7 +242,7 @@ describe('Save Manager recovery', () => {
     expect(diagnostics.snapshot().at(-1)?.code).toBe('roster_write_failed');
   });
 
-  // #339: deleting a character is the only action in this modal that destroys player data, and it
+  // Deleting a character is the only action in this modal that destroys player data, and it
   // was the only roster-mutating path with no test. Every other one here has a negative case.
 
   it('removes a character from the roster once the deletion is confirmed', async () => {

@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 // Each invocation owns its own server on its own port. Reusing whatever answers on a fixed
 // port meant two things: concurrent runs fought over ownership and the shorter one's exit
-// killed the longer one (#182), and — worse — Playwright's reuse check only asks "is something
+// killed the longer one, and — worse — Playwright's reuse check only asks "is something
 // answering here", not "is this the app at this commit". A stale dev server from another branch
 // has the same title and DOM, so the whole suite could go green against code it never built.
 const reservePort = () => new Promise<number>((resolve, reject) => {

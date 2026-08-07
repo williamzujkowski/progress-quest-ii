@@ -21,7 +21,7 @@ describe('large game-number presentation', () => {
     expect(formatGameNumber(value)).toBe(expected);
   });
 
-  // Regression for #346. These are over the character budget on their decimals alone, and used to
+  // These are over the character budget on their decimals alone, and used to
   // print as "1.53e4" — longer than the plain form, less precise than it, and rendered beside a
   // denominator still in plain digits ("1.53e4 / 75600"). Plot progress produces exactly this.
   it.each([

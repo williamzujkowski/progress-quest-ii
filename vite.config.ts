@@ -32,7 +32,7 @@ export default defineConfig({
         // have unit tests and excluding those would throw away real coverage. Each entry here is
         // a component whose verification lives entirely in the Playwright suite.
         //
-        // ItemTooltip was on this list and stopped qualifying when #307 gave it a unit test, which
+        // ItemTooltip was on this list and stopped qualifying once it gained a unit test, which
         // nobody noticed — the list is only as reviewable as the reader is attentive, so
         // scripts/test-coverage-exclusions.mjs now fails when an entry acquires a matching test.
         'src/App.tsx',

@@ -10,7 +10,7 @@ import { access, readFile } from 'node:fs/promises';
  * list is itemised rather than a `src/components/**` glob precisely so that adding to it is a
  * visible decision — but nothing was checking that entries still qualify once added.
  *
- * They stop qualifying silently. #307 gave ItemTooltip a unit test while it was still excluded, so
+ * They stop qualifying silently. ItemTooltip gained a unit test while it was still excluded, so
  * real coverage was being discarded by exactly the mechanism the comment above the list warns
  * against, and the percentage overstated how much untested surface remained.
  *
