@@ -83,7 +83,8 @@ for (const [kind, files] of [['js', jsFiles], ['css', cssFiles]]) {
 const notices = await readFile(noticeUrl, 'utf8');
 const worker = await readFile(workerUrl, 'utf8');
 const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
-const fontPackages = Object.keys(manifest.dependencies ?? {}).filter((name) => name.startsWith('@fontsource'));
-verifyProductionNotices(notices, worker, fontPackages);
+const runtimePackages = Object.keys(manifest.dependencies ?? {});
+const fontPackages = runtimePackages.filter((name) => name.startsWith('@fontsource'));
+verifyProductionNotices(notices, worker, fontPackages, runtimePackages);
 
 console.log(`Verified ${fontUrls.length} local font asset(s) across ${cssFiles.length} production CSS asset(s), within size budget.`);

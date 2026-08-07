@@ -57,6 +57,9 @@ DIRECT RUNTIME SOFTWARE
   Copyright (c) 2025 Colin McDonnell
 - Zustand 5.0.14 — MIT
   Copyright (c) 2019 Paul Henschel
+- remarque-tokens 0.26.0 — MIT
+  Copyright (c) 2026 William Zujkowski
+  https://github.com/williamzujkowski/remarque
 
 The MIT permission and warranty text for these packages is the same form
 reproduced above. Their npm packages include unmodified license files and
