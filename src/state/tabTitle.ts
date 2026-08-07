@@ -6,7 +6,9 @@ import { formatGameNumber } from '../engine/text';
  * The tab strip is the only surface this game has when it is not the active tab, and leaving it
  * open is the single thing a player ever does — so it is worth giving that act a visible return.
  * Facts rotate rather than all appearing at once, because a tab title is roughly thirty legible
- * characters and a queue of three short readings survives truncation better than one long one.
+ * characters, and a queue of two to four short readings survives truncation better than one long
+ * one. Two to four rather than a fixed number: Act is withheld during the prologue and the filing
+ * rate until its window means something, and those two are independent.
  *
  * Every fact here is a number the engine already reports. Nothing implies a mechanic that does
  * not exist, which is the same bar the item catalogue is held to.
