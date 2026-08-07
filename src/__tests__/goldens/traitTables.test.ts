@@ -270,3 +270,52 @@ describe('trait table structure', () => {
     expect(MON_MODS.filter((modifier) => !modifier.includes('*'))).toEqual([]);
   });
 });
+
+/**
+ * What race and class are worth, held still while their names are free to change.
+ *
+ * These two tables are the ones nothing pins by content — deliberately, so the vocabulary can be
+ * rewritten (#382, #384). But the entries are not only names: each grants stat bonuses at character
+ * creation, which this build applies and the original never did. So a rewrite that reaches for a
+ * funnier word and takes a different `stats` array with it would rebalance the game, and the only
+ * symptom would be characters quietly rolling differently.
+ *
+ * The counts below are therefore the half that must survive a rename. They say nothing about what
+ * anything is called, which is the point: rename freely, and this fails the moment the arithmetic
+ * moves with the words.
+ *
+ * If a rebalance is ever intended, these numbers are meant to be edited in the same commit that
+ * causes it — the failure is a question, not a verdict.
+ */
+describe('what race and class are worth', () => {
+  const tally = (table: readonly { readonly stats: readonly string[] }[]) => {
+    const perStat: Record<string, number> = {};
+    const perWidth: Record<number, number> = {};
+    for (const entry of table) {
+      for (const stat of entry.stats) perStat[stat] = (perStat[stat] ?? 0) + 1;
+      perWidth[entry.stats.length] = (perWidth[entry.stats.length] ?? 0) + 1;
+    }
+    return { perStat, perWidth };
+  };
+
+  it('grants the same spread of race bonuses however the races are named', () => {
+    expect(tally(RACES).perStat).toEqual({
+      CHA: 2, CON: 5, DEX: 5, 'HP Max': 2, INT: 2, 'MP Max': 2, STR: 4, WIS: 4,
+    });
+  });
+
+  it('grants the same spread of class bonuses however the classes are named', () => {
+    // No HP Max anywhere in this table, which is a real asymmetry with RACES rather than an
+    // oversight: constitution is the racial axis and the classes leave it alone.
+    expect(tally(KLASSES).perStat).toEqual({
+      CHA: 2, CON: 4, DEX: 4, INT: 5, 'MP Max': 1, STR: 3, WIS: 5,
+    });
+  });
+
+  it('keeps the ratio of one-stat to two-stat entries', () => {
+    // The generous entries are the scarce ones, and staying scarce is what keeps a rewrite from
+    // making every option a two-stat option because the names happened to suggest it.
+    expect(tally(RACES).perWidth).toEqual({ 1: 16, 2: 5 });
+    expect(tally(KLASSES).perWidth).toEqual({ 1: 12, 2: 6 });
+  });
+});
