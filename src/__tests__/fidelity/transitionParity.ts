@@ -60,6 +60,18 @@ export interface EncounterTransitionObservation {
   spells: Pair<number>[];
   nextTask: { caption: string; durationMs: number; type: ProgressTask['type']; loot: ProgressTask['loot'] };
   events: string[];
+  /**
+   * How many purchase narratives each side left out of `events`, which is the one class of message
+   * the two builds word differently on purpose — legacy says "Spent N gold", this one negotiates.
+   *
+   * Counted rather than compared, because the texts are meant to diverge and asserting they match
+   * would be asserting the rewrite never happened. What it does catch is the exemption widening:
+   * the legacy side drops by text prefix and the modern side by event type, so a future legacy
+   * line that merely begins "Spent " would vanish from the comparison with nothing to notice. If
+   * the two sides ever disagree about how many lines they set aside, they are no longer setting
+   * aside the same thing.
+   */
+  purchasesOmitted: number;
   rng: AleaState;
   progression: {
     counters: { completedTasks: number; elapsedSeconds: number };
@@ -104,6 +116,9 @@ function typeFromLegacyTask(task: LegacyExpected['task']): ProgressTask['type'] 
   return task.caption.startsWith('Loading Act ') ? 'act_marker' : 'cinematic';
 }
 
+/** The legacy build's purchase line. Named so the exemption is a decision rather than a substring. */
+const isLegacyPurchaseLine = (line: string): boolean => line.startsWith('Spent ');
+
 export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixture): EncounterTransitionObservation {
   assertCompletedTask(fixture.input.sheet);
   const { expected } = fixture;
@@ -114,7 +129,8 @@ export function observeLegacyEncounterTransition(fixture: LegacyTransitionFixtur
     equipment: structuredClone(expected.equipment),
     spells: expected.spells.map(([name, , level]) => [name, level]),
     nextTask: { caption: expected.task.caption, durationMs: expected.task.maxMs, type: typeFromLegacyTask(expected.task), loot: lootFromLegacyTask(expected.task.tag) },
-    events: expected.log.filter((line) => !line.startsWith('Spent ')),
+    events: expected.log.filter((line) => !isLegacyPurchaseLine(line)),
+    purchasesOmitted: expected.log.filter(isLegacyPurchaseLine).length,
     rng: [...expected.rng],
     progression: {
       counters: { completedTasks: expected.counters.tasks, elapsedSeconds: expected.counters.elapsedSeconds },
@@ -190,6 +206,7 @@ export function observeModernEncounterTransition(fixture: LegacyTransitionFixtur
     events: result.records.map(({ event }) => event)
       .filter(({ type }) => type !== 'act_completed' && type !== 'equipment_gained' && type !== 'equipment_purchased')
       .map(describeGameEvent),
+    purchasesOmitted: result.records.filter(({ event }) => event.type === 'equipment_purchased').length,
     rng: [...rng.getState()],
     progression: {
       counters: { completedTasks: progression.completedTasks, elapsedSeconds: progression.elapsedSeconds },
