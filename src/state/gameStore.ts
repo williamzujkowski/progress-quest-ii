@@ -113,7 +113,7 @@ function retainWholeSocialScenes(entries: readonly SocialEntry[]): SocialEntry[]
 
 export const useGameStore = create<GameStore>((set, get) => {
   const initialRng = new RandomGenerator('default-seed');
-  const initialChar = createNewCharacter('Krg', 'Hob-Hobbit', 'Robot Monk', initialRng);
+  const initialChar = createNewCharacter('Krg', 'Sub-Subprocessor', 'Robot Monk', initialRng);
 
   return {
     character: initialChar,

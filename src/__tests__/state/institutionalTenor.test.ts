@@ -96,7 +96,7 @@ describe('institutional tenor', () => {
     // world between ticks has to leave the generator exactly where it was.
     const rng = new RandomGenerator('tenor-purity');
     let state = {
-      character: createNewCharacter('Tenor', 'Half Orc', 'Robot Monk', rng),
+      character: createNewCharacter('Tenor', 'Half Daemon', 'Robot Monk', rng),
       progression: { experience: { currentSeconds: 0, maxSeconds: levelUpTime(1) }, completedTasks: 0, elapsedSeconds: 0 },
     };
     state = advanceGame(state, 5_000, rng).state;

@@ -48,7 +48,7 @@ describe('the digest against a real drain', () => {
   it('reports once when the backlog finishes, and never during ordinary play', () => {
     useGameStore.setState(originalState, true);
     useGameStore.getState().startSession({
-      source: 'creation', name: 'Returner', race: 'Half Orc', klass: 'Ur-Paladin', seed: 5150,
+      source: 'creation', name: 'Returner', race: 'Half Daemon', klass: 'Incident Paladin', seed: 5150,
     });
 
     // Ordinary play: every tick spends its own 50ms, so nothing is ever banked.
@@ -77,7 +77,7 @@ describe('the digest against a real drain', () => {
     // restated: a digest that agreed with itself would prove nothing.
     const rng = new RandomGenerator('digest-parity');
     let state = {
-      character: createNewCharacter('Parity', 'Half Orc', 'Ur-Paladin', rng),
+      character: createNewCharacter('Parity', 'Half Daemon', 'Incident Paladin', rng),
       progression: { experience: { currentSeconds: 0, maxSeconds: levelUpTime(1) }, completedTasks: 0, elapsedSeconds: 0 },
     };
     let expected = EMPTY_DIGEST;
@@ -100,7 +100,7 @@ describe('a digest belongs to one absence', () => {
 
     if (precededByAbandonedDrain) {
       useGameStore.getState().startSession({
-        source: 'creation', name: 'Abandoned', race: 'Half Orc', klass: 'Ur-Paladin', seed: 999,
+        source: 'creation', name: 'Abandoned', race: 'Half Daemon', klass: 'Incident Paladin', seed: 999,
       });
       useGameStore.getState().tick(6 * 60 * 60 * 1000);
       // A handful of ticks only, so the backlog is still deep when the character is replaced.
@@ -109,7 +109,7 @@ describe('a digest belongs to one absence', () => {
     }
 
     useGameStore.getState().startSession({
-      source: 'creation', name, race: 'Half Orc', klass: 'Ur-Paladin', seed,
+      source: 'creation', name, race: 'Half Daemon', klass: 'Incident Paladin', seed,
     });
     useGameStore.getState().tick(20 * 60 * 1000);
     for (let guard = 0; guard < 20_000 && useGameStore.getState().pendingElapsedMs > 0; guard += 1) {

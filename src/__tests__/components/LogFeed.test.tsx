@@ -64,20 +64,20 @@ describe('Activity Log accessibility', () => {
     fireEvent.click(activityTab);
     activityTab.focus();
 
-    act(() => useGameStore.getState().startSession({ source: 'creation', name: 'Fresh Tab Oracle', race: 'Double Hobbit', klass: 'Ur-Paladin', seed: 'fresh-tab' }));
+    act(() => useGameStore.getState().startSession({ source: 'creation', name: 'Fresh Tab Oracle', race: 'Double Tenant', klass: 'Incident Paladin', seed: 'fresh-tab' }));
     expect(chatterTab.getAttribute('aria-selected')).toBe('true');
     expect(document.activeElement).toBe(chatterTab);
 
     fireEvent.click(activityTab);
     const activity = screen.getByRole('region', { name: 'Activity Event Log' });
     activity.focus();
-    act(() => useGameStore.getState().startSession({ source: 'creation', name: 'Newer Tab Oracle', race: 'Double Hobbit', klass: 'Ur-Paladin', seed: 'newer-tab' }));
+    act(() => useGameStore.getState().startSession({ source: 'creation', name: 'Newer Tab Oracle', race: 'Double Tenant', klass: 'Incident Paladin', seed: 'newer-tab' }));
     expect(document.activeElement).toBe(chatterTab);
 
     fireEvent.click(activityTab);
     const outside = screen.getByRole('button', { name: 'Outside console' });
     outside.focus();
-    act(() => useGameStore.getState().startSession({ source: 'creation', name: 'External Focus Oracle', race: 'Double Hobbit', klass: 'Ur-Paladin', seed: 'external-focus' }));
+    act(() => useGameStore.getState().startSession({ source: 'creation', name: 'External Focus Oracle', race: 'Double Tenant', klass: 'Incident Paladin', seed: 'external-focus' }));
     expect(chatterTab.getAttribute('aria-selected')).toBe('true');
     expect(document.activeElement).toBe(outside);
   });

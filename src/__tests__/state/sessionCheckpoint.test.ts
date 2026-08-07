@@ -45,8 +45,8 @@ describe('active session checkpoint boundary', () => {
   });
 
   it('starts the most recently saved roster character when no active session exists', () => {
-    saveToRoster(createNewCharacter('Earlier Roster', 'Half Orc', 'Robot Monk', 704));
-    saveToRoster(createNewCharacter('Latest Roster', 'Dung Elf', 'Vermineer', 705));
+    saveToRoster(createNewCharacter('Earlier Roster', 'Half Daemon', 'Robot Monk', 704));
+    saveToRoster(createNewCharacter('Latest Roster', 'Off-Prem Elf', 'Vermineer', 705));
 
     const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT, storage: localStorage });
 
@@ -57,10 +57,10 @@ describe('active session checkpoint boundary', () => {
   });
 
   it('restores the active checkpoint before considering the roster', () => {
-    const active = createNewCharacter('Active Wins', 'Half Orc', 'Robot Monk', 706);
+    const active = createNewCharacter('Active Wins', 'Half Daemon', 'Robot Monk', 706);
     useGameStore.setState({ character: active });
     expect(writeActiveCheckpoint(localStorage, captureActiveSession(FIXED_SAVED_AT), null)).toMatchObject({ ok: true });
-    saveToRoster(createNewCharacter('Roster Loses', 'Dung Elf', 'Vermineer', 707));
+    saveToRoster(createNewCharacter('Roster Loses', 'Off-Prem Elf', 'Vermineer', 707));
     useGameStore.setState(originalState, true);
 
     const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT, storage: localStorage });
@@ -88,7 +88,7 @@ describe('active session checkpoint boundary', () => {
   });
 
   it('round-trips the complete deterministic session through a strict v1 envelope', () => {
-    const character = createNewCharacter('Checkpoint', 'Dung Elf', 'Vermineer', 701);
+    const character = createNewCharacter('Checkpoint', 'Off-Prem Elf', 'Vermineer', 701);
     character.Task.elapsedMs = 123;
     const rng = new RandomGenerator('checkpoint-rng');
     rng.random(99);
@@ -106,7 +106,7 @@ describe('active session checkpoint boundary', () => {
     const loaded = loadActiveCheckpoint(localStorage);
     expect(loaded).toMatchObject({ status: 'loaded', checkpoint });
 
-    useGameStore.getState().startSession({ source: 'creation', name: 'Replacement', race: 'Half Orc', klass: 'Robot Monk', seed: 702 });
+    useGameStore.getState().startSession({ source: 'creation', name: 'Replacement', race: 'Half Daemon', klass: 'Robot Monk', seed: 702 });
     if (loaded.status !== 'loaded') throw new Error('Expected a loaded checkpoint');
     restoreActiveSession(loaded.checkpoint, FIXED_SAVED_AT);
     const restored = useGameStore.getState();
@@ -342,7 +342,7 @@ describe('active session checkpoint boundary', () => {
   });
 
   it('continues with the exact same next transition and Alea state after restore', () => {
-    const character = createNewCharacter('Continuation', 'Half Orc', 'Robot Monk', 703);
+    const character = createNewCharacter('Continuation', 'Half Daemon', 'Robot Monk', 703);
     character.Quest.history = [character.Quest.description];
     character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
     character.Task = { description: 'Executing rat...', durationMs: 100, elapsedMs: 75, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
@@ -360,7 +360,7 @@ describe('active session checkpoint boundary', () => {
   });
 
   it('preserves bounded catch-up remainder across pause and restore', () => {
-    useGameStore.getState().startSession({ source: 'creation', name: 'Patient Continuation', race: 'Half Orc', klass: 'Robot Monk', seed: 714 });
+    useGameStore.getState().startSession({ source: 'creation', name: 'Patient Continuation', race: 'Half Daemon', klass: 'Robot Monk', seed: 714 });
     useGameStore.getState().tick(Number.MAX_VALUE);
     expect(useGameStore.getState().progression.completedTasks).toBe(100);
     useGameStore.getState().togglePause();
@@ -382,7 +382,7 @@ describe('active session checkpoint boundary', () => {
   });
 
   it('resumes a mid-prologue checkpoint with identical queued work and RNG', () => {
-    const character = createNewCharacter('Prologue Continuation', 'Half Orc', 'Robot Monk', 709);
+    const character = createNewCharacter('Prologue Continuation', 'Half Daemon', 'Robot Monk', 709);
     const rng = new RandomGenerator('prologue-checkpoint-rng');
     const midPrologue = advanceGame({
       character,
@@ -433,7 +433,7 @@ describe('active session checkpoint boundary', () => {
     // origin and re-credits time that has already been banked. Closing that window is the whole
     // reason the restore writes straight back instead of waiting for the debounce — and dispose()
     // deliberately does not flush, so a crash or a mobile tab eviction lands squarely in it.
-    useGameStore.getState().startSession({ source: 'creation', name: 'Twice Counted', race: 'Half Orc', klass: 'Robot Monk', seed: 715 });
+    useGameStore.getState().startSession({ source: 'creation', name: 'Twice Counted', race: 'Half Daemon', klass: 'Robot Monk', seed: 715 });
     useGameStore.setState({ isPaused: false, pendingElapsedMs: 0 });
     expect(writeActiveCheckpoint(localStorage, captureActiveSession(FIXED_SAVED_AT), null).ok).toBe(true);
 
@@ -455,7 +455,7 @@ describe('the serialized payload cap', () => {
   // restore at all, so it was the wrong one to leave unexercised (#334).
 
   const oversizedSession = () => {
-    useGameStore.getState().startSession({ source: 'creation', name: 'Overstuffed', race: 'Half Orc', klass: 'Robot Monk', seed: 11 });
+    useGameStore.getState().startSession({ source: 'creation', name: 'Overstuffed', race: 'Half Daemon', klass: 'Robot Monk', seed: 11 });
     const checkpoint = captureActiveSession(FIXED_SAVED_AT);
     // Schema-valid and over the cap at the same time, which is the only combination that reaches
     // the guard: an invalid checkpoint is refused earlier by safeParse for a different reason.
@@ -494,7 +494,7 @@ describe('the serialized payload cap', () => {
    * JSON escaping perturbs the length while it is being tuned.
    */
   const checkpointOfExactly = (target: number) => {
-    useGameStore.getState().startSession({ source: 'creation', name: 'Exact', race: 'Half Orc', klass: 'Robot Monk', seed: 13 });
+    useGameStore.getState().startSession({ source: 'creation', name: 'Exact', race: 'Half Daemon', klass: 'Robot Monk', seed: 13 });
     const checkpoint = captureActiveSession(FIXED_SAVED_AT);
     const inventory: { name: string; qty: number }[] = [];
     checkpoint.session.character.Inventory = inventory;
@@ -548,7 +548,7 @@ describe('the serialized payload cap', () => {
   it('writes a checkpoint that sits just under the cap', () => {
     // The negative above only proves something is refused; without this it would still pass if the
     // guard refused every write.
-    useGameStore.getState().startSession({ source: 'creation', name: 'Ordinary', race: 'Half Orc', klass: 'Robot Monk', seed: 12 });
+    useGameStore.getState().startSession({ source: 'creation', name: 'Ordinary', race: 'Half Daemon', klass: 'Robot Monk', seed: 12 });
     const checkpoint = captureActiveSession(FIXED_SAVED_AT);
     expect(JSON.stringify(checkpoint).length).toBeLessThan(MAX_CHECKPOINT_SERIALIZED_LENGTH);
     expect(writeActiveCheckpoint(localStorage, checkpoint, null).ok).toBe(true);

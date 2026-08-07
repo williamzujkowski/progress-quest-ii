@@ -88,7 +88,7 @@ describe('specimen log', () => {
     // asserting my own idea of what an acquisition looks like.
     const rng = new RandomGenerator('specimens');
     let state = {
-      character: createNewCharacter('Collector', 'Half Orc', 'Ur-Paladin', rng),
+      character: createNewCharacter('Collector', 'Half Daemon', 'Incident Paladin', rng),
       progression: { experience: { currentSeconds: 0, maxSeconds: levelUpTime(1) }, completedTasks: 0, elapsedSeconds: 0 },
     };
     let log = EMPTY_SPECIMEN_LOG;

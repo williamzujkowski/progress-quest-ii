@@ -8,7 +8,7 @@ import { useGameStore } from '../../state/gameStore';
 afterEach(cleanup);
 
 const withHistory = (history: string[] | undefined) => {
-  const character = createNewCharacter('Archivist', 'Half Orc', 'Robot Monk', 900);
+  const character = createNewCharacter('Archivist', 'Half Daemon', 'Robot Monk', 900);
   useGameStore.setState({ character: { ...character, Quest: { ...character.Quest, history: history as string[] } } });
 };
 

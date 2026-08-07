@@ -27,7 +27,7 @@ const spyOnLedgerWrites = () => {
 
 const startDrain = () => {
   useGameStore.getState().startSession({
-    source: 'creation', name: 'Long Absence', race: 'Half Orc', klass: 'Ur-Paladin', seed: 4242,
+    source: 'creation', name: 'Long Absence', race: 'Half Daemon', klass: 'Incident Paladin', seed: 4242,
   });
   // Far more than a single tick can spend, so the first tick is guaranteed to stop with work left.
   useGameStore.setState({ pendingElapsedMs: 0, isPaused: false });

@@ -16,7 +16,7 @@ const STABLE_BRANCHES = ['Traits', 'Stats', 'Equip', 'Inventory', 'Spells', 'Que
 
 const churnCounts = (ticks: number) => {
   useGameStore.getState().startSession({
-    source: 'creation', name: 'Identity Subject', race: 'Half Orc', klass: 'Ur-Paladin', seed: 909,
+    source: 'creation', name: 'Identity Subject', race: 'Half Daemon', klass: 'Incident Paladin', seed: 909,
   });
 
   const counts: Record<string, number> = { character: 0, ...Object.fromEntries(STABLE_BRANCHES.map((k) => [k, 0])) };

@@ -16,7 +16,7 @@ export function archivedSessionStorageState(
   origin: string,
   { history = [], log = ['Seeded for measurement.'] }: { history?: string[]; log?: string[] } = {},
 ) {
-  const character = createNewCharacter('Archivist', 'Hob-Hobbit', 'Robot Monk', 908);
+  const character = createNewCharacter('Archivist', 'Sub-Subprocessor', 'Robot Monk', 908);
   character.Quest.history = history;
 
   return {

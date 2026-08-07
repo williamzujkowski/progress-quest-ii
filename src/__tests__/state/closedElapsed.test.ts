@@ -57,7 +57,7 @@ describe('closed-app elapsed credit', () => {
 });
 
 describe('offline catch-up determinism', () => {
-  const START = { source: 'creation', name: 'Replay Subject', race: 'Half Orc', klass: 'Ur-Paladin', seed: 4242 } as const;
+  const START = { source: 'creation', name: 'Replay Subject', race: 'Half Daemon', klass: 'Incident Paladin', seed: 4242 } as const;
 
   const drive = (deliver: (tick: (ms: number) => void) => void) => {
     useGameStore.getState().startSession({ ...START });

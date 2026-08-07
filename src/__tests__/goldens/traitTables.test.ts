@@ -1,3 +1,4 @@
+import { plural as pluralize } from '../../engine/text';
 import { describe, expect, it } from 'vitest';
 import {
   ALL_STATS,
@@ -317,5 +318,59 @@ describe('what race and class are worth', () => {
     // making every option a two-stat option because the names happened to suggest it.
     expect(tally(RACES).perWidth).toEqual({ 1: 16, 2: 5 });
     expect(tally(KLASSES).perWidth).toEqual({ 1: 12, 2: 6 });
+  });
+});
+
+describe('the compute-industrial trait catalogue', () => {
+  // Written in the manner of the social catalogue's own guard. These tables moved from 2002 high
+  // fantasy to job titles that should not exist (#384), and the hazard the register brings with it
+  // is naming something real: a vendor, a product, a model, or a person. An invented Vermineer is
+  // the joke; a real trademark in a shipped table is somebody else's property doing the work.
+  const serialized = JSON.stringify([...RACES, ...KLASSES]).toLowerCase();
+
+  it('names no real vendor, product, model, or person', () => {
+    for (const forbidden of [
+      // Vendors and clouds.
+      'aws', 'amazon', 'azure', 'google', 'microsoft', 'oracle', 'ibm', 'meta', 'apple',
+      'nvidia', 'intel', 'salesforce', 'vmware', 'cloudflare', 'datadog', 'atlassian',
+      // Products and platforms whose names would otherwise fit this register far too well.
+      'kubernetes', 'docker', 'terraform', 'jira', 'slack', 'github', 'gitlab', 'jenkins',
+      'splunk', 'grafana', 'kafka', 'hadoop', 'postgres', 'mysql', 'redis', 'nginx',
+      'systemd', 'ansible', 'databricks', 'snowflake', 'servicenow', 'workday', 'sap',
+      // Labs and models, on the separate ground that they date the writing.
+      'openai', 'anthropic', 'deepmind', 'chatgpt', 'claude', 'gemini', 'copilot', 'llama',
+      // People.
+      'turing', 'lovelace', 'mccarthy', 'minsky', 'hopper', 'torvalds', 'stallman', 'ritchie',
+    ]) expect(serialized, `trait tables must not name ${forbidden}`).not.toContain(forbidden);
+  });
+
+  it('carries no markup, links, control characters, or bidirectional overrides', () => {
+    // These strings reach the DOM as a hero's race and class and are spoken by the screen-reader
+    // path, so the same envelope the social catalogue holds applies here.
+    expect(serialized).not.toContain('http://');
+    expect(serialized).not.toContain('https://');
+    expect(serialized).not.toMatch(/[<>\u202a-\u202e\u2066-\u2069]/u);
+    expect(Array.from(serialized).some((character) => {
+      const codePoint = character.codePointAt(0) ?? 0;
+      return codePoint < 0x20 || (codePoint >= 0x7f && codePoint <= 0x9f);
+    })).toBe(false);
+  });
+
+  it('pluralizes every race into something a quest line can print', () => {
+    // transition.ts renders `the <Title> of the <plural race>`. plural() is naive by design, so a
+    // race ending in -y or -us would print as "Standbies" or "Nimbi". Asserting the round trip here
+    // keeps that a property of the table rather than something noticed in a screenshot.
+    for (const { name } of RACES) {
+      const plural = pluralize(name);
+      expect(plural.startsWith(name.slice(0, Math.max(1, name.length - 2))), `${name} -> ${plural}`).toBe(true);
+      expect(plural).not.toBe(name);
+    }
+  });
+
+  it('keeps every name inside the width the loadout and hero banner allow', () => {
+    for (const { name } of [...RACES, ...KLASSES]) {
+      expect(Array.from(name).length, `${name} is too long to print`).toBeLessThanOrEqual(24);
+      expect(name.trim(), `${name} has stray whitespace`).toBe(name);
+    }
   });
 });

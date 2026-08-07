@@ -54,7 +54,7 @@ describe('legacy quest reward dispatcher', () => {
       rng: [0.44738486921414733, 0.8698570972774178, 0.7554666411597282, 1991341],
     },
   ] as const)('applies the $kind branch without mutating its input', ({ state, reset, kind, expected, rng: expectedRng }) => {
-    const character = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 'reward-character');
+    const character = createNewCharacter('Oracle', 'Half Daemon', 'Incident Paladin', 'reward-character');
     character.Stats = { ...balancedStats };
     character.Equip = { ...character.Equip, Weapon: 'Sharp Rock' };
     character.Inventory = [];
@@ -77,7 +77,7 @@ describe('legacy quest reward dispatcher', () => {
   });
 
   it('uses the legacy payment wording when an item reward reuses Gold', () => {
-    const character = createNewCharacter('Oracle', 'Half Orc', 'Ur-Paladin', 'gold-vector');
+    const character = createNewCharacter('Oracle', 'Half Daemon', 'Incident Paladin', 'gold-vector');
     character.Inventory = Array.from({ length: 299 }, (_, index) => ({ name: `Item ${index}`, qty: 1 }));
     character.Gold = 0;
     const rng = new RandomGenerator('dispatch-gold-3255');
@@ -95,7 +95,7 @@ describe('legacy quest reward dispatcher', () => {
     ['spell', [0.578806129284203, 0.5098025279585272, 0.04669409594498575, 1], (character: ReturnType<typeof createNewCharacter>) => { character.Spells = [{ name: 'Rabbit Punch', level: 1_000_000_000 }]; }, (character: ReturnType<typeof createNewCharacter>) => character.Spells[0]?.level],
     ['stat', [0.7377883812878281, 0.3013112908229232, 0.7470456755254418, 1], (character: ReturnType<typeof createNewCharacter>) => { character.Stats.CHA = 1_000_000_000; }, (character: ReturnType<typeof createNewCharacter>) => character.Stats.CHA],
   ] as const)('keeps the %s reward within accepted save bounds', (_kind, state, arrange, readValue) => {
-    const character = createNewCharacter('Boundary', 'Half Orc', 'Ur-Paladin', 'reward-boundary');
+    const character = createNewCharacter('Boundary', 'Half Daemon', 'Incident Paladin', 'reward-boundary');
     character.Stats = { ...balancedStats };
     arrange(character);
     const rng = new RandomGenerator('replaced-by-vector');
@@ -109,7 +109,7 @@ describe('legacy quest reward dispatcher', () => {
   });
 
   it('keeps reused item quantity and Gold within accepted save bounds', () => {
-    const itemCharacter = createNewCharacter('Boundary', 'Half Orc', 'Ur-Paladin', 'item-boundary');
+    const itemCharacter = createNewCharacter('Boundary', 'Half Daemon', 'Incident Paladin', 'item-boundary');
     itemCharacter.Inventory = [{ name: 'Unearthly Tiara of Craft', qty: 1_000_000_000 }];
     const itemRng = new RandomGenerator('replaced-by-vector');
     itemRng.setState([0.6739257371518761, 0.3510640109889209, 0.8553721038624644, 1]);
@@ -120,7 +120,7 @@ describe('legacy quest reward dispatcher', () => {
     expect(itemResult.character.Inventory).toEqual([{ name: 'Unearthly Tiara of Craft', qty: 1_000_000_000 }]);
     expect(itemResult.effect).toBeUndefined();
 
-    const goldCharacter = createNewCharacter('Boundary', 'Half Orc', 'Ur-Paladin', 'gold-boundary');
+    const goldCharacter = createNewCharacter('Boundary', 'Half Daemon', 'Incident Paladin', 'gold-boundary');
     goldCharacter.Inventory = Array.from({ length: 299 }, (_, index) => ({ name: `Item ${index}`, qty: 1 }));
     goldCharacter.Gold = 1_000_000_000_000;
     const goldRng = new RandomGenerator('dispatch-gold-3255');
@@ -133,7 +133,7 @@ describe('legacy quest reward dispatcher', () => {
   });
 
   it('reports the actual fractional stat and Gold credited at the ceiling', () => {
-    const statCharacter = createNewCharacter('Boundary', 'Half Orc', 'Robot Monk', 1);
+    const statCharacter = createNewCharacter('Boundary', 'Half Daemon', 'Robot Monk', 1);
     statCharacter.Stats = { ...balancedStats, 'MP Max': MAX_PERSISTED_VALUE - 0.5 };
 
     const statResult = applyQuestReward(new RandomGenerator('fraction-118'), statCharacter);
@@ -141,7 +141,7 @@ describe('legacy quest reward dispatcher', () => {
     expect(statResult.character.Stats['MP Max']).toBe(MAX_PERSISTED_VALUE);
     expect(statResult.effect).toEqual({ type: 'stat', stat: 'MP Max', amount: 0.5 });
 
-    const goldCharacter = createNewCharacter('Boundary', 'Half Orc', 'Robot Monk', 1);
+    const goldCharacter = createNewCharacter('Boundary', 'Half Daemon', 'Robot Monk', 1);
     goldCharacter.Inventory = Array.from({ length: 299 }, (_, index) => ({ name: `Item ${index}`, qty: 1 }));
     goldCharacter.Gold = MAX_PERSISTED_GOLD - 0.5;
     const goldRng = new RandomGenerator('dispatch-gold-3255');

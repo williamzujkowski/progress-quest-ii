@@ -1,7 +1,7 @@
 {
   "input": {
     "sheet": {
-      "Traits": { "Name": "Oracle", "Race": "Half Orc", "Class": "Ur-Paladin", "Level": 1 },
+      "Traits": { "Name": "Oracle", "Race": "Half Daemon", "Class": "Incident Paladin", "Level": 1 },
       "Stats": { "STR": 10, "CON": 10, "DEX": 10, "INT": 10, "WIS": 10, "CHA": 10, "HP Max": 10, "MP Max": 10 },
       "Equips": { "Weapon": "Sharp Rock", "Shield": "", "Helm": "", "Hauberk": "-3 Burlap", "Brassairts": "", "Vambraces": "", "Gauntlets": "", "Gambeson": "", "Cuisses": "", "Greaves": "", "Sollerets": "" },
       "Inventory": [["Gold", 0]],
@@ -33,7 +33,7 @@
     "completed": { "tag": "kill|Rat|0|tail", "caption": "Executing a Rat...", "durationMs": 6000 },
     "counters": { "tasks": 1, "elapsedSeconds": 6 },
     "character": {
-      "traits": { "Name": "Oracle", "Race": "Half Orc", "Class": "Ur-Paladin", "Level": 2 },
+      "traits": { "Name": "Oracle", "Race": "Half Daemon", "Class": "Incident Paladin", "Level": 2 },
       "stats": [["STR", 10], ["CON", 10], ["DEX", 10], ["INT", 11], ["WIS", 10], ["CHA", 10], ["HP Max", 17], ["MP Max", 15]]
     },
     "task": { "tag": "kill|Rot Grub|1|eggsac", "caption": "Executing a Rot Grub...", "positionMs": 0, "maxMs": 3000, "queue": [] },

@@ -12,7 +12,7 @@ import { advanceGame, type GameTransitionState } from '../../engine/transition';
  */
 
 const killState = (durationMs: number, experience: { currentSeconds: number; maxSeconds: number }): GameTransitionState => {
-  const character = createNewCharacter('Experience Subject', 'Half Orc', 'Ur-Paladin', 4242);
+  const character = createNewCharacter('Experience Subject', 'Half Daemon', 'Incident Paladin', 4242);
   character.Task = { description: 'Executing a Rat...', durationMs, elapsedMs: 0, type: 'kill' };
   character.PendingTasks = undefined;
   return { character, progression: { experience, completedTasks: 0, elapsedSeconds: 0 } };

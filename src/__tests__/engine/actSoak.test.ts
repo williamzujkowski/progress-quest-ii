@@ -27,7 +27,7 @@ const checkpoint = (state: GameTransitionState, rng: RandomGenerator) => activeC
 });
 
 function runActs({ resumeAt }: { resumeAt?: number } = {}) {
-  const character = createNewCharacter('Long Horizon Oracle', 'Half Orc', 'Ur-Paladin', 812);
+  const character = createNewCharacter('Long Horizon Oracle', 'Half Daemon', 'Incident Paladin', 812);
   character.Traits.Level = 87;
   character.Plot = { act: 1, currentProgress: 0, maxProgress: 21_600 };
   character.PendingTasks = undefined;
@@ -91,7 +91,7 @@ describe('indefinite Act progression', () => {
     { completedAct: 55_555, nextAct: 55_556, expectedDuration: MAX_PERSISTED_VALUE, label: 'Loading Act 55556...' },
     { completedAct: MAX_PERSISTED_VALUE, nextAct: MAX_PERSISTED_VALUE, expectedDuration: MAX_PERSISTED_VALUE, label: 'Loading Act 1.00e9...' },
   ])('saturates the duration safely after Act $completedAct', ({ completedAct, nextAct, expectedDuration, label }) => {
-    const character = createNewCharacter('Ceiling Oracle', 'Half Orc', 'Ur-Paladin', 813);
+    const character = createNewCharacter('Ceiling Oracle', 'Half Daemon', 'Incident Paladin', 813);
     character.Plot = { act: completedAct, currentProgress: 1, maxProgress: 1 };
     character.Task = { description: 'Testing the patience of arithmetic...', durationMs: 1, elapsedMs: 0, type: 'cinematic' };
     character.PendingTasks = [{ description: 'Loading', durationMs: 1, elapsedMs: 0, type: 'act_marker' }];

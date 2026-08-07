@@ -10,7 +10,7 @@ import { projectSocialBatch } from '../../state/socialProjection';
 import type { IdentifiedGameTransitionRecord } from '../../state/worldContext';
 
 const snapshot = (overrides: Partial<GamePresentationSnapshot> = {}): GamePresentationSnapshot => ({
-  hero: { name: 'Krg', race: 'Hob-Hobbit', className: 'Robot Monk', level: 7 },
+  hero: { name: 'Krg', race: 'Sub-Subprocessor', className: 'Robot Monk', level: 7 },
   act: 2,
   completedTask: 'kill',
   nextTask: 'kill',
@@ -213,7 +213,7 @@ describe('deterministic social batch projection', () => {
 
   it('leaves authoritative state, records, saves, and gameplay RNG byte-identical', () => {
     const run = (enabled: boolean) => {
-      const character = createNewCharacter('Social Parity Oracle', 'Half Orc', 'Robot Monk', 'social-parity-character');
+      const character = createNewCharacter('Social Parity Oracle', 'Half Daemon', 'Robot Monk', 'social-parity-character');
       character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };
       character.Inventory = [{ name: 'rat tail', qty: 100 }];
       const rng = new RandomGenerator('social-parity-transition');
@@ -246,7 +246,7 @@ describe('deterministic social batch projection', () => {
   });
 
   it('summarizes a real bounded engine catch-up burst', () => {
-    const character = createNewCharacter('Catch-up Oracle', 'Half Orc', 'Robot Monk', 'social-catch-up-character');
+    const character = createNewCharacter('Catch-up Oracle', 'Half Daemon', 'Robot Monk', 'social-catch-up-character');
     character.Plot = { act: 1, currentProgress: 1, maxProgress: 1 };
     character.Quest = { description: 'Typed assignment', currentProgress: 1, maxProgress: 1, history: ['Typed assignment'], kind: 'deliver' };
     character.Task = { description: 'Executing fixed paperwork...', durationMs: 1, elapsedMs: 0, type: 'kill', loot: { type: 'fixed', item: 'rat tail' } };

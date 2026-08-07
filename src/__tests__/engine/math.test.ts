@@ -37,9 +37,9 @@ describe('Progress Quest Engine Math', () => {
     // The previous version asserted only that each stat exceeded zero, which roll3d6 already
     // guarantees at three — it passed with both bonus loops deleted.
     const rolled = generateInitialStats(new RandomGenerator(12345), 'no-such-race', 'no-such-class');
-    const stats = generateInitialStats(new RandomGenerator(12345), 'Hob-Hobbit', 'Robot Monk');
+    const stats = generateInitialStats(new RandomGenerator(12345), 'Sub-Subprocessor', 'Robot Monk');
 
-    // Hob-Hobbit raises DEX and CON; Robot Monk raises STR. Two points each, and nothing else.
+    // Sub-Subprocessor raises DEX and CON; Robot Monk raises STR. Two points each, and nothing else.
     expect(stats.DEX - rolled.DEX).toBe(2);
     expect(stats.CON - rolled.CON).toBe(2);
     expect(stats.STR - rolled.STR).toBe(2);

@@ -100,7 +100,7 @@ describe('the assumption this module rejects', () => {
     // quietly left in place.
     const rng = new RandomGenerator('eta-premise');
     let state = {
-      character: createNewCharacter('Premise', 'Half Orc', 'Robot Monk', rng),
+      character: createNewCharacter('Premise', 'Half Daemon', 'Robot Monk', rng),
       progression: { experience: { currentSeconds: 0, maxSeconds: levelUpTime(1) }, completedTasks: 0, elapsedSeconds: 0 },
     };
 
@@ -131,7 +131,7 @@ describe('the plot track is not a clock either', () => {
     // would have justified a subtraction where a rate is required.
     const rng = new RandomGenerator('plot-clock-check');
     let state = {
-      character: createNewCharacter('Plot', 'Half Orc', 'Robot Monk', rng),
+      character: createNewCharacter('Plot', 'Half Daemon', 'Robot Monk', rng),
       progression: { experience: { currentSeconds: 0, maxSeconds: levelUpTime(1) }, completedTasks: 0, elapsedSeconds: 0 },
     };
     let gained = 0;

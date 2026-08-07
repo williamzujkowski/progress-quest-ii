@@ -25,8 +25,8 @@ Running the authoritative code from a state immediately before `MonsterTask(1)` 
 
 | Form | Starting Alea state | Random `(limit → result)` trace | Raw kill tag | Display caption | Final Alea state |
 | --- | --- | --- | --- | --- | --- |
-| Passing | `[0.8579177698120475, 0.8263699773233384, 0.24956287536770105, 1]` | `5→3, 25→0, 21→7, 2→0, 18→2` | `kill\|passing Talking Pony Robot Monk\|1\|*` | `Executing a passing Talking Pony Robot Monk...` | `[0.44347366294823587, 0.86426544142887, 0.03502870723605156, 1408544]` |
-| Titled | `[0.1729756232816726, 0.18765057669952512, 0.41180504229851067, 1]` | `5→4, 25→0, 21→2, 2→1, 9→7, 9→0, 22→8, 14→4, 12→2, 22→13, 14→1, 12→6` | `kill\|Mr. Midan the Half Halfling\|1\|*` | `Executing Mr. Midan the Half Halfling...` | `[0.21785219269804657, 0.8072053005453199, 0.47258021542802453, 308334]` |
+| Passing | `[0.8579177698120475, 0.8263699773233384, 0.24956287536770105, 1]` | `5→3, 25→0, 21→7, 2→0, 18→2` | `kill\|passing Talking Roadmap Robot Monk\|1\|*` | `Executing a passing Talking Roadmap Robot Monk...` | `[0.44347366294823587, 0.86426544142887, 0.03502870723605156, 1408544]` |
+| Titled | `[0.1729756232816726, 0.18765057669952512, 0.41180504229851067, 1]` | `5→4, 25→0, 21→2, 2→1, 9→7, 9→0, 22→8, 14→4, 12→2, 22→13, 14→1, 12→6` | `kill\|Mr. Midan the Rounding Error\|1\|*` | `Executing Mr. Midan the Rounding Error...` | `[0.21785219269804657, 0.8072053005453199, 0.47258021542802453, 308334]` |
 
 The existing `one-kill.json` transition shape can use either starting state unchanged elsewhere: its completed Rat has fixed loot, and its XP, quest, and plot bars do not cross a boundary before the next task is generated. The oracle loads the supplied Alea tuple, executes exactly one `Timer1Timer` transition, and records the resulting task tag, caption, duration, and final RNG; its test runner automatically executes every JSON fixture twice and requires deterministic equality. (`scripts/legacy-oracle.mjs` and `scripts/test-legacy-oracle.mjs`, both retired in #381; the recordings they produced survive as goldens)
 
