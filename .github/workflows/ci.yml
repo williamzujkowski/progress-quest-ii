@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  quality:
+  checks:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -77,6 +77,23 @@ jobs:
 
       - name: WebKit browser suite
         run: npm run test:e2e:webkit
+
+  # The single required status check, and deliberately a job that does no work.
+  #
+  # Branch protection requires one context by name, `quality`. When the WebKit suite moved onto its
+  # own runner, that name stopped covering it — a pull request could go green and merge with WebKit
+  # failing, which was impossible while both ran in one job. Splitting the work quietly narrowed
+  # what the gate was asserting.
+  #
+  # Rather than widen the protection rule to name every job, which then has to be edited by hand
+  # each time a job is added or renamed, this job fans in. It fails if either half fails, so the
+  # rule keeps meaning "everything passed" without knowing what everything is.
+  quality:
+    runs-on: ubuntu-latest
+    needs: [checks, browser-parity]
+    steps:
+      - name: Confirm every suite passed
+        run: echo "checks and browser-parity both succeeded"
 
   # Blocks a pull request that introduces a dependency with a known advisory, before it is
   # merged and before `npm audit` would catch it on main. Pull-request event only: it compares

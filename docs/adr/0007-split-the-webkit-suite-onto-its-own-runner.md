@@ -60,3 +60,22 @@ That is the trade being made deliberately.
 
 A failure now names which engine failed before anyone opens the log, which the combined job did
 not.
+
+## Correction, made immediately after
+
+The first version of this split broke the merge gate, and the ADR should record that rather than
+present the result as though it arrived clean.
+
+Branch protection requires exactly one status check by name: `quality`. Moving WebKit into
+`browser-parity` meant that name no longer covered it, so a pull request could go green and merge
+with WebKit failing — impossible while both ran in one job. Splitting the work silently narrowed
+what the gate asserted, and nothing in the change said so.
+
+The repair keeps `quality` as the required name and makes it a job that does no work, fanning in
+from `checks` and `browser-parity` via `needs`. It fails if either fails, so the protection rule
+keeps meaning "everything passed" without having to name what everything is — and adding a job
+later does not silently fall outside the gate the way this one did.
+
+The alternative was to widen the protection rule to list both contexts. That needs a settings
+change, and it has to be edited by hand every time a job is added or renamed, which is the same
+failure with a longer fuse.
