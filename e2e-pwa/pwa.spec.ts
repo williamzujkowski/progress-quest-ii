@@ -1,10 +1,10 @@
-import AxeBuilder from '@axe-core/playwright';
 // The strict-console fixture rather than a bare `test`. The service-worker suite is where a
 // swallowed console error matters most: registration, precache and activation all report failure
 // through the console long before anything visible changes, and a test that only asserts what it
 // went looking for would sail past the first sign that the worker never installed.
 import { expect, test } from '../e2e/fixtures/strictConsole';
 import { returningSessionStorageState } from '../e2e/fixtures/returningSession';
+import { expectNoViolations } from '../e2e/fixtures/accessibility';
 
 test.use({ storageState: returningSessionStorageState('http://127.0.0.1:4173') });
 
@@ -87,10 +87,7 @@ test.describe('a worker that is not there', () => {
       await expect(page.locator('.pwa-status[role="status"]')).toHaveText('Offline mode is unavailable. Questing may require civilization.');
       await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest III' })).toBeVisible();
       await expect(page.locator('.pwa-status[role="status"]')).toHaveCount(1);
-      const results = await new AxeBuilder({ page })
-        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-        .analyze();
-      expect(results.violations).toEqual([]);
+      await expectNoViolations(page, 'service worker registration failed');
     } finally {
       await request.post('./__test__/worker-mode/normal');
     }
@@ -128,10 +125,7 @@ test('applies an update only after the user approves it and removes the stale ca
       'progress-quest-ii-shell-pwa-test-update',
     ]);
 
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze();
-    expect(results.violations).toEqual([]);
+    await expectNoViolations(page, 'update available');
     await updateButton.focus();
     await Promise.all([page.waitForEvent('load'), page.keyboard.press('Enter')]);
     await expect(page.getByRole('heading', { level: 1, name: 'Progress Quest III' })).toBeVisible();
@@ -195,10 +189,7 @@ test('bounds a stalled activation and restores a retry without disturbing the se
     await expect(status.getByRole('button')).toHaveCount(0);
     await page.clock.resume();
 
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze();
-    expect(results.violations).toEqual([]);
+    await expectNoViolations(page, 'retry after a failed update');
   } finally {
     await request.post('./__test__/worker-mode/normal');
   }
