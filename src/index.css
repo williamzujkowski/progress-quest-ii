@@ -1023,7 +1023,18 @@ textarea.form-control { resize: vertical; }
 .recovery-status { min-height: 1.6em; margin-bottom: 0; color: var(--text-muted); }
 .picker-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
 .picker-fieldset { min-width: 0; border: 0; }
-.picker-list { max-height: 140px; overflow-y: auto; padding: var(--space-2); }
+/* Sized against the viewport rather than pinned at 140px, which showed 3 of 21 races — 15% of the
+   list — at every window size. The names are the best writing in the game and character creation is
+   the only screen that asks anyone to read them.
+
+   A majority cannot be shown at any height: 21 options at the 44px touch target is 924px of content
+   and the dialog is already scrolling at 1025x760. What this fixes is the nested scroll, which is
+   the part that actually hurts — a three-row box inside a scrollable dialog. It stays a scrollbox,
+   just one worth scrolling.
+
+   Not a two-column list inside the box: the fieldsets are 217px wide, so columns would be ~105px
+   and "Enchanted Motorcycle" would truncate. Hiding the joke to fit more of it in is not a fix. */
+.picker-list { max-height: min(22rem, 34vh); overflow-y: auto; padding: var(--space-2); }
 .picker-option { display: flex; align-items: center; gap: var(--space-2); min-height: 44px; font-size: 0.82rem; }
 .roster-list { display: flex; flex-direction: column; gap: var(--space-2); max-height: 150px; overflow-y: auto; }
 .roster-item { gap: var(--space-3); padding: var(--space-2); }
