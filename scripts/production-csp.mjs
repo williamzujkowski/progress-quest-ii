@@ -70,9 +70,16 @@ export function extractCsp(html) {
  * src="./theme-boot.js"></script>` is the supported pattern and must keep passing, while the same
  * tag with anything non-whitespace between it and its closing tag is exactly what `script-src
  * 'self'` refuses to run.
+ *
+ * The end tag is `<\/script\s*>` rather than `<\/script>`. The HTML tokenizer accepts whitespace
+ * between an end tag's name and its `>`, so `</script >` closes the element — but a regex looking
+ * for the exact string does not stop there, and the lazy body match runs past it to the next
+ * literal `</script>` or fails to match at all. An inline script written that way was invisible to
+ * this function, which means the check added to catch inline scripts could be walked around by a
+ * space. Found by CodeQL's js/bad-tag-filter on the pull request that introduced it.
  */
 export function findInlineScripts(html) {
-  return [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
+  return [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)]
     .map((match) => match[1])
     .filter((body) => body.trim().length > 0);
 }

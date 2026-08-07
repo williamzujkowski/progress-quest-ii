@@ -114,3 +114,19 @@ test('inline script detection reports every offending body', () => {
   const bodies = findInlineScripts('<script>a()</script><script src="x.js"></script><script>b()</script>');
   assert.deepEqual(bodies, ['a()', 'b()']);
 });
+
+test('an end tag with whitespace before its bracket still closes the element', () => {
+  // The HTML tokenizer accepts `</script >`, so it closes the element — but a regex looking for
+  // the literal `</script>` runs past it. The first version of this check matched exactly, and an
+  // inline script closed that way was invisible to it: the gate against inline scripts could be
+  // walked around with a space. CodeQL's js/bad-tag-filter caught it on the introducing PR.
+  assert.deepEqual(findInlineScripts('<script>evil()</script >'), ['evil()']);
+  assert.deepEqual(findInlineScripts('<script>evil()</script\n>'), ['evil()']);
+  assert.deepEqual(findInlineScripts('<script>evil()</script\t>'), ['evil()']);
+  assert.throws(
+    () => verifyProductionCsp(shell(POLICY, '<script>evil()</script >')),
+    /contains 1 inline <script> element/,
+  );
+  // The supported pattern keeps passing in the same spelling.
+  assert.doesNotThrow(() => verifyProductionCsp(shell(POLICY, '<script src="./theme-boot.js"></script >')));
+});
