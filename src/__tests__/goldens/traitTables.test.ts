@@ -374,3 +374,73 @@ describe('the compute-industrial trait catalogue', () => {
     }
   });
 });
+
+describe('the item vocabulary the generator composes', () => {
+  const ITEM_TABLES = {
+    WEAPONS, ARMORS, SHIELDS, OFFENSE_ATTRIB, OFFENSE_BAD, DEFENSE_ATTRIB, DEFENSE_BAD,
+  } as const;
+  const bases = (table: readonly (readonly [string, number])[]) => table.map(([name]) => name);
+  const GROUPS = [
+    ['weapon', bases(WEAPONS), [...bases(OFFENSE_ATTRIB), ...bases(OFFENSE_BAD)]],
+    ['shield', bases(SHIELDS), [...bases(DEFENSE_ATTRIB), ...bases(DEFENSE_BAD)]],
+    ['armour', bases(ARMORS), [...bases(DEFENSE_ATTRIB), ...bases(DEFENSE_BAD)]],
+  ] as const;
+
+  it('never lets a modifier and a base contain one another', () => {
+    // Learned by breaking it. `Chartered` was a defence modifier while `Charter` was an armour
+    // base, and every `Chartered <armour>` in the game collapsed onto one fallback tooltip,
+    // because resolving a generated name means finding the base inside it. One word being a
+    // prefix of another silently destroyed 144 distinct items and nothing named the cause.
+    for (const [label, baseNames, modifiers] of GROUPS) {
+      for (const modifier of modifiers) {
+        for (const base of baseNames) {
+          expect(modifier.includes(base), `${label}: modifier "${modifier}" contains base "${base}"`).toBe(false);
+          expect(base.includes(modifier), `${label}: base "${base}" contains modifier "${modifier}"`).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('never lets one base contain another within a slot group', () => {
+    // Same failure in the other direction: `Leaf Mandate` and `Broad Mandate` both resolved to
+    // `Mandate` and shared a tooltip.
+    for (const [label, baseNames] of GROUPS) {
+      for (const outer of baseNames) {
+        for (const inner of baseNames) {
+          if (outer === inner) continue;
+          expect(outer.includes(inner), `${label}: base "${outer}" contains base "${inner}"`).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('keeps modifiers short enough that two of them survive the tooltip', () => {
+    // itemDetails renders `Its <modifier> file was ...` through boundedLabel(modifier, _, 20), and
+    // a generated item can carry two modifiers joined by " and ". A pair over the bound is
+    // truncated mid-word, which is how two different items start reading identically.
+    for (const table of [
+      [...OFFENSE_ATTRIB, ...OFFENSE_BAD],
+      [...DEFENSE_ATTRIB, ...DEFENSE_BAD],
+    ]) {
+      for (const [modifier] of table) {
+        expect(Array.from(modifier).length, `${modifier} is too long to pair`).toBeLessThanOrEqual(10);
+      }
+    }
+  });
+
+  it('names no real vendor, product, model, or person', () => {
+    const serialized = JSON.stringify([
+      ...Object.values(ITEM_TABLES).flat(), ...ITEM_ATTRIB, ...ITEM_OFS, ...SPECIALS, ...BORING_ITEMS,
+    ]).toLowerCase();
+    for (const forbidden of [
+      'aws', 'amazon', 'azure', 'google', 'microsoft', 'oracle', 'ibm', 'nvidia', 'intel',
+      'salesforce', 'vmware', 'cloudflare', 'datadog', 'atlassian', 'kubernetes', 'docker',
+      'terraform', 'jira', 'slack', 'github', 'gitlab', 'jenkins', 'splunk', 'grafana', 'kafka',
+      'hadoop', 'postgres', 'mysql', 'redis', 'nginx', 'systemd', 'ansible', 'databricks',
+      'snowflake', 'servicenow', 'workday', 'kevlar', 'openai', 'anthropic', 'deepmind',
+      'chatgpt', 'claude', 'gemini', 'copilot', 'llama', 'turing', 'lovelace', 'torvalds',
+    ]) expect(serialized, `item vocabulary must not name ${forbidden}`).not.toContain(forbidden);
+    expect(serialized).not.toContain('http');
+    expect(serialized).not.toMatch(/[<>\u202a-\u202e\u2066-\u2069]/u);
+  });
+});

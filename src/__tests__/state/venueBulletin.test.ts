@@ -40,7 +40,7 @@ describe('venue bulletins', () => {
 
   it('gives different towns different offices', () => {
     const rosters = new Set(
-      ['Bleeding Cliffs', 'Iron Bottom', 'Nowhere', 'Doubt', 'Middling'].map(
+      ['Bleeding Cliffs', 'Ironclad Bottom', 'Nowhere', 'Doubt', 'Middling'].map(
         (location) => venueBulletin(town({ location }))!.join('|'),
       ),
     );

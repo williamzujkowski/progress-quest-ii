@@ -35,8 +35,8 @@ const loadDenseDashboard = async (page: Page) => {
         ...state.character,
         Equip: {
           ...state.character.Equip,
-          Weapon: '+100 Threadbare Diamond Sword of Administrative Finality',
-          Helm: 'Enchanted Tax Hat of Unscheduled Compliance',
+          Weapon: '+100 Derated Diamond Sword of Administrative Finality',
+          Helm: 'Escrowed Tax Hat of Unscheduled Compliance',
         },
         Inventory: [
           { name: 'Gold', qty: 0 },
@@ -464,18 +464,18 @@ test.describe('Progress Quest III terminal dashboard', () => {
       useGameStore.setState({
         character: {
           ...state.character,
-          Equip: { ...state.character.Equip, Weapon: 'Venomed Shortsword' },
-          Inventory: [{ name: 'Gold', qty: 0 }, { name: 'Golden Orb of Fortune', qty: 3 }],
+          Equip: { ...state.character.Equip, Weapon: 'Punitive Short Sprint' },
+          Inventory: [{ name: 'Gold', qty: 0 }, { name: 'Certified Order of Forecast', qty: 3 }],
           Gold: 42,
           Spells: [{ name: 'Rabbit Punch', level: 2 }],
         },
       });
     });
 
-    const weapon = page.locator('.tooltip-trigger', { hasText: 'Venomed Shortsword' });
+    const weapon = page.locator('.tooltip-trigger', { hasText: 'Punitive Short Sprint' });
     await weapon.focus();
     const tooltip = page.getByRole('tooltip');
-    await expect(tooltip).toContainText('Generation quality: 9 (Shortsword 5 + Venomed +4)');
+    await expect(tooltip).toContainText('Generation quality: 9 (Short Sprint 5 + Punitive +4)');
     await expect(tooltip).toContainText('Combat contribution: none');
     expect(await tooltip.evaluate((element) => element.parentElement === document.body)).toBe(true);
     const tooltipBox = await tooltip.boundingBox();
@@ -485,7 +485,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
     expect(tooltipBox.x).toBeGreaterThanOrEqual(0);
     expect(tooltipBox.y).toBeGreaterThanOrEqual(0);
     expect(tooltipBox.x + tooltipBox.width).toBeLessThanOrEqual(1280);
-    await page.locator('.tooltip-trigger', { hasText: 'Golden Orb of Fortune' }).focus();
+    await page.locator('.tooltip-trigger', { hasText: 'Certified Order of Forecast' }).focus();
     await expect(page.getByRole('tooltip')).toContainText('Encumbrance: +3 cubits');
     await page.locator('.tooltip-trigger', { hasText: 'Rabbit Punch' }).focus();
     await expect(page.getByRole('tooltip')).toContainText('Spell rank: 2');

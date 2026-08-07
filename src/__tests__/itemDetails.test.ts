@@ -22,34 +22,34 @@ const withoutIdentityToken = (description: string, ...tokens: string[]): string 
 
 describe('item tooltip details', () => {
   it('reports generated equipment quality without inventing combat damage', () => {
-    const details = describeEquipment('Venomed Shortsword', 'Weapon');
+    const details = describeEquipment('Punitive Short Sprint', 'Weapon');
 
-    expect(details.description).toContain('Venomed');
-    expect(details.description).toContain('Shortsword');
+    expect(details.description).toContain('Punitive');
+    expect(details.description).toContain('Short Sprint');
     expect(details.effect).toBe(
-      'Generation quality: 9 (Shortsword 5 + Venomed +4). Combat contribution: none; classic encounter time ignores equipment.',
+      'Generation quality: 9 (Short Sprint 5 + Punitive +4). Combat contribution: none; classic encounter time ignores equipment.',
     );
   });
 
   it('keeps an explicit equipment quality mark in the item story', () => {
-    const details = describeEquipment('-3 Burlap', 'Hauberk');
+    const details = describeEquipment('-3 Boilerplate', 'Hauberk');
 
     expect(details.description).toContain('-3');
-    expect(details.description).toContain('Burlap');
+    expect(details.description).toContain('Boilerplate');
     expect(details.effect).toContain('Generation quality: 0');
   });
 
   it('includes every canonical modifier in an accepted equipment name', () => {
-    const details = describeEquipment('Venomed Vicious Stick', 'Weapon');
+    const details = describeEquipment('Punitive Binding Sticky Note', 'Weapon');
 
-    expect(details.description).toContain('Venomed');
-    expect(details.description).toContain('Vicious');
+    expect(details.description).toContain('Punitive');
+    expect(details.description).toContain('Binding');
     expect(details.effect).toContain('Generation quality: 7');
   });
 
   it('preserves canonical modifier order in an equipment micro-story', () => {
-    const originalOrder = describeEquipment('Venomed Vicious Stick', 'Weapon');
-    const alternateOrder = describeEquipment('Vicious Venomed Stick', 'Weapon');
+    const originalOrder = describeEquipment('Punitive Binding Sticky Note', 'Weapon');
+    const alternateOrder = describeEquipment('Binding Punitive Sticky Note', 'Weapon');
 
     expect(originalOrder.description).toBe(alternateOrder.description);
     expect(originalOrder.effect).toBe(alternateOrder.effect);
@@ -57,14 +57,14 @@ describe('item tooltip details', () => {
 
   it('keeps the equipped slot meaningful for the same armor', () => {
     const armorSlots = EQUIP_SLOTS.filter((slot) => slot !== 'Weapon' && slot !== 'Shield');
-    const descriptions = armorSlots.map((slot) => describeEquipment('Burlap', slot).description);
+    const descriptions = armorSlots.map((slot) => describeEquipment('Boilerplate', slot).description);
 
     expect(new Set(descriptions).size).toBe(armorSlots.length);
   });
 
   it.each([
     ['accepted long equipment', 'X'.repeat(200), 'Helm' as const],
-    ['stacked canonical equipment', '+100 Threadbare Diamond Mail', 'Hauberk' as const],
+    ['stacked canonical equipment', '+100 Derated Air Gap', 'Hauberk' as const],
   ])('bounds %s flavor', (_case, name, slot) => {
     expect(describeEquipment(name, slot).description.length).toBeLessThanOrEqual(220);
   });
@@ -74,10 +74,10 @@ describe('item tooltip details', () => {
     ['oversized zero', '0'.repeat(194)],
     ['leading zeros', `${'0'.repeat(193)}1`],
   ])('does not treat an imported %s prefix as an equipment quality mark', (_case, mark) => {
-    const details = describeEquipment(`${mark} Stick`, 'Weapon');
+    const details = describeEquipment(`${mark} Sticky Note`, 'Weapon');
 
     expect([...details.description].length).toBeLessThanOrEqual(220);
-    expect(details.effect).toContain('Generation quality: 0 (Stick 0).');
+    expect(details.effect).toContain('Generation quality: 0 (Sticky Note 0).');
     expect(details.effect).not.toMatch(/Infinity|NaN|e\+/);
   });
 
@@ -101,26 +101,26 @@ describe('item tooltip details', () => {
   });
 
   it('gives neighboring equipment bases meaning beyond the interpolated noun', () => {
-    const stick = withoutIdentityToken(describeEquipment('Polished Stick', 'Weapon').description, 'Stick');
-    const shiv = withoutIdentityToken(describeEquipment('Polished Shiv', 'Weapon').description, 'Shiv');
+    const stick = withoutIdentityToken(describeEquipment('Vetted Sticky Note', 'Weapon').description, 'Sticky Note');
+    const shiv = withoutIdentityToken(describeEquipment('Vetted Shim', 'Weapon').description, 'Shim');
 
     expect(stick).not.toBe(shiv);
   });
 
   it('gives neighboring equipment modifiers meaning beyond the interpolated adjective', () => {
-    const venomed = withoutIdentityToken(describeEquipment('Venomed Shortsword', 'Weapon').description, 'Venomed');
-    const vicious = withoutIdentityToken(describeEquipment('Vicious Shortsword', 'Weapon').description, 'Vicious');
+    const venomed = withoutIdentityToken(describeEquipment('Punitive Short Sprint', 'Weapon').description, 'Punitive');
+    const vicious = withoutIdentityToken(describeEquipment('Binding Short Sprint', 'Weapon').description, 'Binding');
 
     expect(venomed).not.toBe(vicious);
   });
 
   it('gives every canonical equipment base a distinct idea in the same context', () => {
     const weaponStories = WEAPONS.map(([base]) =>
-      withoutIdentityToken(describeEquipment(`Polished ${base}`, 'Weapon').description, base));
+      withoutIdentityToken(describeEquipment(`Vetted ${base}`, 'Weapon').description, base));
     const shieldStories = SHIELDS.map(([base]) =>
-      withoutIdentityToken(describeEquipment(`Studded ${base}`, 'Shield').description, base));
+      withoutIdentityToken(describeEquipment(`Bonded ${base}`, 'Shield').description, base));
     const armorStories = ARMORS.map(([base]) =>
-      withoutIdentityToken(describeEquipment(`Studded ${base}`, 'Hauberk').description, base));
+      withoutIdentityToken(describeEquipment(`Bonded ${base}`, 'Hauberk').description, base));
 
     expect(new Set(weaponStories).size).toBe(WEAPONS.length);
     expect(new Set(shieldStories).size).toBe(SHIELDS.length);
@@ -129,9 +129,9 @@ describe('item tooltip details', () => {
 
   it('gives every canonical equipment modifier a distinct idea in the same context', () => {
     const offense = [...OFFENSE_ATTRIB, ...OFFENSE_BAD].map(([modifier]) =>
-      withoutIdentityToken(describeEquipment(`${modifier} Stick`, 'Weapon').description, modifier));
+      withoutIdentityToken(describeEquipment(`${modifier} Sticky Note`, 'Weapon').description, modifier));
     const defense = [...DEFENSE_ATTRIB, ...DEFENSE_BAD].map(([modifier]) =>
-      withoutIdentityToken(describeEquipment(`${modifier} Burlap`, 'Hauberk').description, modifier));
+      withoutIdentityToken(describeEquipment(`${modifier} Boilerplate`, 'Hauberk').description, modifier));
 
     expect(new Set(offense).size).toBe(offense.length);
     expect(new Set(defense).size).toBe(defense.length);
@@ -139,8 +139,8 @@ describe('item tooltip details', () => {
 
   it('keeps equipment stories to two sentences and bounds stacked imported modifiers', () => {
     const modifiers = [...OFFENSE_ATTRIB, ...OFFENSE_BAD].map(([modifier]) => modifier).join(' ');
-    const stacked = describeEquipment(`+100 ${modifiers} Stick`, 'Weapon').description;
-    const ordinary = describeEquipment('Polished Stick', 'Weapon').description;
+    const stacked = describeEquipment(`+100 ${modifiers} Sticky Note`, 'Weapon').description;
+    const ordinary = describeEquipment('Vetted Sticky Note', 'Weapon').description;
     const sentenceCount = (description: string): number => description.match(/[.!?](?:\s|$)/g)?.length ?? 0;
 
     expect([...stacked].length).toBeLessThanOrEqual(220);
@@ -148,7 +148,7 @@ describe('item tooltip details', () => {
   });
 
   it('bounds a retained safe mark combined with stacked modifiers and an unknown base', () => {
-    const prefix = '-9007199254700000 Polished Pronged Steely Nerf Venomed Dancing Vicious Invisible Tarnished Rubber Mini Padded Stabbity I8 ';
+    const prefix = '-9007199254700000 Vetted Phased Signed Sunset Punitive Scripted Binding Unlogged Flagged Unfunded Trial Redlined Enforced I8 ';
     const name = `${prefix}${'Q'.repeat(200 - prefix.length)}`;
     const details = describeEquipment(name, 'Weapon');
 
@@ -179,11 +179,11 @@ describe('item tooltip details', () => {
   });
 
   it('describes loot quantity and encumbrance without claiming combat stats', () => {
-    const details = describeInventoryItem('Golden Orb of Fortune', 3);
+    const details = describeInventoryItem('Certified Order of Forecast', 3);
 
-    expect(details.description).toContain('Golden');
-    expect(details.description).toContain('Orb');
-    expect(details.description).toContain('Fortune');
+    expect(details.description).toContain('Certified');
+    expect(details.description).toContain('Order');
+    expect(details.description).toContain('Forecast');
     expect(details.description.length).toBeLessThanOrEqual(220);
     expect(details.effect).toBe(
       'Quantity: 3. Encumbrance: +3 cubits. Combat contribution: none; loot is sold when the pack fills.',
@@ -230,15 +230,15 @@ describe('item tooltip details', () => {
   });
 
   it('names mundane loot in its bureaucratic demotion story', () => {
-    const description = describeInventoryItem('nail', 1).description;
+    const description = describeInventoryItem('paperclip', 1).description;
 
-    expect(description).toContain('nail');
+    expect(description).toContain('paperclip');
     expect(description).toContain('treasure');
   });
 
   it('gives neighboring mundane loot meaning beyond the interpolated object', () => {
-    const nail = withoutIdentityToken(describeInventoryItem('nail', 1).description, 'nail');
-    const lunchpail = withoutIdentityToken(describeInventoryItem('lunchpail', 1).description, 'lunchpail');
+    const nail = withoutIdentityToken(describeInventoryItem('paperclip', 1).description, 'paperclip');
+    const lunchpail = withoutIdentityToken(describeInventoryItem('lanyard', 1).description, 'lanyard');
 
     expect(nail).not.toBe(lunchpail);
   });
@@ -266,33 +266,33 @@ describe('item tooltip details', () => {
   });
 
   it('gives neighboring special-item concepts meaning beyond the interpolated noun', () => {
-    const craft = withoutIdentityToken(describeInventoryItem('Golden Diadem of Craft', 1).description, 'Craft');
-    const joy = withoutIdentityToken(describeInventoryItem('Golden Diadem of Joy', 1).description, 'Joy');
+    const craft = withoutIdentityToken(describeInventoryItem('Certified Directive of Compliance', 1).description, 'Compliance');
+    const joy = withoutIdentityToken(describeInventoryItem('Certified Directive of Jurisdiction', 1).description, 'Jurisdiction');
 
     expect(craft).not.toBe(joy);
   });
 
   it('gives neighboring special-item attributes meaning beyond the interpolated adjective', () => {
-    const golden = withoutIdentityToken(describeInventoryItem('Golden Diadem of Craft', 1).description, 'Golden');
-    const garlanded = withoutIdentityToken(describeInventoryItem('Garlanded Diadem of Craft', 1).description, 'Garlanded');
+    const golden = withoutIdentityToken(describeInventoryItem('Certified Directive of Compliance', 1).description, 'Certified');
+    const garlanded = withoutIdentityToken(describeInventoryItem('Commended Directive of Compliance', 1).description, 'Commended');
 
     expect(golden).not.toBe(garlanded);
   });
 
   it('gives neighboring special-item objects meaning beyond the interpolated noun', () => {
-    const diadem = withoutIdentityToken(describeInventoryItem('Golden Diadem of Craft', 1).description, 'Diadem');
-    const garnet = withoutIdentityToken(describeInventoryItem('Golden Garnet of Craft', 1).description, 'Garnet');
+    const diadem = withoutIdentityToken(describeInventoryItem('Certified Directive of Compliance', 1).description, 'Directive');
+    const garnet = withoutIdentityToken(describeInventoryItem('Certified Grant of Compliance', 1).description, 'Grant');
 
     expect(diadem).not.toBe(garnet);
   });
 
   it('gives every special-item component a distinct idea in a fixed context', () => {
     const attributes = ITEM_ATTRIB.map((attribute) =>
-      withoutIdentityToken(describeInventoryItem(`${attribute} Diadem of Craft`, 1).description, attribute));
+      withoutIdentityToken(describeInventoryItem(`${attribute} Directive of Compliance`, 1).description, attribute));
     const objects = SPECIALS.map((object) =>
-      withoutIdentityToken(describeInventoryItem(`Golden ${object} of Craft`, 1).description, object));
+      withoutIdentityToken(describeInventoryItem(`Certified ${object} of Compliance`, 1).description, object));
     const concepts = ITEM_OFS.map((concept) =>
-      withoutIdentityToken(describeInventoryItem(`Golden Diadem of ${concept}`, 1).description, concept));
+      withoutIdentityToken(describeInventoryItem(`Certified Directive of ${concept}`, 1).description, concept));
 
     expect(new Set(attributes).size).toBe(attributes.length);
     expect(new Set(objects).size).toBe(objects.length);
@@ -347,9 +347,9 @@ describe('item tooltip details', () => {
   });
 
   it('keeps an inventory item story stable when its quantity changes', () => {
-    const first = describeInventoryItem('Golden Orb of Fortune', 3).description;
-    const repeat = describeInventoryItem('Golden Orb of Fortune', 3).description;
-    const other = describeInventoryItem('Golden Orb of Fortune', 4).description;
+    const first = describeInventoryItem('Certified Order of Forecast', 3).description;
+    const repeat = describeInventoryItem('Certified Order of Forecast', 3).description;
+    const other = describeInventoryItem('Certified Order of Forecast', 4).description;
 
     expect(repeat).toBe(first);
     expect(other).toBe(first);
@@ -360,8 +360,8 @@ describe('modifier count as a register signal', () => {
   it('files a stacked item with more ceremony and no more power', () => {
     // Modifier count is the engine's own rarity signal. It escalates the paperwork's tone; it must
     // never escalate the claim, because equipment has no combat contribution at any quality.
-    const stacked = describeEquipment('+3 Holy Fine Chain Mail', 'Hauberk');
-    const plain = describeEquipment('+1 Fine Chain Mail', 'Hauberk');
+    const stacked = describeEquipment('+3 Notarized Audited Chain Mail', 'Hauberk');
+    const plain = describeEquipment('+1 Audited Chain Mail', 'Hauberk');
 
     expect(stacked.description).not.toBe(plain.description);
     for (const details of [stacked, plain]) {
@@ -372,7 +372,7 @@ describe('modifier count as a register signal', () => {
 
   it('keeps a stacked story inside the same bounds as any other', () => {
     // The register may change; the two-sentence and length contracts may not.
-    const stacked = describeEquipment('+3 Holy Fine Chain Mail', 'Hauberk');
+    const stacked = describeEquipment('+3 Notarized Audited Chain Mail', 'Hauberk');
     expect(stacked.description.split(/(?<=\.)\s+/).filter(Boolean).length).toBeLessThanOrEqual(2);
     expect(stacked.description.length).toBeLessThanOrEqual(220);
   });
@@ -414,7 +414,7 @@ describe('the boundary between what a thing is and what it does', () => {
       ...BORING_ITEMS.slice(0, 12).map((name) => describeInventoryItem(name, 3)),
       ...ITEM_ATTRIB.slice(0, 8).map((attribute, index) => describeInventoryItem(`${attribute} ${ITEM_OFS[index] ?? 'Thing'}`, 2)),
       ...MONSTERS.slice(0, 20).filter(({ item }) => item).map(({ item }) => describeInventoryItem(item, 1)),
-      ...EQUIP_SLOTS.map((slot) => describeEquipment(`Plexiglass ${slot}`, slot)),
+      ...EQUIP_SLOTS.map((slot) => describeEquipment(`Provisional Waiver ${slot}`, slot)),
       ...SPELLS.slice(0, 12).map((spell, index) => describeSpell(spell, index + 1)),
     ];
     expect(samples.length).toBeGreaterThan(60);
@@ -432,7 +432,7 @@ describe('provenance acquires an industrial edge as acts accumulate', () => {
     ...BORING_ITEMS.map((name) => describeInventoryItem(name, 3, act).description),
     ...MONSTERS.filter(({ item }) => item).map(({ item }) => describeInventoryItem(item, 1, act).description),
     ...EQUIP_SLOTS.flatMap((slot) => (slot === 'Weapon' ? WEAPONS : slot === 'Shield' ? SHIELDS : ARMORS)
-      .map(([base]) => describeEquipment(`Plexiglass ${base}`, slot, act).description)),
+      .map(([base]) => describeEquipment(`Provisional Waiver ${base}`, slot, act).description)),
   ];
 
   const industrialCount = (act: number) =>
@@ -458,7 +458,7 @@ describe('provenance acquires an industrial edge as acts accumulate', () => {
   it('leaves the mechanical effect alone at every act', () => {
     for (const act of [0, 5, 12, 30]) {
       expect(describeInventoryItem('Rat Tail', 1, act).effect).toBe(describeInventoryItem('Rat Tail', 1, 0).effect);
-      expect(describeEquipment('Plexiglass Sword', 'Weapon', act).effect).toBe(describeEquipment('Plexiglass Sword', 'Weapon', 0).effect);
+      expect(describeEquipment('Provisional Waiver Sword', 'Weapon', act).effect).toBe(describeEquipment('Provisional Waiver Sword', 'Weapon', 0).effect);
     }
   });
 });

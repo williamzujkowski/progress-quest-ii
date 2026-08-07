@@ -169,7 +169,7 @@ describe('advanceGame', () => {
       first: "Oh sweet relief! You've reached the kind protection of King Frudem of Krabgrout...",
       pending: [
         'There is rejoicing, and an unnerving encounter with King Frudem of Krabgrout in private',
-        'You forget your toothpick and go back to get it',
+        'You forget your toner cartridge and go back to get it',
         "What's this!? You overhear something shocking!",
         'Could King Frudem of Krabgrout be a dirty double-dealer?',
         'Who can possibly be trusted with this news!? -- Oh yes, of course',
@@ -257,7 +257,7 @@ describe('advanceGame', () => {
 
     const result = advanceGame(stateFor(character), 1000, rng);
 
-    expect(result.state.character.Inventory).toContainEqual({ name: 'Proverbial Tome of Guile', qty: 1 });
+    expect(result.state.character.Inventory).toContainEqual({ name: 'Customary Tariff of Governance', qty: 1 });
     expect(result.state.character.PendingTasks?.map(({ description }) => description)).toEqual([
       'A desperate struggle commences with Zouvjaen the Wraith',
       'Zouvjaen the Wraith seems to have the upper hand',
@@ -280,7 +280,7 @@ describe('advanceGame', () => {
 
     const result = advanceGame(stateFor(character), 1000, rng);
 
-    expect(result.state.character.Inventory).toContainEqual({ name: 'Golden Diadem of Foreboding', qty: 1 });
+    expect(result.state.character.Inventory).toContainEqual({ name: 'Certified Directive of Foreseeable Risk', qty: 1 });
     expect(rng.getState()).toEqual([0, 0, 0, 0]);
   });
 
@@ -296,12 +296,12 @@ describe('advanceGame', () => {
     const result = advanceGame(stateFor(character), 1000, rng);
 
     expect(result.state.character.Plot).toEqual({ act: 2, currentProgress: 0, maxProgress: 39_600 });
-    expect(result.state.character.Inventory).toContainEqual({ name: 'Unearthly Candelabra of Silence', qty: 1 });
-    expect(result.state.character.Equip.Helm).toBe('Lace');
+    expect(result.state.character.Inventory).toContainEqual({ name: 'Off-Books Seal of Silent Failure', qty: 1 });
+    expect(result.state.character.Equip.Helm).toBe('Lanyard');
     expect(eventsOf(result)).toEqual([
       { type: 'act_completed', act: 1 },
-      { type: 'item_gained', name: 'Unearthly Candelabra of Silence', quantity: 1 },
-      { type: 'equipment_gained', slot: 'Helm', name: 'Lace' },
+      { type: 'item_gained', name: 'Off-Books Seal of Silent Failure', quantity: 1 },
+      { type: 'equipment_gained', slot: 'Helm', name: 'Lanyard' },
       { type: 'save_requested', characterName: 'Oracle' },
       { type: 'task_started', task: result.state.character.Task },
     ]);
@@ -595,8 +595,8 @@ describe('advanceGame', () => {
     const character = createNewCharacter('Merchant', 'Half Daemon', 'Robot Monk', 802);
     character.Traits.Level = 5;
     character.Gold = 10;
-    character.Inventory = [{ name: 'Diadem of Foreboding', qty: 2 }, { name: 'old boot', qty: 2 }];
-    character.Task = { description: 'Selling 2 Diadems of Foreboding...', durationMs: 1000, elapsedMs: 0, type: 'selling' };
+    character.Inventory = [{ name: 'Directive of Foreseeable Risk', qty: 2 }, { name: 'old boot', qty: 2 }];
+    character.Task = { description: 'Selling 2 Diadems of Foreseeable Risk...', durationMs: 1000, elapsedMs: 0, type: 'selling' };
     character.Plot = { act: 1, currentProgress: 0, maxProgress: 10 };
     character.PendingTasks = undefined;
     const rng = new RandomGenerator('sale-transition');

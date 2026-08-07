@@ -36,14 +36,14 @@ describe('legacy quest reward dispatcher', () => {
       kind: 'equipment',
       state: [0.6359334820881486, 0.37374331383034587, 0.28759220940992236, 1],
       reset: 85,
-      expected: { equipment: ['Vambraces', 'Patched Dented Flannel'], effect: { type: 'equipment', slot: 'Vambraces', name: 'Patched Dented Flannel' } },
+      expected: { equipment: ['Vambraces', 'Hotfixed Contested Framework'], effect: { type: 'equipment', slot: 'Vambraces', name: 'Hotfixed Contested Framework' } },
       rng: [0.062331163324415684, 0.7646989999338984, 0.471838767407462, 276700],
     },
     {
       kind: 'item',
       state: [0.6739257371518761, 0.3510640109889209, 0.8553721038624644, 1],
       reset: 76,
-      expected: { inventory: [{ name: 'Unearthly Tiara of Craft', qty: 1 }], effect: { type: 'item', name: 'Unearthly Tiara of Craft', quantity: 1 } },
+      expected: { inventory: [{ name: 'Off-Books Tally of Compliance', qty: 1 }], effect: { type: 'item', name: 'Off-Books Tally of Compliance', quantity: 1 } },
       rng: [0.7132585479412228, 0.37233209586702287, 0.28208580473437905, 1364003],
     },
     {
@@ -110,14 +110,14 @@ describe('legacy quest reward dispatcher', () => {
 
   it('keeps reused item quantity and Gold within accepted save bounds', () => {
     const itemCharacter = createNewCharacter('Boundary', 'Half Daemon', 'Incident Paladin', 'item-boundary');
-    itemCharacter.Inventory = [{ name: 'Unearthly Tiara of Craft', qty: 1_000_000_000 }];
+    itemCharacter.Inventory = [{ name: 'Off-Books Tally of Compliance', qty: 1_000_000_000 }];
     const itemRng = new RandomGenerator('replaced-by-vector');
     itemRng.setState([0.6739257371518761, 0.3510640109889209, 0.8553721038624644, 1]);
     itemRng.random(100);
 
     const itemResult = applyQuestReward(itemRng, itemCharacter);
 
-    expect(itemResult.character.Inventory).toEqual([{ name: 'Unearthly Tiara of Craft', qty: 1_000_000_000 }]);
+    expect(itemResult.character.Inventory).toEqual([{ name: 'Off-Books Tally of Compliance', qty: 1_000_000_000 }]);
     expect(itemResult.effect).toBeUndefined();
 
     const goldCharacter = createNewCharacter('Boundary', 'Half Daemon', 'Incident Paladin', 'gold-boundary');
@@ -209,7 +209,7 @@ describe('legacy item reward', () => {
   it('generates a three-part special item for an ordinary inventory', () => {
     const rng = new RandomGenerator('item-special');
     expect([generateItemReward(rng, ['Gold']), rng.getState()]).toEqual([
-      'Reverential Galoon of Grob',
+      'Deferential Guideline of Gross Margin',
       [0.6745457765646279, 0.42392367543652654, 0.7211832229513675, 1289757],
     ]);
   });

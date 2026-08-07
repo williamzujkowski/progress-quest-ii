@@ -3,7 +3,7 @@
     "sheet": {
       "Traits": { "Name": "Oracle", "Race": "Half Daemon", "Class": "Incident Paladin", "Level": 1 },
       "Stats": { "STR": 10, "CON": 10, "DEX": 10, "INT": 10, "WIS": 10, "CHA": 10, "HP Max": 10, "MP Max": 10 },
-      "Equips": { "Weapon": "Sharp Rock", "Shield": "", "Helm": "", "Hauberk": "-3 Burlap", "Brassairts": "", "Vambraces": "", "Gauntlets": "", "Gambeson": "", "Cuisses": "", "Greaves": "", "Sollerets": "" },
+      "Equips": { "Weapon": "Sharp Rock", "Shield": "", "Helm": "", "Hauberk": "-3 Boilerplate", "Brassairts": "", "Vambraces": "", "Gauntlets": "", "Gambeson": "", "Cuisses": "", "Greaves": "", "Sollerets": "" },
       "Inventory": [["Gold", 0]],
       "Spells": [],
       "act": 1,
@@ -41,11 +41,11 @@
     "encumbrance": { "positionCubits": 1, "maxCubits": 20 },
     "quest": { "caption": "Test quest", "positionSeconds": 0, "maxSeconds": 100, "history": ["Test quest"], "monster": "", "monsterIndex": null },
     "plot": { "act": 2, "caption": "Act II", "positionSeconds": 0, "maxSeconds": 39600 },
-    "inventory": [["Gold", 0], ["Unearthly Candelabra of Silence", 1]],
-    "equipment": [["Weapon", "Sharp Rock"], ["Shield", ""], ["Helm", "Lace"], ["Hauberk", "-3 Burlap"], ["Brassairts", ""], ["Vambraces", ""], ["Gauntlets", ""], ["Gambeson", ""], ["Cuisses", ""], ["Greaves", ""], ["Sollerets", ""]],
+    "inventory": [["Gold", 0], ["Off-Books Seal of Silent Failure", 1]],
+    "equipment": [["Weapon", "Sharp Rock"], ["Shield", ""], ["Helm", "Lanyard"], ["Hauberk", "-3 Boilerplate"], ["Brassairts", ""], ["Vambraces", ""], ["Gauntlets", ""], ["Gambeson", ""], ["Cuisses", ""], ["Greaves", ""], ["Sollerets", ""]],
     "spells": [],
-    "best": { "stat": "STR 10", "spell": "", "equipment": "Lace Helm" },
-    "log": ["Gained an Unearthly Candelabra of Silence", "Saving game: Oracle", "Loading Act II..."],
+    "best": { "stat": "STR 10", "spell": "", "equipment": "Lanyard Helm" },
+    "log": ["Gained an Off-Books Seal of Silent Failure", "Saving game: Oracle", "Loading Act II..."],
     "savedRng": [0.06199767650105059, 0.7019953967537731, 0.5525467498227954, 439734],
     "rng": [0.06199767650105059, 0.7019953967537731, 0.5525467498227954, 439734]
   }

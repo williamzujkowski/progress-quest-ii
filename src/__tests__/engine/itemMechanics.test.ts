@@ -5,15 +5,15 @@ describe('item mechanics', () => {
   it('explains every part of generated equipment quality without inventing combat damage', () => {
     expect(analyzeItemMechanics({
       kind: 'equipment',
-      name: '+2 Venomed Vicious Shortsword',
+      name: '+2 Punitive Binding Short Sprint',
       slot: 'Weapon',
     })).toEqual({
       kind: 'equipment',
       quality: {
-        base: { name: 'Shortsword', value: 5 },
+        base: { name: 'Short Sprint', value: 5 },
         modifiers: [
-          { name: 'Vicious', value: 3 },
-          { name: 'Venomed', value: 4 },
+          { name: 'Binding', value: 3 },
+          { name: 'Punitive', value: 4 },
         ],
         mark: { label: '+2', value: 2 },
         total: 14,
@@ -40,9 +40,9 @@ describe('item mechanics', () => {
   });
 
   it('retains negative quality marks and reports empty equipment explicitly', () => {
-    expect(analyzeItemMechanics({ kind: 'equipment', name: '-3 Burlap', slot: 'Hauberk' })).toMatchObject({
+    expect(analyzeItemMechanics({ kind: 'equipment', name: '-3 Boilerplate', slot: 'Hauberk' })).toMatchObject({
       quality: {
-        base: { name: 'Burlap', value: 3 },
+        base: { name: 'Boilerplate', value: 3 },
         mark: { label: '-3', value: -3 },
         total: 0,
       },
