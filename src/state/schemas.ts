@@ -22,14 +22,14 @@ const rngStateSchema = z.tuple([
 
 export const characterNameSchema = z.string().min(1).max(MAX_CHARACTER_NAME_LENGTH);
 
-export const characterTraitsSchema = z.object({
+const characterTraitsSchema = z.object({
   Name: characterNameSchema,
   Race: z.string().min(1).max(120),
   Class: z.string().min(1).max(120),
   Level: z.number().int().min(1).max(MAX_PERSISTED_VALUE),
 }).strict();
 
-export const statsMapSchema = z.object({
+const statsMapSchema = z.object({
   STR: positiveBoundedInteger,
   CON: positiveBoundedInteger,
   DEX: positiveBoundedInteger,
@@ -40,7 +40,7 @@ export const statsMapSchema = z.object({
   'MP Max': positiveBoundedNumber,
 }).strict();
 
-export const equipmentMapSchema = z.object({
+const equipmentMapSchema = z.object({
   Weapon: shortText,
   Shield: shortText,
   Helm: shortText,
@@ -54,17 +54,17 @@ export const equipmentMapSchema = z.object({
   Sollerets: shortText,
 }).strict();
 
-export const inventoryItemSchema = z.object({
+const inventoryItemSchema = z.object({
   name: shortText,
   qty: boundedInteger,
 }).strict();
 
-export const spellItemSchema = z.object({
+const spellItemSchema = z.object({
   name: shortText,
   level: z.number().int().min(1).max(MAX_PERSISTED_VALUE),
 }).strict();
 
-export const questStateSchema = z.object({
+const questStateSchema = z.object({
   description,
   currentProgress: boundedNumber,
   maxProgress: positiveBoundedNumber,
@@ -77,7 +77,7 @@ export const questStateSchema = z.object({
   path: ['currentProgress'],
 });
 
-export const plotStateSchema = z.object({
+const plotStateSchema = z.object({
   act: z.number().int().min(0).max(MAX_PERSISTED_VALUE),
   currentProgress: boundedNumber,
   maxProgress: positiveBoundedNumber,

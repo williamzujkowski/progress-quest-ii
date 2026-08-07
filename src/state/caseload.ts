@@ -44,7 +44,7 @@ export const MAX_TRACKED_TARGETS = 50;
 
 const countSchema = z.number().int().min(0).max(MAX_PERSISTED_VALUE);
 
-export const caseloadSchema = z.object({
+const caseloadSchema = z.object({
   // partialRecord rather than record: zod treats an enum-keyed record as exhaustive, which would
   // reject every tally that has not yet seen all five kinds.
   kinds: z.partialRecord(z.enum(QUEST_KINDS), countSchema).default({}),
