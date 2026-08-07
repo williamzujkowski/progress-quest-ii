@@ -157,11 +157,11 @@ export const LogFeed: React.FC = () => {
             degree rather than by counting up. Every line is literally true of a hero filing
             paperwork and killing rats; only the confidence moves. */}
         <p className="world-context-tenor">{tenorLine(world)}</p>
-        {/* A town used to be a name with nothing in it. These offices do nothing the engine does
-            not already do — two of them name a real transaction and the rest are departments the
-            institution keeps regardless, which is the point. */}
+        {/* A place used to be a name with nothing in it. These notices do nothing the engine does
+            not already do — towns list over-administered offices, fields under-administered
+            notices, and dungeons administrative notes from people who have never been inside. */}
         {services && (
-          <ul className="world-context-services" aria-label="Offices open in this settlement">
+          <ul className="world-context-services" aria-label="Notices for this venue">
             {services.map((office) => <li key={office}>{office}</li>)}
           </ul>
         )}
