@@ -104,8 +104,8 @@ Owner: `src/engine/prng.ts`
 
 ## Quality gates
 
-After dependencies and Chromium are installed, `npm run quality` is the canonical
-local, CI, and deployment gate. It runs full Nexus installation verification,
+After dependencies and the Chromium and WebKit Playwright browsers are installed,
+`npm run quality` is the canonical local, CI, and deployment gate. It runs full Nexus installation verification,
 warning-clean modern lint, typecheck, unit and legacy-oracle tests under enforced
 coverage floors, dependency
 audit at moderate severity plus registry signature verification, Playwright E2E,
