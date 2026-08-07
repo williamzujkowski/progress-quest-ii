@@ -1232,6 +1232,41 @@ test.describe('Progress Quest III terminal dashboard', () => {
     });
   }
 
+  test('gives every records disclosure a visible open affordance', async ({ page }) => {
+    // The Case archive rendered as a muted label with nothing under it, because `display: flex` on
+    // a summary removes the marker a summary draws as a list item. It read as a dead section
+    // header — the exact impression ClosedCasework gates itself to avoid — while the world console
+    // disclosure beside it kept its triangle, having never set `display`.
+    //
+    // Asserted as list-item rather than by screenshot: the marker is what `display` decides, and
+    // this is the property that was changed by accident once already.
+    await page.goto('/');
+    await loadDenseDashboard(page);
+    // The archive is gated on having closed something, so a fresh session renders no disclosure at
+    // all and the loop below would sweep an empty list.
+    await page.evaluate(async () => {
+      const { useGameStore } = await import('/src/state/gameStore.ts');
+      const state = useGameStore.getState();
+      useGameStore.setState({
+        character: {
+          ...state.character,
+          Quest: { ...state.character.Quest, history: ['Deliver this dirtclod', 'Placate the Swamp Tickets'] },
+        },
+      });
+    });
+
+    const summaries = page.locator('.records-details > summary');
+    const count = await summaries.count();
+    // Without this the loop below would pass on a page that rendered no disclosures at all.
+    expect(count).toBeGreaterThan(0);
+
+    for (let index = 0; index < count; index += 1) {
+      const summary = summaries.nth(index);
+      await expect(summary).toHaveCSS('display', 'list-item');
+      await expect(summary).toBeVisible();
+    }
+  });
+
   test('spends a wide viewport on the loadout rather than on the prose column', async ({ page }) => {
     // The loadout measured 329px at 1280, 1806 and 2560 alike, because `.app-container` caps the
     // whole dashboard at 1280 and centres it — the column ratios were never what held it there.
