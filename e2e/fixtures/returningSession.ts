@@ -14,7 +14,7 @@ const activeSession = JSON.stringify({
     // Deliberately the pre-rename wording: this fixture stands in for a save written before the
     // title changed, and the log is stored text rather than something the app regenerates. Updating
     // it would quietly retire the one case that proves an older save still restores and renders.
-    log: ['Welcome to Progress Quest II! Krg the Sub-Subprocessor Robot Monk sets out on an adventure.'],
+    log: ['Welcome to Progress Quest III! Krg the Sub-Subprocessor Robot Monk sets out on an adventure.'],
   },
 });
 
