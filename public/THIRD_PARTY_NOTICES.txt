@@ -1,5 +1,5 @@
 PROGRESS QUEST II — THIRD-PARTY NOTICES
-Last updated: 2026-08-04
+Last updated: 2026-08-06
 
 This file ships with the PWA. It records direct production inputs; it does not
 change their licenses or resolve the legacy-web-source ambiguity documented at
