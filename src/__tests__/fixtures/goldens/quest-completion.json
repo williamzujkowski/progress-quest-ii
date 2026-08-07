@@ -3,7 +3,7 @@
     "sheet": {
       "Traits": { "Name": "Oracle", "Race": "Half Daemon", "Class": "Incident Paladin", "Level": 1 },
       "Stats": { "STR": 10, "CON": 10, "DEX": 10, "INT": 10, "WIS": 10, "CHA": 10, "HP Max": 10, "MP Max": 10 },
-      "Equips": { "Weapon": "Sharp Rock", "Shield": "", "Helm": "", "Hauberk": "-3 Burlap", "Brassairts": "", "Vambraces": "", "Gauntlets": "", "Gambeson": "", "Cuisses": "", "Greaves": "", "Sollerets": "" },
+      "Equips": { "Weapon": "Sharp Rock", "Shield": "", "Helm": "", "Hauberk": "-3 Boilerplate", "Brassairts": "", "Vambraces": "", "Gauntlets": "", "Gambeson": "", "Cuisses": "", "Greaves": "", "Sollerets": "" },
       "Inventory": [["Gold", 0]],
       "Spells": [],
       "act": 1,
@@ -42,7 +42,7 @@
     "quest": { "caption": "Exterminate the Swamp Elves", "positionSeconds": 0, "maxSeconds": 138, "history": ["Test quest", "Exterminate the Swamp Elves"], "monster": "Swamp Elf|1|lilypad", "monsterIndex": 84 },
     "plot": { "act": 1, "caption": "Act I", "positionSeconds": 6, "maxSeconds": 1000 },
     "inventory": [["Gold", 0], ["rat tail", 1]],
-    "equipment": [["Weapon", "Sharp Rock"], ["Shield", ""], ["Helm", ""], ["Hauberk", "-3 Burlap"], ["Brassairts", ""], ["Vambraces", ""], ["Gauntlets", ""], ["Gambeson", ""], ["Cuisses", ""], ["Greaves", ""], ["Sollerets", ""]],
+    "equipment": [["Weapon", "Sharp Rock"], ["Shield", ""], ["Helm", ""], ["Hauberk", "-3 Boilerplate"], ["Brassairts", ""], ["Vambraces", ""], ["Gauntlets", ""], ["Gambeson", ""], ["Cuisses", ""], ["Greaves", ""], ["Sollerets", ""]],
     "spells": [["Rabbit Punch", "I", 1]],
     "best": { "stat": "STR 10", "spell": "Rabbit Punch I", "equipment": "Sharp Rock" },
     "log": ["Quest completed: Test quest", "Commencing quest: Exterminate the Swamp Elves", "Saving game: Oracle", "Gained a rat tail", "Executing an undernourished Nymph..."],

@@ -49,7 +49,7 @@ describe('legacy quest generators', () => {
     const rng = new RandomGenerator('seek');
     const quest = generateSeekQuest(rng);
 
-    expect(quest).toEqual({ kind: 'seek', description: 'Seek the Spectral Hood' });
+    expect(quest).toEqual({ kind: 'seek', description: 'Seek the Provisional Hearing' });
     expect(rng.getState()).toEqual(stateAfterPicks('seek', 2));
   });
 
@@ -57,8 +57,8 @@ describe('legacy quest generators', () => {
     const deliverRng = new RandomGenerator('deliver');
     const fetchRng = new RandomGenerator('fetch');
 
-    expect(generateDeliverQuest(deliverRng)).toEqual({ kind: 'deliver', description: 'Deliver this dirtclod' });
-    expect(generateFetchQuest(fetchRng)).toEqual({ kind: 'fetch', description: 'Fetch me an egg' });
+    expect(generateDeliverQuest(deliverRng)).toEqual({ kind: 'deliver', description: 'Deliver this dust cap' });
+    expect(generateFetchQuest(fetchRng)).toEqual({ kind: 'fetch', description: 'Fetch me an egg timer' });
     expect(deliverRng.getState()).toEqual(stateAfterPicks('deliver', 1));
     expect(fetchRng.getState()).toEqual(stateAfterPicks('fetch', 1));
   });
@@ -80,9 +80,9 @@ describe('legacy quest generators', () => {
 
     expect(outputs).toEqual([
       [{ kind: 'exterminate', description: 'Exterminate the Piercers', target: 'Piercer|3|tip', targetIndex: 169 }, [0.7386679488699883, 0.1321149712894112, 0.25837940047495067, 1859545]],
-      [{ kind: 'seek', description: 'Seek the Mythic Amethyst' }, [0.440847976366058, 0.36323591391555965, 0.49511508364230394, 179019]],
+      [{ kind: 'seek', description: 'Seek the Precedent Amendment' }, [0.440847976366058, 0.36323591391555965, 0.49511508364230394, 179019]],
       [{ kind: 'deliver', description: 'Deliver this I.O.U.' }, [0.31013343250378966, 0.797919366043061, 0.5409550939220935, 1914968]],
-      [{ kind: 'fetch', description: 'Fetch me a sock' }, [0.9172258146572858, 0.4534230341669172, 0.2273825639858842, 134543]],
+      [{ kind: 'fetch', description: 'Fetch me a sticky note' }, [0.9172258146572858, 0.4534230341669172, 0.2273825639858842, 134543]],
       [{ kind: 'placate', description: 'Placate the Mariliths' }, [0.685977301094681, 0.4743830212391913, 0.5976645925547928, 215245]],
     ]);
   });

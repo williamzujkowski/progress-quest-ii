@@ -3,7 +3,7 @@
     "sheet": {
       "Traits": { "Name": "Oracle", "Race": "Half Daemon", "Class": "Incident Paladin", "Level": 1 },
       "Stats": { "STR": 10, "CON": 10, "DEX": 10, "INT": 10, "WIS": 10, "CHA": 10, "HP Max": 10, "MP Max": 10 },
-      "Equips": { "Weapon": "Sharp Rock", "Shield": "", "Helm": "", "Hauberk": "-3 Burlap", "Brassairts": "", "Vambraces": "", "Gauntlets": "", "Gambeson": "", "Cuisses": "", "Greaves": "", "Sollerets": "" },
+      "Equips": { "Weapon": "Sharp Rock", "Shield": "", "Helm": "", "Hauberk": "-3 Boilerplate", "Brassairts": "", "Vambraces": "", "Gauntlets": "", "Gambeson": "", "Cuisses": "", "Greaves": "", "Sollerets": "" },
       "Inventory": [["Gold", 0]],
       "Spells": [],
       "act": 1,
@@ -42,7 +42,7 @@
     "quest": { "caption": "Test quest", "positionSeconds": 6, "maxSeconds": 100, "history": ["Test quest"], "monster": "", "monsterIndex": null },
     "plot": { "act": 1, "caption": "Act I", "positionSeconds": 6, "maxSeconds": 1000 },
     "inventory": [["Gold", 0], ["rat tail", 1]],
-    "equipment": [["Weapon", "Sharp Rock"], ["Shield", ""], ["Helm", ""], ["Hauberk", "-3 Burlap"], ["Brassairts", ""], ["Vambraces", ""], ["Gauntlets", ""], ["Gambeson", ""], ["Cuisses", ""], ["Greaves", ""], ["Sollerets", ""]],
+    "equipment": [["Weapon", "Sharp Rock"], ["Shield", ""], ["Helm", ""], ["Hauberk", "-3 Boilerplate"], ["Brassairts", ""], ["Vambraces", ""], ["Gauntlets", ""], ["Gambeson", ""], ["Cuisses", ""], ["Greaves", ""], ["Sollerets", ""]],
     "spells": [["Slime Finger", "I", 1]],
     "best": { "stat": "INT 11", "spell": "Slime Finger I", "equipment": "Sharp Rock" },
     "log": ["Gained a Level", "Gained 6 HP Maxes", "Gained 5 MP Maxes", "Gained an INT", "Gained a HP Max", "Saving game: Oracle", "Gained a rat tail", "Executing a Rot Grub..."],

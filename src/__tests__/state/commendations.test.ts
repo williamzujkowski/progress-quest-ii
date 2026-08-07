@@ -113,14 +113,14 @@ describe('commendation ledger', () => {
   });
 
   it('keeps the finer item per slot and survives it being sold', () => {
-    const notable = mergeExhibit(EMPTY_COMMENDATIONS, 'Weapon', 'Notable Stick', { label: 'notable', quality: 4 });
-    const worse = mergeExhibit(notable, 'Weapon', 'Plain Stick', { label: 'serviceable', quality: 1 });
+    const notable = mergeExhibit(EMPTY_COMMENDATIONS, 'Weapon', 'Notable Sticky Note', { label: 'notable', quality: 4 });
+    const worse = mergeExhibit(notable, 'Weapon', 'Plain Sticky Note', { label: 'serviceable', quality: 1 });
     // The record is about what was once owned, not what is worn now - selling must not erase it.
     expect(worse).toBe(notable);
-    expect(worse.exhibit.Weapon?.name).toBe('Notable Stick');
+    expect(worse.exhibit.Weapon?.name).toBe('Notable Sticky Note');
 
-    const better = mergeExhibit(notable, 'Weapon', 'Legendary Stick', { label: 'legendary', quality: 9 });
-    expect(better.exhibit.Weapon?.name).toBe('Legendary Stick');
+    const better = mergeExhibit(notable, 'Weapon', 'Landmark Sticky Note', { label: 'legendary', quality: 9 });
+    expect(better.exhibit.Weapon?.name).toBe('Landmark Sticky Note');
   });
 
   it('keeps the incumbent on a tie, so the record marks when a quality was first reached', () => {

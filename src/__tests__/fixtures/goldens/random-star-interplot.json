@@ -21,7 +21,7 @@
         "Weapon": "Sharp Rock",
         "Shield": "",
         "Helm": "",
-        "Hauberk": "-3 Burlap",
+        "Hauberk": "-3 Boilerplate",
         "Brassairts": "",
         "Vambraces": "",
         "Gauntlets": "",
@@ -143,7 +143,7 @@
       "maxMs": 2000,
       "queue": [
         "task|3|There is rejoicing, and an unnerving encounter with Chief Braexprab of Jiebyick in private",
-        "task|2|You forget your twig and go back to get it",
+        "task|2|You forget your tally sheet and go back to get it",
         "task|2|What's this!? You overhear something shocking!",
         "task|2|Could Chief Braexprab of Jiebyick be a dirty double-dealer?",
         "task|3|Who can possibly be trusted with this news!? -- Oh yes, of course",
@@ -180,7 +180,7 @@
         0
       ],
       [
-        "Reverential Candelabra of Electrum",
+        "Deferential Seal of Escrow",
         1
       ]
     ],
@@ -199,7 +199,7 @@
       ],
       [
         "Hauberk",
-        "-3 Burlap"
+        "-3 Boilerplate"
       ],
       [
         "Brassairts",
@@ -237,7 +237,7 @@
       "equipment": "Sharp Rock"
     },
     "log": [
-      "Gained a Reverential Candelabra of Electrum",
+      "Gained a Deferential Seal of Escrow",
       "Oh sweet relief! You've reached the kind protection of Chief Braexprab of Jiebyick..."
     ],
     "savedRng": [

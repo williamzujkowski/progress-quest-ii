@@ -22,7 +22,7 @@ describe('specimen identity', () => {
   });
 
   it('treats the same name in two slots as two findings', () => {
-    expect(specimenIdentity(equipped('Helm', 'Burlap'))).not.toBe(specimenIdentity(equipped('Shield', 'Burlap')));
+    expect(specimenIdentity(equipped('Helm', 'Boilerplate'))).not.toBe(specimenIdentity(equipped('Shield', 'Boilerplate')));
   });
 
   it('reports nothing for an event that acquires nothing', () => {
@@ -55,7 +55,7 @@ describe('specimen log', () => {
   });
 
   it('round-trips and degrades to nothing rather than failing', () => {
-    const log = mergeSpecimens(EMPTY_SPECIMEN_LOG, [gained('bent fork'), equipped('Helm', 'Burlap')]);
+    const log = mergeSpecimens(EMPTY_SPECIMEN_LOG, [gained('bent fork'), equipped('Helm', 'Boilerplate')]);
     const storage = fakeStorage();
     writeSpecimenLog(storage, log);
     expect(readSpecimenLog(storage)).toEqual(log);
