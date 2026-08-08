@@ -133,9 +133,30 @@ const AMBIENT_IN = 3;
 /** How much had happened when the guild last said anything. */
 export interface ChatterCadence {
   readonly lastLineTasks: number;
+  /**
+   * The last few lines actually shown, newest first.
+   *
+   * Two ambient lanes deliberately hold one string for a long stretch — a running bit keeps its beat
+   * for forty completed tasks, and the trade advertisement is fixed for the life of a character.
+   * Both are right in themselves, and both made the same sentence arrive twice inside one unscrolled
+   * panel: measured at 15% of ambient lines repeating within five, which is what a re-asked question
+   * looks like when it is re-asked four lines later instead of four minutes later.
+   *
+   * Rendering memory, not conversation memory. It exists to refuse a line, never to compose one, so
+   * it stays short — long enough to cover a visible panel and no longer.
+   */
+  readonly recentTexts: readonly string[];
 }
 
-export const NEW_CADENCE: ChatterCadence = { lastLineTasks: 0 };
+/** About what fits on screen at once, which is the window a repeat is actually noticed in. */
+const RECENT_TEXTS = 8;
+
+export const NEW_CADENCE: ChatterCadence = { lastLineTasks: 0, recentTexts: [] };
+
+/** Newest first, oldest dropped. */
+function remember(recent: readonly string[], spoken: readonly SocialEntry[]): readonly string[] {
+  return [...spoken.map(({ text }) => text).reverse(), ...recent].slice(0, RECENT_TEXTS);
+}
 
 /**
  * Decides whether a batch of already-written lines is spoken at all.
@@ -178,10 +199,8 @@ export function scheduleChatter(
   }
 
   if (heard.size > 0) {
-    return {
-      entries: entries.filter(({ sceneId }) => heard.has(sceneId)),
-      cadence: { lastLineTasks: completedTasks },
-    };
+    const spoken = entries.filter(({ sceneId }) => heard.has(sceneId));
+    return { entries: spoken, cadence: { lastLineTasks: completedTasks, recentTexts: remember(cadence.recentTexts, spoken) } };
   }
 
   // Nothing the hero did earned a line, which is most of the time and is when a real channel is at
@@ -198,7 +217,11 @@ export function scheduleChatter(
   // A channel is quiet more often than it speaks, and the quiet is what makes the next line read as
   // somebody arriving at a topic rather than a timer firing.
   if (ambient.length > 0 && stableChoice(`say:${completedTasks}`, AMBIENT_IN) === 0) {
-    return { entries: ambient, cadence: { lastLineTasks: completedTasks } };
+    // Declined rather than substituted when it would repeat something still on screen. Substituting
+    // would need a second choice and a rule for when that one repeats too; declining costs nothing,
+    // because two free slots in three are already declined and silence is the established answer.
+    if (ambient.some(({ text }) => cadence.recentTexts.includes(text))) return { entries: [], cadence };
+    return { entries: ambient, cadence: { lastLineTasks: completedTasks, recentTexts: remember(cadence.recentTexts, ambient) } };
   }
   return { entries: [], cadence };
 }
