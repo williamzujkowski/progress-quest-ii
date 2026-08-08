@@ -1,3 +1,4 @@
+import { encounterSpeedMultiplier, loadoutQuality } from './loadout';
 import { ALL_STATS, ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, EQUIP_SLOTS, ITEM_ATTRIB, ITEM_OFS, KLASSES, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, PRIME_STATS, RACES, SHIELDS, SPECIALS, SPELLS, TITLES, WEAPONS } from '../data/traits';
 import { MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../data/limits';
 import { calculateEncumbranceMax, generateInitialStats, generateName, MAX_FINITE_CHARACTER_LEVEL } from './math';
@@ -367,7 +368,15 @@ function generateMonsterTask(rng: RandomGenerator, character: CharacterSheet): {
   const opponentLevel = targetLevel * quantity;
   return {
     description: `Executing ${definiteName ? displayName : indefinite(displayName, quantity)}...`,
-    durationMs: Math.floor((2 * 3 * opponentLevel * 1000) / characterLevel),
+    // Canonical duration first, then the loadout. Kept in that order so the classic formula stays
+    // legible as itself: opponent puissance over character level, exactly as the original computed
+    // it, with this build's one divergence applied to the result rather than folded into it.
+    //
+    // A starting loadout floors to zero quality and multiplies by exactly one, which is why every
+    // recorded golden is unchanged rather than merely close. See ADR 0008.
+    durationMs: Math.floor(
+      ((2 * 3 * opponentLevel * 1000) / characterLevel) * encounterSpeedMultiplier(loadoutQuality(character)),
+    ),
     // Reported at the site that decided it. Nothing downstream recomputes it, and nothing in the
     // engine reads it back - the duration above is still derived from the same local value.
     opponents: quantity,

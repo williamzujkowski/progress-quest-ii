@@ -81,3 +81,31 @@ describe('encounter speed multiplier', () => {
     expect(encounterSpeedMultiplier(Number.NaN)).toBe(1);
   });
 });
+
+describe('the multiplier reaches encounter durations', () => {
+  it('shortens a kill for a well-equipped hero and leaves a starting one alone', async () => {
+    // "Every golden is unchanged" is only reassuring if the wiring exists at all — an unapplied
+    // multiplier would satisfy it just as well. This asserts the opposite direction: with the same
+    // seed and the same opponent, a heavily equipped hero's kill is strictly shorter.
+    const { RandomGenerator } = await import('../../engine/prng');
+    const { generateTaskDescription } = await import('../../engine/sim');
+
+    const durationFor = (equip: (character: ReturnType<typeof hero>) => void) => {
+      const character = hero();
+      character.Traits.Level = 20;
+      equip(character);
+      // A fresh generator per run, so both see the same draws and only the loadout differs.
+      let task = generateTaskDescription(new RandomGenerator('encounter-parity'), character);
+      while (task.type !== 'kill') task = generateTaskDescription(new RandomGenerator('encounter-parity'), character);
+      return task.durationMs;
+    };
+
+    const starting = durationFor(() => {});
+    const equipped = durationFor((character) => {
+      for (const slot of EQUIP_SLOTS) character.Equip[slot] = '+2000 Mandate';
+    });
+
+    expect(starting).toBeGreaterThan(0);
+    expect(equipped).toBeLessThan(starting);
+  });
+});
