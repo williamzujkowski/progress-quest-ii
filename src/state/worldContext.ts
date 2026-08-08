@@ -1,5 +1,6 @@
 import { dungeonNamesAt, fieldNamesAt, RAID_ACT_THRESHOLD, raidNamesAt, townNamesAt } from '../data/worldContext';
 import { analyzeItemMechanics } from '../engine/itemMechanics';
+import { fileLoadout, type LoadoutFiling } from '../engine/loadoutFiling';
 import { boundCodePoints, MAX_TEXT_CODE_POINTS, describeGameNumber, formatGameNumber, stableIndex } from '../engine/text';
 import type { GamePresentationSnapshot, GameTransitionEvent, GameTransitionRecord, GameTransitionState } from '../engine/transition';
 import type { ProgressTask, QuestKind } from '../engine/types';
@@ -42,6 +43,14 @@ export interface WorldProjection {
   readonly context: WorldContext;
   readonly notices: readonly WorldNotice[];
   readonly equipment?: EquipmentClassification;
+  /**
+   * What the institution has noticed about the loadout, on the current-state path only.
+   *
+   * A standing observation rather than an event, so it belongs where the console reports the world
+   * as it is, not in the notices, which report things that just happened. Absent from the
+   * transition path for the same reason.
+   */
+  readonly loadout?: LoadoutFiling;
 }
 
 export type WorldProjectionInput =
@@ -269,7 +278,13 @@ function noticesFor(source: IdentifiedGameTransitionRecord, context: WorldContex
 }
 
 export function projectWorld(input: WorldProjectionInput): WorldProjection {
-  if (input.kind === 'current') return { context: contextFor(postFromState(input.state)), notices: [] };
+  if (input.kind === 'current') {
+    return {
+      context: contextFor(postFromState(input.state)),
+      notices: [],
+      loadout: fileLoadout(input.state.character),
+    };
+  }
   const { event, post } = input.source.record;
   const context = contextFor(post, event);
   const equipment = equipmentFor(event);

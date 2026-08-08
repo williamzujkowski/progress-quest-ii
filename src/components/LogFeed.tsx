@@ -36,7 +36,9 @@ export const LogFeed: React.FC = () => {
   const progression = useGameStore((state) => state.progression);
   const sessionGeneration = useGameStore((state) => state.sessionGeneration);
   const pendingElapsedMs = useGameStore((state) => state.pendingElapsedMs);
-  const world = projectWorld({ kind: 'current', state: { character, progression } }).context;
+  const currentProjection = projectWorld({ kind: 'current', state: { character, progression } });
+  const world = currentProjection.context;
+  const loadout = currentProjection.loadout;
   const services = venueBulletin(world);
   const muster = raidMuster(world);
   const feedRef = useRef<HTMLDivElement>(null);
@@ -186,6 +188,34 @@ export const LogFeed: React.FC = () => {
             {muster.map((entry) => (
               <li key={entry.name}>{entry.name} · {entry.role} · {attendanceLabel(entry.attendance)}</li>
             ))}
+          </ul>
+        )}
+        {/* The loadout, said out loud.
+            ADR 0008 gave equipment a real effect — a kill takes `1000 / (1000 + quality)` of the
+            time it otherwise would — and it has been invisible since it shipped, because the player
+            cannot see the counterfactual and nothing named it. Every figure here is one the engine
+            multiplied by, so the console can say it without flattering anything.
+            Written as an observation the institution has filed, never as an achievement: the moment
+            a repeated modifier reads as something to pursue, the joke becomes a spreadsheet the
+            player is forbidden to fill in. */}
+        {loadout && loadout.itemOfRecord && (
+          <ul className="world-context-services" aria-label="Loadout filing">
+            <li>
+              Item of record // {loadout.itemOfRecord.name} ({loadout.itemOfRecord.slot})
+            </li>
+            {loadout.reductionPercent > 0 && (
+              <li>
+                Processing time reduced by {loadout.reductionPercent}%
+                {loadout.contributors.length > 0
+                  ? `, cited: ${loadout.contributors.slice(0, 3).map(({ name }) => name).join(', ')}`
+                  : ''}
+              </li>
+            )}
+            {loadout.repeatedModifier && (
+              <li>
+                {loadout.repeatedModifier.name} recorded in {loadout.repeatedModifier.slots} slots. Noted as a coincidence.
+              </li>
+            )}
           </ul>
         )}
         <details className="world-context-details">
