@@ -321,13 +321,21 @@ export function startSessionCheckpoints({
     failureRecorded = true;
     diagnostics.record({ code: 'session_checkpoint_failed', severity: 'warning', subsystem: 'storage', operation, outcome: 'failed', source: 'session-checkpoint' });
   };
-  const block = (message: string, operation: 'read' | 'write' = 'write', allowRepair = false) => {
+  /**
+   * Stops persisting, and says whether there is a way back.
+   *
+   * The label is a parameter rather than a constant because the two repairable cases are different
+   * offers. An unreadable checkpoint offers to replace bytes nobody can read; a checkpoint another
+   * tab has taken over offers to take it back. Wording them identically would ask the player to
+   * approve one thing and get the other.
+   */
+  const block = (message: string, operation: 'read' | 'write' = 'write', repairLabel?: string) => {
     canPersist = false;
-    repairAllowed = allowRepair;
+    repairAllowed = repairLabel !== undefined;
     if (timer !== undefined) clearTimeout(timer);
     timer = undefined;
     recordFailure(operation);
-    publish({ kind: 'alert', message, canRepair: repairAllowed, ...(repairAllowed ? { repairLabel: 'Replace unreadable checkpoint' } : {}) });
+    publish({ kind: 'alert', message, canRepair: repairAllowed, ...(repairLabel === undefined ? {} : { repairLabel }) });
   };
   const flush = () => {
     if (timer !== undefined) clearTimeout(timer);
@@ -436,7 +444,7 @@ export function startSessionCheckpoints({
       // overwritten by whoever the player creates next, and a payload this build cannot parse is
       // not a payload that is gone. Restoring it is a later build's job, and the existing
       // "blocks automatic writes after a corrupt read" test is the guarantee that says so.
-      block(loaded.message, 'read', loaded.status === 'corrupt' && loaded.canRepair);
+      block(loaded.message, 'read', loaded.status === 'corrupt' && loaded.canRepair ? 'Replace unreadable checkpoint' : undefined);
     }
   }
 
@@ -447,7 +455,27 @@ export function startSessionCheckpoints({
   const handlePagehide = () => flush();
   const handleStorage = (event: Event) => {
     if (!(event instanceof StorageEvent) || event.key !== ACTIVE_CHECKPOINT_KEY) return;
-    if (event.newValue !== expectedPrimaryRaw) block('Another tab changed the saved session. Automatic checkpoints are paused in this tab.');
+    if (event.newValue === expectedPrimaryRaw) return;
+
+    // Refusing to write is right: this tab's view of the checkpoint is stale, and overwriting
+    // blindly would discard whatever the other tab has been doing. What was missing is a way out.
+    // The tab kept simulating forever with nothing persisted and no way to reclaim the save short
+    // of a reload — the hero levelling on screen the whole time, none of it keepable.
+    //
+    // So the newer bytes become this tab's baseline. That is what makes the offer real: repair is a
+    // compare-and-set against `expectedPrimaryRaw`, and against the value this tab last wrote it
+    // could only ever fail. Adopting the baseline lets the player choose which tab wins.
+    //
+    // Whichever tab they act in takes over, and the other one receives this same event and this
+    // same offer. Symmetric on purpose — there is no correct answer to which tab is the real one,
+    // only the one the player is looking at.
+    expectedPrimaryRaw = event.newValue;
+    repairSuccessMessage = 'This tab now owns the saved session. Automatic checkpoints resumed.';
+    block(
+      'Another tab changed the saved session. Automatic checkpoints are paused in this tab.',
+      'write',
+      'Continue in this tab',
+    );
   };
   visibilityTarget?.addEventListener('visibilitychange', handleVisibility);
   pagehideTarget?.addEventListener('pagehide', handlePagehide);
