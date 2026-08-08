@@ -553,6 +553,10 @@ input[type='radio']:checked::before { transform: scale(1); }
 }
 
 .equip-list {
+  /* These are real <ul>s now, so the browser's own list styling has to be turned off. Kept next to
+     the layout rather than in a reset block, because it is a consequence of the element choice and
+     a reader changing one should see the other. */
+  list-style: none;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);

@@ -20,7 +20,7 @@ describe('commendation panel', () => {
       commendations: { highestLevel: 27, largestSale: 1834, questsCompleted: 9, actsCompleted: 2, exhibit: {} },
     });
     render(<Commendations />);
-    expect(screen.getByRole('region', { name: 'Commendation ledger' })).toBeTruthy();
+    expect(screen.getByRole('list', { name: 'Commendation ledger' })).toBeTruthy();
     expect(screen.getByText('Highest level attained')).toBeTruthy();
     expect(screen.getByText('27')).toBeTruthy();
     expect(screen.getByText('1834')).toBeTruthy();

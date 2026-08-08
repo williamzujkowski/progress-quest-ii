@@ -50,7 +50,7 @@ const loadDenseDashboard = async (page: Page) => {
     });
   });
   await expect(page.locator('.log-entry')).toHaveCount(50);
-  await expect(page.getByRole('region', { name: 'Inventory items' }).locator('.equip-item')).toHaveCount(80);
+  await expect(page.getByRole('list', { name: 'Inventory items' }).locator('.equip-item')).toHaveCount(80);
 };
 
 test.describe('Progress Quest III terminal dashboard', () => {
@@ -437,7 +437,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await expect(page.getByText(/Spell Book/i)).toBeVisible();
     await expect(page.getByText('No spells have been learned. They arrive automatically at level-up and may also be awarded for completed quests; the curriculum remains aggressively theoretical.')).toBeVisible();
     await expect(page.getByText('No loot has been retained. Combat supplies it automatically; procurement awaits a monster with transferable assets.')).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Equipment List' }).locator('.tooltip-trigger')).toHaveCount(11);
+    await expect(page.getByRole('list', { name: 'Equipment List' }).locator('.tooltip-trigger')).toHaveCount(11);
     // Carried weight sits on the inventory panel; Gold reads once, on the hero banner.
     await expect(page.locator('.inventory-card .card-header .inventory-weight')).toBeVisible();
     await expect(page.locator('.inventory-card .card-header')).not.toContainText('GP');
@@ -1054,10 +1054,10 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await openActivityTab(page);
 
     const log = page.getByRole('region', { name: 'Activity Event Log' });
-    const inventory = page.getByRole('region', { name: 'Inventory items' });
+    const inventory = page.getByRole('list', { name: 'Inventory items' });
     const character = page.getByRole('region', { name: 'Character Loadout' });
-    const equipment = page.getByRole('region', { name: 'Equipment List' });
-    const spellBook = page.getByRole('region', { name: 'Spell Book' });
+    const equipment = page.getByRole('list', { name: 'Equipment List' });
+    const spellBook = page.getByRole('list', { name: 'Spell Book' });
     const metrics = {
       page: await page.evaluate(() => ({ height: document.documentElement.scrollHeight, viewport: window.innerHeight })),
       log: await log.evaluate((element) => ({ client: element.clientHeight, scroll: element.scrollHeight, top: element.scrollTop })),
@@ -1079,8 +1079,10 @@ test.describe('Progress Quest III terminal dashboard', () => {
     expect(metrics.spells.scroll).toBeGreaterThan(metrics.spells.client);
     await expect(equipment).toHaveCSS('grid-template-columns', /\S+\s+\S+/);
     await expect(page.getByText('Spell Book (18)')).toBeInViewport();
-    await character.focus();
-    await expect(character).toBeFocused();
+    // The card is deliberately not a focus stop. The assertion three lines above is the reason:
+    // its scroll height never exceeds its client height, so focusing it announced a name and did
+    // nothing. Asserted as an absence so the tabIndex cannot quietly come back.
+    await expect(character).not.toHaveAttribute('tabindex', /.*/);
     await expect(log.locator('.log-entry').last()).toContainText('Event 50');
   });
 
@@ -1135,7 +1137,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await openActivityTab(page);
 
     const character = page.getByRole('region', { name: 'Character Loadout' });
-    const spellBook = page.getByRole('region', { name: 'Spell Book' });
+    const spellBook = page.getByRole('list', { name: 'Spell Book' });
     const characterBox = await character.boundingBox();
     const spellBox = await spellBook.boundingBox();
 
@@ -1190,7 +1192,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await page.goto('/');
     await loadDenseDashboard(page);
 
-    await expect(page.getByRole('region', { name: 'Equipment List' })).toHaveCSS('grid-template-columns', /\S+\s+\S+/);
+    await expect(page.getByRole('list', { name: 'Equipment List' })).toHaveCSS('grid-template-columns', /\S+\s+\S+/);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => document.documentElement.clientWidth));
   });
 
@@ -1202,8 +1204,8 @@ test.describe('Progress Quest III terminal dashboard', () => {
       await openActivityTab(page);
 
       const log = page.getByRole('region', { name: 'Activity Event Log' });
-      const inventory = page.getByRole('region', { name: 'Inventory items' });
-      const spellBook = page.getByRole('region', { name: 'Spell Book' });
+      const inventory = page.getByRole('list', { name: 'Inventory items' });
+      const spellBook = page.getByRole('list', { name: 'Spell Book' });
       const metrics = {
         page: await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth })),
         log: await log.evaluate((element) => ({ client: element.clientHeight, scroll: element.scrollHeight, top: element.scrollTop })),
@@ -1216,7 +1218,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
       expect(metrics.log.top + metrics.log.client).toBeGreaterThanOrEqual(metrics.log.scroll - 1);
       expect(metrics.inventory.scroll).toBeGreaterThan(metrics.inventory.client);
       expect(metrics.spells.scroll).toBeGreaterThan(metrics.spells.client);
-      await expect(page.getByRole('region', { name: 'Equipment List' })).toHaveCSS('grid-template-columns', /^[^ ]+$/);
+      await expect(page.getByRole('list', { name: 'Equipment List' })).toHaveCSS('grid-template-columns', /^[^ ]+$/);
       await expect(log.locator('.log-entry').last()).toContainText('Event 50');
     });
   }
@@ -1300,7 +1302,7 @@ test.describe('Progress Quest III terminal dashboard', () => {
 
     // Two columns inside the loadout at both widths: the extra room widens each cell, which is
     // where names truncate, rather than adding a third column of narrower ones.
-    await expect(page.getByRole('region', { name: 'Equipment List' })).toHaveCSS('grid-template-columns', /^\S+\s+\S+$/);
+    await expect(page.getByRole('list', { name: 'Equipment List' })).toHaveCSS('grid-template-columns', /^\S+\s+\S+$/);
 
     for (const width of [1600, 2560]) {
       await page.setViewportSize({ width, height: 900 });
@@ -1614,8 +1616,8 @@ test.describe('Progress Quest III terminal dashboard', () => {
       await expect(page.getByText('No spells have been learned. They arrive automatically at level-up and may also be awarded for completed quests; the curriculum remains aggressively theoretical.')).toBeVisible();
       await expect(page.getByText('No loot has been retained. Combat supplies it automatically; procurement awaits a monster with transferable assets.')).toBeVisible();
       expect(await page.locator('.brand-tagline').evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
-      expect(await page.getByRole('region', { name: 'Spell Book' }).evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
-      expect(await page.getByRole('region', { name: 'Inventory items' }).evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      expect(await page.getByRole('list', { name: 'Spell Book' }).evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      expect(await page.getByRole('list', { name: 'Inventory items' }).evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
       await expect(page.getByRole('button', { name: /Roster & Saves/i })).toBeInViewport();
       await expect(page.getByRole('combobox', { name: 'Visual theme' })).toBeInViewport();
 

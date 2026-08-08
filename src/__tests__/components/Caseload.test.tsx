@@ -19,7 +19,7 @@ describe('docket summary panel', () => {
     useGameStore.setState({ caseload: { kinds: { placate: 3, exterminate: 41 }, targets: {} } });
     render(<Caseload />);
 
-    const rows = screen.getByRole('region', { name: 'Docket summary' });
+    const rows = screen.getByRole('list', { name: 'Docket summary' });
     const labels = [...rows.children].map((row) => row.querySelector('.equip-slot')?.textContent);
     // exterminate precedes placate in the engine's own ordering, whatever order the tally holds.
     expect(labels).toEqual(['Extermination writs closed', 'Placation accords reached']);

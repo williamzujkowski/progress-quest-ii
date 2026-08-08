@@ -37,14 +37,14 @@ export const Commendations: React.FC = () => {
       <div className="section-label">
         <Award size={14} aria-hidden="true" /> Commendations
       </div>
-      <div className="equip-list commendation-list" role="region" aria-label="Commendation ledger">
+      <ul className="equip-list commendation-list" aria-label="Commendation ledger">
         {rows.map(([label, value]) => (
-          <div className="equip-item" key={label}>
+          <li className="equip-item" key={label}>
             <span className="equip-slot">{label}</span>
             <span className="commendation-value"><GameNumber value={value} /></span>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
 
       {exhibit.length > 0 && (
         <>
@@ -53,14 +53,14 @@ export const Commendations: React.FC = () => {
           </div>
           {/* Prestige, not power: worldContext's own classification, which records explicitly
               that equipment has no combat contribution. */}
-          <div className="equip-list commendation-list" role="region" aria-label="Exhibit case">
+          <ul className="equip-list commendation-list" aria-label="Exhibit case">
             {exhibit.map(([slot, entry]) => (
-              <div className="equip-item" key={slot}>
+              <li className="equip-item" key={slot}>
                 <span className="equip-slot">{slot}</span>
                 <ItemTooltip kind="equipment" name={entry.name} slot={slot as never} />
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </>
       )}
     </>

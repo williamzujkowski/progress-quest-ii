@@ -59,20 +59,26 @@ export const InventoryView: React.FC = () => {
         </div>
       </div>
 
-      <div className="equip-list inventory-list" role="region" tabIndex={0} aria-label="Inventory items">
+      {/*
+        A list, not a region. `ClosedCasework` already reasons this out: naming a collection a region
+        trades the list role away, and the list role is what tells a reader how many things are here
+        and where they are in them. Without it there is no count on entry, no "3 of 80" while
+        arrowing, and no list-jump navigation.
+      */}
+      <ul className="equip-list inventory-list" tabIndex={0} aria-label="Inventory items">
         {nonGoldItems.length === 0 ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontStyle: 'italic', padding: '0.5rem 0' }}>
+          <li className="equip-empty" style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontStyle: 'italic', padding: '0.5rem 0' }}>
             No loot has been retained. Combat supplies it automatically; procurement awaits a monster with transferable assets.
-          </div>
+          </li>
         ) : (
           nonGoldItems.map((item, index) => (
-            <div className="equip-item" key={index}>
+            <li className="equip-item" key={index}>
               <ItemTooltip kind="inventory" name={item.name} quantity={item.qty} />
               <span style={{ fontWeight: 600 }}>x<GameNumber value={item.qty} /></span>
-            </div>
+            </li>
           ))
         )}
-      </div>
+      </ul>
     </section>
   );
 };
