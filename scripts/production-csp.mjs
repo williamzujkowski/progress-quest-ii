@@ -24,6 +24,25 @@
 const REQUIRED_NONE = ['default-src', 'object-src', 'base-uri'];
 
 /**
+ * Directives whose exact value is the control, not merely their presence.
+ *
+ * Refusing `'unsafe-inline'` and `'unsafe-eval'` bounds *how* script may run and says nothing about
+ * *where* it may come from — so `script-src *`, `script-src data:` and `script-src 'self'
+ * https://anywhere.example` all satisfied that check. A policy is not stricter for naming a
+ * directive; it is stricter for what the directive names.
+ *
+ * `connect-src` is here for a reason particular to this application. "Nothing is sent anywhere" is
+ * a headline property, stated in SECURITY.md and relied on by the local-model research, and
+ * `connect-src 'self'` is the only thing enforcing it. Nothing previously asserted that the
+ * directive still existed, let alone what it said, so widening it to reach a CDN would have passed
+ * on a green tick.
+ *
+ * Exact rather than "contains 'self'", because a list that also carries a remote origin is exactly
+ * the change worth catching.
+ */
+const REQUIRED_SELF = ['script-src', 'connect-src'];
+
+/**
  * Parses a policy into directive name -> source list.
  *
  * Directive names are case-insensitive per the CSP grammar and are lowercased here; source
@@ -127,6 +146,21 @@ export function verifyProductionCsp(html) {
   for (const unsafe of ["'unsafe-inline'", "'unsafe-eval'"]) {
     if (scriptSrc.includes(unsafe)) {
       throw new Error(`Production Content-Security-Policy allows ${unsafe} in script-src.`);
+    }
+  }
+
+  // Placed after the unsafe-keyword checks on purpose. An added 'unsafe-inline' is both the likeliest
+  // mistake and the one with the most actionable message, so it should be what the reader is told
+  // rather than the broader "not exactly 'self'" that would otherwise fire first on the same policy.
+  for (const directive of REQUIRED_SELF) {
+    const sources = directives.get(directive);
+    if (!sources) throw new Error(`Production Content-Security-Policy omits ${directive}.`);
+    if (sources.length !== 1 || sources[0] !== "'self'") {
+      throw new Error(
+        `Production Content-Security-Policy sets ${directive} to "${sources.join(' ')}" rather than 'self'. `
+        + 'Every asset this application loads is same-origin, and it makes no network requests at all, '
+        + 'so any other source list is either dead or a change nobody meant to ship.',
+      );
     }
   }
 
