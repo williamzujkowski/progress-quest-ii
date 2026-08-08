@@ -89,14 +89,39 @@ function getStorage(): SaveResult<Storage> {
   }
 }
 
-function readRoster(storage: Storage): SaveResult<Record<string, CharacterSheet>> {
+interface RosterRead {
+  readonly roster: Record<string, CharacterSheet>;
+  /**
+   * Entries this build could not parse, kept verbatim.
+   *
+   * They are not returned to callers as characters — nothing can be done with a sheet that fails
+   * the schema — but every writer serialises them back out, so the bytes survive. A save this
+   * build cannot read is not necessarily a save that is gone: `characterSheetSchema` is `.strict()`,
+   * so a character written by a *newer* build fails here purely for carrying a field this one has
+   * never heard of, and dropping it would turn a version skew into a deletion.
+   */
+  readonly unreadable: Record<string, unknown>;
+}
+
+/**
+ * Reads the roster, skipping entries it cannot parse rather than failing the whole map.
+ *
+ * It used to return on the first bad entry. One unreadable character therefore hid every valid one
+ * beside it, and because `removeFromRoster` reads before it deletes, the only cleanup control in
+ * the app could not clear the thing that was blocking it — so no character could ever be saved
+ * again, with no in-app way back.
+ *
+ * `readLedger` in `ledgerStorage.ts` already faces this and fails closed to empty. A roster is a
+ * map of independent records; one corrupt value is not evidence about the others.
+ */
+function readRoster(storage: Storage): SaveResult<RosterRead> {
   let raw: string | null;
   try {
     raw = storage.getItem(ROSTER_STORAGE_KEY);
   } catch {
     return saveFailure('storage_unavailable', 'Browser storage could not be read. Nothing was changed.');
   }
-  if (raw === null) return { ok: true, value: emptyRoster() };
+  if (raw === null) return { ok: true, value: { roster: emptyRoster(), unreadable: emptyRoster() } };
   if (raw.length > MAX_ROSTER_SERIALIZED_LENGTH) {
     return saveFailure('storage_corrupt', 'The saved roster is too large to process. Nothing was changed.');
   }
@@ -104,25 +129,42 @@ function readRoster(storage: Storage): SaveResult<Record<string, CharacterSheet>
   try {
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      // Still a whole-map failure: this is not one bad record among good ones, it is not a map.
       return saveFailure('storage_corrupt', 'The saved roster is unreadable. Nothing was changed.');
     }
 
     const validRoster = emptyRoster();
+    const unreadable: Record<string, unknown> = emptyRoster();
     for (const [key, value] of Object.entries(parsed)) {
-      if (Object.keys(validRoster).length >= MAX_ROSTER_ENTRIES) {
+      // Counts both, because the cap bounds how much this has to hold, and an unreadable entry
+      // occupies a slot just as surely as a readable one.
+      if (Object.keys(validRoster).length + Object.keys(unreadable).length >= MAX_ROSTER_ENTRIES) {
         return saveFailure('storage_corrupt', 'The saved roster has too many characters. Nothing was changed.');
       }
       const check = characterSheetSchema.safeParse(value);
-      if (!check.success) return saveFailure('storage_corrupt', 'The saved roster is unreadable. Nothing was changed.');
-      if (key !== check.data.Traits.Name) {
-        return saveFailure('storage_corrupt', 'The saved roster is unreadable. Nothing was changed.');
+      // A key that disagrees with the name inside it is corruption of the same kind, and is kept
+      // for the same reason — this build cannot use the entry, and cannot prove it is worthless.
+      if (!check.success || key !== check.data.Traits.Name) {
+        unreadable[key] = value;
+        continue;
       }
       validRoster[key] = check.data;
     }
-    return { ok: true, value: validRoster };
+    return { ok: true, value: { roster: validRoster, unreadable } };
   } catch {
     return saveFailure('storage_corrupt', 'The saved roster is unreadable. Nothing was changed.');
   }
+}
+
+/**
+ * What gets written back: the valid characters plus whatever could not be read.
+ *
+ * Every writer serialises the map it was handed, so without this an unreadable entry would survive
+ * exactly until the player's next save and then be gone. Valid entries win a key collision — if a
+ * character is saved under a name an unreadable entry holds, the one that parses is the real one.
+ */
+function serializableRoster(read: RosterRead): Record<string, unknown> {
+  return { ...read.unreadable, ...read.roster };
 }
 
 function writeFailure(error: unknown, action: string): SaveResult<never> {
@@ -162,7 +204,9 @@ function readRosterRecency(storage: Storage, roster: Record<string, CharacterShe
 
 export function loadRoster(storageOverride?: Storage): SaveResult<Record<string, CharacterSheet>> {
   const storage: SaveResult<Storage> = storageOverride ? { ok: true, value: storageOverride } : getStorage();
-  return storage.ok ? readRoster(storage.value) : storage;
+  if (!storage.ok) return storage;
+  const loaded = readRoster(storage.value);
+  return loaded.ok ? { ok: true, value: loaded.value.roster } : loaded;
 }
 
 export function loadMostRecentRosterCharacter(storage?: Storage): SaveResult<CharacterSheet | null> {
@@ -170,13 +214,13 @@ export function loadMostRecentRosterCharacter(storage?: Storage): SaveResult<Cha
   if (!availableStorage.ok) return availableStorage;
   const loaded = readRoster(availableStorage.value);
   if (!loaded.ok) return loaded;
-  const recency = readRosterRecency(availableStorage.value, loaded.value);
+  const recency = readRosterRecency(availableStorage.value, loaded.value.roster);
   if (!recency.ok) return recency;
   for (const name of recency.value.toReversed()) {
-    const character = loaded.value[name];
-    if (Object.hasOwn(loaded.value, name) && character) return { ok: true, value: character };
+    const character = loaded.value.roster[name];
+    if (Object.hasOwn(loaded.value.roster, name) && character) return { ok: true, value: character };
   }
-  return { ok: true, value: Object.values(loaded.value).at(-1) ?? null };
+  return { ok: true, value: Object.values(loaded.value.roster).at(-1) ?? null };
 }
 
 /**
@@ -199,7 +243,7 @@ export function importToRoster(sheet: CharacterSheet): SaveResult<Record<string,
   if (!loaded.ok) return loaded;
 
   // Own-property only: a character named `constructor` must not read as already present.
-  if (Object.hasOwn(loaded.value, sheet.Traits.Name)) {
+  if (Object.hasOwn(loaded.value.roster, sheet.Traits.Name)) {
     // A name collision is only destructive when the two characters differ. Re-importing a save of
     // the character already stored — the common case, since exporting and re-importing your own
     // backup is what the feature is for — replaces the entry with itself and loses nothing.
@@ -207,7 +251,7 @@ export function importToRoster(sheet: CharacterSheet): SaveResult<Record<string,
     // Warning there would be a false alarm, and false alarms are how a confirmation stops being
     // read. Both sides are compared through the same schema so key order cannot make identical
     // characters look different.
-    const stored = characterSheetSchema.safeParse(loaded.value[sheet.Traits.Name]);
+    const stored = characterSheetSchema.safeParse(loaded.value.roster[sheet.Traits.Name]);
     const incoming = characterSheetSchema.safeParse(sheet);
     const unchanged = stored.success && incoming.success
       && JSON.stringify(stored.data) === JSON.stringify(incoming.data);
@@ -232,16 +276,17 @@ export function saveToRoster(sheet: CharacterSheet): SaveResult<Record<string, C
   if (!storage.ok) return storage;
   const loaded = readRoster(storage.value);
   if (!loaded.ok) return loaded;
-  const recency = readRosterRecency(storage.value, loaded.value);
+  const recency = readRosterRecency(storage.value, loaded.value.roster);
   if (!recency.ok) return recency;
 
   try {
-    const roster = loaded.value;
+    const roster = loaded.value.roster;
     roster[candidate.data.Traits.Name] = candidate.data;
-    if (Object.keys(roster).length > MAX_ROSTER_ENTRIES) {
+    const persisted = serializableRoster(loaded.value);
+    if (Object.keys(persisted).length > MAX_ROSTER_ENTRIES) {
       return saveFailure('roster_too_large', 'The roster already contains the maximum number of characters. Nothing was changed.');
     }
-    const serialized = JSON.stringify(roster);
+    const serialized = JSON.stringify(persisted);
     if (serialized.length > MAX_ROSTER_SERIALIZED_LENGTH) {
       return saveFailure('roster_too_large', 'The roster is too large to save. Nothing was changed.');
     }
@@ -269,13 +314,16 @@ export function removeFromRoster(characterName: string): SaveResult<Record<strin
   if (!storage.ok) return storage;
   const loaded = readRoster(storage.value);
   if (!loaded.ok) return loaded;
-  const recency = readRosterRecency(storage.value, loaded.value);
+  const recency = readRosterRecency(storage.value, loaded.value.roster);
   if (!recency.ok) return recency;
 
   try {
-    const roster = loaded.value;
+    const roster = loaded.value.roster;
     delete roster[characterName];
-    const serialized = JSON.stringify(roster);
+    // Deletes from the unreadable side too: the player asked for this name to be gone, and an
+    // entry they cannot see is still one they asked to remove.
+    const { [characterName]: _removed, ...keptUnreadable } = loaded.value.unreadable;
+    const serialized = JSON.stringify(serializableRoster({ roster, unreadable: keptUnreadable }));
     const nextRecency = rosterRecencySchema.safeParse(recency.value.filter((name) => name !== characterName && Object.hasOwn(roster, name)));
     if (!nextRecency.success) return saveFailure('storage_failed', 'Roster recency could not be updated safely. Nothing was changed.');
     const serializedRecency = JSON.stringify(nextRecency.data);
