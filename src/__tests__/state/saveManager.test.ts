@@ -536,27 +536,43 @@ describe('Save Manager & Serialization', () => {
     expect(localStorage.getItem('progquest_roster_v1')).toBe('');
   });
 
-  it('rejects roster entries whose storage key does not match the character name', () => {
+  it('skips a roster entry whose storage key does not match the character name, and keeps it on disk', () => {
     const character = createNewCharacter('ActualName', 'Half Daemon', 'Robot Monk', 608);
     const mismatchedRoster = JSON.stringify({ Alias: character });
     localStorage.setItem('progquest_roster_v1', mismatchedRoster);
 
-    expect(loadRoster()).toMatchObject({
-      ok: false,
-      error: { code: 'storage_corrupt' },
-    });
+    // A key disagreeing with the name inside it is corruption this build cannot resolve, but it is
+    // not evidence the entry is worthless — so it is skipped, not surfaced and not destroyed.
+    expect(loadRoster()).toMatchObject({ ok: true });
+    expect(Object.keys((loadRoster() as { value: Record<string, unknown> }).value)).toEqual([]);
     expect(localStorage.getItem('progquest_roster_v1')).toBe(mismatchedRoster);
   });
 
-  it('rejects and preserves roster entries that fail the character schema', () => {
-    const invalidRoster = JSON.stringify({ Broken: { Traits: { Name: 'Broken' } } });
-    localStorage.setItem('progquest_roster_v1', invalidRoster);
+  it('skips an unreadable roster entry without hiding the valid ones or blocking a save', () => {
+    // This is the shape a version skew takes: characterSheetSchema is .strict(), so a character
+    // written by a newer build fails here purely for a field this one has never heard of.
+    const alice = createNewCharacter('Alice', 'Half Daemon', 'Robot Monk', 610);
+    const carol = createNewCharacter('Carol', 'Off-Prem Elf', 'Vermineer', 611);
+    const broken = { Traits: { Name: 'Broken' } };
+    const originalRoster = JSON.stringify({ Alice: alice, Broken: broken, Carol: carol });
+    localStorage.setItem('progquest_roster_v1', originalRoster);
 
-    expect(loadRoster()).toMatchObject({
-      ok: false,
-      error: { code: 'storage_corrupt' },
-    });
-    expect(localStorage.getItem('progquest_roster_v1')).toBe(invalidRoster);
+    const loaded = loadRoster();
+    expect(loaded.ok).toBe(true);
+    expect(loaded.ok && Object.keys(loaded.value).sort()).toEqual(['Alice', 'Carol']);
+
+    // The half that is easy to get wrong. Every writer re-serialises what it was handed, so
+    // skipping alone would delete the unreadable character on the player's next save.
+    const dave = createNewCharacter('Dave', 'Off-Prem Elf', 'Vermineer', 612);
+    expect(saveToRoster(dave).ok).toBe(true);
+    const persisted: Record<string, unknown> = JSON.parse(localStorage.getItem('progquest_roster_v1') ?? '{}');
+    expect(Object.keys(persisted).sort()).toEqual(['Alice', 'Broken', 'Carol', 'Dave']);
+    expect(persisted.Broken).toEqual(broken);
+
+    // And the entry the player cannot see is still one they can ask to remove.
+    expect(removeFromRoster('Broken').ok).toBe(true);
+    expect(Object.keys(JSON.parse(localStorage.getItem('progquest_roster_v1') ?? '{}')).sort())
+      .toEqual(['Alice', 'Carol', 'Dave']);
   });
 
   it('returns a generic typed failure when storage rejects a write for another reason', () => {
