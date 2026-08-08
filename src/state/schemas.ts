@@ -16,8 +16,27 @@ export const MAX_CHARACTER_NAME_LENGTH = 120;
  * formatting characters because U+202E reverses the rest of the line it lands in — an item name is
  * interpolated into guild chatter and printed on the world console, so one of them in a saved
  * loadout rewrites text the player never typed. React escapes markup; it does not escape these.
+ * Written as a predicate over code points rather than a character class, because a regex that
+ * matches control characters is exactly what `no-control-regex` exists to flag, and the rule fires
+ * whether the class is spelled with literals or with escapes. Suppressing it would have been the
+ * wrong way round: the lint is right that a control character in a pattern is worth a second look,
+ * and the ranges read better named than packed into brackets.
  */
-const FORBIDDEN_CODE_POINTS = /[\u0000-\u001F\u007F-\u009F\u200E\u200F\u202A-\u202E\u2066-\u2069]/u;
+const isForbiddenCodePoint = (point: number): boolean =>
+  point <= 0x1f // C0 controls
+  || (point >= 0x7f && point <= 0x9f) // delete and the C1 controls
+  || point === 0x200e || point === 0x200f // left-to-right and right-to-left marks
+  || (point >= 0x202a && point <= 0x202e) // the embedding and override run, U+202E among them
+  || (point >= 0x2066 && point <= 0x2069); // the isolates
+
+const isUnrenderable = (value: string): boolean => {
+  // Iterated by code point rather than by UTF-16 unit, so an astral character is never split into
+  // surrogates and mistaken for something in a forbidden range.
+  for (const character of value) {
+    if (isForbiddenCodePoint(character.codePointAt(0) ?? 0)) return true;
+  }
+  return false;
+};
 
 /**
  * Rejects rather than strips.
@@ -28,7 +47,7 @@ const FORBIDDEN_CODE_POINTS = /[\u0000-\u001F\u007F-\u009F\u200E\u200F\u202A-\u2
  * parse, which blocks automatic writes rather than overwriting anything.
  */
 const readableText = <T extends z.ZodType<string>>(schema: T) =>
-  schema.refine((value) => !FORBIDDEN_CODE_POINTS.test(value), {
+  schema.refine((value) => !isUnrenderable(value), {
     message: 'Text may not contain control or bidirectional formatting characters.',
   });
 

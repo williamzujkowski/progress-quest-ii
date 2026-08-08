@@ -55,7 +55,9 @@ describe('what a saved name is allowed to contain', () => {
     // The failure mode of a character-class rule is rejecting legitimate saves, which here would
     // mean refusing to load a real player's game. The names this game makes carry curly apostrophes
     // and dashes, and there is no reason a character name should not carry an accent.
-    for (const ordinary of ['Sgt. Zoumpouk the Off-Prem Elf', 'a squire’s note', 'Zoë Ærlich', '—', 'Cc Line', '+9 Skeleton Key']) {
+    // The astral character is here for the code-point iteration: scanned by UTF-16 unit instead, a
+    // surrogate pair is two values neither of which is the character that was written.
+    for (const ordinary of ['Sgt. Zoumpouk the Off-Prem Elf', 'a squire’s note', 'Zoë Ærlich', '—', 'Cc Line', '+9 Skeleton Key', 'Doomsday Vault \u{1F600}']) {
       expect(parse((d) => { d.Equip.Helm = ordinary; }).success, ordinary).toBe(true);
     }
   });
