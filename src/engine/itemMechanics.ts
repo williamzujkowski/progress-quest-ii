@@ -1,5 +1,5 @@
+import { armourTableForSlot } from '../data/armourBySlot';
 import {
-  ARMORS,
   DEFENSE_ATTRIB,
   DEFENSE_BAD,
   OFFENSE_ATTRIB,
@@ -61,7 +61,10 @@ export function analyzeItemMechanics(request: ItemMechanicsRequest): EquipmentMe
   const { name, slot } = request;
   if (!name || name === '—') return { kind: 'equipment', quality: null, combatContribution: 'none' };
 
-  const baseTable = slot === 'Weapon' ? WEAPONS : slot === 'Shield' ? SHIELDS : ARMORS;
+  // Armour is named per slot, so the table an item is looked up in has to be the slot's own.
+  // Reading every slot against the shared list would find no base for eight of the nine, which
+  // costs the tooltips their breakdown and `loadoutQuality` its entire contribution.
+  const baseTable = slot === 'Weapon' ? WEAPONS : slot === 'Shield' ? SHIELDS : armourTableForSlot(slot);
   const modifierTable = slot === 'Weapon'
     ? [...OFFENSE_ATTRIB, ...OFFENSE_BAD]
     : [...DEFENSE_ATTRIB, ...DEFENSE_BAD];

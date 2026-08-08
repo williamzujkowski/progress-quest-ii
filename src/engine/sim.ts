@@ -1,4 +1,5 @@
 import { encounterSpeedMultiplier, loadoutQuality } from './loadout';
+import { armourNameForSlot } from '../data/armourBySlot';
 import { ALL_STATS, ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, EQUIP_SLOTS, ITEM_ATTRIB, ITEM_OFS, KLASSES, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, PRIME_STATS, RACES, SHIELDS, SPECIALS, SPELLS, TITLES, WEAPONS } from '../data/traits';
 import { MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../data/limits';
 import { calculateEncumbranceMax, generateInitialStats, generateName, MAX_FINITE_CHARACTER_LEVEL } from './math';
@@ -232,11 +233,18 @@ export function generateEquipUpgrade(rng: RandomGenerator, level: number): { slo
     worse = DEFENSE_BAD;
   }
 
-  let [name, quality] = rng.pick(stuff);
+  // Index rather than name, so the slot can rename what the draw chose without changing the draw.
+  // `rng.pick` consumes one value and returns a position; the quality at that position drives every
+  // figure below, and renaming afterwards leaves all of it identical.
+  // `rng.random(n)` is exactly what `pick` calls internally, so this is the same single draw and
+  // the same sequence — it simply keeps the position instead of discarding it.
+  let index = rng.random(stuff.length);
   for (let attempt = 0; attempt < 5; attempt += 1) {
-    const candidate = rng.pick(stuff);
-    if (Math.abs(level - quality) > Math.abs(level - candidate[1])) [name, quality] = candidate;
+    const candidate = rng.random(stuff.length);
+    if (Math.abs(level - stuff[index]![1]) > Math.abs(level - stuff[candidate]![1])) index = candidate;
   }
+  let quality = stuff[index]![1];
+  let name = slot === 'Weapon' || slot === 'Shield' ? stuff[index]![0] : armourNameForSlot(slot, index);
 
   let plus = level - quality;
   if (plus < 0) better = worse;

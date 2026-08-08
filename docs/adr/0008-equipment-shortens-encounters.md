@@ -39,17 +39,27 @@ reduction would need a clamp, and a clamp is a second rule that has to be kept t
 
 ## Consequences
 
-**Every recorded golden is unchanged, but not for the reason first claimed here.** An earlier draft
-of this ADR said the floor was what kept them intact. Removing the floor and re-running proves
-otherwise: all 95 still pass. The goldens take a task's duration from the `TaskBar.max` recorded in
-their input, and the durations they go on to pin are market and purchase tasks, which do not use
-this formula. **They never reach the kill-duration path at all.**
+**Every recorded golden is unchanged, and the reason has now been wrong twice.** The first draft said
+the floor kept them intact; removing the floor disproved that. The correction that replaced it said
+the goldens never reach the kill-duration path at all. That is also false, and it was checked
+carelessly — `one-kill.json` pins a regenerated next task of `kill|Grid Bug|1|trace` at `maxMs: 6000`,
+which is this formula's output, and three other fixtures do the same.
 
-That is worth stating plainly rather than quietly fixing, because it changes what protection this
-change has. The behavioural baseline does not cover regenerated encounter durations, so the goldens
-cannot vouch for this and the unit tests are the only guard. The floor is justified by its design
-argument alone — a threadbare hauberk should not punish the player for wearing it — which is
-sufficient, and was the owner's reasoning, but is not the arithmetic guarantee first written here.
+The true reason is narrower than the first claim and broader in what it permits. **Every fixture's
+input loadout is `Sharp Rock` and `-3 Boilerplate`, and both contribute nothing** — `Sharp Rock`
+matches no `WEAPONS` label, and `Boilerplate` at 3 with a `-3` assessor's mark is 0. Measured:
+`loadoutQuality` is `0` and `encounterSpeedMultiplier(0)` is exactly `1`, so the multiplication is
+the identity and the recorded durations survive it untouched.
+
+That is a general licence and worth writing down as one: **a loadout-derived multiplier is
+golden-safe if and only if it is inert at `loadoutQuality === 0`.** It is mechanically checkable
+rather than a matter of judgement, and it covers far more future change than "the path is never
+reached" would have.
+
+It also means the goldens *do* guard this formula, at exactly one point — the point where it must do
+nothing. They cannot vouch for its behaviour anywhere else, so the unit tests remain the only guard
+for the rest. The floor is still justified by its design argument alone: a threadbare hauberk should
+not punish the player for wearing it.
 
 **`CONTEXT.md` is now wrong in two places** and is superseded here rather than silently left. The
 statements were true of the original and are no longer true of this build, which is what ADR 0003

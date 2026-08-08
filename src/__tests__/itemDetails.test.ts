@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { ARMOUR_BY_SLOT } from '../data/armourBySlot';
+import type { EquipSlot } from '../engine/types';
 import { describeEquipment, describeInventoryItem, describeSpell } from '../data/itemDetails';
 import {
   ARMORS,
@@ -119,12 +121,17 @@ describe('item tooltip details', () => {
       withoutIdentityToken(describeEquipment(`Vetted ${base}`, 'Weapon').description, base));
     const shieldStories = SHIELDS.map(([base]) =>
       withoutIdentityToken(describeEquipment(`Bonded ${base}`, 'Shield').description, base));
-    const armorStories = ARMORS.map(([base]) =>
-      withoutIdentityToken(describeEquipment(`Bonded ${base}`, 'Hauberk').description, base));
-
     expect(new Set(weaponStories).size).toBe(WEAPONS.length);
     expect(new Set(shieldStories).size).toBe(SHIELDS.length);
-    expect(new Set(armorStories).size).toBe(ARMORS.length);
+
+    // Armour is named per slot, so the property is asserted nine times rather than once. Reading
+    // every slot against the shared list would find no base for eight of them, collapse them all
+    // onto the same fallback description, and report a collision that is really a lookup failure.
+    for (const [slot, names] of Object.entries(ARMOUR_BY_SLOT)) {
+      const stories = names.map((base) =>
+        withoutIdentityToken(describeEquipment(`Bonded ${base}`, slot as EquipSlot).description, base));
+      expect(new Set(stories).size, `${slot} has two bases telling the same story`).toBe(names.length);
+    }
   });
 
   it('gives every canonical equipment modifier a distinct idea in the same context', () => {
