@@ -1,4 +1,4 @@
-import { MAX_PERSISTED_GOLD } from '../data/limits';
+import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../data/limits';
 
 /**
  * Gold that keeps growing instead of stopping.
@@ -29,6 +29,18 @@ export interface GoldPurse {
  * Shedding divides by ten and rounds down, so a decade costs at most nine coins of precision out
  * of a trillion. Rounding rather than truncating would be no more accurate and would occasionally
  * hand the player money they had not earned.
+ *
+ * The decade count saturates at `MAX_PERSISTED_VALUE`, and the figure then rides at the cap the way
+ * it used to before any of this. Every other quantity the transition writes into the sheet is
+ * clamped — Level, the stats, the act, spell level, inventory quantity — and the carrier was
+ * originally not, which made it the one persisted number that could grow past what the schema
+ * accepts. A character in that state fails `characterSheetSchema`, and the checkpoint writer, the
+ * roster writer and the exporter all refuse it at once with no repair offered, so the save is lost
+ * on close.
+ *
+ * Not reachable by playing: earnings scale roughly as the cube of level, and a billion decade-sheds
+ * is not a number of kills. It is reachable by importing a hand-edited save, which the schema
+ * accepts because a billion is a legal value right up until it is incremented.
  */
 export function earnGold(purse: GoldPurse, earned: number): GoldPurse {
   if (!Number.isFinite(earned) || earned <= 0) return purse;
@@ -36,12 +48,14 @@ export function earnGold(purse: GoldPurse, earned: number): GoldPurse {
   let gold = purse.gold + earned;
   let decades = purse.decades;
 
-  while (gold >= MAX_PERSISTED_GOLD) {
+  while (gold >= MAX_PERSISTED_GOLD && decades < MAX_PERSISTED_VALUE) {
     gold = Math.floor(gold / 10);
     decades += 1;
   }
 
-  return { gold, decades };
+  // Saturating the decade count leaves the figure itself above the cap, so it needs its own clamp.
+  // Without this the loop's exit condition would simply hand back the unbounded sum.
+  return { gold: Math.min(gold, MAX_PERSISTED_GOLD - 1), decades };
 }
 
 /**

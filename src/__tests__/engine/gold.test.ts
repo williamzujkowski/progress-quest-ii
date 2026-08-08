@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_PERSISTED_GOLD } from '../../data/limits';
+import { MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../../data/limits';
 import { earnGold, goldEarnedBetween, spendGold } from '../../engine/gold';
+import { characterSheetSchema } from '../../state/schemas';
 
 const purse = (gold: number, decades = 0) => ({ gold, decades });
 
@@ -65,5 +66,29 @@ describe('gold that keeps growing', () => {
   it('spends normally below the first decade', () => {
     expect(spendGold(purse(500), 200)).toEqual(purse(300));
     expect(spendGold(purse(100), 500)).toEqual(purse(0));
+  });
+  it('stops shedding at the schema maximum instead of growing past what a save can hold', () => {
+    // The decade count was the one persisted quantity with no clamp. Every other figure the
+    // transition writes is bounded, and a character carrying an out-of-range one fails
+    // characterSheetSchema — which the checkpoint writer, the roster writer and the exporter all
+    // refuse at once, with no repair offered.
+    const atCeiling = purse(MAX_PERSISTED_GOLD - 1, MAX_PERSISTED_VALUE);
+    const after = earnGold(atCeiling, MAX_PERSISTED_GOLD);
+
+    expect(after.decades).toBe(MAX_PERSISTED_VALUE);
+    // Both halves matter: saturating the count alone would leave the figure above the cap, which
+    // fails the same schema by the other field.
+    expect(after.gold).toBeLessThan(MAX_PERSISTED_GOLD);
+    expect(characterSheetSchema.shape.GoldDecades.safeParse(after.decades).success).toBe(true);
+    expect(characterSheetSchema.shape.Gold.safeParse(after.gold).success).toBe(true);
+  });
+
+  it('reports earning nothing once the purse is genuinely at the ceiling', () => {
+    // Honest rather than flattering. goldEarnedBetween returns the requested amount whenever a
+    // decade was shed, so a saturated purse must not keep claiming the player got richer.
+    const atCeiling = purse(MAX_PERSISTED_GOLD - 1, MAX_PERSISTED_VALUE);
+    const after = earnGold(atCeiling, MAX_PERSISTED_GOLD);
+
+    expect(goldEarnedBetween(atCeiling, after, MAX_PERSISTED_GOLD)).toBe(0);
   });
 });
