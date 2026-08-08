@@ -100,6 +100,8 @@ export interface CharacterSheet {
   Inventory: InventoryItem[];
   Spells: SpellItem[];
   Gold: number;
+  /** Powers of ten shed from Gold once it passes the cap. Absent on sheets written before ADR 0009. */
+  GoldDecades?: number | undefined;
   Plot: {
     act: number;
     currentProgress: number;

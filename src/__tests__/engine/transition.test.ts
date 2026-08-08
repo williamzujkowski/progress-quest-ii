@@ -654,8 +654,22 @@ describe('advanceGame', () => {
 
     const result = advanceGame(stateFor(character), 1, new RandomGenerator('maximum-sale'));
 
-    expect(result.state.character.Gold).toBe(MAX_PERSISTED_GOLD);
-    expect(eventsOf(result)[0]).toEqual({ type: 'inventory_sold', gold: 0 });
+    // This asserted Gold stayed at MAX_PERSISTED_GOLD and the sale paid nothing. That was the old
+    // contract and it is deliberately gone: the cap was an ending rather than a limit, and a player
+    // who reached it went on selling loot forever while being told they earned zero each time.
+    //
+    // Gold now sheds a decade instead of saturating (ADR 0009), so the stored figure falls below
+    // the cap while the balance has grown. Both halves are asserted, because either alone would
+    // pass on a bug: a figure under the cap could mean gold was lost, and a decade could be shed
+    // without the sale paying.
+    expect(result.state.character.Gold).toBeLessThan(MAX_PERSISTED_GOLD);
+    // Fourteen, not one: this sale is a billion items at once, so it sheds many decades in a
+    // single step. Asserted as "some" rather than a pinned count, because the exact number is a
+    // fact about the fixture's inventory rather than about the mechanic.
+    expect(result.state.character.GoldDecades ?? 0).toBeGreaterThan(0);
+    expect(eventsOf(result)[0]).toMatchObject({ type: 'inventory_sold' });
+    const sold = eventsOf(result)[0] as { type: 'inventory_sold'; gold: number };
+    expect(sold.gold, 'a sale past the cap must still pay').toBeGreaterThan(0);
     expect(characterSheetSchema.safeParse(result.state.character).success).toBe(true);
   });
 

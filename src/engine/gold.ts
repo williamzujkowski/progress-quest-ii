@@ -1,0 +1,72 @@
+import { MAX_PERSISTED_GOLD } from '../data/limits';
+
+/**
+ * Gold that keeps growing instead of stopping.
+ *
+ * It used to saturate: `Math.min(MAX_PERSISTED_GOLD, gold + earned)`. That is a cap rather than an
+ * ending — the figure simply froze at a trillion while the game carried on selling loot, and every
+ * sale after that reported earning nothing.
+ *
+ * It now sheds a decade instead. The stored figure stays under the cap, exact and safe to add to,
+ * and a count of powers of ten carries the scale. Which is the joke: the number gets bigger because
+ * zeros are appended, not because anything computed a bigger number. See ADR 0009.
+ *
+ * The arithmetic lives here rather than in `magnitude.ts` because gold has a constraint that
+ * carrier does not: the mantissa must stay a whole number of coins. A player with `4.2 × 10^12`
+ * gold has an exact integer of gold, and `Magnitude` normalises to `[1, 10)`, which would turn a
+ * balance into a decimal.
+ */
+
+/** Gold carried as an exact figure plus the decades it has shed. */
+export interface GoldPurse {
+  readonly gold: number;
+  readonly decades: number;
+}
+
+/**
+ * Adds earnings, shedding decades rather than saturating.
+ *
+ * Shedding divides by ten and rounds down, so a decade costs at most nine coins of precision out
+ * of a trillion. Rounding rather than truncating would be no more accurate and would occasionally
+ * hand the player money they had not earned.
+ */
+export function earnGold(purse: GoldPurse, earned: number): GoldPurse {
+  if (!Number.isFinite(earned) || earned <= 0) return purse;
+
+  let gold = purse.gold + earned;
+  let decades = purse.decades;
+
+  while (gold >= MAX_PERSISTED_GOLD) {
+    gold = Math.floor(gold / 10);
+    decades += 1;
+  }
+
+  return { gold, decades };
+}
+
+/**
+ * Spends, which cannot shed decades back.
+ *
+ * A purchase is priced in ordinary coins, so a player whose balance has shed decades can always
+ * afford it and the decades never come back down. That asymmetry is deliberate: this game has no
+ * mechanic that should be able to erase an order of magnitude a player has reached, and a spend
+ * path that could would be a way to lose progress by shopping.
+ */
+export function spendGold(purse: GoldPurse, cost: number): GoldPurse {
+  if (!Number.isFinite(cost) || cost <= 0) return purse;
+  if (purse.decades > 0) return purse.gold >= cost ? { ...purse, gold: purse.gold - cost } : purse;
+  return { ...purse, gold: Math.max(0, purse.gold - cost) };
+}
+
+/**
+ * What the player is told they earned.
+ *
+ * Reported from the figures rather than by subtracting balances: once a decade is shed, the stored
+ * balance falls even though the player gained, so a naive difference reports a loss. That is the
+ * defect this function exists to prevent, and it would have been invisible until someone sold loot
+ * at exactly the wrong moment.
+ */
+export function goldEarnedBetween(before: GoldPurse, after: GoldPurse, requested: number): number {
+  if (after.decades !== before.decades) return requested;
+  return after.gold - before.gold;
+}

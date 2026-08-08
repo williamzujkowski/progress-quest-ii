@@ -1,6 +1,7 @@
 import { addInventoryItem, applyQuestReward, applySpellReward, calculateEncumbrance, equipPrice, generateEquipUpgrade, generateItemReward, generateQuest, generateStatReward, generateTaskDescription } from './sim';
 import { BORING_ITEMS, IMPRESSIVE_TITLES, MONSTERS, RACES } from '../data/traits';
 import { MAX_PENDING_TASKS, MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../data/limits';
+import { earnGold, goldEarnedBetween } from './gold';
 import { calculateEncumbranceMax, generateName, levelUpTime } from './math';
 import type { RandomGenerator } from './prng';
 import { formatGameNumber, indefinite, plural } from './text';
@@ -296,6 +297,7 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
     let plot = { ...character.Plot };
     let inventory = character.Inventory;
     let gold = character.Gold;
+    let goldDecades = character.GoldDecades ?? 0;
     let equip = { ...character.Equip };
     let pendingTasks = [...(character.PendingTasks ?? [])];
     let cinematicOpening: CinematicOpening | undefined;
@@ -322,6 +324,7 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
             Spells: spells,
             Inventory: inventory,
             Gold: gold,
+            GoldDecades: goldDecades,
             Quest: quest,
             Plot: plot,
             Task: task,
@@ -384,9 +387,14 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
           * (1 + Math.min(rng.random(traits.Level), rng.random(traits.Level)));
       }
       inventory = remainingInventory;
-      const previousGold = gold;
-      gold = Math.min(MAX_PERSISTED_GOLD, gold + earned);
-      const receivedGold = gold - previousGold;
+      // Sheds a decade rather than saturating, so a sale past the cap still pays. The earning is
+      // reported from what was asked for, not from the change in the stored figure — once a decade
+      // is shed the balance falls even though the player gained.
+      const before = { gold, decades: goldDecades };
+      const after = earnGold(before, earned);
+      gold = after.gold;
+      goldDecades = after.decades;
+      const receivedGold = goldEarnedBetween(before, after, earned);
       if (soldItem) marketSale = { name: soldItem.name, quantity: soldItem.qty, gold: receivedGold };
       events.push({ type: 'inventory_sold', gold: receivedGold });
     } else if (task.type === 'buying') {
@@ -402,7 +410,7 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
       plot.currentProgress = Math.min(plot.maxProgress, plot.currentProgress + progressDelta);
     }
 
-    let transitionedCharacter: CharacterSheet = { ...character, Traits: traits, Stats: stats, Equip: equip, Spells: spells, Inventory: inventory, Gold: gold, Quest: quest, Plot: plot, Task: task, PendingTasks: pendingTasks };
+    let transitionedCharacter: CharacterSheet = { ...character, Traits: traits, Stats: stats, Equip: equip, Spells: spells, Inventory: inventory, Gold: gold, GoldDecades: goldDecades, Quest: quest, Plot: plot, Task: task, PendingTasks: pendingTasks };
     let nextTask: ProgressTask | undefined;
     // Set only where the engine actually made the decision, so the feed never has to guess.
     let marketReason: { carriedCubits: number; capacityCubits: number } | undefined;
@@ -472,7 +480,7 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
       nextTask = { ...nextTaskInfo, elapsedMs: 0 };
     }
     if (!nextTask) throw new Error('Sequence transition did not produce a task');
-    transitionedCharacter = { ...transitionedCharacter, Equip: equip, Inventory: inventory, Gold: gold, Plot: plot, PendingTasks: pendingTasks };
+    transitionedCharacter = { ...transitionedCharacter, Equip: equip, Inventory: inventory, Gold: gold, GoldDecades: goldDecades, Plot: plot, PendingTasks: pendingTasks };
     if (pendingTasks.length === 0) delete transitionedCharacter.PendingTasks;
     events.push(marketReason
       ? { type: 'task_started', task: structuredClone(nextTask), reason: marketReason }
