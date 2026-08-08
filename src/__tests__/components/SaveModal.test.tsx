@@ -305,3 +305,75 @@ describe('Save Manager recovery', () => {
     setItem.mockRestore();
   });
 });
+
+describe('character creation stays in the dedicated creator', () => {
+  /**
+   * Replaces an assertion that could not fail.
+   *
+   * The e2e suite asserted `getByText('Roll New Guy')` had a count of zero. That string exists
+   * nowhere in the repository, so the count was structurally zero and no change to this component
+   * could have moved it — including the one the test's name forbids.
+   *
+   * The property is engine-level rather than textual: `gameStore` mints a character only through
+   * `startSession` with `source: 'creation'`, and this modal legitimately calls `startSession` with
+   * `'import'` and `'roster'`. So the discriminant is the request's source, which a vocabulary
+   * rewrite cannot touch — the previous assertion rotted precisely because it matched flavour text.
+   */
+  const sweepEveryButton = async (roster: Record<string, ReturnType<typeof createNewCharacter>>) => {
+    localStorage.setItem('progquest_roster_v1', JSON.stringify(roster));
+    // Deletion asks first, and an unanswered prompt would stop the sweep at the first delete.
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    const sources: string[] = [];
+    const realStartSession = useGameStore.getState().startSession;
+    useGameStore.setState({
+      startSession: (request: Parameters<typeof realStartSession>[0]) => {
+        sources.push(request.source);
+        realStartSession(request);
+      },
+    });
+
+    render(<SaveModal isOpen onClose={() => undefined} />);
+    // By role and by index, never by name: a control added tomorrow is clicked by construction.
+    const buttons = await screen.findAllByRole('button');
+    for (const button of buttons) fireEvent.click(button);
+
+    useGameStore.setState({ startSession: realStartSession });
+    return { sources, buttonCount: buttons.length };
+  };
+
+  it('creates no character from any control in the roster modal', async () => {
+    const stored = createNewCharacter('Filed Away', 'Half Daemon', 'Robot Monk', 808);
+    const { sources, buttonCount } = await sweepEveryButton({ 'Filed Away': stored });
+
+    // The instrument is live and the sweep reached something — without this, the assertion below
+    // would pass on a wrapper that was never installed or a modal that rendered no controls, which
+    // is the exact failure the string it replaces had.
+    expect(buttonCount).toBeGreaterThan(2);
+    expect(sources).toContain('roster');
+
+    expect(sources, `a control in the roster modal created a character: ${sources.join(', ')}`)
+      .not.toContain('creation');
+  });
+
+  it('creates no character from an empty roster either', async () => {
+    // A creation affordance offered only when there is nothing to load would hide from a sweep
+    // that always runs against a populated roster.
+    const { sources, buttonCount } = await sweepEveryButton({});
+
+    expect(buttonCount).toBeGreaterThan(0);
+    expect(sources).not.toContain('creation');
+  });
+
+  it('renders none of the creator\'s own controls', async () => {
+    // A second angle on the same rule, catching the shape rather than the behaviour: the creator
+    // is a form with two radio-group fieldsets and a name box. This modal has none of that, and a
+    // creation form pasted in here would bring it.
+    localStorage.setItem('progquest_roster_v1', JSON.stringify({}));
+    render(<SaveModal isOpen onClose={() => undefined} />);
+
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+    expect(screen.queryAllByRole('group')).toHaveLength(0);
+    expect(document.querySelectorAll('form, fieldset')).toHaveLength(0);
+  });
+});
