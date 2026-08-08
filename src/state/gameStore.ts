@@ -13,6 +13,7 @@ import { EMPTY_COMMENDATIONS, mergeEvents, mergeExhibit, readCommendations, writ
 import { EMPTY_CASELOAD, mergeRecords, readCaseload, writeCaseload, type Caseload } from './caseload';
 import { EMPTY_DIGEST, accumulateDigest, describeDigest, type AbsenceDigest } from './absenceDigest';
 import { EMPTY_SPECIMEN_LOG, mergeSpecimens, readSpecimenLog, writeSpecimenLog, type SpecimenLog } from './specimenLog';
+import { loadRoster, saveToRoster } from './saveManager';
 
 // Read once at module load, the same way the roster is read: a ledger that cannot be read is
 // simply an empty one, never a reason for the game not to start.
@@ -111,6 +112,38 @@ function retainWholeSocialScenes(entries: readonly SocialEntry[]): SocialEntry[]
   return retained;
 }
 
+/**
+ * Banks the character being replaced, when it already has a roster entry.
+ *
+ * All progress since the player's last explicit save lives only in the active checkpoint — the
+ * `save_requested` events the engine emits are log lines, and nothing persists on them. So loading
+ * another character used to discard everything the current one had earned: the next flush wrote the
+ * newcomer over the checkpoint, and the outgoing session survived only in the last-known-good copy
+ * until the flush after that. Delete asks for confirmation; this destroyed more and asked nothing.
+ *
+ * Restricted to characters already in the roster, which is not a hedge but the condition that makes
+ * this safe. It updates an entry rather than adding one, so it cannot hit the roster cap, cannot
+ * surprise the player with saves they never asked for, and cannot fail for a reason that would have
+ * to block the switch.
+ *
+ * `sessionGeneration` is the guard against the boot path. `startSessionCheckpoints` calls
+ * `startSession` while the store still holds its hard-coded default, and the default is named Krg —
+ * so without this a player who had saved a character called Krg would have it overwritten by a
+ * level-1 stranger every time the app started. Generation is zero until a session is established
+ * and non-zero forever after, which is exactly the distinction needed.
+ *
+ * Best effort throughout: a failure here must never stop the player switching characters. The
+ * checkpoint controller already surfaces storage problems through its own notice.
+ */
+function preserveOutgoingCharacter(state: Pick<GameStore, 'character' | 'sessionGeneration'>): void {
+  if (state.sessionGeneration === 0) return;
+
+  const roster = loadRoster();
+  if (!roster.ok || !Object.hasOwn(roster.value, state.character.Traits.Name)) return;
+
+  saveToRoster(state.character);
+}
+
 export const useGameStore = create<GameStore>((set, get) => {
   const initialRng = new RandomGenerator('default-seed');
   const initialChar = createNewCharacter('Krg', 'Sub-Subprocessor', 'Robot Monk', initialRng);
@@ -137,6 +170,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       // carrying a partial one across would report another session's work as this one's.
       drainDigest = EMPTY_DIGEST;
       const { nextActivityId, sessionGeneration } = get();
+      preserveOutgoingCharacter(get());
       let character: CharacterSheet;
       let rng: RandomGenerator;
       let message: string;
