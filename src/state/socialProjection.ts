@@ -1,6 +1,6 @@
 import { SOCIAL_PERSONAS, type SocialPersona, type SocialSeat } from '../data/socialCatalog';
 import { boundCodePoints, boundedLabel, MAX_TEXT_CODE_POINTS, formatGameNumber, stableIndex, stableChoice } from '../engine/text';
-import { AMBIENT_LINES, BLAME_BEATS, FEUD_BEATS, ITEM_OF_RECORD_LINES, QUESTION_BEATS, REACTION_LINES, TRADE_LINES, type AmbientLine } from '../data/socialAmbient';
+import { AMBIENT_LINES, BLAME_BEATS, FEUD_BEATS, ITEM_OF_RECORD_LINES, ONBOARDING_LINES, QUESTION_BEATS, REACTION_LINES, TRADE_LINES, type AmbientLine } from '../data/socialAmbient';
 import type { LoadoutFiling } from '../engine/loadoutFiling';
 import { projectWorld, type IdentifiedGameTransitionRecord } from './worldContext';
 
@@ -489,6 +489,10 @@ const AMBIENT_LANES = [
   // a lane that fired often would say the same thing about the same item all afternoon.
   'item',
   'blame',
+  // Only reachable while the loadout is entry-tier, which is a state a character leaves within
+  // minutes and never returns to. Weighted as though it were an ordinary lane so it is loud while
+  // it lasts rather than rare during the one window it can occur in.
+  'onboarding',
 ] as const;
 
 /**
@@ -497,6 +501,15 @@ const AMBIENT_LANES = [
  * Long, because these are the lines that reward watching rather than the lines that fill a gap.
  */
 const AMBIENT_BEAT_TASKS = 40;
+
+/**
+ * The standing at or below which the hall is still explaining itself.
+ *
+ * Two, which covers the first two rungs of every slot's vocabulary — a `Lanyard`, a `Visitor Badge`,
+ * a `Cover Note`. Generated equipment reaches past that within the first few upgrades, so this is a
+ * window rather than a mode.
+ */
+const ONBOARDING_STANDING = 2;
 
 /**
  * A line the guild says when the hero has done nothing worth mentioning.
@@ -518,6 +531,9 @@ export function projectAmbient(
   // Nothing worth citing means nothing to say about it. Falls back rather than falling silent,
   // because a lane that produced no line would quietly lower the rate the cadence was tuned to.
   if ((lane === 'item' || lane === 'blame') && !loadout?.itemOfRecord) lane = 'ambient';
+  // The best thing the hero owns is still entry-tier, so the hall explains itself to them. Anything
+  // better equipped ends it, which is why it needs no timer and cannot outstay its welcome.
+  if (lane === 'onboarding' && (loadout?.itemOfRecord?.standing ?? 0) > ONBOARDING_STANDING) lane = 'ambient';
 
   // The two running bits step with the task counter and wrap, so a feud restarts rather than
   // resolving. `beatIndex` lives in chatterSchedule with the rest of the cadence arithmetic; the
@@ -525,7 +541,9 @@ export function projectAmbient(
   const beat = (beats: readonly AmbientLine[]) =>
     beats[Math.floor(completedTasks / AMBIENT_BEAT_TASKS) % beats.length]!;
 
-  const line: AmbientLine = lane === 'item'
+  const line: AmbientLine = lane === 'onboarding'
+    ? ONBOARDING_LINES[stableChoice(`onboard:${key}`, ONBOARDING_LINES.length)]!
+    : lane === 'item'
     ? ITEM_OF_RECORD_LINES[stableChoice(`item:${key}`, ITEM_OF_RECORD_LINES.length)]!
     : lane === 'blame'
       ? beat(BLAME_BEATS)

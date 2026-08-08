@@ -191,3 +191,27 @@ export const BLAME_BEATS: readonly AmbientLine[] = [
   { seat: 'support', channel: 'guild', text: 'The {slot} matter is closed. It is also ongoing.' },
 ];
 
+/**
+ * The hall, as explained to somebody who has just arrived.
+ *
+ * The register shift the effects design argued for, in place of an accent. An accent is a different
+ * joke, it degrades over hundreds of repetitions, and it is hostile to a screen reader; a register
+ * shift does the same work in this project's own voice and gets funnier the longer it runs.
+ *
+ * Reached only while the best thing the hero owns is entry-tier — a `Lanyard`, a `Cover Note`, a
+ * `Desk Space`. The joke is that the worst loadout in the game has the loudest voice, and that a
+ * brand-new player meets an equipment effect within two minutes of starting, which nothing else in
+ * the feed manages. It stops on its own the moment anything better is equipped, so it cannot outstay
+ * its welcome.
+ */
+export const ONBOARDING_LINES: readonly AmbientLine[] = [
+  { seat: 'official', channel: 'guild', text: 'Welcome. Your access has been provisioned at the level you already had.' },
+  { seat: 'official', channel: 'guild', text: 'Please complete the induction. The induction is this sentence.' },
+  { seat: 'logistics', channel: 'guild', text: 'Your workstation is wherever you are standing when somebody needs you.' },
+  { seat: 'support', channel: 'guild', text: 'Someone will be assigned to you shortly. They will also be you.' },
+  { seat: 'field', channel: 'party', text: 'The tour covers the fire exits. There is one fire exit and it is decorative.' },
+  { seat: 'official', channel: 'guild', text: 'Your probation ends automatically and nobody is notified.' },
+  { seat: 'support', channel: 'guild', text: 'Any questions can be raised at the meeting, which was yesterday.' },
+  { seat: 'logistics', channel: 'guild', text: 'Kit issued: one. Kit expected: one. Kit reconciled: pending.' },
+];
+
