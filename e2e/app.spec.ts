@@ -521,9 +521,10 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await page.goto('/');
 
     const trigger = page.locator('.tooltip-trigger').first();
-    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    // Asserted through the tooltip itself rather than aria-expanded, which the trigger no longer
+    // carries: it is for a control that expands a region, and this controls a role="tooltip".
+    await expect(page.getByRole('tooltip')).toHaveCount(0);
     await trigger.tap();
-    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toBeVisible();
     const box = await tooltip.boundingBox();
@@ -531,13 +532,12 @@ test.describe('Progress Quest III terminal dashboard', () => {
     expect(box.x).toBeGreaterThanOrEqual(0);
     expect(box.x + box.width).toBeLessThanOrEqual(390);
     await page.getByRole('heading', { name: 'Progress Quest III' }).tap();
-    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await expect(tooltip).toBeHidden();
     await trigger.tap();
     await expect(tooltip).toBeVisible();
     await trigger.tap();
     await expect(tooltip).toBeHidden();
-    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).not.toHaveAttribute('aria-describedby', /./);
 
     await page.evaluate(async () => {
       const { useGameStore } = await import('/src/state/gameStore.ts');
