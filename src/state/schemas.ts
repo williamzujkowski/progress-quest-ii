@@ -1,4 +1,5 @@
-import { z } from 'zod';
+import { z } from './zod';
+
 import { MAX_PENDING_ELAPSED_MS, MAX_PENDING_TASKS, MAX_PERSISTED_DESCRIPTION_LENGTH, MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../data/limits';
 
 export { MAX_PERSISTED_ITEMS } from '../data/limits';

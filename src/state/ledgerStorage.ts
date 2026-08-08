@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import type { z } from './zod';
 import { MAX_STORED_PAYLOAD_LENGTH } from '../data/limits';
 
 /**

@@ -8,6 +8,46 @@ import { expectNoViolations } from '../e2e/fixtures/accessibility';
 
 test.use({ storageState: returningSessionStorageState('http://127.0.0.1:4173') });
 
+test('loads the production bundle without violating its own policy', async ({ page }) => {
+  // The gap this closes: the policy is asserted as text by scripts/production-csp.mjs, and the app
+  // is asserted as console-clean by the strict-console fixture. A CSP violation is neither — the
+  // browser fires `securitypolicyviolation` and writes nothing Playwright can see — so a refused
+  // request fell between the two controls.
+  //
+  // It was not hypothetical. Zod probed for `eval` support with `new Function('')` while building
+  // the persisted schemas, and `script-src 'self'` refused it on every page load of the deployed
+  // site. Validation was unaffected, which is precisely why nothing noticed.
+  //
+  // This suite is the only one that runs against the real dist under the real policy, so it is the
+  // only place the assertion can live.
+  const violations: { directive: string; blocked: string }[] = [];
+  await page.exposeFunction('__recordCspViolation', (directive: string, blocked: string) => {
+    violations.push({ directive, blocked });
+  });
+  await page.addInitScript(() => {
+    addEventListener('securitypolicyviolation', (event) => {
+      (window as unknown as { __recordCspViolation: (d: string, b: string) => void })
+        .__recordCspViolation(event.effectiveDirective, event.blockedURI);
+    });
+  });
+
+  await page.goto('./');
+  await expect(page.getByRole('heading', { name: 'Progress Quest III' })).toBeVisible();
+
+  expect(violations, `the production bundle violated its own policy: ${JSON.stringify(violations)}`).toEqual([]);
+
+  // An empty list is the same shape whether nothing was refused or nothing was listening, so the
+  // wiring is proven separately. A synthetic event rather than a real violation: every genuine one
+  // also writes a console error, which the strict-console fixture correctly refuses to ignore, and
+  // a test that had to whitelist its own noise would be the weaker control.
+  await page.evaluate(() => {
+    dispatchEvent(new SecurityPolicyViolationEvent('securitypolicyviolation', {
+      effectiveDirective: 'script-src', blockedURI: 'wiring-probe',
+    }));
+  });
+  await expect.poll(() => violations).toEqual([{ directive: 'script-src', blocked: 'wiring-probe' }]);
+});
+
 test('publishes the Progress Quest III install contract at its Pages scope', async ({ page }) => {
   await page.goto('./');
 

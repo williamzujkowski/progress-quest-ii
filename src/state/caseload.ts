@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from './zod';
 import { MAX_PERSISTED_VALUE, MAX_PERSISTED_DESCRIPTION_LENGTH } from '../data/limits';
 import type { GameTransitionRecord } from '../engine/transition';
 import { readLedger, writeLedger } from './ledgerStorage';
