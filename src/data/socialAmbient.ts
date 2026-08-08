@@ -215,3 +215,51 @@ export const ONBOARDING_LINES: readonly AmbientLine[] = [
   { seat: 'logistics', channel: 'guild', text: 'Kit issued: one. Kit expected: one. Kit reconciled: pending.' },
 ];
 
+/**
+ * Two people talking to each other, with the hero not in the room.
+ *
+ * The measured feed had the hero in every third line and the cast addressing them in the other two.
+ * A channel where every exchange includes the person reading it is a caption track with more
+ * speakers, and the fastest way to make a room feel populated is to let it carry on without them.
+ *
+ * Each exchange is a complete unit and is emitted whole, which is the one place the ambient lane
+ * says more than one thing at a time. Two lines is the shape a real exchange usually has: somebody
+ * asks, somebody answers, and the channel moves on. None of them resolves anything.
+ */
+export const EXCHANGES: readonly (readonly AmbientLine[])[] = [
+  [
+    { seat: 'official', channel: 'guild', text: 'Did you sign the intake sheet?' },
+    { seat: 'logistics', channel: 'guild', text: 'I initialled it, which is legally similar.' },
+  ],
+  [
+    { seat: 'field', channel: 'party', text: 'Muster at the usual hour.' },
+    { seat: 'support', channel: 'party', text: 'The usual hour has moved and kept its name.' },
+  ],
+  [
+    { seat: 'logistics', channel: 'guild', text: 'Who has the key to the annexe?' },
+    { seat: 'official', channel: 'guild', text: 'The annexe has the key to the annexe.' },
+  ],
+  [
+    { seat: 'support', channel: 'guild', text: 'If it goes wrong, whose is it?' },
+    { seat: 'official', channel: 'guild', text: 'Yours. It was pre-assigned in the spring.' },
+  ],
+  [
+    { seat: 'field', channel: 'party', text: 'Is this the same cart as last time?' },
+    { seat: 'logistics', channel: 'party', text: 'It is the same cart. It has a new number.' },
+  ],
+  [
+    { seat: 'official', channel: 'guild', text: 'I have drafted the objectives.' },
+    { seat: 'support', channel: 'guild', text: 'Drafted, or written?' },
+    { seat: 'official', channel: 'guild', text: 'Drafted.' },
+  ],
+  [
+    { seat: 'logistics', channel: 'guild', text: 'The kettle is a shared asset.' },
+    { seat: 'support', channel: 'guild', text: 'Then I share it more than anyone.' },
+  ],
+  [
+    { seat: 'field', channel: 'party', text: 'I found a shortcut.' },
+    { seat: 'official', channel: 'party', text: 'Is it shorter?' },
+    { seat: 'field', channel: 'party', text: 'It is a shortcut.' },
+  ],
+];
+

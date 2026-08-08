@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { AMBIENT_LINES, BLAME_BEATS, FEUD_BEATS, ITEM_OF_RECORD_LINES, QUESTION_BEATS, REACTION_LINES, TRADE_LINES } from '../../data/socialAmbient';
+import { AMBIENT_LINES, BLAME_BEATS, EXCHANGES, FEUD_BEATS, ITEM_OF_RECORD_LINES, QUESTION_BEATS, REACTION_LINES, TRADE_LINES } from '../../data/socialAmbient';
 import { projectAmbient } from '../../state/socialProjection';
 import { SOCIAL_PERSONAS } from '../../data/socialCatalog';
 
@@ -29,10 +29,39 @@ describe('the guild talks about itself', () => {
     now.mockRestore();
   });
 
-  it('says one thing at a time', () => {
+  it('says one thing at a time, except an exchange, which is a unit', () => {
     // Somebody says a thing and the channel moves on. A burst of ambient would be a caption track
-    // with a different subject.
-    for (let task = 0; task < 200; task += 1) expect(projectAmbient(HERO, task)).toHaveLength(1);
+    // with a different subject — but half of "Is it shorter?" / "It is a shortcut." is not a
+    // shorter joke, it is a different and worse one, so an exchange arrives entire.
+    for (let task = 0; task < 400; task += 1) {
+      const spoken = projectAmbient(HERO, task);
+      // Detected by `includes`, not `endsWith`. Anchoring on the end made the check depend on the
+      // exact thing a mutation would change — splitting an exchange across scenes appended an index
+      // and the assertion below silently stopped running.
+      const isExchange = spoken[0]?.sceneId.includes(':exchange') ?? false;
+      expect(spoken.length, `task ${task}`).toBe(isExchange ? spoken.length : 1);
+      if (isExchange) {
+        expect(spoken.length).toBeGreaterThan(1);
+        // One scene, so the scheduler gates it whole.
+        expect(new Set(spoken.map(({ sceneId }) => sceneId)).size).toBe(1);
+      }
+    }
+  });
+
+  it('lets two personas talk to each other with the hero not in the room', () => {
+    // The measured feed had the hero in every third line and the cast addressing them in the other
+    // two. A channel where every exchange includes the person reading it is a caption track with
+    // more speakers.
+    const exchanges = Array.from({ length: 3000 }, (_, task) => projectAmbient(HERO, task))
+      .filter((spoken) => spoken[0]?.sceneId.includes(':exchange'));
+
+    expect(exchanges.length).toBeGreaterThan(0);
+    for (const spoken of exchanges) {
+      expect(spoken.every(({ speaker }) => speaker.kind === 'cast')).toBe(true);
+      expect(spoken.every(({ speaker }) => !speaker.automaticHero)).toBe(true);
+      // At least two voices, or it is not an exchange.
+      expect(new Set(spoken.map(({ speaker }) => speaker.id)).size).toBeGreaterThan(1);
+    }
   });
 
   it('reaches every lane, including the two slow ones', () => {
@@ -40,7 +69,7 @@ describe('the guild talks about itself', () => {
     // owning nothing worth citing is exactly the one the hall is still explaining itself to, so
     // onboarding does fire.
     const lanes = new Set(Array.from({ length: 2000 }, (_, task) => projectAmbient(HERO, task)[0]?.sceneId.split(':')[2]));
-    expect(lanes).toEqual(new Set(['ambient', 'reaction', 'trade', 'feud', 'question', 'onboarding']));
+    expect(lanes).toEqual(new Set(['ambient', 'reaction', 'trade', 'feud', 'question', 'onboarding', 'exchange']));
   });
 
   it('stops explaining the hall once the hero owns something better than a lanyard', () => {
@@ -163,7 +192,7 @@ describe('the guild notices what is being worn', () => {
       .map((entry) => entry?.sceneId.split(':')[2]);
 
   it('reaches the two loadout lanes when there is something to cite', () => {
-    expect(new Set(lanesOf(FILING))).toEqual(new Set(['ambient', 'reaction', 'trade', 'feud', 'question', 'item', 'blame']));
+    expect(new Set(lanesOf(FILING))).toEqual(new Set(['ambient', 'reaction', 'trade', 'feud', 'question', 'item', 'blame', 'exchange']));
   });
 
   it('says nothing about a loadout that earns nothing, rather than falling silent', () => {
@@ -207,5 +236,12 @@ describe('the interpolated bank', () => {
 
   it('states no figure of its own', () => {
     for (const { text } of INTERPOLATED) expect(text).not.toMatch(/\d/);
+  });
+
+  it('gives every exchange at least two speakers and no hero', () => {
+    for (const exchange of EXCHANGES) {
+      expect(exchange.length).toBeGreaterThan(1);
+      expect(new Set(exchange.map(({ seat }) => seat)).size).toBeGreaterThan(1);
+    }
   });
 });
