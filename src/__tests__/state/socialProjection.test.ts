@@ -91,7 +91,10 @@ describe('deterministic social batch projection', () => {
 
     expect(new Set(entries.map(({ sceneId }) => sceneId)).size).toBe(1);
     expect(entries.every(({ sceneKind, sourceActivityId }) => sceneKind === 'level' && sourceActivityId === 102)).toBe(true);
-    expect(entries).toHaveLength(3);
+    // Scene length is drawn rather than fixed at three, so this asserts the range the shape allows.
+    // Pinning it to one number would only re-pin the liturgy this change exists to break.
+    expect(entries.length).toBeGreaterThanOrEqual(1);
+    expect(entries.length).toBeLessThanOrEqual(3);
   });
 
   it('selects a stable four-person cast from hero facts across reload-equivalent batches', () => {
@@ -106,7 +109,9 @@ describe('deterministic social batch projection', () => {
     );
 
     expect(castIds(makeBatch(1, 10))).toEqual(castIds(makeBatch(100, 1000)));
-    expect(castIds(makeBatch(1, 10)).size).toBe(4);
+    // Four distinct seats still get drawn across a batch; a single scene may now speak with fewer
+    // voices than it writes, so the count is taken over the batch rather than over one scene.
+    expect(castIds(makeBatch(1, 10)).size).toBeGreaterThanOrEqual(2);
   });
 
   it('keeps only the newest three complete scenes and one truthful catch-up row', () => {
@@ -122,8 +127,13 @@ describe('deterministic social batch projection', () => {
     expect(scenes).toHaveLength(4);
     expect(entries[0]).toMatchObject({ sceneKind: 'catch_up', channel: 'system', sourceActivityId: 204 });
     expect(entries[0]?.text).toContain('4 routine social scenes');
-    expect(entries.slice(1)).toHaveLength(9);
-    for (const sceneId of scenes.slice(1)) expect(entries.filter((entry) => entry.sceneId === sceneId)).toHaveLength(3);
+    // Three scenes are retained; how many lines each speaks is drawn. The invariant that matters is
+    // that every retained scene speaks at least once and never more than it wrote.
+    for (const sceneId of scenes.slice(1)) {
+      const spoken = entries.filter((entry) => entry.sceneId === sceneId);
+      expect(spoken.length).toBeGreaterThanOrEqual(1);
+      expect(spoken.length).toBeLessThanOrEqual(3);
+    }
     expect(entries.at(-1)?.sourceActivityId).toBe(206);
   });
 
@@ -262,8 +272,11 @@ describe('deterministic social batch projection', () => {
 
     expect(result.records.length).toBeGreaterThan(10);
     expect(entries[0]?.sceneKind).toBe('catch_up');
-    expect(entries).toHaveLength(10);
+    // One catch-up row plus three retained scenes of drawn length. The row and the scene count are
+    // the invariants; the line total is not one, and asserting it would re-pin the fixed shape.
     expect(new Set(entries.slice(1).map(({ sceneId }) => sceneId))).toHaveLength(3);
+    expect(entries.length).toBeGreaterThanOrEqual(4);
+    expect(entries.length).toBeLessThanOrEqual(10);
   });
 
   it('returns nothing for routine records with no approved social scene', () => {
@@ -296,5 +309,45 @@ describe('the market scene reports a sale accurately', () => {
     // Only when it is genuinely empty. A free item is still a sale, and so is one that pays.
     expect(projectSocialBatch([sold(1, 0)]).length).toBeGreaterThan(0);
     expect(projectSocialBatch([sold(0, 5)]).length).toBeGreaterThan(0);
+  });
+});
+
+describe('scenes are not all the same shape', () => {
+  it('varies its length across a run, and leans short', () => {
+    // Range assertions elsewhere permit a constant three, so they do not guard this at all — a
+    // mutation restoring the fixed liturgy passed every one of them. The distribution is the change,
+    // so the distribution is what gets asserted.
+    const lengths = Array.from({ length: 400 }, (_, index) => {
+      const entries = projectSocialBatch([
+        source(600 + index, { type: 'item_gained', name: 'Thing', quantity: 1 }, snapshot({ completedTasks: 40 + index })),
+      ]);
+      return entries.length;
+    });
+
+    const counts = new Map<number, number>();
+    for (const length of lengths) counts.set(length, (counts.get(length) ?? 0) + 1);
+
+    // Every scene speaks, and none speaks more than it wrote.
+    expect(Math.min(...lengths)).toBeGreaterThanOrEqual(1);
+    expect(Math.max(...lengths)).toBeLessThanOrEqual(3);
+    // More than one shape occurs, which is the whole point.
+    expect(counts.size).toBeGreaterThan(1);
+    // And single lines are the most common, because most utterances in a channel are.
+    const one = counts.get(1) ?? 0;
+    expect(one).toBeGreaterThan(counts.get(2) ?? 0);
+    expect(one).toBeGreaterThan(counts.get(3) ?? 0);
+    expect(one / lengths.length).toBeGreaterThan(0.4);
+  });
+
+  it('keeps the line carrying the facts', () => {
+    // The opening line interpolates the quantity; the lines after it are commentary. A shortened
+    // scene that dropped the opening told the player nothing about what had happened.
+    for (let index = 0; index < 60; index += 1) {
+      const entries = projectSocialBatch([
+        source(700 + index, { type: 'item_gained', name: 'Thing', quantity: 3 }, snapshot({ completedTasks: 90 + index })),
+      ]);
+      expect(entries.length).toBeGreaterThan(0);
+      expect(entries[0]?.text).toContain('3');
+    }
   });
 });
