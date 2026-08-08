@@ -157,3 +157,15 @@ export const MAX_TEXT_CODE_POINTS = 180;
 export function boundCodePoints(text: string, limit: number): string {
   return Array.from(text).slice(0, limit).join('');
 }
+
+/**
+ * A name cut to a length a line can hold, with a fallback for an empty one.
+ *
+ * Lived in `itemDetails` while the tooltips were its only caller. The market scene now quotes an
+ * item's name too, and an imported save can carry a name of any length — so the bound belongs
+ * beside the other text limits rather than in one consumer that happens to have needed it first.
+ */
+export const boundedLabel = (name: string, fallback: string, limit = 60): string => {
+  const characters = Array.from(name);
+  return characters.length > limit ? `${characters.slice(0, limit - 1).join('')}…` : name || fallback;
+};

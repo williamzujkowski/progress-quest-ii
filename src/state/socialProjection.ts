@@ -1,5 +1,5 @@
 import { SOCIAL_PERSONAS, type SocialPersona, type SocialSeat } from '../data/socialCatalog';
-import { boundCodePoints, MAX_TEXT_CODE_POINTS, formatGameNumber, stableIndex, stableChoice } from '../engine/text';
+import { boundCodePoints, boundedLabel, MAX_TEXT_CODE_POINTS, formatGameNumber, stableIndex, stableChoice } from '../engine/text';
 import { AMBIENT_LINES, BLAME_BEATS, FEUD_BEATS, ITEM_OF_RECORD_LINES, QUESTION_BEATS, REACTION_LINES, TRADE_LINES, type AmbientLine } from '../data/socialAmbient';
 import type { LoadoutFiling } from '../engine/loadoutFiling';
 import { projectWorld, type IdentifiedGameTransitionRecord } from './worldContext';
@@ -279,11 +279,22 @@ function linesFor(candidate: SceneCandidate): readonly SceneLine[] {
   }
   if (candidate.kind === 'market' && event.type === 'inventory_sold') {
     const sale = post.marketSale;
-    // Pluralised the way the loot scene has always done it. Hard-coding "units" here made the
-    // single-item sale — which is most of them — read "1 units became 1 gold", 165 times in a
+    // The quartermaster names the thing.
+    //
+    // `marketSale` has carried the item's name all along and the scene threw it away, so the busiest
+    // line in the game reported "1 unit became 1 gold" — which is true, tells the player nothing,
+    // and wastes the funniest string available. The names are the joke; a sale is the one moment
+    // they are worth quoting, because it is the last time that item is ever mentioned.
+    //
+    // Bounded, because an imported save can carry a name of any length and this text is spoken by
+    // the screen-reader path. Pluralised the way the loot scene has always done it: hard-coding
+    // "units" made the single-item sale, which is most of them, read "1 units", 165 times in a
     // measured half hour.
+    const soldLabel = sale ? boundedLabel(sale.name, 'an unnamed lot', 48) : '';
     const facts = sale
-      ? `${formatGameNumber(sale.quantity)} unit${sale.quantity === 1 ? '' : 's'} became ${formatGameNumber(sale.gold)} gold`
+      ? sale.quantity === 1
+        ? `${soldLabel} became ${formatGameNumber(sale.gold)} gold`
+        : `${formatGameNumber(sale.quantity)} × ${soldLabel} became ${formatGameNumber(sale.gold)} gold`
       : `${formatGameNumber(event.gold)} gold was received`;
     return variant([
       [
