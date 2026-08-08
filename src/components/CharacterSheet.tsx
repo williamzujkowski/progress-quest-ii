@@ -68,18 +68,23 @@ export const CharacterSheetView: React.FC = () => {
         <Shield size={14} /> Equipment Slots
       </div>
       <div className="equip-list equipment-list" role="region" tabIndex={0} aria-label="Equipment List">
-        {EQUIP_SLOTS.map((slot: EquipSlot) => {
-          const equipName = character.Equip[slot] || '—';
-          return (
-            <div className="equip-item" key={slot}>
-              <span className="equip-slot-icon" title={slot}>
-                {React.createElement(SLOT_ICONS[slot], { size: 13, 'aria-hidden': true })}
-                <span className="sr-only">{slot}</span>
-              </span>
-              <ItemTooltip kind="equipment" name={equipName} slot={slot} />
-            </div>
-          );
-        })}
+        {EQUIP_SLOTS.map((slot: EquipSlot) => (
+          <div className="equip-item" key={slot}>
+            <span className="equip-slot-icon" title={slot}>
+              {React.createElement(SLOT_ICONS[slot], { size: 13, 'aria-hidden': true })}
+              <span className="sr-only">{slot}</span>
+            </span>
+            {/*
+              The dash is the visible placeholder and stays here, where it was chosen. The name
+              passed through is the real one, so the trigger can say which slot it belongs to —
+              nine of eleven of these are empty on a new character, and every one of them used to
+              announce as "dash, button" with nothing to tell them apart.
+            */}
+            <ItemTooltip kind="equipment" name={character.Equip[slot]} slot={slot}>
+              {character.Equip[slot] || '—'}
+            </ItemTooltip>
+          </div>
+        ))}
       </div>
 
       <div className="section-label">
