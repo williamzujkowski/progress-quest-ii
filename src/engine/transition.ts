@@ -3,6 +3,7 @@ import { BORING_ITEMS, IMPRESSIVE_TITLES, MONSTERS, RACES } from '../data/traits
 import { MAX_PENDING_TASKS, MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../data/limits';
 import { earnGold, goldEarnedBetween } from './gold';
 import { storageAllowance } from './storage';
+import { marketFavour } from './marketFavour';
 import { calculateEncumbranceMax, generateName, levelUpTime } from './math';
 import type { RandomGenerator } from './prng';
 import { formatGameNumber, indefinite, plural } from './text';
@@ -387,6 +388,10 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
         earned *= (1 + Math.min(rng.random(10), rng.random(10)))
           * (1 + Math.min(rng.random(traits.Level), rng.random(traits.Level)));
       }
+      // Applied after the draws, never instead of one, so the multiplier cannot move the RNG stream.
+      // Floored rather than rounded: the hero should never be paid a fraction of a gold piece, and
+      // rounding up would let a `Desk Space` add a coin to a sale worth nothing.
+      earned = Math.floor(earned * marketFavour(equip));
       inventory = remainingInventory;
       // Sheds a decade rather than saturating, so a sale past the cap still pays. The earning is
       // reported from what was asked for, not from the change in the stored figure — once a decade

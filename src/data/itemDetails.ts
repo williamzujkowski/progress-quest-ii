@@ -2,6 +2,7 @@ import { MAX_PERSISTED_GOLD } from './limits';
 import { ARMORS, BORING_ITEMS, SPELLS, DEFENSE_ATTRIB, DEFENSE_BAD, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, WEAPONS } from './traits';
 import { analyzeItemMechanics } from '../engine/itemMechanics';
 import { storageAllowance } from '../engine/storage';
+import { marketFavour } from '../engine/marketFavour';
 import { boundedLabel, formatGameNumber, stableIndex } from '../engine/text';
 import { substrateStage } from './worldContext';
 import type { CharacterSheet, EquipSlot } from '../engine/types';
@@ -262,9 +263,16 @@ export function describeEquipment(name: string, slot: EquipSlot, act = 0): ItemD
     ? ` Padding the hero out by ${formatGameNumber(allowance)} cubits of carrying capacity.`
     : '';
 
+  // The footprint slot does a third thing, and like the padding slot it is the only one that does.
+  // Same discipline: read from the function the engine multiplies by, and say it only where true.
+  const favour = slot === 'Sollerets' ? marketFavour({ Sollerets: name } as CharacterSheet['Equip']) : 1;
+  const terms = favour > 1
+    ? ` Standing here is worth ${formatGameNumber(Math.round((favour - 1) * 100))}% better terms at market.`
+    : '';
+
   return {
     description,
-    effect: `Generation quality: ${formatGameNumber(total)} (${qualityParts.join(' + ')}). ${contribution}; damage is ${mechanics.combatContribution === 'none' ? 'not modeled' : mechanics.combatContribution}.${carrying}`,
+    effect: `Generation quality: ${formatGameNumber(total)} (${qualityParts.join(' + ')}). ${contribution}; damage is ${mechanics.combatContribution === 'none' ? 'not modeled' : mechanics.combatContribution}.${carrying}${terms}`,
   };
 }
 
