@@ -296,3 +296,21 @@ Adapted rather than copied. That playbook governs federal development, and most 
 1. **Feature Branches**: All non-trivial work MUST be done on a dedicated branch (e.g. `feat/game-state-machine`, `feat/save-system`, `fix/encumbrance-calc`).
 2. **Pull Requests**: Submit PRs via `gh pr create` with clear titles, descriptions, and linked issue numbers.
 3. **Verification**: Run `npm test` and `npm run typecheck` before opening or merging any PR.
+4. **Branch each step off `main`.** Multi-step work lands sequentially: open one pull request, merge it, pull, then branch the next step. Do not stack a branch on another open branch.
+
+### Why stacking costs more than it saves
+
+This repository squash-merges, which is what keeps `main` at one commit per change and makes its history readable. It also means a merged branch's commits never enter `main` — a new, different commit carrying the same diff does.
+
+So a branch stacked on another open branch proposes changes `main` already has, arrived at through commits `main` has never seen. GitHub reports that as a conflict and the pull request goes `DIRTY`.
+
+Nothing is lost when this happens, and it is worth knowing exactly why: `delete_branch_on_merge` is off, so the old base ref is still there and the repair is one command.
+
+```
+git rebase --onto origin/main <old-base-sha>
+gh api -X PATCH repos/<owner>/<repo>/pulls/<n> -f base=main
+```
+
+The second line is needed because the pull request still points at a branch that is no longer where the work belongs, and `gh pr edit --base` can fail on an unrelated GraphQL deprecation.
+
+The repair is mechanical and takes under a minute. The reason the rule is "do not stack" anyway is that the cost is paid every time, it is invisible until the parent merges, and re-verifying after the rebase is not optional — the branch is being replayed onto a tree it has never been tested against. Landing sequentially avoids all of it and costs only the wait.
