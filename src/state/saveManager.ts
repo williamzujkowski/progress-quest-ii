@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from './zod';
 import type { CharacterSheet } from '../engine/types';
 import { isDOMExceptionNamed } from './diagnostics';
 import { characterNameSchema, characterSheetSchema, type PersistedCharacterSheet } from './schemas';

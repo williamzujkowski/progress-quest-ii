@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from './zod';
 import { readLedger, writeLedger } from './ledgerStorage';
 import { MAX_PERSISTED_DESCRIPTION_LENGTH } from '../data/limits';
 import type { GameTransitionEvent } from '../engine/transition';
