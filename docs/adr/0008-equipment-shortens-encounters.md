@@ -39,10 +39,17 @@ reduction would need a clamp, and a clamp is a second rule that has to be kept t
 
 ## Consequences
 
-**Every recorded golden is arithmetically unchanged.** This is a property of the floor rather than
-a coincidence: the captured sessions carry zero or negative loadouts, which floor to zero, which
-makes the multiplier exactly one. Not approximately one — exactly. Had the floor been rejected, at
-least one golden would have moved and each would have needed a deliberate edit.
+**Every recorded golden is unchanged, but not for the reason first claimed here.** An earlier draft
+of this ADR said the floor was what kept them intact. Removing the floor and re-running proves
+otherwise: all 95 still pass. The goldens take a task's duration from the `TaskBar.max` recorded in
+their input, and the durations they go on to pin are market and purchase tasks, which do not use
+this formula. **They never reach the kill-duration path at all.**
+
+That is worth stating plainly rather than quietly fixing, because it changes what protection this
+change has. The behavioural baseline does not cover regenerated encounter durations, so the goldens
+cannot vouch for this and the unit tests are the only guard. The floor is justified by its design
+argument alone — a threadbare hauberk should not punish the player for wearing it — which is
+sufficient, and was the owner's reasoning, but is not the arithmetic guarantee first written here.
 
 **`CONTEXT.md` is now wrong in two places** and is superseded here rather than silently left. The
 statements were true of the original and are no longer true of this build, which is what ADR 0003
