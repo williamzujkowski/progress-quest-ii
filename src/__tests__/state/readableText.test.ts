@@ -5,6 +5,7 @@ import { RandomGenerator } from '../../engine/prng';
 import { fileLoadout } from '../../engine/loadoutFiling';
 import { projectAmbient } from '../../state/socialProjection';
 import type { CharacterSheet } from '../../engine/types';
+import type { HeroIdentity } from '../../state/socialProjection';
 
 /**
  * The save boundary bounded how long a name could be and nothing about what could be in it.
@@ -21,6 +22,9 @@ const ESCAPE = String.fromCodePoint(0x1b);
 const DELETE = String.fromCodePoint(0x7f);
 const LRM = String.fromCodePoint(0x200e);
 const ISOLATE = String.fromCodePoint(0x2066);
+
+/** The chatter is projected from an identity, not a sheet; the sheet only supplies the loadout. */
+const SPEAKER: HeroIdentity = { name: 'Readable', race: 'Half Daemon', className: 'Robot Monk' };
 
 const sheet = (): CharacterSheet =>
   structuredClone(createNewCharacter('Readable', 'Half Daemon', 'Robot Monk', new RandomGenerator('readable')));
@@ -92,7 +96,7 @@ describe('what the filing is willing to quote', () => {
 
     const spoken: string[] = [];
     for (let tasks = 0; tasks < 3000; tasks += 1) {
-      for (const line of projectAmbient(hero, tasks, filing) ?? []) spoken.push(line.text);
+      for (const line of projectAmbient(SPEAKER, tasks, filing)) spoken.push(line.text);
     }
 
     expect(spoken.length, 'expected the run to actually produce chatter').toBeGreaterThan(0);
