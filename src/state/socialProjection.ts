@@ -250,6 +250,22 @@ function linesFor(candidate: SceneCandidate): readonly SceneLine[] {
         { speaker: 'hero', channel: 'hero', text: 'Record it as found, which is nearly true.' },
       ],
       [
+        { speaker: 'logistics', channel: 'guild', text: `${formatGameNumber(event.quantity)} unit${event.quantity === 1 ? '' : 's'} recovered. The previous holder is not available for comment.` },
+        { speaker: 'field', channel: 'party', text: 'Recovery was uncontested at the point of recovery.' },
+      ],
+      [
+        { speaker: 'logistics', channel: 'party', text: `Intake of ${formatGameNumber(event.quantity)}. Filed under things that were already there.` },
+      ],
+      [
+        { speaker: 'logistics', channel: 'guild', text: `${formatGameNumber(event.quantity)} unit${event.quantity === 1 ? '' : 's'} logged against a category invented this morning.` },
+        { speaker: 'official', channel: 'guild', text: 'The category has since been ratified retroactively.' },
+        { speaker: 'hero', channel: 'hero', text: 'I invent categories the way other people trip.' },
+      ],
+      [
+        { speaker: 'logistics', channel: 'party', text: `Acquisition of ${formatGameNumber(event.quantity)} confirmed. Nobody has claimed it and nobody has ruled that out.` },
+        { speaker: 'support', channel: 'party', text: 'Received.' },
+      ],
+      [
         { speaker: 'logistics', channel: 'guild', text: `Manifest amended by ${formatGameNumber(event.quantity)}. The amendment is longer than the item.` },
         { speaker: 'support', channel: 'guild', text: 'Storage has been notified and has responded with a form.' },
         { speaker: 'hero', channel: 'hero', text: 'I shall carry it until carrying it becomes the story.' },
@@ -279,6 +295,27 @@ function linesFor(candidate: SceneCandidate): readonly SceneLine[] {
         { speaker: 'logistics', channel: 'guild', text: `${facts}; valuation was performed by a hat near the counter.` },
         { speaker: 'support', channel: 'guild', text: 'I find the transaction fiscally plausible and spiritually damp.' },
         { speaker: 'hero', channel: 'hero', text: 'Record my bargaining posture as stationary.' },
+      ],
+      [
+        { speaker: 'logistics', channel: 'guild', text: `${facts}. The counter has been asked to confirm and has nodded.` },
+        { speaker: 'support', channel: 'guild', text: 'Noted.' },
+        { speaker: 'hero', channel: 'hero', text: 'A nod is a receipt in the jurisdictions that matter.' },
+      ],
+      [
+        { speaker: 'logistics', channel: 'world', text: `${facts}, before adjustments nobody has proposed.` },
+        { speaker: 'support', channel: 'world', text: 'The adjustment window opened and closed while we were carrying things.' },
+      ],
+      [
+        { speaker: 'logistics', channel: 'guild', text: `${facts}. The stall is unattended and the price is firm.` },
+        { speaker: 'hero', channel: 'hero', text: 'I negotiated with the absence and it held.' },
+      ],
+      [
+        { speaker: 'logistics', channel: 'world', text: `${facts}. The transaction has been backdated to before it was doubted.` },
+        { speaker: 'support', channel: 'world', text: 'Doubt is retained separately for audit.' },
+        { speaker: 'hero', channel: 'hero', text: 'Then the audit and I are in agreement about something.' },
+      ],
+      [
+        { speaker: 'logistics', channel: 'guild', text: `${facts}, which the ledger accepted without reading.` },
       ],
       [
         { speaker: 'logistics', channel: 'world', text: `${facts}. Commerce continues despite the evidence.` },

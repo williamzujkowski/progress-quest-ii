@@ -351,3 +351,42 @@ describe('scenes are not all the same shape', () => {
     }
   });
 });
+
+describe('the written scene banks', () => {
+  /** Every line the event scenes can produce, gathered by projecting each kind many times. */
+  const spokenTexts = (kind: 'loot' | 'market'): string[] => {
+    const texts = new Set<string>();
+    for (let index = 0; index < 400; index += 1) {
+      const post = snapshot({ completedTasks: 40 + index, marketSale: { name: 'Thing', quantity: 2, gold: 5 } });
+      const event = kind === 'loot'
+        ? { type: 'item_gained' as const, name: 'Thing', quantity: 2 }
+        : { type: 'inventory_sold' as const, gold: 5 };
+      for (const entry of projectSocialBatch([source(900 + index, event, post)])) texts.add(entry.text);
+    }
+    return [...texts];
+  };
+
+  it('writes enough variants for the two kinds that dominate the feed', () => {
+    // Loot and market are 90% of event traffic. With three market variants the same sentence
+    // arrived twice inside one unscrolled panel; the pool is what fixes that, not suppression.
+    expect(spokenTexts('market').length).toBeGreaterThanOrEqual(14);
+    expect(spokenTexts('loot').length).toBeGreaterThanOrEqual(18);
+  });
+
+  it('does not lean on the construction that is already a fingerprint', () => {
+    // "emotionally complete and legally decorative" is the best move in this project's kit, and at
+    // its current density it is recognisable. New writing must not add to it.
+    const paired = [...spokenTexts('loot'), ...spokenTexts('market')]
+      .filter((text) => /\b\w+ly \w+ and \w+ly \w+/.test(text));
+    expect(paired.length, `paired-modifier lines: ${paired.join(' | ')}`).toBeLessThanOrEqual(2);
+  });
+
+  it('carries lines that are not jokes', () => {
+    // A channel where every utterance is a polished aphorism reads as generated however good each
+    // aphorism is. The same argument the ambient bank already won.
+    const short = [...spokenTexts('loot'), ...spokenTexts('market')]
+      .filter((text) => text.split(/\s+/).length <= 2);
+    expect(short.length).toBeGreaterThan(0);
+  });
+});
+
