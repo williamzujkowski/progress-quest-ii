@@ -663,3 +663,61 @@ describe('the serialized payload cap', () => {
     });
   });
 });
+
+describe('a tab another tab took over', () => {
+  it('offers to take the session back, and the offer works', () => {
+    // Refusing to write was always right — this tab's view is stale and overwriting blindly would
+    // discard the other tab's play. What was missing is a way out: the tab kept simulating forever
+    // with nothing persisted and no way to reclaim the save short of a reload.
+    vi.useFakeTimers();
+    const mine = createNewCharacter('Watched', 'Half Daemon', 'Robot Monk', 730);
+    useGameStore.setState({ character: mine });
+    const first = writeActiveCheckpoint(localStorage, captureActiveSession(FIXED_SAVED_AT), null);
+    if (!first.ok) throw new Error('Expected a first checkpoint');
+
+    const controller = startSessionCheckpoints({
+      now: () => FIXED_SAVED_AT, storage: localStorage, intervalMs: 1, pagehideTarget: window,
+    });
+
+    // Another tab writes its own session.
+    useGameStore.setState({ character: createNewCharacter('Other Tab', 'Off-Prem Elf', 'Vermineer', 731) });
+    const theirs = JSON.stringify(captureActiveSession(FIXED_SAVED_AT));
+    useGameStore.setState({ character: mine });
+    localStorage.setItem(ACTIVE_CHECKPOINT_KEY, theirs);
+    window.dispatchEvent(new StorageEvent('storage', { key: ACTIVE_CHECKPOINT_KEY, newValue: theirs }));
+
+    expect(controller.getNotice()).toMatchObject({ kind: 'alert', canRepair: true, repairLabel: 'Continue in this tab' });
+
+    // Still refuses to write on its own, which is the half that must not change.
+    useGameStore.setState({ log: activityLog('Earned while silenced') });
+    vi.runAllTimers();
+    expect(localStorage.getItem(ACTIVE_CHECKPOINT_KEY)).toBe(theirs);
+
+    // And the offer is real rather than decorative: taking it back writes this tab's character and
+    // resumes ordinary checkpoints.
+    controller.repair();
+    const reclaimed = activeCheckpointV1Schema.safeParse(JSON.parse(localStorage.getItem(ACTIVE_CHECKPOINT_KEY) ?? '{}'));
+    expect(reclaimed.success).toBe(true);
+    expect(reclaimed.success && reclaimed.data.session.character.Traits.Name).toBe('Watched');
+    expect(controller.getNotice()).toMatchObject({ kind: 'status', canRepair: false });
+
+    useGameStore.setState({ log: activityLog('Earned after reclaiming') });
+    vi.runAllTimers();
+    const after = activeCheckpointV1Schema.safeParse(JSON.parse(localStorage.getItem(ACTIVE_CHECKPOINT_KEY) ?? '{}'));
+    expect(after.success && after.data.session.log[0]).toBe('Earned after reclaiming');
+    controller.dispose();
+  });
+
+  it('says nothing when the other tab wrote what this one already had', () => {
+    // The listener fires on every write to the key, including this tab's own. Treating an identical
+    // value as a conflict would silence a tab that nothing had taken over.
+    const controller = startSessionCheckpoints({
+      now: () => FIXED_SAVED_AT, storage: localStorage, intervalMs: 1, pagehideTarget: window,
+    });
+    const same = localStorage.getItem(ACTIVE_CHECKPOINT_KEY);
+    window.dispatchEvent(new StorageEvent('storage', { key: ACTIVE_CHECKPOINT_KEY, newValue: same }));
+
+    expect(controller.getNotice()).not.toMatchObject({ repairLabel: 'Continue in this tab' });
+    controller.dispose();
+  });
+});
