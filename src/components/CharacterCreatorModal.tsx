@@ -34,6 +34,19 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
   const [seedHistory, setSeedHistory] = useState<number[]>([]);
   const [currentSeed, setCurrentSeed] = useState<number>(Date.now());
   const [stats, setStats] = useState<StatsMap>(() => generateInitialStats(new RandomGenerator(currentSeed), race, klass));
+  /**
+   * What the last roll produced, for the status region.
+   *
+   * Empty until the player rolls, so opening the dialogue does not announce a result nobody asked
+   * for. Rolling changes seven numbers at once — six stats and the total — and a screen-reader user
+   * previously got silence and had to navigate back into the grid and re-read all seven to find out
+   * what happened, in the one part of this app that is genuinely interactive. WCAG 2.2 4.1.3.
+   *
+   * All six are spoken rather than only the total. This is a deliberate button press, not ambient
+   * chatter, and the six values are exactly what was asked for — announcing only the sum would send
+   * the reader back into the grid for the rest, which is the problem being fixed.
+   */
+  const [rollOutcome, setRollOutcome] = useState('');
 
   if (!isOpen) return null;
 
@@ -46,20 +59,29 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
     return '';
   };
 
+  const describeRoll = (rolled: StatsMap, verb: string) => {
+    const total = PRIME_STATS.reduce((sum, stat) => sum + (rolled[stat] || 0), 0);
+    return `${verb} ${total} total. ${PRIME_STATS.map((stat) => `${stat} ${rolled[stat]}`).join(', ')}.`;
+  };
+
   const handleRoll = () => {
     const nextSeed = Date.now() + Math.floor(Math.random() * 10000);
+    const rolled = generateInitialStats(new RandomGenerator(nextSeed), race, klass);
     setSeedHistory((prev) => [...prev, currentSeed]);
     setCurrentSeed(nextSeed);
-    setStats(generateInitialStats(new RandomGenerator(nextSeed), race, klass));
+    setStats(rolled);
+    setRollOutcome(describeRoll(rolled, 'Rolled'));
   };
 
   const handleUnroll = () => {
     if (seedHistory.length === 0) return;
     const prevSeed = seedHistory.at(-1);
     if (prevSeed === undefined) return;
+    const restored = generateInitialStats(new RandomGenerator(prevSeed), race, klass);
     setSeedHistory((prev) => prev.slice(0, -1));
     setCurrentSeed(prevSeed);
-    setStats(generateInitialStats(new RandomGenerator(prevSeed), race, klass));
+    setStats(restored);
+    setRollOutcome(describeRoll(restored, 'Restored'));
   };
 
   const handleRandomName = () => {
@@ -128,6 +150,8 @@ export const CharacterCreatorModal: React.FC<CharacterCreatorModalProps> = ({ is
                 </span>
               </div>
             </div>
+
+            <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{rollOutcome}</div>
 
             <div className="stat-grid" data-testid="creator-prime-stats" style={{ marginBottom: '0.75rem' }}>
               {PRIME_STATS.map((stat) => (
