@@ -66,9 +66,17 @@ export const ChatterFeed: React.FC<{ readonly active?: boolean }> = ({ active = 
           type="button"
           className="btn btn-compact chatter-mute"
           aria-controls={messagesId}
-          aria-pressed={muted}
           onClick={() => setMuted((current) => !current)}
         >
+          {/*
+            The label names the action, so aria-pressed cannot also name the state — carrying both
+            inverted the meaning. Muted announced as "Unmute fictional chatter, pressed", which
+            reads as "unmute is on" while chatter is off.
+
+            The label is the signal kept, because it is the unambiguous one. A fixed label with
+            aria-pressed would give "Fictional chatter, pressed" and leave the listener to guess
+            whether pressed means muted or playing.
+          */}
           {muted ? 'Unmute fictional chatter' : 'Mute fictional chatter'}
         </button>
       </div>

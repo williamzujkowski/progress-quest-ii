@@ -57,7 +57,10 @@ describe('simulated chatter accessibility', () => {
     const mute = screen.getByRole('button', { name: 'Mute fictional chatter' });
 
     fireEvent.click(mute);
-    expect(mute.getAttribute('aria-pressed')).toBe('true');
+    // The label is the state signal, and the only one. Carrying aria-pressed as well inverted the
+    // meaning: muted announced as "Unmute fictional chatter, pressed".
+    expect(mute.textContent).toBe('Unmute fictional chatter');
+    expect(mute.getAttribute('aria-pressed')).toBeNull();
     expect(screen.getByText('Fictional chatter is muted. The imaginary people remain industrious.')).not.toBeNull();
     expect(screen.queryByText('Message 1')).toBeNull();
 

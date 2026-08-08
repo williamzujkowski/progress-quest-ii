@@ -69,3 +69,24 @@ describe('equipment triggers name their slot', () => {
     expect(screen.getByRole('button', { name: 'Procedural Disappointment' })).toBeTruthy();
   });
 });
+
+describe('tooltip triggers are not disclosure buttons', () => {
+  it('carries no aria-expanded, while keeping the description wiring that does the work', () => {
+    // aria-expanded is for a control that expands a region; this controls a role="tooltip", so
+    // "collapsed" promised content Enter would reveal in place. On a stocked dashboard that was a
+    // spurious word on every one of a hundred-odd rows.
+    render(<ItemTooltip kind="inventory" name="Loot item" quantity={2} />);
+    const trigger = screen.getByRole('button', { name: 'Loot item' });
+
+    expect(trigger.getAttribute('aria-expanded')).toBeNull();
+    expect(trigger.getAttribute('aria-describedby')).toBeNull();
+
+    fireEvent.focus(trigger);
+
+    // Opening still wires the tooltip up the way a reader actually reaches it.
+    expect(trigger.getAttribute('aria-expanded')).toBeNull();
+    const describedBy = trigger.getAttribute('aria-describedby');
+    expect(describedBy).not.toBeNull();
+    expect(screen.getByRole('tooltip').id).toBe(describedBy);
+  });
+});

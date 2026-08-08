@@ -150,7 +150,11 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
       ref={triggerRef}
       aria-controls={open ? tooltipId : undefined}
       aria-describedby={open ? tooltipId : undefined}
-      aria-expanded={open}
+      // No aria-expanded. It is for a control that expands a region, and what this controls is a
+      // `role="tooltip"` — so "collapsed" promised content that Enter would reveal in place, which
+      // is not what happens. On a stocked dashboard that was a spurious word on every one of a
+      // hundred-odd rows: "Loot item 1, button, collapsed", eighty times. The describedby wiring
+      // below is how the tooltip actually reaches a reader, and it is correct.
       aria-label={accessibleName}
       title={details.description}
       onPointerEnter={showFromHover}
