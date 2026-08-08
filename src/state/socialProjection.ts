@@ -89,7 +89,20 @@ function candidateFor(source: IdentifiedGameTransitionRecord): SceneCandidate | 
   if (event.type === 'quest_completed' || event.type === 'quest_started') return { kind: 'quest', priority: event.type === 'quest_completed' ? 85 : 80, source };
   if (event.type === 'equipment_purchased' || event.type === 'equipment_gained') return { kind: 'equipment', priority: event.type === 'equipment_purchased' ? 75 : 70, source };
   if (event.type === 'item_gained') return { kind: 'loot', priority: 65, source };
-  if (event.type === 'inventory_sold') return { kind: 'market', priority: 60, source };
+  if (event.type === 'inventory_sold') {
+    // A sale of nothing is not news. Every character starts with a `{ name: 'Gold', qty: 0 }`
+    // placeholder at the head of the inventory, and the selling task takes the head unconditionally
+    // — so the first market trip of every character sold the currency row for nothing and announced
+    // it to the guild as "0 units became 0 gold".
+    //
+    // Suppressed here rather than fixed in the engine on purpose. Changing which item the sell path
+    // takes would move the inventory sequence and every figure downstream of it, which is a
+    // recorded-session change for a cosmetic complaint. The engine is doing what it has always
+    // done; the chat simply has nothing worth saying about it.
+    const sale = post.marketSale;
+    if (sale && sale.quantity <= 0 && sale.gold <= 0) return undefined;
+    return { kind: 'market', priority: 60, source };
+  }
   if (event.type === 'task_started') {
     const isBoundary = event.task.type === 'heading_to_market'
       || (event.task.type === 'selling' && post.completedTask === 'heading_to_market')
@@ -238,7 +251,12 @@ function linesFor(candidate: SceneCandidate): readonly SceneLine[] {
   }
   if (candidate.kind === 'market' && event.type === 'inventory_sold') {
     const sale = post.marketSale;
-    const facts = sale ? `${formatGameNumber(sale.quantity)} units became ${formatGameNumber(sale.gold)} gold` : `${formatGameNumber(event.gold)} gold was received`;
+    // Pluralised the way the loot scene has always done it. Hard-coding "units" here made the
+    // single-item sale — which is most of them — read "1 units became 1 gold", 165 times in a
+    // measured half hour.
+    const facts = sale
+      ? `${formatGameNumber(sale.quantity)} unit${sale.quantity === 1 ? '' : 's'} became ${formatGameNumber(sale.gold)} gold`
+      : `${formatGameNumber(event.gold)} gold was received`;
     return variant([
       [
         { speaker: 'logistics', channel: 'world', text: `${facts}. The market has declined to explain itself.` },

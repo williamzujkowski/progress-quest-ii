@@ -273,3 +273,28 @@ describe('deterministic social batch projection', () => {
     ])).toEqual([]);
   });
 });
+
+describe('the market scene reports a sale accurately', () => {
+  const sold = (quantity: number, gold: number) =>
+    source(90, { type: 'inventory_sold', gold }, snapshot({ marketSale: { name: 'Trap Ticket Shag', quantity, gold } }));
+
+  it('says "1 unit" for a single item and "units" for more', () => {
+    const one = projectSocialBatch([sold(1, 1)]).map(({ text }) => text).join(' | ');
+    expect(one).toContain('1 unit became');
+    expect(one).not.toContain('1 units');
+
+    const many = projectSocialBatch([sold(4, 12)]).map(({ text }) => text).join(' | ');
+    expect(many).toContain('4 units became');
+  });
+
+  it('says nothing at all about a sale of nothing', () => {
+    // Every character starts with a `{ name: 'Gold', qty: 0 }` placeholder at the head of the
+    // inventory and the selling task takes the head unconditionally, so the first market trip of
+    // every character used to announce "0 units became 0 gold" to the guild.
+    expect(projectSocialBatch([sold(0, 0)])).toEqual([]);
+
+    // Only when it is genuinely empty. A free item is still a sale, and so is one that pays.
+    expect(projectSocialBatch([sold(1, 0)]).length).toBeGreaterThan(0);
+    expect(projectSocialBatch([sold(0, 5)]).length).toBeGreaterThan(0);
+  });
+});
