@@ -24,6 +24,14 @@ export interface LoadoutContribution {
   readonly slot: EquipSlot;
   readonly name: string;
   readonly quality: number;
+  /**
+   * The bare noun, without modifiers or the assessor's mark.
+   *
+   * What the chatter quotes. A full generated name carries digits — `-4 Lapsed Contested Skeleton
+   * Key` — and an ambient line citing a figure would be asserting state nothing computed, which the
+   * bank is asserted never to do. The noun is the funny part anyway.
+   */
+  readonly base: string;
 }
 
 export interface LoadoutFiling {
@@ -70,9 +78,9 @@ export function fileLoadout(character: CharacterSheet): LoadoutFiling {
   // when the arithmetic calls them equal.
   const contributors = analysed
     .filter(({ quality }) => quality.total > 0)
-    .map(({ slot, name, quality }) => ({ slot, name, quality: quality.total, standing: quality.base?.value ?? 0 }))
+    .map(({ slot, name, quality }) => ({ slot, name, quality: quality.total, standing: quality.base?.value ?? 0, base: quality.base?.name ?? name }))
     .sort((left, right) => right.standing - left.standing || right.quality - left.quality)
-    .map(({ slot, name, quality }) => ({ slot, name, quality }));
+    .map(({ slot, name, quality, base }) => ({ slot, name, quality, base }));
 
   // Taken from the same function the transition multiplies by, rather than recomputed from the
   // contributors above. A sum of the positive slots would disagree with the engine the moment a

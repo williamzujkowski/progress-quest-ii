@@ -1,10 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
-import { AMBIENT_LINES, FEUD_BEATS, QUESTION_BEATS, REACTION_LINES, TRADE_LINES } from '../../data/socialAmbient';
+import { AMBIENT_LINES, BLAME_BEATS, FEUD_BEATS, ITEM_OF_RECORD_LINES, QUESTION_BEATS, REACTION_LINES, TRADE_LINES } from '../../data/socialAmbient';
 import { projectAmbient } from '../../state/socialProjection';
 import { SOCIAL_PERSONAS } from '../../data/socialCatalog';
 
 const HERO = { name: 'Krg', race: 'Sub-Subprocessor', className: 'Robot Monk' } as const;
 const ALL = [...AMBIENT_LINES, ...TRADE_LINES, ...REACTION_LINES, ...FEUD_BEATS, ...QUESTION_BEATS];
+/** The two lanes that quote the loadout, kept apart because their text carries placeholders. */
+const INTERPOLATED = [...ITEM_OF_RECORD_LINES, ...BLAME_BEATS];
+const FILING = {
+  itemOfRecord: { slot: 'Gauntlets' as const, name: '-4 Lapsed Skeleton Key', quality: 3, base: 'Skeleton Key' },
+  reductionPercent: 3,
+  contributors: [{ slot: 'Gauntlets' as const, name: '-4 Lapsed Skeleton Key', quality: 3, base: 'Skeleton Key' }],
+  repeatedModifier: null,
+};
 
 describe('the guild talks about itself', () => {
   it('is deterministic and touches no clock or random source', () => {
@@ -131,5 +139,58 @@ describe('the written bank', () => {
   it('fits the persona word caps', () => {
     const cap = Math.min(...SOCIAL_PERSONAS.map(({ voice }) => voice.maxWords));
     for (const { text } of ALL) expect(text.split(/\s+/).length).toBeLessThanOrEqual(cap);
+  });
+});
+
+describe('the guild notices what is being worn', () => {
+  const lanesOf = (loadout?: typeof FILING) =>
+    Array.from({ length: 3000 }, (_, task) => projectAmbient(HERO, task, loadout)[0])
+      .map((entry) => entry?.sceneId.split(':')[2]);
+
+  it('reaches the two loadout lanes when there is something to cite', () => {
+    expect(new Set(lanesOf(FILING))).toEqual(new Set(['ambient', 'reaction', 'trade', 'feud', 'question', 'item', 'blame']));
+  });
+
+  it('says nothing about a loadout that earns nothing, rather than falling silent', () => {
+    // A lane producing no line would quietly lower the rate the cadence was tuned to, so it falls
+    // back instead. Both halves matter: the lanes are gone AND the channel still speaks.
+    const lanes = lanesOf(undefined);
+    expect(lanes).not.toContain('item');
+    expect(lanes).not.toContain('blame');
+    expect(lanes.filter(Boolean).length).toBe(lanes.length);
+  });
+
+  it('quotes the bare noun, never the generated name', () => {
+    // A full name carries an assessor's mark, and a figure in an ambient line asserts state nothing
+    // computed. The noun is the funny part anyway.
+    const spoken = Array.from({ length: 3000 }, (_, task) => projectAmbient(HERO, task, FILING)[0])
+      .filter((entry) => entry?.sceneId.endsWith(':item') || entry?.sceneId.endsWith(':blame'))
+      .map((entry) => entry?.text ?? '');
+
+    expect(spoken.length).toBeGreaterThan(0);
+    for (const text of spoken) {
+      expect(text).not.toMatch(/\d/);
+      expect(text).not.toContain('Lapsed');
+      expect(text).not.toContain('{');
+    }
+    expect(spoken.some((text) => text.includes('Skeleton Key'))).toBe(true);
+    expect(spoken.some((text) => text.includes('Gauntlets'))).toBe(true);
+  });
+
+  it('walks the blame beats in order and starts them again', () => {
+    const beats = Array.from({ length: 6000 }, (_, task) => projectAmbient(HERO, task, FILING)[0])
+      .filter((entry) => entry?.sceneId.endsWith(':blame'))
+      .map((entry) => entry?.text);
+    expect(new Set(beats).size).toBe(BLAME_BEATS.length);
+  });
+});
+
+describe('the interpolated bank', () => {
+  it('carries a placeholder in every line, so none is a fixed string by accident', () => {
+    for (const { text } of INTERPOLATED) expect(text).toMatch(/\{(item|slot)\}/);
+  });
+
+  it('states no figure of its own', () => {
+    for (const { text } of INTERPOLATED) expect(text).not.toMatch(/\d/);
   });
 });

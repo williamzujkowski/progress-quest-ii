@@ -1,6 +1,7 @@
 import { SOCIAL_PERSONAS, type SocialPersona, type SocialSeat } from '../data/socialCatalog';
 import { boundCodePoints, MAX_TEXT_CODE_POINTS, formatGameNumber, stableIndex, stableChoice } from '../engine/text';
-import { AMBIENT_LINES, FEUD_BEATS, QUESTION_BEATS, REACTION_LINES, TRADE_LINES, type AmbientLine } from '../data/socialAmbient';
+import { AMBIENT_LINES, BLAME_BEATS, FEUD_BEATS, ITEM_OF_RECORD_LINES, QUESTION_BEATS, REACTION_LINES, TRADE_LINES, type AmbientLine } from '../data/socialAmbient';
+import type { LoadoutFiling } from '../engine/loadoutFiling';
 import { projectWorld, type IdentifiedGameTransitionRecord } from './worldContext';
 
 export type SocialChannel = 'guild' | 'world' | 'party' | 'raid' | 'whisper' | 'system' | 'hero';
@@ -431,11 +432,15 @@ export function projectSocialBatch(sources: readonly IdentifiedGameTransitionRec
  * question re-asked every minute is nagging rather than forlorn.
  */
 const AMBIENT_LANES = [
-  'ambient', 'ambient', 'ambient', 'ambient',
+  'ambient', 'ambient', 'ambient',
   'reaction', 'reaction', 'reaction',
   'trade',
   'feud',
   'question',
+  // Two lanes about what the hero is wearing. Kept scarce on purpose: the loadout changes rarely, so
+  // a lane that fired often would say the same thing about the same item all afternoon.
+  'item',
+  'blame',
 ] as const;
 
 /**
@@ -453,11 +458,18 @@ const AMBIENT_BEAT_TASKS = 40;
  * somebody saying a thing and the channel moving on, and a burst of ambient would be a caption
  * track with a different subject.
  */
-export function projectAmbient(hero: HeroIdentity, completedTasks: number): readonly SocialEntry[] {
+export function projectAmbient(
+  hero: HeroIdentity,
+  completedTasks: number,
+  loadout?: LoadoutFiling,
+): readonly SocialEntry[] {
   if (!Number.isFinite(completedTasks) || completedTasks < 0) return [];
   const cast = castForHero(hero);
   const key = `ambient:${hero.name}:${hero.race}:${hero.className}:${completedTasks}`;
-  const lane = AMBIENT_LANES[stableChoice(`lane:${key}`, AMBIENT_LANES.length)]!;
+  let lane = AMBIENT_LANES[stableChoice(`lane:${key}`, AMBIENT_LANES.length)]!;
+  // Nothing worth citing means nothing to say about it. Falls back rather than falling silent,
+  // because a lane that produced no line would quietly lower the rate the cadence was tuned to.
+  if ((lane === 'item' || lane === 'blame') && !loadout?.itemOfRecord) lane = 'ambient';
 
   // The two running bits step with the task counter and wrap, so a feud restarts rather than
   // resolving. `beatIndex` lives in chatterSchedule with the rest of the cadence arithmetic; the
@@ -465,7 +477,11 @@ export function projectAmbient(hero: HeroIdentity, completedTasks: number): read
   const beat = (beats: readonly AmbientLine[]) =>
     beats[Math.floor(completedTasks / AMBIENT_BEAT_TASKS) % beats.length]!;
 
-  const line: AmbientLine = lane === 'feud'
+  const line: AmbientLine = lane === 'item'
+    ? ITEM_OF_RECORD_LINES[stableChoice(`item:${key}`, ITEM_OF_RECORD_LINES.length)]!
+    : lane === 'blame'
+      ? beat(BLAME_BEATS)
+      : lane === 'feud'
     ? beat(FEUD_BEATS)
     : lane === 'question'
       ? beat(QUESTION_BEATS)
@@ -492,7 +508,12 @@ export function projectAmbient(hero: HeroIdentity, completedTasks: number): read
       fictional: true,
       automaticHero: false,
     },
-    text: bound(line.text),
+    // Interpolated after selection so every lane shares one substitution, and only the bare noun is
+    // quoted — a full generated name carries an assessor's mark, and a figure here would assert
+    // state nothing computed.
+    text: bound(line.text
+      .replaceAll('{item}', loadout?.itemOfRecord?.base ?? 'equipment')
+      .replaceAll('{slot}', loadout?.itemOfRecord?.slot ?? 'loadout')),
   }];
 }
 

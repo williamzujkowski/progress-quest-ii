@@ -10,6 +10,7 @@ import { MAX_PENDING_ELAPSED_MS, MAX_SOCIAL_ENTRIES, MAX_WORLD_NOTICES } from '.
 import { projectWorld, type WorldNotice } from './worldContext';
 import { projectAmbient, projectSocialBatch, type SocialEntry } from './socialProjection';
 import { scheduleChatter, NEW_CADENCE, type ChatterCadence } from './chatterSchedule';
+import { fileLoadout } from '../engine/loadoutFiling';
 import { EMPTY_COMMENDATIONS, mergeEvents, mergeExhibit, readCommendations, writeCommendations, type Commendations } from './commendations';
 import { EMPTY_CASELOAD, mergeRecords, readCaseload, writeCaseload, type Caseload } from './caseload';
 import { EMPTY_DIGEST, accumulateDigest, describeDigest, type AbsenceDigest } from './absenceDigest';
@@ -315,7 +316,13 @@ export const useGameStore = create<GameStore>((set, get) => {
         chatterCadence,
         chatterTasks,
         // Offered on every batch; the schedule decides whether the silence is worth filling.
-        projectAmbient(sources.at(-1)?.record.post.hero ?? { name: character.Traits.Name, race: character.Traits.Race, className: character.Traits.Class }, chatterTasks),
+        // The filing comes from the sheet the store already holds rather than from the snapshot, so
+        // the engine needs no new field and the recorded sessions stay untouched.
+        projectAmbient(
+          sources.at(-1)?.record.post.hero ?? { name: character.Traits.Name, race: character.Traits.Race, className: character.Traits.Class },
+          chatterTasks,
+          fileLoadout(result.state.character),
+        ),
       );
       chatterCadence = scheduled.cadence;
       const projectedSocialEntries = scheduled.entries.toReversed();
