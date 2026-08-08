@@ -9,6 +9,7 @@ import type { CharacterSheet, ProgressionState, StatsMap } from '../engine/types
 import { MAX_PENDING_ELAPSED_MS, MAX_SOCIAL_ENTRIES, MAX_WORLD_NOTICES } from '../data/limits';
 import { projectWorld, type WorldNotice } from './worldContext';
 import { projectSocialBatch, type SocialEntry } from './socialProjection';
+import { scheduleChatter, NEW_CADENCE, type ChatterCadence } from './chatterSchedule';
 import { EMPTY_COMMENDATIONS, mergeEvents, mergeExhibit, readCommendations, writeCommendations, type Commendations } from './commendations';
 import { EMPTY_CASELOAD, mergeRecords, readCaseload, writeCaseload, type Caseload } from './caseload';
 import { EMPTY_DIGEST, accumulateDigest, describeDigest, type AbsenceDigest } from './absenceDigest';
@@ -39,6 +40,11 @@ let lastPersistedSpecimens = initialSpecimens;
 // because nothing renders it until it is finished and nothing persists it at all: it exists for
 // exactly as long as one backlog takes to work through.
 let drainDigest: AbsenceDigest = EMPTY_DIGEST;
+
+// How much had happened when the guild last spoke. Module-level for the same reason the drain digest
+// is: nothing renders it and nothing persists it. A reload therefore starts the channel quiet, which
+// is what rejoining a channel feels like.
+let chatterCadence: ChatterCadence = NEW_CADENCE;
 
 type StartSessionRequest =
   | { source: 'creation'; name: string; race: string; klass: string; seed: PRNGSeed; stats?: StatsMap }
@@ -167,8 +173,11 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     startSession: (request: StartSessionRequest) => {
       // Whoever was mid-catch-up is gone. A digest describes one absence by one character, and
-      // carrying a partial one across would report another session's work as this one's.
+      // carrying a partial one across would report another session's work as this one's. The
+      // chatter gap goes for the same reason: it was measured against a counter that is no longer
+      // this character's.
       drainDigest = EMPTY_DIGEST;
+      chatterCadence = NEW_CADENCE;
       const { nextActivityId, sessionGeneration } = get();
       preserveOutgoingCharacter(get());
       let character: CharacterSheet;
@@ -300,7 +309,9 @@ export const useGameStore = create<GameStore>((set, get) => {
         lastPersistedSpecimens = nextSpecimens;
         writeSpecimenLog(typeof window === 'undefined' ? undefined : window.localStorage, nextSpecimens);
       }
-      const projectedSocialEntries = projectSocialBatch(sources).toReversed();
+      const scheduled = scheduleChatter(projectSocialBatch(sources), chatterCadence, sources.at(-1)?.record.post.completedTasks ?? progression.completedTasks);
+      chatterCadence = scheduled.cadence;
+      const projectedSocialEntries = scheduled.entries.toReversed();
       set({
         ...result.state,
         pendingElapsedMs: result.remainingElapsedMs,

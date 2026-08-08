@@ -1,4 +1,5 @@
 import { stableChoice } from '../engine/text';
+import type { SocialEntry, SocialSceneKind } from './socialProjection';
 
 /**
  * When the simulated guild says anything, decided apart from what it says.
@@ -115,4 +116,67 @@ export function clampBeatAdvance(previous: number, next: number, beats: number):
   const from = ((Math.trunc(previous) % beats) + beats) % beats;
   const to = ((Math.trunc(next) % beats) + beats) % beats;
   return to === from ? from : (from + 1) % beats;
+}
+
+/**
+ * Scene kinds that always speak.
+ *
+ * A milestone, an act, or a level is the one suppression a player would read as a bug rather than
+ * as restraint. `catch_up` is here because it is the row that explains a drain — silencing the
+ * explanation is worse than the noise it exists to replace.
+ */
+const ALWAYS_HEARD: readonly SocialSceneKind[] = ['milestone', 'level', 'catch_up'];
+
+/** How much had happened when the guild last said anything. */
+export interface ChatterCadence {
+  readonly lastLineTasks: number;
+}
+
+export const NEW_CADENCE: ChatterCadence = { lastLineTasks: 0 };
+
+/**
+ * Decides whether a batch of already-written lines is spoken at all.
+ *
+ * Deliberately downstream of `projectSocialBatch` rather than inside it. That function answers what
+ * a moment could say and is asserted byte-stable from its input alone; this answers whether anyone
+ * says it, which needs memory across ticks and a notion of elapsed time. Keeping them apart is what
+ * lets the wording be tested without a clock and the cadence be tested without any wording.
+ *
+ * Gating happens per scene, never per line, so a scene is heard whole or not at all. Half a
+ * three-line exchange is worse than none of it.
+ *
+ * Two independent gates. Admission drops four ordinary scenes in five, which is the difference
+ * between reporting and noticing. The cadence gap then decides whether what survives arrives now or
+ * waits, drawn rather than fixed so the channel is bursty instead of evenly spaced — evenness is
+ * what gives a feed away, at any rate.
+ */
+export function scheduleChatter(
+  entries: readonly SocialEntry[],
+  cadence: ChatterCadence,
+  completedTasks: number,
+): { readonly entries: readonly SocialEntry[]; readonly cadence: ChatterCadence } {
+  if (entries.length === 0) return { entries, cadence };
+
+  const scenes = [...new Set(entries.map(({ sceneId }) => sceneId))];
+  const heard = new Set(scenes.filter((sceneId) => {
+    const kind = entries.find((entry) => entry.sceneId === sceneId)?.sceneKind;
+    if (kind !== undefined && ALWAYS_HEARD.includes(kind)) return true;
+    return admitsEvent(0, `${sceneId}:${completedTasks}`);
+  }));
+  if (heard.size === 0) return { entries: [], cadence };
+
+  // A scene that always speaks is not subject to the gap either. Making a level-up wait would put
+  // it behind loot the player is no longer looking at.
+  const unconditional = [...heard].some((sceneId) => {
+    const kind = entries.find((entry) => entry.sceneId === sceneId)?.sceneKind;
+    return kind !== undefined && ALWAYS_HEARD.includes(kind);
+  });
+  if (!unconditional && !readyToSpeak(completedTasks, cadence.lastLineTasks, `gap:${scenes[0]}`)) {
+    return { entries: [], cadence };
+  }
+
+  return {
+    entries: entries.filter(({ sceneId }) => heard.has(sceneId)),
+    cadence: { lastLineTasks: completedTasks },
+  };
 }
