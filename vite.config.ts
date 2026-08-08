@@ -36,7 +36,6 @@ export default defineConfig({
         // nobody noticed — the list is only as reviewable as the reader is attentive, so
         // scripts/test-coverage-exclusions.mjs now fails when an entry acquires a matching test.
         'src/App.tsx',
-        'src/components/CharacterCreatorModal.tsx',
         'src/components/CharacterSheet.tsx',
         'src/components/HeroBanner.tsx',
         'src/components/InventoryView.tsx',
