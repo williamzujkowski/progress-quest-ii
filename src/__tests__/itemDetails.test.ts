@@ -29,7 +29,7 @@ describe('item tooltip details', () => {
     expect(details.description).toContain('Punitive');
     expect(details.description).toContain('Short Sprint');
     expect(details.effect).toBe(
-      'Generation quality: 9 (Short Sprint 5 + Punitive +4). Combat contribution: none; classic encounter time ignores equipment.',
+      'Generation quality: 9 (Short Sprint 5 + Punitive +4). Contributes 9 to the loadout, which shortens encounters; damage is not modeled.',
     );
   });
 
@@ -204,8 +204,9 @@ describe('item tooltip details', () => {
     expect(details.description).toContain('Order');
     expect(details.description).toContain('Forecast');
     expect(details.description.length).toBeLessThanOrEqual(220);
+    // No level supplied, so no price is quoted. A confident "0 gold" would be worse than silence.
     expect(details.effect).toBe(
-      'Quantity: 3. Encumbrance: +3 cubits. Combat contribution: none; loot is sold when the pack fills.',
+      'Quantity: 3. Encumbrance: +3 cubits. Combat contribution: none.',
     );
   });
 
@@ -411,7 +412,10 @@ describe('modifier count as a register signal', () => {
 
     expect(stacked.description).not.toBe(plain.description);
     for (const details of [stacked, plain]) {
-      expect(details.effect).toContain('Combat contribution: none');
+      // Damage is never modeled, at any quality. The loadout contribution below is a different
+      // claim and a true one — it is the figure the engine multiplies encounter time by — so the
+      // assertion moved to the part that must stay constant rather than the part that now varies.
+      expect(details.effect).toContain('damage is not modeled');
       expect(details.description).not.toMatch(/stronger|tougher|deadlier|more effective/i);
     }
   });
@@ -429,7 +433,12 @@ describe('the boundary between what a thing is and what it does', () => {
   // forbids asserting anything the engine does not model. These pin the shape of every effect
   // string so a future flavour pass cannot append prose to one, or smuggle a quantity in beside a
   // real figure. A legitimate mechanics change updates the pattern here deliberately.
-  const EQUIPMENT_EFFECT = /^Generation quality: [-\d,]+ \([^)]*\)\. Combat contribution: [a-z ]+; classic encounter time ignores equipment\.$/u;
+  // The shape moved because the claim inside it was false. "classic encounter time ignores
+  // equipment" was true of the original and stopped being true the day ADR 0008 shipped —
+  // `sim.ts` multiplies every kill's duration by `encounterSpeedMultiplier(loadoutQuality)`.
+  // Still pinned to a mechanical shape rather than left free, because an effects column is the
+  // failure this surface exists to avoid.
+  const EQUIPMENT_EFFECT = /^Generation quality: [-\d,]+ \([^)]*\)\. Contributes (?:[\d,]+ to the loadout, which shortens encounters|nothing to the loadout, so encounters are unaffected); damage is (?:not modeled|[a-z ]+)\.$/u;
   const SPELL_EFFECT = /^Spell rank: [-\d,]+\. Combat contribution: [a-z ]+; classic encounter time ignores spells\.$/u;
 
   it('keeps every generated equipment effect to the mechanical shape', () => {
@@ -506,5 +515,49 @@ describe('provenance acquires an industrial edge as acts accumulate', () => {
       expect(describeInventoryItem('Nit Tail', 1, act).effect).toBe(describeInventoryItem('Nit Tail', 1, 0).effect);
       expect(describeEquipment('Provisional Waiver Sword', 'Weapon', act).effect).toBe(describeEquipment('Provisional Waiver Sword', 'Weapon', 0).effect);
     }
+  });
+
+  it('prices a stack the way the market actually prices it', () => {
+    // `transition.ts` pays quantity times character level. The player had no way to learn that, and
+    // no way to tell which of their boxes was the valuable one.
+    expect(describeInventoryItem('tech debt grub eggsac', 3, 1, 7).effect)
+      .toContain('Sells for 21 gold at your level');
+  });
+
+  it('reports the named-item premium as a floor, never as a figure', () => {
+    // Anything with " of " in its name is multiplied by two factors that are both at least one, and
+    // both are rolled at the moment of sale. Quoting an exact number would invent state, which is
+    // the one thing this line may never do.
+    const named = describeInventoryItem('Certified Order of Forecast', 3, 1, 7).effect;
+
+    expect(named).toContain('at least 21 gold');
+    expect(named).toContain('fetches more');
+    expect(named).not.toMatch(/Sells for \d+ gold at your level/);
+  });
+
+  it('quotes no price when it has no level to price against', () => {
+    // Reachable from a caller with no character. A confident "0 gold" would be worse than silence,
+    // and the sentences must still join without a gap where the price would have been.
+    const effect = describeInventoryItem('post-it dust', 1, 1, 0).effect;
+
+    expect(effect).not.toContain('gold');
+    expect(effect).not.toMatch(/ {2}/);
+  });
+
+  it('does not quote a price beyond what a purse can hold', () => {
+    const effect = describeInventoryItem('hoard', 1_000_000_000, 1, 1_000_000_000).effect;
+
+    expect(effect).toContain('Sells for');
+    expect(effect).not.toMatch(/Infinity|NaN|e\+/);
+  });
+
+  it('promises no reduction from an item that contributes nothing', () => {
+    // The starting hauberk totals zero — Boilerplate 3 with a -3 mark. "Contributes 0 to the
+    // loadout, which shortens encounters" would be a promise the arithmetic does not keep, and
+    // `encounterSpeedMultiplier(0)` is exactly 1.
+    const effect = describeEquipment('-3 Boilerplate', 'Hauberk').effect;
+
+    expect(effect).toContain('Contributes nothing to the loadout, so encounters are unaffected');
+    expect(effect).not.toContain('shortens encounters');
   });
 });

@@ -477,7 +477,11 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await weapon.focus();
     const tooltip = page.getByRole('tooltip');
     await expect(tooltip).toContainText('Generation quality: 9 (Short Sprint 5 + Punitive +4)');
-    await expect(tooltip).toContainText('Combat contribution: none');
+    // The claim moved because it was false. "classic encounter time ignores equipment" stopped
+    // being true when ADR 0008 shipped, and the tooltip went on saying it on the same screen as a
+    // world-console filing reporting the reduction.
+    await expect(tooltip).toContainText('Contributes 9 to the loadout, which shortens encounters');
+    await expect(tooltip).toContainText('damage is not modeled');
     expect(await tooltip.evaluate((element) => element.parentElement === document.body)).toBe(true);
     const tooltipBox = await tooltip.boundingBox();
     // Narrowing rather than optional-chaining: `box?.x + (box?.width ?? 0)` evaluates to NaN

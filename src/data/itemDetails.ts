@@ -1,3 +1,4 @@
+import { MAX_PERSISTED_GOLD } from './limits';
 import { ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, WEAPONS } from './traits';
 import { analyzeItemMechanics } from '../engine/itemMechanics';
 import { formatGameNumber, stableIndex } from '../engine/text';
@@ -237,9 +238,25 @@ export function describeEquipment(name: string, slot: EquipSlot, act = 0): ItemD
     ...(mark ? [`mark ${signedGameNumber(mark.value)}`] : []),
   ];
 
+  // What the item actually does, which the line here used to deny.
+  //
+  // It said "classic encounter time ignores equipment", which was true of the original and stopped
+  // being true the day ADR 0008 shipped: `sim.ts` multiplies every kill's duration by
+  // `encounterSpeedMultiplier(loadoutQuality(character))`. The tooltip went on saying otherwise on
+  // the same screen as a world-console filing reporting the reduction, which is the worst possible
+  // place for the game to contradict itself.
+  //
+  // Narrated rather than tabulated. An effects column — "+2 chatter, −1 travel" — is the failure
+  // this surface is built to avoid, and the `effect` line is pinned to mechanical truth for exactly
+  // that reason. A quality that contributes nothing says so, because "shortens encounters" would be
+  // a promise the arithmetic does not keep at zero.
+  const contribution = total > 0
+    ? `Contributes ${formatGameNumber(total)} to the loadout, which shortens encounters`
+    : 'Contributes nothing to the loadout, so encounters are unaffected';
+
   return {
     description,
-    effect: `Generation quality: ${formatGameNumber(total)} (${qualityParts.join(' + ')}). Combat contribution: ${mechanics.combatContribution}; classic encounter time ignores equipment.`,
+    effect: `Generation quality: ${formatGameNumber(total)} (${qualityParts.join(' + ')}). ${contribution}; damage is ${mechanics.combatContribution === 'none' ? 'not modeled' : mechanics.combatContribution}.`,
   };
 }
 
@@ -432,7 +449,31 @@ const mundaneLootStory = (name: string, stage = 0): string => {
   return `${history} Its promotion was ${dossierBeat(BORING_ITEMS.indexOf(name), name, 100, stage)}.`;
 };
 
-export function describeInventoryItem(name: string, quantity: number, act = 0): ItemDetails {
+/**
+ * What the market will give for a stack, which the player had no way to find out.
+ *
+ * `transition.ts` prices a sale at quantity times character level, and then multiplies anything
+ * whose name contains " of " by two random factors that are both at least one. So a named item is
+ * worth strictly more than a plain one of the same size, and that has been true since the original
+ * without ever being said anywhere — a player watching gold arrive could not tell which of their
+ * boxes was the valuable one.
+ *
+ * The premium is reported as a floor rather than a figure, because the multipliers are rolled at
+ * the moment of sale. Naming an exact number would be inventing state, which is the one thing this
+ * line may never do.
+ *
+ * Silent at level zero, which is only reachable from a caller that has no character to price
+ * against. A confident "0 gold" would be worse than saying nothing.
+ */
+function saleValue(name: string, quantity: number, level: number): string {
+  if (!Number.isFinite(level) || level <= 0) return '';
+  const base = Math.min(MAX_PERSISTED_GOLD, quantity * level);
+  return name.includes(' of ')
+    ? `Sells for at least ${formatGameNumber(base)} gold; a named thing fetches more.`
+    : `Sells for ${formatGameNumber(base)} gold at your level.`;
+}
+
+export function describeInventoryItem(name: string, quantity: number, act = 0, level = 0): ItemDetails {
   const stage = substrateStage(act);
   const mechanics = analyzeItemMechanics({ kind: 'inventory', name, quantity });
   const special = specialItemParts(name);
@@ -463,6 +504,13 @@ export function describeInventoryItem(name: string, quantity: number, act = 0): 
     description,
     effect: name === 'Gold'
       ? `Quantity: ${formatGameNumber(mechanics.quantity)}. Encumbrance: +${formatGameNumber(mechanics.encumbranceCubits)} cubits. Funds equipment purchases; combat contribution: ${mechanics.combatContribution}.`
-      : `Quantity: ${formatGameNumber(mechanics.quantity)}. Encumbrance: +${formatGameNumber(mechanics.encumbranceCubits)} cubits. Combat contribution: ${mechanics.combatContribution}; loot is sold when the pack fills.`,
+      : [
+        `Quantity: ${formatGameNumber(mechanics.quantity)}.`,
+        `Encumbrance: +${formatGameNumber(mechanics.encumbranceCubits)} cubits.`,
+        // Empty when no level was supplied, so the sentences join without leaving a gap where a
+        // price would have been.
+        saleValue(name, mechanics.quantity, level),
+        `Combat contribution: ${mechanics.combatContribution}.`,
+      ].filter(Boolean).join(' '),
   };
 }
