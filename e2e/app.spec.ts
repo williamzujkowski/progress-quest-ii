@@ -1400,7 +1400,19 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await notices.focus();
     await expect(notices).toBeFocused();
     await expectVisibleFocusRing(notices, 'world notices region');
-    expect(await page.locator('.progress-bar-fill').first().evaluate((element) => parseFloat(getComputedStyle(element).animationDuration))).toBeLessThan(0.001);
+    // Read through ::after, which is where the shimmer animation actually lives. This assertion
+    // used to read the element itself, which has no animation at all — so `animationDuration` was
+    // "0s", parsed to 0, and the check passed whether or not the preference was honoured. Verified
+    // by measuring the same element under no-preference, where it also reported "0s".
+    //
+    // The element's own `transition: width 0.1s linear` is asserted too, so both kinds of motion
+    // the progress bar produces are covered rather than only the one that was nearly missed.
+    const shimmer = await page.locator('.progress-bar-fill').first().evaluate((element) => ({
+      animation: parseFloat(getComputedStyle(element, '::after').animationDuration),
+      transition: parseFloat(getComputedStyle(element).transitionDuration),
+    }));
+    expect(shimmer.animation).toBeLessThan(0.001);
+    expect(shimmer.transition).toBeLessThan(0.001);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     await expectNoViolations(page);
   });
