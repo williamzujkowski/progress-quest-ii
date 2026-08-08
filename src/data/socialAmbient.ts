@@ -153,3 +153,41 @@ export const QUESTION_BEATS: readonly AmbientLine[] = [
   { seat: 'field', channel: 'guild', text: 'The horse has been carried forward to the next agenda.' },
   { seat: 'field', channel: 'guild', text: 'The next agenda has been carried forward.' },
 ];
+
+/**
+ * What the guild says about the thing the hero is wearing.
+ *
+ * `{item}` is replaced with a bare base noun — never a full generated name, which carries an
+ * assessor's mark and would put a figure in a bank asserted to contain none. `{slot}` is the slot
+ * it sits in.
+ *
+ * The institution notices the item; the item does not announce itself. That is the register this
+ * project's comedy actually runs on — the tenor ladder, the legendary remarks and the feud beats all
+ * work that way — and an item expressing a property of itself would read as a stat.
+ */
+export const ITEM_OF_RECORD_LINES: readonly AmbientLine[] = [
+  { seat: 'official', channel: 'guild', text: 'The {item} is now cited in correspondence by default.' },
+  { seat: 'official', channel: 'guild', text: 'All filings this quarter reference the {item}. None explain why.' },
+  { seat: 'logistics', channel: 'guild', text: 'The {item} has been valued twice, differently, by the same person.' },
+  { seat: 'logistics', channel: 'world', text: 'WTB one {item}. I have seen what it does and I remain interested.' },
+  { seat: 'field', channel: 'party', text: 'Route planning now assumes the {item}. It did not consent.' },
+  { seat: 'support', channel: 'guild', text: 'Morale is attributed to the {item}, provisionally and without evidence.' },
+  { seat: 'official', channel: 'guild', text: 'The {item} attended in the {slot} capacity and was minuted.' },
+  { seat: 'support', channel: 'guild', text: 'I have stopped asking what the {item} is for.' },
+];
+
+/**
+ * A slot held responsible, in order, for ever.
+ *
+ * The support seat's declared preoccupation is blame allocation, and this is that preoccupation
+ * given something to be about. It wraps rather than resolving, which is the honest shape — the
+ * escalation shrinks in stakes as it grows in register, and then begins again.
+ */
+export const BLAME_BEATS: readonly AmbientLine[] = [
+  { seat: 'support', channel: 'guild', text: 'The {slot} is the problem.' },
+  { seat: 'support', channel: 'guild', text: 'I have been asked to specify which {slot}.' },
+  { seat: 'support', channel: 'guild', text: 'The {slot}.' },
+  { seat: 'support', channel: 'guild', text: 'Blame for the {slot} has been provisionally accepted by the {slot}.' },
+  { seat: 'support', channel: 'guild', text: 'The {slot} matter is closed. It is also ongoing.' },
+];
+
