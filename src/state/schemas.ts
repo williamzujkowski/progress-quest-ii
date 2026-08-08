@@ -142,6 +142,17 @@ export const characterSheetSchema = z.object({
   Inventory: z.array(inventoryItemSchema).max(MAX_PERSISTED_ITEMS),
   Spells: z.array(spellItemSchema).max(MAX_PERSISTED_ITEMS),
   Gold: z.number().min(0).max(MAX_PERSISTED_GOLD),
+  /**
+   * How many powers of ten the gold figure has shed.
+   *
+   * Gold used to stop at MAX_PERSISTED_GOLD, which is a cap rather than an ending — the number
+   * simply froze and the game carried on. It now sheds a decade instead of saturating, so it keeps
+   * growing while the value the engine adds to stays bounded and exact. See ADR 0009.
+   *
+   * Optional and defaulting to zero, so every save written before this reads back as the number it
+   * always was. Nothing needs migrating.
+   */
+  GoldDecades: z.number().int().min(0).max(MAX_PERSISTED_VALUE).optional(),
   Plot: plotStateSchema,
   Quest: questStateSchema,
   Task: progressTaskSchema,
