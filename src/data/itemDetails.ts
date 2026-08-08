@@ -1,9 +1,10 @@
 import { MAX_PERSISTED_GOLD } from './limits';
 import { ARMORS, BORING_ITEMS, SPELLS, DEFENSE_ATTRIB, DEFENSE_BAD, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, WEAPONS } from './traits';
 import { analyzeItemMechanics } from '../engine/itemMechanics';
+import { storageAllowance } from '../engine/storage';
 import { boundedLabel, formatGameNumber, stableIndex } from '../engine/text';
 import { substrateStage } from './worldContext';
-import type { EquipSlot } from '../engine/types';
+import type { CharacterSheet, EquipSlot } from '../engine/types';
 
 export interface ItemDetails {
   description: string;
@@ -249,9 +250,21 @@ export function describeEquipment(name: string, slot: EquipSlot, act = 0): ItemD
     ? `Contributes ${formatGameNumber(total)} to the loadout, which shortens encounters`
     : 'Contributes nothing to the loadout, so encounters are unaffected';
 
+  // The padding slot does a second thing, and it is the only slot that does.
+  //
+  // Stated only where it is true. A sentence about carrying capacity on a helm would be the effects
+  // column this surface refuses to become, and worse, it would be false. The figure is read from the
+  // same function the engine adds to capacity, never recomputed, for the reason the whole file is
+  // pinned to mechanical truth: a tooltip that flattered the item would be the failure rather than
+  // the fix.
+  const allowance = slot === 'Gambeson' ? storageAllowance({ Gambeson: name } as CharacterSheet['Equip']) : 0;
+  const carrying = allowance > 0
+    ? ` Padding the hero out by ${formatGameNumber(allowance)} cubits of carrying capacity.`
+    : '';
+
   return {
     description,
-    effect: `Generation quality: ${formatGameNumber(total)} (${qualityParts.join(' + ')}). ${contribution}; damage is ${mechanics.combatContribution === 'none' ? 'not modeled' : mechanics.combatContribution}.`,
+    effect: `Generation quality: ${formatGameNumber(total)} (${qualityParts.join(' + ')}). ${contribution}; damage is ${mechanics.combatContribution === 'none' ? 'not modeled' : mechanics.combatContribution}.${carrying}`,
   };
 }
 

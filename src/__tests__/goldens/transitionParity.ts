@@ -21,12 +21,26 @@ import { EQUIP_SLOTS } from '../../data/traits';
 import { RandomGenerator } from '../../engine/prng';
 import { calculateEncumbrance } from '../../engine/sim';
 import { calculateEncumbranceMax } from '../../engine/math';
+import { storageAllowance } from '../../engine/storage';
 import { advanceGame } from '../../engine/transition';
 import type { CharacterSheet, CharacterTraits, EquipSlot, ProgressionState, ProgressTask, StatName } from '../../engine/types';
 import { describeGameEvent } from '../../state/gameEventAdapter';
 
 type AleaState = [number, number, number, number];
 type Pair<T> = [string, T];
+
+/**
+ * Capacity the way the engine computes it, strength plus whatever the padding slot allows.
+ *
+ * A no-op against every recorded fixture — each one's loadout is a `Sharp Rock` and a `-3
+ * Boilerplate`, and the Gambeson slot is empty for the whole of every run, so the allowance is zero
+ * and the pinned `max` of 20 is untouched. It is written this way anyway: a comparator that reached
+ * capacity by a different route from the engine would disagree with it silently the first time
+ * anyone wore the slot, which is the failure the goldens exist to catch rather than an instance of
+ * it.
+ */
+const capacityOf = (sheet: CharacterSheet): number =>
+  calculateEncumbranceMax(sheet.Stats.STR, storageAllowance(sheet.Equip));
 
 interface LegacySheet {
   Traits: CharacterTraits;
@@ -232,8 +246,8 @@ export function observeModernEncounterTransition(fixture: RecordedTransitionFixt
       counters: { completedTasks: progression.completedTasks, elapsedSeconds: progression.elapsedSeconds },
       experience: structuredClone(progression.experience),
       encumbrance: {
-        currentCubits: Math.min(calculateEncumbrance(transitioned.Inventory), calculateEncumbranceMax(transitioned.Stats.STR)),
-        maxCubits: calculateEncumbranceMax(transitioned.Stats.STR),
+        currentCubits: Math.min(calculateEncumbrance(transitioned.Inventory), capacityOf(transitioned)),
+        maxCubits: capacityOf(transitioned),
       },
       quest: {
         description: transitioned.Quest.description,

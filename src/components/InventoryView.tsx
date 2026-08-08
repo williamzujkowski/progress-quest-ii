@@ -2,24 +2,30 @@ import { Package, Weight } from 'lucide-react';
 import React from 'react';
 import { calculateEncumbranceMax } from '../engine/math';
 import { calculateEncumbrance } from '../engine/sim';
+import { storageAllowance } from '../engine/storage';
 import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../state/gameStore';
 import { GameNumber } from './GameNumber';
 import { ItemTooltip } from './ItemTooltip';
 
 export const InventoryView: React.FC = () => {
-  // Inventory changed identity 0 times across a measured 400 ticks, Stats 3 times.
-  const { Inventory, Stats } = useGameStore(useShallow((state) => ({
+  // Inventory changed identity 0 times across a measured 400 ticks, Stats 3 times. Equip changes
+  // only when the hero is handed something, which is rarer than either.
+  const { Inventory, Stats, Equip } = useGameStore(useShallow((state) => ({
     Inventory: state.character.Inventory,
     Stats: state.character.Stats,
+    Equip: state.character.Equip,
   })));
-  const character = { Inventory, Stats };
+  const character = { Inventory, Stats, Equip };
 
   const nonGoldItems = character.Inventory.filter((item) => item.name !== 'Gold');
   // Carried weight belongs on the bag, the way EverQuest and WoW put it there. Gold is
   // reported once, on the hero banner, and carries no weight anyway.
   const encumbrance = calculateEncumbrance(character.Inventory);
-  const encumbranceMax = calculateEncumbranceMax(character.Stats.STR);
+  // Read through `storageAllowance` rather than from strength alone, because the engine decides the
+  // market trip on the larger figure. A bar that filled at 20 while procurement waited until 30
+  // would be the readout calling the engine a liar.
+  const encumbranceMax = calculateEncumbranceMax(character.Stats.STR, storageAllowance(character.Equip));
   const atCapacity = encumbrance >= encumbranceMax;
   const encumbrancePct = encumbranceMax > 0
     ? Math.min(100, Math.floor((encumbrance / encumbranceMax) * 100))

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ARMOUR_BY_SLOT } from '../data/armourBySlot';
-import type { EquipSlot } from '../engine/types';
+import { ARMOUR_BY_SLOT, armourTableForSlot } from '../data/armourBySlot';
+import type { CharacterSheet, EquipSlot } from '../engine/types';
+import { storageAllowance } from '../engine/storage';
 import { describeEquipment, describeInventoryItem, describeSpell } from '../data/itemDetails';
 import {
   ARMORS,
@@ -438,10 +439,32 @@ describe('the boundary between what a thing is and what it does', () => {
   // `sim.ts` multiplies every kill's duration by `encounterSpeedMultiplier(loadoutQuality)`.
   // Still pinned to a mechanical shape rather than left free, because an effects column is the
   // failure this surface exists to avoid.
-  const EQUIPMENT_EFFECT = /^Generation quality: [-\d,]+ \([^)]*\)\. Contributes (?:[\d,]+ to the loadout, which shortens encounters|nothing to the loadout, so encounters are unaffected); damage is (?:not modeled|[a-z ]+)\.$/u;
+  // Widened once more for the second effect equipment has. Optional, and only the padding slot ever
+  // carries it — a carrying-capacity sentence on a helm would be both an effects column and a lie.
+  const EQUIPMENT_EFFECT = /^Generation quality: [-\d,]+ \([^)]*\)\. Contributes (?:[\d,]+ to the loadout, which shortens encounters|nothing to the loadout, so encounters are unaffected); damage is (?:not modeled|[a-z ]+)\.(?: Padding the hero out by [\d,]+ cubits of carrying capacity\.)?$/u;
   // Still pinned to a mechanical shape, widened for two facts the line never carried: what a rank
   // counts, and the wisdom-plus-level threshold at which a spell enters the curriculum at all.
   const SPELL_EFFECT = /^Spell rank: [-\d,]+, meaning it has been awarded (?:once|[\d,]+ times)\.(?: Enters the curriculum at wisdom plus level [\d,]+\.)? Combat contribution: [a-z ]+; encounters are unaffected\.$/u;
+
+  it('states the carrying capacity the engine adds, on the one slot that adds any', () => {
+    // Read against the same function the engine passes to `calculateEncumbranceMax`, not a figure
+    // written down twice. The whole file is pinned to mechanical truth because a tooltip that
+    // flattered an item would be the failure it exists to fix rather than an instance of it.
+    for (const [base] of armourTableForSlot('Gambeson')) {
+      const allowance = storageAllowance({ Gambeson: base } as CharacterSheet['Equip']);
+      expect(allowance).toBeGreaterThan(0);
+      expect(describeEquipment(base, 'Gambeson').effect)
+        .toContain(`Padding the hero out by ${allowance} cubits of carrying capacity.`);
+    }
+  });
+
+  it('says nothing about carrying capacity on a slot that grants none', () => {
+    for (const slot of EQUIP_SLOTS) {
+      if (slot === 'Gambeson') continue;
+      const base = slot === 'Weapon' ? WEAPONS[4]![0] : slot === 'Shield' ? SHIELDS[4]![0] : armourTableForSlot(slot)[4]![0];
+      expect(describeEquipment(base, slot).effect).not.toContain('carrying capacity');
+    }
+  });
 
   it('keeps every generated equipment effect to the mechanical shape', () => {
     for (const slot of EQUIP_SLOTS) {
