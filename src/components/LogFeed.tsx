@@ -35,6 +35,7 @@ export const LogFeed: React.FC = () => {
   const character = useGameStore((state) => state.character);
   const progression = useGameStore((state) => state.progression);
   const sessionGeneration = useGameStore((state) => state.sessionGeneration);
+  const pendingElapsedMs = useGameStore((state) => state.pendingElapsedMs);
   const world = projectWorld({ kind: 'current', state: { character, progression } }).context;
   const services = venueBulletin(world);
   const muster = raidMuster(world);
@@ -132,8 +133,20 @@ export const LogFeed: React.FC = () => {
         </div>
       </div>
 
+      {/*
+        Silent while a backlog is draining, which is the difference between a status region and a
+        firehose. A closed tab banks up to 11.6 days, and the clock spends it at 50 ms a tick — so a
+        six-hour absence pushed roughly sixty new newest-entries in three seconds. `aria-live`
+        queues rather than replaces, and a page cannot cancel a queued polite utterance, so a
+        screen-reader user got about two minutes of already-happened events during which nothing
+        else they did could be heard.
+
+        The right announcement already exists: `describeDigest` lands the one-line summary when the
+        drain finishes, and it was being read out *after* the sixty lines it summarises. Suppressing
+        until then makes the digest the announcement rather than the postscript.
+      */}
       <div className="sr-only" role="status" aria-label="Latest activity" aria-live="polite" aria-atomic="true">
-        {latest?.id === initialLatestId.current ? '' : latest?.message}
+        {latest?.id === initialLatestId.current || pendingElapsedMs > 0 ? '' : latest?.message}
       </div>
 
       <section className="world-context" role="region" aria-label="Current world context">
