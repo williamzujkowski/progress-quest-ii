@@ -1,5 +1,5 @@
 import { MAX_PERSISTED_GOLD } from './limits';
-import { ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, WEAPONS } from './traits';
+import { ARMORS, BORING_ITEMS, SPELLS, DEFENSE_ATTRIB, DEFENSE_BAD, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, WEAPONS } from './traits';
 import { analyzeItemMechanics } from '../engine/itemMechanics';
 import { boundedLabel, formatGameNumber, stableIndex } from '../engine/text';
 import { substrateStage } from './worldContext';
@@ -317,13 +317,41 @@ const SPELL_CLOSERS = [
  * intake file, so it has no custody history to acquire an industrial edge. Giving it one would be
  * the joke asserting something the rest of the model does not agree with.
  */
+/**
+ * When a spell first becomes reachable, which the curriculum has never told anyone.
+ *
+ * `generateSpellReward` draws from the first `wisdom + level` entries of an ordered list, so a
+ * spell's position in that list is the threshold at which it can be awarded at all. A player could
+ * watch for hours without learning that the list is ordered, that it is gated, or that wisdom is
+ * what moves the gate — the same shape of hidden mechanic as the sale premium on a named item.
+ *
+ * Absent for a spell that is not in the curriculum, which an imported save can carry.
+ */
+function curriculumThreshold(name: string): number | null {
+  const index = SPELLS.indexOf(name);
+  return index < 0 ? null : index + 1;
+}
+
 export function describeSpell(name: string, level: number): ItemDetails {
   const premise = SPELL_FLAVOR[name]
     ?? `The incantation “${boundedLabel(name, 'unnamed spell')}” arrived without syllabus, sponsor, or declared learning outcome.`;
   const mechanics = analyzeItemMechanics({ kind: 'spell', level });
+  const threshold = curriculumThreshold(name);
+
+  // Rank is a count of awards, not of power. `applySpellReward` increments it when the same spell
+  // comes up again, so a rank of three means the curriculum has handed the same rite over three
+  // times — which is funnier and more useful than the bare number the line used to print.
+  //
+  // "Encounters are unaffected" is stated rather than inherited. It is true of spells, unlike
+  // equipment, where the identical claim was false for as long as ADR 0008 has been shipping; a
+  // reader comparing the two tooltips should be able to trust the difference.
   return {
     description: `${premise} ${choose(SPELL_CLOSERS, `${name}:closer`)}`,
-    effect: `Spell rank: ${formatGameNumber(mechanics.rank)}. Combat contribution: ${mechanics.combatContribution}; classic encounter time ignores spells.`,
+    effect: [
+      `Spell rank: ${formatGameNumber(mechanics.rank)}, meaning it has been awarded ${mechanics.rank === 1 ? 'once' : `${formatGameNumber(mechanics.rank)} times`}.`,
+      threshold === null ? '' : `Enters the curriculum at wisdom plus level ${formatGameNumber(threshold)}.`,
+      `Combat contribution: ${mechanics.combatContribution}; encounters are unaffected.`,
+    ].filter(Boolean).join(' '),
   };
 }
 
