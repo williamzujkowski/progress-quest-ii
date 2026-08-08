@@ -35,15 +35,27 @@ describe('the loadout, said out loud', () => {
     expect(filing.itemOfRecord?.slot).toBe('Helm');
   });
 
-  it('names the best thing being worn, and orders the rest behind it', () => {
+  it('names the grandest noun, not whichever slot comes first', () => {
+    // The flaw this exists to catch, found by reading a live sheet rather than by reasoning.
+    // `generateEquipUpgrade` tops every item up until its total equals the character's level, so on
+    // a real loadout eleven slots carry two distinct totals between them. Ranking by total therefore
+    // names whichever slot happens to be first in `EQUIP_SLOTS` — an ordering fact, not an
+    // observation. These three all total 3 and their bases are 3, 4 and 10.
+    const filing = fileLoadout(wearing({
+      Weapon: 'Hackathon Prize', Helm: '-1 Name Plate', Gauntlets: '-7 Skeleton Key',
+    }));
+
+    expect(new Set(filing.contributors.map(({ quality }) => quality)).size).toBe(1);
+    expect(filing.itemOfRecord?.name).toBe('-7 Skeleton Key');
+    expect(filing.contributors.map(({ slot }) => slot)).toEqual(['Gauntlets', 'Helm', 'Weapon']);
+  });
+
+  it('still ranks by standing when the totals genuinely differ', () => {
     const filing = fileLoadout(wearing({
       Helm: 'Lanyard', Hauberk: 'Lender of Last Resort', Sollerets: 'Campus',
     }));
 
     expect(filing.itemOfRecord?.name).toBe('Lender of Last Resort');
-    expect(filing.contributors.map(({ quality }) => quality)).toEqual(
-      [...filing.contributors.map(({ quality }) => quality)].sort((left, right) => right - left),
-    );
   });
 
   it('says nothing at all about an empty loadout', () => {

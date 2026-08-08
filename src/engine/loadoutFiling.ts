@@ -56,10 +56,23 @@ export function fileLoadout(character: CharacterSheet): LoadoutFiling {
     return quality ? [{ slot, name, quality }] : [];
   });
 
+  // Ranked by the base noun's own rating, not by the total.
+  //
+  // `generateEquipUpgrade` adds modifiers and an assessor's mark until an item's total equals the
+  // character's level exactly, so on a live sheet almost every slot totals the same number — eleven
+  // slots, two distinct totals, checked in a running game. Ranking by total therefore names whichever
+  // slot happens to come first in `EQUIP_SLOTS`, which is an ordering fact rather than an observation
+  // about the loadout.
+  //
+  // The base ratings do differ, from 3 to 10 on that same sheet, and they are what the names are
+  // made of. So the grandest thing being worn is the one with the grandest noun, which is both the
+  // true answer and the funnier one — `Skeleton Key` deserves the citation over `Hot Desk` even
+  // when the arithmetic calls them equal.
   const contributors = analysed
     .filter(({ quality }) => quality.total > 0)
-    .map(({ slot, name, quality }) => ({ slot, name, quality: quality.total }))
-    .sort((left, right) => right.quality - left.quality);
+    .map(({ slot, name, quality }) => ({ slot, name, quality: quality.total, standing: quality.base?.value ?? 0 }))
+    .sort((left, right) => right.standing - left.standing || right.quality - left.quality)
+    .map(({ slot, name, quality }) => ({ slot, name, quality }));
 
   // Taken from the same function the transition multiplies by, rather than recomputed from the
   // contributors above. A sum of the positive slots would disagree with the engine the moment a
