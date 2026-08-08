@@ -170,7 +170,7 @@ describe('item tooltip details', () => {
     expect(details.description).toContain('customary envelope');
     expect(describeSpell('Quick Win', 7).description).toBe(details.description);
     expect(details.effect).toBe(
-      'Spell rank: 2. Combat contribution: none; classic encounter time ignores spells.',
+      'Spell rank: 2, meaning it has been awarded 2 times. Enters the curriculum at wisdom plus level 2. Combat contribution: none; encounters are unaffected.',
     );
   });
 
@@ -439,7 +439,9 @@ describe('the boundary between what a thing is and what it does', () => {
   // Still pinned to a mechanical shape rather than left free, because an effects column is the
   // failure this surface exists to avoid.
   const EQUIPMENT_EFFECT = /^Generation quality: [-\d,]+ \([^)]*\)\. Contributes (?:[\d,]+ to the loadout, which shortens encounters|nothing to the loadout, so encounters are unaffected); damage is (?:not modeled|[a-z ]+)\.$/u;
-  const SPELL_EFFECT = /^Spell rank: [-\d,]+\. Combat contribution: [a-z ]+; classic encounter time ignores spells\.$/u;
+  // Still pinned to a mechanical shape, widened for two facts the line never carried: what a rank
+  // counts, and the wisdom-plus-level threshold at which a spell enters the curriculum at all.
+  const SPELL_EFFECT = /^Spell rank: [-\d,]+, meaning it has been awarded (?:once|[\d,]+ times)\.(?: Enters the curriculum at wisdom plus level [\d,]+\.)? Combat contribution: [a-z ]+; encounters are unaffected\.$/u;
 
   it('keeps every generated equipment effect to the mechanical shape', () => {
     for (const slot of EQUIP_SLOTS) {
@@ -559,5 +561,35 @@ describe('provenance acquires an industrial edge as acts accumulate', () => {
 
     expect(effect).toContain('Contributes nothing to the loadout, so encounters are unaffected');
     expect(effect).not.toContain('shortens encounters');
+  });
+
+  it('says what a spell rank counts, singular and plural', () => {
+    // The line printed a bare number. Rank is a count of awards — `applySpellReward` increments it
+    // when the same rite comes up again — which is both funnier and the only thing rank means.
+    expect(describeSpell('Wet Signature', 1).effect).toContain('awarded once');
+    expect(describeSpell('Wet Signature', 4).effect).toContain('awarded 4 times');
+  });
+
+  it('reports the curriculum threshold every spell is gated behind', () => {
+    // `generateSpellReward` draws from the first `wisdom + level` entries of an ordered list, so a
+    // spell's position in that list is when it can be awarded at all. A player could watch for
+    // hours without learning the list is ordered, gated, or moved by wisdom.
+    expect(describeSpell(SPELLS[0]!, 1).effect).toContain('wisdom plus level 1');
+    expect(describeSpell(SPELLS[11]!, 1).effect).toContain('wisdom plus level 12');
+  });
+
+  it('quotes no threshold for a spell that is not in the curriculum', () => {
+    // Reachable from an imported save. Inventing a position would be asserting state.
+    const effect = describeSpell('Not In The Book', 2).effect;
+
+    expect(effect).not.toContain('curriculum');
+    expect(effect).not.toMatch(/ {2}/);
+  });
+
+  it('says encounters are unaffected, which is true of spells and was not of equipment', () => {
+    // The identical claim was false on the equipment tooltip for as long as ADR 0008 has shipped.
+    // A reader comparing the two should be able to trust the difference.
+    expect(describeSpell('Quick Win', 1).effect).toContain('encounters are unaffected');
+    expect(describeEquipment('Lanyard', 'Helm').effect).toContain('shortens encounters');
   });
 });
