@@ -36,6 +36,19 @@ jobs:
         # not run.
         run: npx playwright install --with-deps chromium
 
+      # Its own step, and only here. `quality` used to begin with this, which put it in the deploy
+      # job too - the job that goes on to build and upload the Pages artifact that is then attested.
+      # `nexus-agents` is 209 of the 421 packages in the lockfile against a production runtime tree
+      # of 14, and `verify` executes that tree: core modules, native bindings, a write to
+      # ~/.nexus-agents, and three authenticated adapter probes. `npm ci --ignore-scripts` stops
+      # install-time execution and does nothing about runtime execution. The attestation would still
+      # be true and would still cover a job in which all of that ran.
+      #
+      # It stays a gate, because it is deterministic and it is what catches a broken agent
+      # installation or configuration. It just no longer runs anywhere near the deployed bytes.
+      - name: Agent tooling configuration gate
+        run: npm run agents:verify
+
       - name: Quality gate
         run: npm run quality
 
