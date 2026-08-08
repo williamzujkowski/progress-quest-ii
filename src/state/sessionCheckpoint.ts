@@ -10,6 +10,15 @@ export const ACTIVE_CHECKPOINT_LKG_KEY = 'progquest_active_session_lkg_v1';
 // limit is not the checkpoint's own; every reader of local storage is held to the same one.
 export const MAX_CHECKPOINT_SERIALIZED_LENGTH = MAX_STORED_PAYLOAD_LENGTH;
 
+/**
+ * How much longer than the debounce a quota retry waits.
+ *
+ * A multiple of the interval rather than a fixed span so tests can drive the retry without waiting
+ * on a real clock. Thirty is far above the ordinary cadence on purpose: a store that is genuinely
+ * full will keep failing, and there is nothing to gain by asking it at the debounce rate.
+ */
+const QUOTA_RETRY_FACTOR = 30;
+
 type CheckpointErrorCode =
   | 'invalid_schema'
   | 'storage_unavailable'
@@ -298,20 +307,26 @@ export function startSessionCheckpoints({
   let repairAllowed = false;
   let requiresCharacterCreation = false;
   let repairSuccessMessage = 'The active-session checkpoint was replaced. Automatic checkpoints resumed.';
+  // Whether a quota failure is currently being retried, so a later success knows to clear the alert.
+  let quotaDeferred = false;
 
   const publish = (next: CheckpointNotice | null) => {
     notice = next;
     for (const listener of listeners) listener();
+  };
+  // One episode per controller, whether it ends persistence or only defers it. A retrying quota
+  // failure would otherwise record on every attempt and bury everything else in the report.
+  const recordFailure = (operation: 'read' | 'write') => {
+    if (failureRecorded) return;
+    failureRecorded = true;
+    diagnostics.record({ code: 'session_checkpoint_failed', severity: 'warning', subsystem: 'storage', operation, outcome: 'failed', source: 'session-checkpoint' });
   };
   const block = (message: string, operation: 'read' | 'write' = 'write', allowRepair = false) => {
     canPersist = false;
     repairAllowed = allowRepair;
     if (timer !== undefined) clearTimeout(timer);
     timer = undefined;
-    if (!failureRecorded) {
-      failureRecorded = true;
-      diagnostics.record({ code: 'session_checkpoint_failed', severity: 'warning', subsystem: 'storage', operation, outcome: 'failed', source: 'session-checkpoint' });
-    }
+    recordFailure(operation);
     publish({ kind: 'alert', message, canRepair: repairAllowed, ...(repairAllowed ? { repairLabel: 'Replace unreadable checkpoint' } : {}) });
   };
   const flush = () => {
@@ -320,11 +335,33 @@ export function startSessionCheckpoints({
     if (!dirty || !canPersist || storage === undefined) return;
     const result = writeActiveCheckpoint(storage, captureActiveSession(now()), expectedPrimaryRaw);
     if (!result.ok) {
+      // A full store is the one write failure that is transient by nature: the quota is shared
+      // across the origin, so it can be relieved by the player deleting something or by another
+      // site releasing space, without this tab doing anything. Treating it as terminal meant a
+      // single spike ended persistence for the session — the `pagehide` flush included, so closing
+      // the tab lost everything since the spike, and only a reload recovered, which lost it too.
+      //
+      // So it stays armed and tries again. Backed off well beyond the ordinary interval, because a
+      // store that is genuinely full will keep failing and there is nothing to gain by asking it
+      // at the debounce rate.
+      if (result.error.code === 'storage_full') {
+        quotaDeferred = true;
+        recordFailure('write');
+        publish({ kind: 'alert', message: `${result.error.message} It will keep trying.`, canRepair: false });
+        timer = setTimeout(flush, intervalMs * QUOTA_RETRY_FACTOR);
+        return;
+      }
       block(result.error.message);
       return;
     }
     expectedPrimaryRaw = result.value.raw;
     dirty = false;
+    // Clearing the alert is the half that makes the retry worth having: without it the player is
+    // told storage is full for the rest of the session even once it plainly is not.
+    if (quotaDeferred) {
+      quotaDeferred = false;
+      publish({ kind: 'status', message: 'Browser storage recovered. Automatic checkpoints resumed.', canRepair: false });
+    }
   };
   const schedule = () => {
     dirty = true;

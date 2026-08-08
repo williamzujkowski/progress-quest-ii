@@ -321,6 +321,42 @@ describe('active session checkpoint boundary', () => {
     controller.dispose();
   });
 
+  it('keeps trying after the store fills, and clears the alert once a write lands', () => {
+    // A full store is the one write failure that is transient by nature: the quota is shared across
+    // the origin, so it can be relieved without this tab doing anything. Treating it as terminal
+    // meant one spike ended persistence for the session, pagehide included.
+    vi.useFakeTimers();
+    const character = createNewCharacter('Persistent', 'Half Daemon', 'Robot Monk', 720);
+    useGameStore.setState({ character, sessionGeneration: 1 });
+
+    let full = true;
+    const realSetItem = Storage.prototype.setItem;
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key: string, value: string) {
+      if (full && key === ACTIVE_CHECKPOINT_KEY) throw new DOMException('Full', 'QuotaExceededError');
+      realSetItem.call(this, key, value);
+    });
+
+    const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT, storage: localStorage, intervalMs: 1 });
+    useGameStore.setState({ log: activityLog('Earned while the disk was full') });
+    vi.advanceTimersByTime(5);
+
+    expect(controller.getNotice()).toMatchObject({ kind: 'alert', canRepair: false });
+    expect(controller.getNotice()?.message).toContain('keep trying');
+    expect(localStorage.getItem(ACTIVE_CHECKPOINT_KEY)).toBeNull();
+
+    // The player frees space. Nothing else happens — no reload, no further store change.
+    full = false;
+    vi.advanceTimersByTime(1 * 30 + 5);
+
+    const written = localStorage.getItem(ACTIVE_CHECKPOINT_KEY);
+    expect(written).not.toBeNull();
+    expect(activeCheckpointV1Schema.safeParse(JSON.parse(written ?? '{}')).success).toBe(true);
+    // Clearing the alert is the half that makes the retry worth having.
+    expect(controller.getNotice()).toMatchObject({ kind: 'status' });
+    expect(setItem).toHaveBeenCalled();
+    controller.dispose();
+  });
+
   it('disables further repair after an explicit repair write fails', () => {
     localStorage.setItem(ACTIVE_CHECKPOINT_KEY, '{broken');
     const original = localStorage.getItem(ACTIVE_CHECKPOINT_KEY);
