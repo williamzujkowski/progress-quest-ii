@@ -1,9 +1,10 @@
 import { SOCIAL_PERSONAS, type SocialPersona, type SocialSeat } from '../data/socialCatalog';
 import { boundCodePoints, MAX_TEXT_CODE_POINTS, formatGameNumber, stableIndex, stableChoice } from '../engine/text';
+import { AMBIENT_LINES, FEUD_BEATS, QUESTION_BEATS, REACTION_LINES, TRADE_LINES, type AmbientLine } from '../data/socialAmbient';
 import { projectWorld, type IdentifiedGameTransitionRecord } from './worldContext';
 
 export type SocialChannel = 'guild' | 'world' | 'party' | 'raid' | 'whisper' | 'system' | 'hero';
-export type SocialSceneKind = 'level' | 'quest' | 'equipment' | 'loot' | 'market' | 'zone' | 'milestone' | 'catch_up';
+export type SocialSceneKind = 'level' | 'quest' | 'equipment' | 'loot' | 'market' | 'zone' | 'milestone' | 'catch_up' | 'ambient';
 
 export interface SocialSpeaker {
   readonly id: string;
@@ -47,8 +48,14 @@ const SYSTEM_SPEAKER: SocialSpeaker = {
 
 const bound = (text: string): string => boundCodePoints(text, MAX_TEXT_CODE_POINTS);
 
-function castFor(source: IdentifiedGameTransitionRecord): Readonly<Record<SocialSeat, SocialPersona>> {
-  const { hero } = source.record.post;
+/** The identity the cast is drawn from, so ambient chatter can draw the same troupe as the scenes. */
+export interface HeroIdentity {
+  readonly name: string;
+  readonly race: string;
+  readonly className: string;
+}
+
+function castForHero(hero: HeroIdentity): Readonly<Record<SocialSeat, SocialPersona>> {
   const heroKey = `${hero.name}:${hero.race}:${hero.className}`;
   const choosePersona = (seat: SocialSeat): SocialPersona => {
     const options = SOCIAL_PERSONAS.filter((persona) => persona.seat === seat);
@@ -65,6 +72,10 @@ function castFor(source: IdentifiedGameTransitionRecord): Readonly<Record<Social
     field: choosePersona('field'),
     support: choosePersona('support'),
   };
+}
+
+function castFor(source: IdentifiedGameTransitionRecord): Readonly<Record<SocialSeat, SocialPersona>> {
+  return castForHero(source.record.post.hero);
 }
 
 function speakerFor(line: SceneLine, cast: Readonly<Record<SocialSeat, SocialPersona>>): SocialSpeaker {
@@ -410,3 +421,78 @@ export function projectSocialBatch(sources: readonly IdentifiedGameTransitionRec
     text: `${suppressed} routine social scene${suppressed === 1 ? ' was' : 's were'} consolidated during accelerated progress.`,
   }, ...detailed];
 }
+
+/**
+ * How the ambient lanes are weighted against each other.
+ *
+ * Ambient carries the most because it is the lane that establishes the channel exists without the
+ * hero. Reactions are next because they are what fixes the word-length distribution. The two
+ * running bits are rare on purpose: a feud that surfaced often would stop being a slow burn, and a
+ * question re-asked every minute is nagging rather than forlorn.
+ */
+const AMBIENT_LANES = [
+  'ambient', 'ambient', 'ambient', 'ambient',
+  'reaction', 'reaction', 'reaction',
+  'trade',
+  'feud',
+  'question',
+] as const;
+
+/**
+ * How many completed tasks a running bit spends on one beat.
+ *
+ * Long, because these are the lines that reward watching rather than the lines that fill a gap.
+ */
+const AMBIENT_BEAT_TASKS = 40;
+
+/**
+ * A line the guild says when the hero has done nothing worth mentioning.
+ *
+ * Deterministic from the hero and the task count, the same way everything else here is, so the same
+ * save always produces the same channel. Returns exactly one entry: this is the lane that models
+ * somebody saying a thing and the channel moving on, and a burst of ambient would be a caption
+ * track with a different subject.
+ */
+export function projectAmbient(hero: HeroIdentity, completedTasks: number): readonly SocialEntry[] {
+  if (!Number.isFinite(completedTasks) || completedTasks < 0) return [];
+  const cast = castForHero(hero);
+  const key = `ambient:${hero.name}:${hero.race}:${hero.className}:${completedTasks}`;
+  const lane = AMBIENT_LANES[stableChoice(`lane:${key}`, AMBIENT_LANES.length)]!;
+
+  // The two running bits step with the task counter and wrap, so a feud restarts rather than
+  // resolving. `beatIndex` lives in chatterSchedule with the rest of the cadence arithmetic; the
+  // beat is computed here because the lines are here.
+  const beat = (beats: readonly AmbientLine[]) =>
+    beats[Math.floor(completedTasks / AMBIENT_BEAT_TASKS) % beats.length]!;
+
+  const line: AmbientLine = lane === 'feud'
+    ? beat(FEUD_BEATS)
+    : lane === 'question'
+      ? beat(QUESTION_BEATS)
+      : lane === 'trade'
+        // Drawn on the hero alone, not the task count, so the same advertisement repeats verbatim
+        // for a whole character. That repetition is the joke rather than the failure.
+        ? TRADE_LINES[stableChoice(`trade:${hero.name}`, TRADE_LINES.length)]!
+        : lane === 'reaction'
+          ? REACTION_LINES[stableChoice(`react:${key}`, REACTION_LINES.length)]!
+          : AMBIENT_LINES[stableChoice(`say:${key}`, AMBIENT_LINES.length)]!;
+
+  const sceneId = `ambient:${completedTasks}:${lane}`;
+  return [{
+    id: `${sceneId}:0`,
+    sceneId,
+    sceneKind: 'ambient',
+    sourceActivityId: -1,
+    channel: line.channel,
+    speaker: {
+      id: cast[line.seat].id,
+      kind: 'cast',
+      displayName: cast[line.seat].displayName,
+      role: cast[line.seat].role,
+      fictional: true,
+      automaticHero: false,
+    },
+    text: bound(line.text),
+  }];
+}
+

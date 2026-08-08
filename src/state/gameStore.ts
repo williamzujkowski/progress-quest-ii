@@ -8,7 +8,7 @@ import { advanceGame, type GameTransitionEvent } from '../engine/transition';
 import type { CharacterSheet, ProgressionState, StatsMap } from '../engine/types';
 import { MAX_PENDING_ELAPSED_MS, MAX_SOCIAL_ENTRIES, MAX_WORLD_NOTICES } from '../data/limits';
 import { projectWorld, type WorldNotice } from './worldContext';
-import { projectSocialBatch, type SocialEntry } from './socialProjection';
+import { projectAmbient, projectSocialBatch, type SocialEntry } from './socialProjection';
 import { scheduleChatter, NEW_CADENCE, type ChatterCadence } from './chatterSchedule';
 import { EMPTY_COMMENDATIONS, mergeEvents, mergeExhibit, readCommendations, writeCommendations, type Commendations } from './commendations';
 import { EMPTY_CASELOAD, mergeRecords, readCaseload, writeCaseload, type Caseload } from './caseload';
@@ -309,7 +309,14 @@ export const useGameStore = create<GameStore>((set, get) => {
         lastPersistedSpecimens = nextSpecimens;
         writeSpecimenLog(typeof window === 'undefined' ? undefined : window.localStorage, nextSpecimens);
       }
-      const scheduled = scheduleChatter(projectSocialBatch(sources), chatterCadence, sources.at(-1)?.record.post.completedTasks ?? progression.completedTasks);
+      const chatterTasks = sources.at(-1)?.record.post.completedTasks ?? progression.completedTasks;
+      const scheduled = scheduleChatter(
+        projectSocialBatch(sources),
+        chatterCadence,
+        chatterTasks,
+        // Offered on every batch; the schedule decides whether the silence is worth filling.
+        projectAmbient(sources.at(-1)?.record.post.hero ?? { name: character.Traits.Name, race: character.Traits.Race, className: character.Traits.Class }, chatterTasks),
+      );
       chatterCadence = scheduled.cadence;
       const projectedSocialEntries = scheduled.entries.toReversed();
       set({
