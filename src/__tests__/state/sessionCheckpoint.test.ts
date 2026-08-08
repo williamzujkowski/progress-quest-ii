@@ -249,7 +249,7 @@ describe('active session checkpoint boundary', () => {
 
   it('adopts the roster character when the checkpoint is unreadable, so repair cannot capture a stranger', () => {
     // The forward-compatibility break this guards is not hypothetical. `characterSheetSchema` is
-    // `.strict()`, and adding one optional field to it — `GoldDecades`, in #441 — means a save
+    // `.strict()`, so adding one optional field to it — `GoldDecades` was the first — means a save
     // this build writes is refused by the build before it. A player holding a cached older bundle
     // reaches exactly this branch, and it used to hand them the store's hard-coded default.
     const hero = createNewCharacter('Veteran', 'Robot', 'Monk', new RandomGenerator('corrupt-fallback'));
