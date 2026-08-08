@@ -84,11 +84,21 @@ export function fileLoadout(character: CharacterSheet): LoadoutFiling {
   // made of. So the grandest thing being worn is the one with the grandest noun, which is both the
   // true answer and the funnier one — `Skeleton Key` deserves the citation over `Hot Desk` even
   // when the arithmetic calls them equal.
+  // Only slots whose base noun the analyser actually resolved.
+  //
+  // The filter used to be `quality.total > 0` alone, with `base` falling back to the raw name. An
+  // item can total more than zero on its assessor's mark while resolving no base at all — anything
+  // uncatalogued carrying a positive mark — and the fallback then handed the whole generated string
+  // to `{item}`, digits and all. Chatter is asserted never to quote a figure, and the field above is
+  // documented as the bare noun; both were true only for names the analyser could read.
+  //
+  // Excluding them rather than repairing them, because there is nothing to repair: an item with no
+  // catalogued noun has no bare noun to quote. It still counts toward the reduction, which is taken
+  // from `loadoutQuality` further down and never from this list.
   const contributors = analysed
-    .filter(({ quality }) => quality.total > 0)
-    .map(({ slot, name, quality }) => ({ slot, name, quality: quality.total, standing: quality.base?.value ?? 0, base: quality.base?.name ?? name }))
-    .sort((left, right) => right.standing - left.standing || right.quality - left.quality)
-    .map(({ slot, name, quality, base, standing }) => ({ slot, name, quality, base, standing }));
+    .filter(({ quality }) => quality.total > 0 && quality.base !== null)
+    .map(({ slot, name, quality }) => ({ slot, name, quality: quality.total, standing: quality.base!.value, base: quality.base!.name }))
+    .sort((left, right) => right.standing - left.standing || right.quality - left.quality);
 
   // Taken from the same function the transition multiplies by, rather than recomputed from the
   // contributors above. A sum of the positive slots would disagree with the engine the moment a

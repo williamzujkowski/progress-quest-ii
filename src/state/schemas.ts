@@ -5,8 +5,35 @@ import { MAX_PENDING_ELAPSED_MS, MAX_PENDING_TASKS, MAX_PERSISTED_DESCRIPTION_LE
 export { MAX_PERSISTED_ITEMS } from '../data/limits';
 export const MAX_CHARACTER_NAME_LENGTH = 120;
 
-const shortText = z.string().max(200);
-const description = z.string().max(MAX_PERSISTED_DESCRIPTION_LENGTH);
+/**
+ * Code points a saved name may not contain, whatever its length.
+ *
+ * Every name this game displays it also generated, from fixed tables of ordinary words, so none of
+ * these can arrive by playing. They arrive by import, which is the one attacker-controlled route
+ * into the state, and length was the only thing the boundary checked.
+ *
+ * The C0 and C1 ranges because a control character in a name reaches the DOM as one. The bidi
+ * formatting characters because U+202E reverses the rest of the line it lands in — an item name is
+ * interpolated into guild chatter and printed on the world console, so one of them in a saved
+ * loadout rewrites text the player never typed. React escapes markup; it does not escape these.
+ */
+const FORBIDDEN_CODE_POINTS = /[\u0000-\u001F\u007F-\u009F\u200E\u200F\u202A-\u202E\u2066-\u2069]/u;
+
+/**
+ * Rejects rather than strips.
+ *
+ * Stripping would silently rewrite what the player imported and then persist the rewrite, which is
+ * the shape of a data loss: the next save writes the edited bytes back over the original. Refusing
+ * the read leaves the file alone and takes the path this app already has for a save it cannot
+ * parse, which blocks automatic writes rather than overwriting anything.
+ */
+const readableText = <T extends z.ZodType<string>>(schema: T) =>
+  schema.refine((value) => !FORBIDDEN_CODE_POINTS.test(value), {
+    message: 'Text may not contain control or bidirectional formatting characters.',
+  });
+
+const shortText = readableText(z.string().max(200));
+const description = readableText(z.string().max(MAX_PERSISTED_DESCRIPTION_LENGTH));
 const boundedInteger = z.number().int().min(0).max(MAX_PERSISTED_VALUE);
 const positiveBoundedInteger = z.number().int().positive().max(MAX_PERSISTED_VALUE);
 const boundedNumber = z.number().min(0).max(MAX_PERSISTED_VALUE);
@@ -21,12 +48,12 @@ const rngStateSchema = z.tuple([
   z.number().int().min(0).max(2_091_638),
 ]);
 
-export const characterNameSchema = z.string().min(1).max(MAX_CHARACTER_NAME_LENGTH);
+export const characterNameSchema = readableText(z.string().min(1).max(MAX_CHARACTER_NAME_LENGTH));
 
 const characterTraitsSchema = z.object({
   Name: characterNameSchema,
-  Race: z.string().min(1).max(120),
-  Class: z.string().min(1).max(120),
+  Race: readableText(z.string().min(1).max(120)),
+  Class: readableText(z.string().min(1).max(120)),
   Level: z.number().int().min(1).max(MAX_PERSISTED_VALUE),
 }).strict();
 
@@ -71,7 +98,7 @@ const questStateSchema = z.object({
   maxProgress: positiveBoundedNumber,
   history: z.array(description).max(100).optional(),
   kind: z.enum(['exterminate', 'seek', 'deliver', 'fetch', 'placate']).optional(),
-  target: z.string().min(1).max(200).optional(),
+  target: readableText(z.string().min(1).max(200)).optional(),
   targetIndex: boundedInteger.optional(),
 }).strict().refine(({ currentProgress, maxProgress }) => currentProgress <= maxProgress, {
   message: 'Quest progress cannot exceed its maximum.',
@@ -93,7 +120,7 @@ export const progressTaskSchema = z.object({
   elapsedMs: z.number().min(0).max(86_400_000),
   type: z.enum(['kill', 'buying', 'selling', 'quest', 'plot', 'loading', 'prologue', 'cinematic', 'act_marker', 'heading_to_market', 'heading']),
   loot: z.discriminatedUnion('type', [
-    z.object({ type: z.literal('fixed'), item: z.string().min(1).max(200) }).strict(),
+    z.object({ type: z.literal('fixed'), item: readableText(z.string().min(1).max(200)) }).strict(),
     z.object({ type: z.literal('random') }).strict(),
   ]).optional(),
   // Optional so a checkpoint written before the field still restores, and bounded by the same
