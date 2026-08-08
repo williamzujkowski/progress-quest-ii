@@ -137,10 +137,21 @@ export function verifyProductionCsp(html) {
   }
 
   // Checked on script-src specifically rather than by searching the whole policy string, because
-  // style-src legitimately carries 'unsafe-inline' — React's style={{…}} attributes fall under
-  // style-src-attr and there is no attacker-controlled HTML sink in the app. A blanket search for
-  // "unsafe" would fail on the policy that ships today, so it would have to be written as an
-  // exception, and an exception phrased loosely enough to permit style-src would permit script-src.
+  // style-src carries 'unsafe-inline' and a blanket search for "unsafe" would fail on the policy
+  // that ships today. An exception phrased loosely enough to permit style-src would permit
+  // script-src, so the check names the directive instead.
+  //
+  // Why style-src carries it, accurately: the Vite dev server injects each imported stylesheet as
+  // a <style> element, and this meta tag is in the source index.html, so it governs development as
+  // well as production. It is NOT because of React's style={{…}} attributes, which this file used
+  // to claim — React writes CSSOM properties, and CSP does not govern those at all.
+  //
+  // The production bundle emits real .css files and does not need the keyword. Tightening it there
+  // alone was measured and works — the built app passes every PWA test and drives every theme and
+  // tooltip without a style violation in either engine — but it would take a build-time rewrite of
+  // this tag, leaving development and production on different policies. That divergence would make
+  // the dev server a weaker rehearsal for what users receive, which costs more than the keyword
+  // does given there is no attacker-controlled HTML sink in the app.
   const scriptSrc = directives.get('script-src');
   if (!scriptSrc) throw new Error('Production Content-Security-Policy omits script-src.');
   for (const unsafe of ["'unsafe-inline'", "'unsafe-eval'"]) {

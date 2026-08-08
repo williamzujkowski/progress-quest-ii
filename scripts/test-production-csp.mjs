@@ -84,8 +84,11 @@ test("script-src and connect-src must be exactly 'self', not merely present and 
 });
 
 test("script-src refuses unsafe-inline and unsafe-eval while style-src keeps unsafe-inline", () => {
-  // The asymmetry is the point. style-src 'unsafe-inline' is load-bearing — React style={{…}}
-  // attributes fall under style-src-attr — so this cannot be a blanket search for "unsafe".
+  // The asymmetry is the point, and the reason for it is not the one this comment used to give.
+  // style-src 'unsafe-inline' is load-bearing for the Vite dev server, which injects each imported
+  // stylesheet as a <style> element; the production bundle emits real .css files and does not need
+  // it. React's style={{…}} attributes have nothing to do with it — React writes CSSOM properties,
+  // which CSP does not govern. Either way this cannot be a blanket search for "unsafe".
   assert.throws(
     () => verifyProductionCsp(shell(POLICY.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'"))),
     /allows 'unsafe-inline' in script-src/,
