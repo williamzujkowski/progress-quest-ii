@@ -33,6 +33,9 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
   // Selected narrowly rather than taken from the whole character, because an act changes once
   // every several hours and a tooltip should not re-render on every tick to learn that.
   const act = useGameStore((state) => state.character.Plot.act);
+  // Same reasoning as the act above: a scalar rather than the sheet, so a tooltip does not re-render
+  // on every tick. Level is what the market prices a stack against.
+  const level = useGameStore((state) => state.character.Traits.Level);
   /**
    * Named by its slot, for equipment only.
    *
@@ -55,7 +58,7 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
     ? describeEquipment(props.name, props.slot, act)
     : props.kind === 'spell'
       ? describeSpell(props.name, props.level)
-      : describeInventoryItem(props.name, props.quantity, act);
+      : describeInventoryItem(props.name, props.quantity, act, level);
 
   useLayoutEffect(() => {
     if (!open || !triggerRef.current || !tooltipRef.current) return;
