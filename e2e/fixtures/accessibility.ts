@@ -27,10 +27,24 @@ import { expect, type Page } from '@playwright/test';
 
 const WCAG_AA_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
-/** Removes the animation window an audit could otherwise sample inside. Safe to call repeatedly. */
+/**
+ * Removes the animation window an audit could otherwise sample inside. Safe to call repeatedly.
+ *
+ * Adopted via a constructed stylesheet rather than `page.addStyleTag`, which appends a `<style>`
+ * element and is therefore refused by `style-src 'self'`. The application needs no inline styles —
+ * React writes CSSOM properties, which CSP does not govern — so the only thing that was holding
+ * `'unsafe-inline'` in the shipped policy was this helper. Weakening what users receive to let a
+ * test fixture take a shortcut is the wrong way round.
+ *
+ * `CSSStyleSheet` built in the page and adopted onto the document is not subject to `style-src`
+ * at all, and it replaces cleanly on repeat calls rather than stacking `<style>` elements.
+ */
 export const settleForAudit = async (page: Page): Promise<void> => {
-  await page.addStyleTag({
-    content: '*, *::before, *::after { transition: none !important; animation: none !important; }',
+  await page.evaluate(() => {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync('*, *::before, *::after { transition: none !important; animation: none !important; }');
+    const existing = document.adoptedStyleSheets.filter((adopted) => adopted !== sheet);
+    document.adoptedStyleSheets = [...existing, sheet];
   });
 };
 
