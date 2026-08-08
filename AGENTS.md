@@ -314,3 +314,12 @@ gh api -X PATCH repos/<owner>/<repo>/pulls/<n> -f base=main
 The second line is needed because the pull request still points at a branch that is no longer where the work belongs, and `gh pr edit --base` can fail on an unrelated GraphQL deprecation.
 
 The repair is mechanical and takes under a minute. The reason the rule is "do not stack" anyway is that the cost is paid every time, it is invisible until the parent merges, and re-verifying after the rebase is not optional — the branch is being replayed onto a tree it has never been tested against. Landing sequentially avoids all of it and costs only the wait.
+
+**Then check that CI actually ran against the new head.** A force-push followed by a base retarget can produce no `pull_request` event at all, leaving the pull request showing runs for a commit that is no longer its head:
+
+```
+gh pr view <n> --json headRefOid
+gh run list --branch <branch> --json status,headSha
+```
+
+If the shas disagree, closing and reopening the pull request triggers a fresh run. The required check is a fan-in job that reports nothing until its dependencies finish, so an untested head reads as blocked rather than as a stale pass — the gate holds, but it holds by refusing to say anything, which is easy to mistake for a queue that is merely slow.
