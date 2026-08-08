@@ -55,8 +55,10 @@ export const CharacterSheetView: React.FC = () => {
     (state) => !commendationsIsEmpty(state.commendations) || !caseloadIsEmpty(state.caseload),
   );
 
+  // The card carries no tabIndex: measured at `overflow: visible` with nothing to scroll, so the
+  // stop announced a name and did nothing. The panels inside it that do scroll keep theirs.
   return (
-    <section className="card character-card" aria-labelledby="loadout-heading" tabIndex={0}>
+    <section className="card character-card" aria-labelledby="loadout-heading">
       <div className="card-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Shield size={18} />
@@ -67,9 +69,16 @@ export const CharacterSheetView: React.FC = () => {
       <div className="section-label">
         <Shield size={14} /> Equipment Slots
       </div>
-      <div className="equip-list equipment-list" role="region" tabIndex={0} aria-label="Equipment List">
+      {/*
+        A list rather than a region, so a reader is told there are eleven slots and where they are
+        among them. No tabIndex: the sibling panels carry one because they scroll, and this one
+        cannot — it is `max-height: none` and a two-column grid above 1025px, measured at
+        `overflowY: visible`. A focus stop that announces a name and does nothing is a stop worth
+        removing.
+      */}
+      <ul className="equip-list equipment-list" aria-label="Equipment List">
         {EQUIP_SLOTS.map((slot: EquipSlot) => (
-          <div className="equip-item" key={slot}>
+          <li className="equip-item" key={slot}>
             <span className="equip-slot-icon" title={slot}>
               {React.createElement(SLOT_ICONS[slot], { size: 13, 'aria-hidden': true })}
               <span className="sr-only">{slot}</span>
@@ -83,27 +92,27 @@ export const CharacterSheetView: React.FC = () => {
             <ItemTooltip kind="equipment" name={character.Equip[slot]} slot={slot}>
               {character.Equip[slot] || '—'}
             </ItemTooltip>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
 
       <div className="section-label">
         <Sparkles size={14} /> Spell Book ({character.Spells.length})
       </div>
-      <div className="equip-list spell-list" role="region" tabIndex={0} aria-label="Spell Book">
+      <ul className="equip-list spell-list" tabIndex={0} aria-label="Spell Book">
         {character.Spells.length === 0 ? (
-          <div className="empty-state">
+          <li className="empty-state">
             No spells have been learned. They arrive automatically at level-up and may also be awarded for completed quests; the curriculum remains aggressively theoretical.
-          </div>
+          </li>
         ) : (
           character.Spells.map((spell) => (
-            <div className="equip-item" key={spell.name}>
+            <li className="equip-item" key={spell.name}>
               <ItemTooltip kind="spell" name={spell.name} level={spell.level} />
               <span className="badge">Lvl{' '}<GameNumber value={spell.level} /></span>
-            </div>
+            </li>
           ))
         )}
-      </div>
+      </ul>
 
       {/*
         Records fold away by default. They change on a level, a sale, or a closed quest — not on

@@ -29,22 +29,22 @@ export const Caseload: React.FC = () => {
       <div className="section-label">
         <Scale size={14} aria-hidden="true" /> Docket Summary
       </div>
-      <div className="equip-list commendation-list" role="region" aria-label="Docket summary">
+      <ul className="equip-list commendation-list" aria-label="Docket summary">
         {filed.map(([label, count]) => (
-          <div className="equip-item" key={label}>
+          <li className="equip-item" key={label}>
             <span className="equip-slot">{label}</span>
             <span className="commendation-value"><GameNumber value={count} /></span>
-          </div>
+          </li>
         ))}
         {frequent && (
-          <div className="equip-item" key="most-litigated">
+          <li className="equip-item" key="most-litigated">
             <span className="equip-slot">Most frequently filed against</span>
             <span className="commendation-value">
               {displayTarget(frequent.target)} (<GameNumber value={frequent.count} />)
             </span>
-          </div>
+          </li>
         )}
-      </div>
+      </ul>
     </>
   );
 };
