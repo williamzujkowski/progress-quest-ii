@@ -346,10 +346,42 @@ function linesFor(candidate: SceneCandidate): readonly SceneLine[] {
   ] as const, candidate);
 }
 
+/**
+ * How many of a scene's written lines are actually spoken.
+ *
+ * Every scene used to be three: logistics speaks, support agrees, the hero replies — 435 times out
+ * of 435, always in that order. Nobody's chat looks like a call-and-response liturgy, and a fixed
+ * three-beat shape reads as generated no matter how good the individual lines are. It is the shape
+ * of a written joke rather than of a conversation.
+ *
+ * Weighted toward one, which is what most utterances in a real channel are. The three-line case
+ * survives because some exchanges earn it, not because every one does.
+ */
+const SCENE_LENGTHS = [1, 1, 1, 1, 1, 2, 2, 2, 3] as const;
+
+/**
+ * Trims a scene to the lines it actually says.
+ *
+ * A prefix, deliberately, after trying it the other way. Choosing *which* line survives spreads the
+ * speaking seats more evenly, which is a real goal — but the opening line is the one carrying the
+ * interpolated facts, the quantity sold or the location reached, while the lines after it are
+ * colour. Dropping it left scenes that told the player nothing about what had happened, and five
+ * existing tests caught exactly that by asserting a typed fact appears.
+ *
+ * So the facts always survive and the commentary is what gives way. Seat imbalance is a real
+ * problem and this is the wrong lever for it: the answer is more kinds of message — ambient lines,
+ * two personas talking to each other — not mangling the scenes that already work.
+ */
+function spokenLines(candidate: SceneCandidate, lines: readonly SceneLine[]): readonly SceneLine[] {
+  const { hero, completedTasks } = candidate.source.record.post;
+  const key = `len:${hero.name}:${candidate.kind}:${candidate.source.activityId}:${completedTasks}`;
+  return lines.slice(0, SCENE_LENGTHS[stableChoice(key, SCENE_LENGTHS.length)]!);
+}
+
 function projectScene(candidate: SceneCandidate): readonly SocialEntry[] {
   const cast = castFor(candidate.source);
   const sceneId = `social:${candidate.source.activityId}:${candidate.kind}`;
-  return linesFor(candidate).map((line, index) => ({
+  return spokenLines(candidate, linesFor(candidate)).map((line, index) => ({
     id: `${sceneId}:${index}`,
     sceneId,
     sceneKind: candidate.kind,
