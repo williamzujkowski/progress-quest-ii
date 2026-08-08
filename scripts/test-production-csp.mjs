@@ -50,6 +50,39 @@ test('each fail-closed directive is required to be none', () => {
   }
 });
 
+test("script-src and connect-src must be exactly 'self', not merely present and free of unsafe keywords", () => {
+  // Refusing 'unsafe-inline' and 'unsafe-eval' bounds how script may run and says nothing about
+  // where it may come from. Every one of these satisfied that check and shipped a policy nobody
+  // would have approved.
+  for (const widened of ['*', 'data:', "'self' https://evil.example", "'self' blob:"]) {
+    assert.throws(
+      () => verifyProductionCsp(shell(POLICY.replace("script-src 'self'", `script-src ${widened}`))),
+      /sets script-src to/,
+      `expected script-src ${widened} to be refused`,
+    );
+  }
+
+  // connect-src carries a property this application states in SECURITY.md: nothing is sent
+  // anywhere. It was previously unasserted in both directions — value and existence.
+  assert.throws(
+    () => verifyProductionCsp(shell(POLICY.replace("connect-src 'self'", 'connect-src *'))),
+    /sets connect-src to/,
+  );
+  assert.throws(
+    () => verifyProductionCsp(shell(POLICY.replace("connect-src 'self'", "connect-src 'self' https://cdn.example"))),
+    /sets connect-src to/,
+  );
+  assert.throws(
+    () => verifyProductionCsp(shell(POLICY.replace(/;?\s*connect-src 'self'/, ''))),
+    /omits connect-src/,
+  );
+
+  // And the policy that actually ships still passes, or the check above is just a way to fail.
+  assert.ok(POLICY.includes("script-src 'self'"), 'the shipped policy no longer pins script-src');
+  assert.ok(POLICY.includes("connect-src 'self'"), 'the shipped policy no longer pins connect-src');
+  assert.doesNotThrow(() => verifyProductionCsp(shell()));
+});
+
 test("script-src refuses unsafe-inline and unsafe-eval while style-src keeps unsafe-inline", () => {
   // The asymmetry is the point. style-src 'unsafe-inline' is load-bearing — React style={{…}}
   // attributes fall under style-src-attr — so this cannot be a blanket search for "unsafe".
