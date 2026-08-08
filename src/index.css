@@ -74,7 +74,6 @@
 [data-theme='progros'] {
   --terminal-background: oklch(0.55 0.12 185);
   --terminal-foreground: oklch(0.15 0.01 185);
-  --terminal-cursor: oklch(0.35 0.16 260);
   --terminal-selection: oklch(0.82 0.01 185);
   --terminal-red: oklch(0.36 0.16 25);
   --terminal-green: oklch(0.34 0.14 145);
