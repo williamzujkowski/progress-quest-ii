@@ -1,6 +1,6 @@
 import { SOCIAL_PERSONAS, type SocialPersona, type SocialSeat } from '../data/socialCatalog';
 import { boundCodePoints, boundedLabel, MAX_TEXT_CODE_POINTS, formatGameNumber, stableIndex, stableChoice } from '../engine/text';
-import { AMBIENT_LINES, BLAME_BEATS, FEUD_BEATS, ITEM_OF_RECORD_LINES, ONBOARDING_LINES, QUESTION_BEATS, REACTION_LINES, TRADE_LINES, type AmbientLine } from '../data/socialAmbient';
+import { AMBIENT_LINES, BLAME_BEATS, EXCHANGES, FEUD_BEATS, ITEM_OF_RECORD_LINES, ONBOARDING_LINES, QUESTION_BEATS, REACTION_LINES, TRADE_LINES, type AmbientLine } from '../data/socialAmbient';
 import type { LoadoutFiling } from '../engine/loadoutFiling';
 import { projectWorld, type IdentifiedGameTransitionRecord } from './worldContext';
 
@@ -489,6 +489,9 @@ const AMBIENT_LANES = [
   // a lane that fired often would say the same thing about the same item all afternoon.
   'item',
   'blame',
+  // Two lanes' worth, because an exchange is the form that most changes how the channel reads and
+  // it is the only one that speaks more than once.
+  'exchange', 'exchange',
   // Only reachable while the loadout is entry-tier, which is a state a character leaves within
   // minutes and never returns to. Weighted as though it were an ordinary lane so it is loud while
   // it lasts rather than rare during the one window it can occur in.
@@ -559,27 +562,34 @@ export function projectAmbient(
           ? REACTION_LINES[stableChoice(`react:${key}`, REACTION_LINES.length)]!
           : AMBIENT_LINES[stableChoice(`say:${key}`, AMBIENT_LINES.length)]!;
 
+  // Every lane says one thing and the channel moves on, except an exchange, which is a unit: half of
+  // "Is it shorter?" / "It is a shortcut." is not a shorter joke, it is a different and worse one.
+  // The scheduler gates whole scenes anyway, so an exchange arrives entire or not at all.
+  const lines: readonly AmbientLine[] = lane === 'exchange'
+    ? EXCHANGES[stableChoice(`swap:${key}`, EXCHANGES.length)]!
+    : [line];
+
   const sceneId = `ambient:${completedTasks}:${lane}`;
-  return [{
-    id: `${sceneId}:0`,
+  return lines.map((spoken, index) => ({
+    id: `${sceneId}:${index}`,
     sceneId,
-    sceneKind: 'ambient',
+    sceneKind: 'ambient' as const,
     sourceActivityId: -1,
-    channel: line.channel,
+    channel: spoken.channel,
     speaker: {
-      id: cast[line.seat].id,
-      kind: 'cast',
-      displayName: cast[line.seat].displayName,
-      role: cast[line.seat].role,
-      fictional: true,
+      id: cast[spoken.seat].id,
+      kind: 'cast' as const,
+      displayName: cast[spoken.seat].displayName,
+      role: cast[spoken.seat].role,
+      fictional: true as const,
       automaticHero: false,
     },
     // Interpolated after selection so every lane shares one substitution, and only the bare noun is
     // quoted — a full generated name carries an assessor's mark, and a figure here would assert
     // state nothing computed.
-    text: bound(line.text
+    text: bound(spoken.text
       .replaceAll('{item}', loadout?.itemOfRecord?.base ?? 'equipment')
       .replaceAll('{slot}', loadout?.itemOfRecord?.slot ?? 'loadout')),
-  }];
+  }));
 }
 
