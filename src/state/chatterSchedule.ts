@@ -127,6 +127,9 @@ export function clampBeatAdvance(previous: number, next: number, beats: number):
  */
 const ALWAYS_HEARD: readonly SocialSceneKind[] = ['milestone', 'level', 'catch_up'];
 
+/** How often a free slot is actually spent on an ambient line rather than left silent. */
+const AMBIENT_IN = 3;
+
 /** How much had happened when the guild last said anything. */
 export interface ChatterCadence {
   readonly lastLineTasks: number;
@@ -154,29 +157,48 @@ export function scheduleChatter(
   entries: readonly SocialEntry[],
   cadence: ChatterCadence,
   completedTasks: number,
+  ambient: readonly SocialEntry[] = [],
 ): { readonly entries: readonly SocialEntry[]; readonly cadence: ChatterCadence } {
-  if (entries.length === 0) return { entries, cadence };
-
   const scenes = [...new Set(entries.map(({ sceneId }) => sceneId))];
+  const kindOf = (sceneId: string) => entries.find((entry) => entry.sceneId === sceneId)?.sceneKind;
   const heard = new Set(scenes.filter((sceneId) => {
-    const kind = entries.find((entry) => entry.sceneId === sceneId)?.sceneKind;
+    const kind = kindOf(sceneId);
     if (kind !== undefined && ALWAYS_HEARD.includes(kind)) return true;
     return admitsEvent(0, `${sceneId}:${completedTasks}`);
   }));
-  if (heard.size === 0) return { entries: [], cadence };
 
   // A scene that always speaks is not subject to the gap either. Making a level-up wait would put
   // it behind loot the player is no longer looking at.
   const unconditional = [...heard].some((sceneId) => {
-    const kind = entries.find((entry) => entry.sceneId === sceneId)?.sceneKind;
+    const kind = kindOf(sceneId);
     return kind !== undefined && ALWAYS_HEARD.includes(kind);
   });
-  if (!unconditional && !readyToSpeak(completedTasks, cadence.lastLineTasks, `gap:${scenes[0]}`)) {
+  if (!unconditional && !readyToSpeak(completedTasks, cadence.lastLineTasks, `gap:${completedTasks}`)) {
     return { entries: [], cadence };
   }
 
-  return {
-    entries: entries.filter(({ sceneId }) => heard.has(sceneId)),
-    cadence: { lastLineTasks: completedTasks },
-  };
+  if (heard.size > 0) {
+    return {
+      entries: entries.filter(({ sceneId }) => heard.has(sceneId)),
+      cadence: { lastLineTasks: completedTasks },
+    };
+  }
+
+  // Nothing the hero did earned a line, which is most of the time and is when a real channel is at
+  // its most characteristic. Ambient fills that silence rather than bypassing the rate limit — the
+  // gap above has already been paid. Without this the feed can only ever be about the hero, which
+  // is the property that made it read as a caption track.
+  //
+  // Reached whether the event scenes were dropped by admission or never existed. Only checking the
+  // second left ambient firing once in thirty simulated minutes, because the projection nearly
+  // always produces something for admission to throw away.
+  //
+  // Declined most of the time even so. Filling every free slot took the feed to six messages a
+  // minute and made ambient seven lines in ten, which is a caption track with a different subject.
+  // A channel is quiet more often than it speaks, and the quiet is what makes the next line read as
+  // somebody arriving at a topic rather than a timer firing.
+  if (ambient.length > 0 && stableChoice(`say:${completedTasks}`, AMBIENT_IN) === 0) {
+    return { entries: ambient, cadence: { lastLineTasks: completedTasks } };
+  }
+  return { entries: [], cadence };
 }

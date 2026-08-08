@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NEW_CADENCE, scheduleChatter } from '../../state/chatterSchedule';
+import { NEW_CADENCE, readyToSpeak, scheduleChatter } from '../../state/chatterSchedule';
 import type { SocialEntry, SocialSceneKind } from '../../state/socialProjection';
 
 /**
@@ -87,3 +87,56 @@ describe('how much the guild actually says', () => {
     expect(result.cadence).toBe(cadence);
   });
 });
+
+describe('what the guild says when the hero has done nothing', () => {
+  const ambient = () => scene('amb:1', 'ambient', 1);
+
+  it('fills a silence the event scenes left', () => {
+    // The gate drops four ordinary scenes in five. Without ambient the feed can only ever be about
+    // the hero, which is the property that made it read as a caption track.
+    let cadence = NEW_CADENCE;
+    let spoken = 0;
+    for (let task = 1; task <= 400; task += 1) {
+      const result = scheduleChatter(scene(`s:${task}`, 'loot'), cadence, task, ambient());
+      cadence = result.cadence;
+      spoken += result.entries.filter(({ sceneKind }) => sceneKind === 'ambient').length;
+    }
+    expect(spoken).toBeGreaterThan(20);
+  });
+
+  it('declines most free slots rather than filling every one', () => {
+    // Filling every slot took the feed to six messages a minute with ambient seven lines in ten,
+    // which is a caption track with a different subject.
+    // Counted against the slots the gap actually offered, not against the loop length. A bound of
+    // "fewer than half the iterations" passed even when ambient took every single free slot,
+    // because the gap alone already limits it to roughly one in eight.
+    let cadence = NEW_CADENCE;
+    let offered = 0;
+    let spoken = 0;
+    for (let task = 1; task <= 600; task += 1) {
+      if (readyToSpeak(task, cadence.lastLineTasks, `gap:${task}`)) offered += 1;
+      const result = scheduleChatter([], cadence, task, ambient());
+      cadence = result.cadence;
+      spoken += result.entries.length;
+    }
+    expect(spoken).toBeGreaterThan(20);
+    // The quiet is what makes the next line read as somebody arriving at a topic rather than a
+    // timer firing, so a good share of offered slots must go unused.
+    expect(spoken).toBeLessThan(offered * 0.75);
+  });
+
+  it('never speaks over an event that earned its line', () => {
+    // Ambient fills silence; it does not compete. A level and a stray remark in the same breath
+    // would bury the thing the player was waiting for.
+    const result = scheduleChatter(scene('lvl', 'level'), { lastLineTasks: 0 }, 50, ambient());
+    expect(result.entries.every(({ sceneKind }) => sceneKind === 'level')).toBe(true);
+  });
+
+  it('does not bypass the gap', () => {
+    // Ambient is what fills the silence between lines, not a way around the rate limit.
+    const first = scheduleChatter([], NEW_CADENCE, 100, ambient());
+    if (first.entries.length === 0) return;
+    expect(scheduleChatter([], first.cadence, 100, ambient()).entries).toHaveLength(0);
+  });
+});
+
