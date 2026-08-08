@@ -8,9 +8,9 @@ const ALL = [...AMBIENT_LINES, ...TRADE_LINES, ...REACTION_LINES, ...FEUD_BEATS,
 /** The two lanes that quote the loadout, kept apart because their text carries placeholders. */
 const INTERPOLATED = [...ITEM_OF_RECORD_LINES, ...BLAME_BEATS];
 const FILING = {
-  itemOfRecord: { slot: 'Gauntlets' as const, name: '-4 Lapsed Skeleton Key', quality: 3, base: 'Skeleton Key' },
+  itemOfRecord: { slot: 'Gauntlets' as const, name: '-4 Lapsed Skeleton Key', quality: 3, base: 'Skeleton Key', standing: 10 },
   reductionPercent: 3,
-  contributors: [{ slot: 'Gauntlets' as const, name: '-4 Lapsed Skeleton Key', quality: 3, base: 'Skeleton Key' }],
+  contributors: [{ slot: 'Gauntlets' as const, name: '-4 Lapsed Skeleton Key', quality: 3, base: 'Skeleton Key', standing: 10 }],
   repeatedModifier: null,
 };
 
@@ -36,8 +36,23 @@ describe('the guild talks about itself', () => {
   });
 
   it('reaches every lane, including the two slow ones', () => {
+    // With no loadout there is nothing to cite, so the item and blame lanes fall back — but a hero
+    // owning nothing worth citing is exactly the one the hall is still explaining itself to, so
+    // onboarding does fire.
     const lanes = new Set(Array.from({ length: 2000 }, (_, task) => projectAmbient(HERO, task)[0]?.sceneId.split(':')[2]));
-    expect(lanes).toEqual(new Set(['ambient', 'reaction', 'trade', 'feud', 'question']));
+    expect(lanes).toEqual(new Set(['ambient', 'reaction', 'trade', 'feud', 'question', 'onboarding']));
+  });
+
+  it('stops explaining the hall once the hero owns something better than a lanyard', () => {
+    // The joke is that the worst loadout in the game has the loudest voice. It has to end on its
+    // own, and it does: the window closes the moment anything above entry-tier is equipped, which
+    // is why it needs no timer.
+    const wellEquipped = Array.from({ length: 2000 }, (_, task) => projectAmbient(HERO, task, FILING)[0]?.sceneId.split(':')[2]);
+    expect(wellEquipped).not.toContain('onboarding');
+
+    const entryTier = { ...FILING, itemOfRecord: { ...FILING.itemOfRecord, base: 'Lanyard', standing: 1 } };
+    const starting = Array.from({ length: 2000 }, (_, task) => projectAmbient(HERO, task, entryTier)[0]?.sceneId.split(':')[2]);
+    expect(starting).toContain('onboarding');
   });
 
   it('draws all four seats, which the event scenes never managed', () => {

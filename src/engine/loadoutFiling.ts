@@ -25,6 +25,14 @@ export interface LoadoutContribution {
   readonly name: string;
   readonly quality: number;
   /**
+   * The base noun's own rating, which is what the vocabularies escalate along.
+   *
+   * Distinct from `quality`, which is the total the engine multiplies by and which is the same
+   * number in almost every slot — items are topped up until they match the character's level. The
+   * standing is what says whether the hero is wearing a `Lanyard` or a `Legacy`.
+   */
+  readonly standing: number;
+  /**
    * The bare noun, without modifiers or the assessor's mark.
    *
    * What the chatter quotes. A full generated name carries digits — `-4 Lapsed Contested Skeleton
@@ -80,7 +88,7 @@ export function fileLoadout(character: CharacterSheet): LoadoutFiling {
     .filter(({ quality }) => quality.total > 0)
     .map(({ slot, name, quality }) => ({ slot, name, quality: quality.total, standing: quality.base?.value ?? 0, base: quality.base?.name ?? name }))
     .sort((left, right) => right.standing - left.standing || right.quality - left.quality)
-    .map(({ slot, name, quality, base }) => ({ slot, name, quality, base }));
+    .map(({ slot, name, quality, base, standing }) => ({ slot, name, quality, base, standing }));
 
   // Taken from the same function the transition multiplies by, rather than recomputed from the
   // contributors above. A sum of the positive slots would disagree with the engine the moment a
