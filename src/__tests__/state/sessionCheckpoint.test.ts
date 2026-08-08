@@ -247,6 +247,39 @@ describe('active session checkpoint boundary', () => {
     controller.dispose();
   });
 
+  it('adopts the roster character when the checkpoint is unreadable, so repair cannot capture a stranger', () => {
+    // The forward-compatibility break this guards is not hypothetical. `characterSheetSchema` is
+    // `.strict()`, and adding one optional field to it — `GoldDecades`, in #441 — means a save
+    // this build writes is refused by the build before it. A player holding a cached older bundle
+    // reaches exactly this branch, and it used to hand them the store's hard-coded default.
+    const hero = createNewCharacter('Veteran', 'Robot', 'Monk', new RandomGenerator('corrupt-fallback'));
+    expect(saveToRoster(hero).ok).toBe(true);
+
+    const checkpoint = captureActiveSession(FIXED_SAVED_AT);
+    const fromANewerBuild = JSON.stringify({
+      ...checkpoint,
+      session: { ...checkpoint.session, character: { ...checkpoint.session.character, MoraleIndex: 4 } },
+    });
+    localStorage.setItem(ACTIVE_CHECKPOINT_KEY, fromANewerBuild);
+    localStorage.setItem(ACTIVE_CHECKPOINT_LKG_KEY, fromANewerBuild);
+
+    const controller = startSessionCheckpoints({ now: () => FIXED_SAVED_AT, storage: localStorage, intervalMs: 1 });
+
+    // Both halves matter and either alone passes on a bug: the player must be looking at their own
+    // character, AND the unreadable bytes must still be on disk for a build that can read them.
+    expect(useGameStore.getState().character.Traits.Name).toBe('Veteran');
+    expect(localStorage.getItem(ACTIVE_CHECKPOINT_KEY)).toBe(fromANewerBuild);
+    expect(controller.getNotice()).toMatchObject({ kind: 'alert', canRepair: true });
+
+    // And repair now captures the adopted character rather than overwriting the save with a
+    // level-1 default nobody created.
+    controller.repair();
+    const afterRepair = activeCheckpointV1Schema.safeParse(JSON.parse(localStorage.getItem(ACTIVE_CHECKPOINT_KEY) ?? '{}'));
+    expect(afterRepair.success).toBe(true);
+    expect(afterRepair.success && afterRepair.data.session.character.Traits.Name).toBe('Veteran');
+    controller.dispose();
+  });
+
   it('does not authorize repair for unsupported or unavailable checkpoint reads', () => {
     const checkpoint = captureActiveSession(FIXED_SAVED_AT);
     const unsupportedRaw = JSON.stringify({ ...checkpoint, schemaVersion: 2 });
