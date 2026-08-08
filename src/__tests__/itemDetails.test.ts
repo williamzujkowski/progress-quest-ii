@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ARMOUR_BY_SLOT, armourTableForSlot } from '../data/armourBySlot';
 import type { CharacterSheet, EquipSlot } from '../engine/types';
 import { storageAllowance } from '../engine/storage';
+import { marketFavour } from '../engine/marketFavour';
 import { describeEquipment, describeInventoryItem, describeSpell } from '../data/itemDetails';
 import {
   ARMORS,
@@ -441,7 +442,7 @@ describe('the boundary between what a thing is and what it does', () => {
   // failure this surface exists to avoid.
   // Widened once more for the second effect equipment has. Optional, and only the padding slot ever
   // carries it — a carrying-capacity sentence on a helm would be both an effects column and a lie.
-  const EQUIPMENT_EFFECT = /^Generation quality: [-\d,]+ \([^)]*\)\. Contributes (?:[\d,]+ to the loadout, which shortens encounters|nothing to the loadout, so encounters are unaffected); damage is (?:not modeled|[a-z ]+)\.(?: Padding the hero out by [\d,]+ cubits of carrying capacity\.)?$/u;
+  const EQUIPMENT_EFFECT = /^Generation quality: [-\d,]+ \([^)]*\)\. Contributes (?:[\d,]+ to the loadout, which shortens encounters|nothing to the loadout, so encounters are unaffected); damage is (?:not modeled|[a-z ]+)\.(?: Padding the hero out by [\d,]+ cubits of carrying capacity\.)?(?: Standing here is worth [\d,]+% better terms at market\.)?$/u;
   // Still pinned to a mechanical shape, widened for two facts the line never carried: what a rank
   // counts, and the wisdom-plus-level threshold at which a spell enters the curriculum at all.
   const SPELL_EFFECT = /^Spell rank: [-\d,]+, meaning it has been awarded (?:once|[\d,]+ times)\.(?: Enters the curriculum at wisdom plus level [\d,]+\.)? Combat contribution: [a-z ]+; encounters are unaffected\.$/u;
@@ -455,6 +456,23 @@ describe('the boundary between what a thing is and what it does', () => {
       expect(allowance).toBeGreaterThan(0);
       expect(describeEquipment(base, 'Gambeson').effect)
         .toContain(`Padding the hero out by ${allowance} cubits of carrying capacity.`);
+    }
+  });
+
+  it('states the market terms the engine actually applies, on the one slot that moves them', () => {
+    for (const [base] of armourTableForSlot('Sollerets')) {
+      const favour = marketFavour({ Sollerets: base } as CharacterSheet['Equip']);
+      expect(favour).toBeGreaterThan(1);
+      expect(describeEquipment(base, 'Sollerets').effect)
+        .toContain(`Standing here is worth ${Math.round((favour - 1) * 100)}% better terms at market.`);
+    }
+  });
+
+  it('says nothing about market terms on a slot that moves none', () => {
+    for (const slot of EQUIP_SLOTS) {
+      if (slot === 'Sollerets') continue;
+      const base = slot === 'Weapon' ? WEAPONS[4]![0] : slot === 'Shield' ? SHIELDS[4]![0] : armourTableForSlot(slot)[4]![0];
+      expect(describeEquipment(base, slot).effect).not.toContain('terms at market');
     }
   });
 
