@@ -370,6 +370,35 @@ export function startSessionCheckpoints({
       diagnostics.record({ code: 'session_checkpoint_recovered', severity: 'warning', subsystem: 'storage', operation: 'recover', outcome: 'recovered', source: 'session-checkpoint' });
     } else {
       if (loaded.status === 'corrupt' && loaded.canRepair) expectedPrimaryRaw = loaded.expectedPrimaryRaw;
+
+      // An unreadable checkpoint used to leave the store holding its hard-coded default character,
+      // because this branch was the only one that did not consult the roster. The player saw a
+      // level-1 stranger, and `repairActiveCheckpoint` captures whatever is in the store — so the
+      // button offered to them wrote that stranger over their real save, and the still-readable
+      // last-known-good copy went the same way on the next ordinary flush.
+      //
+      // So adopt the roster's most recent character the way the `missing` branch does. What the
+      // player sees is then theirs, and what repair would capture is theirs too.
+      //
+      // Only where the bytes were read and could not be understood — a corrupt payload, or one a
+      // later build wrote. `unavailable` means the read itself threw, so asking the same storage
+      // for the roster would only throw again, and it keeps its original behaviour untouched.
+      const rosterCharacter = loaded.status === 'corrupt' || loaded.status === 'unsupported'
+        ? loadMostRecentRosterCharacter(storage)
+        : null;
+      if (rosterCharacter?.ok && rosterCharacter.value) {
+        useGameStore.getState().startSession({ source: 'roster', character: rosterCharacter.value });
+      } else if (rosterCharacter) {
+        requiresCharacterCreation = true;
+      }
+
+      // Blocked whether or not a character was adopted: the unreadable checkpoint may be newer
+      // than the roster copy, and a build that cannot parse it is not evidence that it is
+      // worthless. Persisting over it would decide that on the player's behalf.
+      // No exception for an empty roster, tempting as it is: the unreadable bytes would then be
+      // overwritten by whoever the player creates next, and a payload this build cannot parse is
+      // not a payload that is gone. Restoring it is a later build's job, and the existing
+      // "blocks automatic writes after a corrupt read" test is the guarantee that says so.
       block(loaded.message, 'read', loaded.status === 'corrupt' && loaded.canRepair);
     }
   }
