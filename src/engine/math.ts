@@ -15,8 +15,15 @@ export function roll3d6(rng: RandomGenerator): number {
   return rng.random(6) + 1 + (rng.random(6) + 1) + (rng.random(6) + 1);
 }
 
-export function calculateEncumbranceMax(str: number): number {
-  return str + 10;
+/**
+ * Cubits the hero can carry: strength, a constant, and whatever the padding slot allows.
+ *
+ * The allowance is passed in rather than read off the sheet here, because this module knows about
+ * numbers and not about equipment. Callers that have a loadout to hand pass `storageAllowance`;
+ * callers reasoning about strength alone leave it out and get the original figure.
+ */
+export function calculateEncumbranceMax(str: number, storageAllowance = 0): number {
+  return str + 10 + storageAllowance;
 }
 
 export function generateInitialStats(rng: RandomGenerator, raceName: string, klassName: string): StatsMap {

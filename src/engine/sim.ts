@@ -2,6 +2,7 @@ import { encounterSpeedMultiplier, loadoutQuality } from './loadout';
 import { armourNameForSlot } from '../data/armourBySlot';
 import { ALL_STATS, ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, EQUIP_SLOTS, ITEM_ATTRIB, ITEM_OFS, KLASSES, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, PRIME_STATS, RACES, SHIELDS, SPECIALS, SPELLS, TITLES, WEAPONS } from '../data/traits';
 import { MAX_PERSISTED_GOLD, MAX_PERSISTED_ITEMS, MAX_PERSISTED_VALUE } from '../data/limits';
+import { storageAllowance } from './storage';
 import { calculateEncumbranceMax, generateInitialStats, generateName, MAX_FINITE_CHARACTER_LEVEL } from './math';
 import { RandomGenerator, type PRNGSeed } from './prng';
 import { definite, indefinite } from './text';
@@ -396,7 +397,7 @@ function generateMonsterTask(rng: RandomGenerator, character: CharacterSheet): {
 
 export function generateTaskDescription(rng: RandomGenerator, character: CharacterSheet): { description: string; type: ProgressTask['type']; durationMs: number; loot?: ProgressTask['loot']; opponents?: number } {
   const encum = calculateEncumbrance(character.Inventory);
-  const maxEncum = calculateEncumbranceMax(character.Stats.STR);
+  const maxEncum = calculateEncumbranceMax(character.Stats.STR, storageAllowance(character.Equip));
   const price = equipPrice(character.Traits.Level);
 
   if (encum >= maxEncum) {

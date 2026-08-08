@@ -2,6 +2,7 @@ import { addInventoryItem, applyQuestReward, applySpellReward, calculateEncumbra
 import { BORING_ITEMS, IMPRESSIVE_TITLES, MONSTERS, RACES } from '../data/traits';
 import { MAX_PENDING_TASKS, MAX_PERSISTED_GOLD, MAX_PERSISTED_VALUE } from '../data/limits';
 import { earnGold, goldEarnedBetween } from './gold';
+import { storageAllowance } from './storage';
 import { calculateEncumbranceMax, generateName, levelUpTime } from './math';
 import type { RandomGenerator } from './prng';
 import { formatGameNumber, indefinite, plural } from './text';
@@ -461,7 +462,7 @@ export function advanceGame(state: GameTransitionState, elapsedMs: number, rng: 
       }
     } else if (task.type === 'act_marker') {
       const carriedCubits = calculateEncumbrance(inventory);
-      const capacityCubits = calculateEncumbranceMax(stats.STR);
+      const capacityCubits = calculateEncumbranceMax(stats.STR, storageAllowance(equip));
       if (carriedCubits >= capacityCubits) {
         marketReason = { carriedCubits, capacityCubits };
         nextTask = { description: 'Heading to market to sell loot...', durationMs: 4000, elapsedMs: 0, type: 'heading_to_market' };
