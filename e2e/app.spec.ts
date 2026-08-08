@@ -1483,7 +1483,24 @@ test.describe('Progress Quest III terminal dashboard', () => {
     await page.getByRole('button', { name: /Roster & Saves/i }).click();
 
     await expect(page.getByRole('dialog', { name: /Character Roster/i })).toBeVisible();
-    await expect(page.getByText('Roll New Guy')).toHaveCount(0);
+    // Not a text match. The string this replaced — 'Roll New Guy' — existed nowhere in the
+    // repository, so its count was structurally zero and no change to the roster modal could move
+    // it, including the one this test forbids. Matching flavour text is also what rotted it: the
+    // vocabulary was rewritten wholesale and the assertion never noticed.
+    //
+    // The shape check below is a second angle; the behaviour it stands for is asserted directly in
+    // SaveModal.test.tsx, which sweeps every control and fails if any reaches startSession with
+    // source 'creation'.
+    const roster = page.getByRole('dialog', { name: /Character Roster/i });
+    await expect(roster.getByRole('radio')).toHaveCount(0);
+    await expect(roster.locator('form, fieldset')).toHaveCount(0);
+
+    // The positive control. Without it the three assertions above would keep passing if the roster
+    // dialog stopped rendering, or if the creator's pickers stopped being radios — the negative
+    // half would go quietly vacuous exactly as its predecessor did.
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: /New Character/i }).click();
+    await expect(page.getByRole('dialog', { name: /New Character/i }).getByRole('radio')).not.toHaveCount(0);
   });
 
   test('loads a roster character through a fresh game session', async ({ page }) => {
