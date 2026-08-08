@@ -198,6 +198,19 @@ input[type='radio']:checked::before { transform: scale(1); }
   font-weight: 600;
 }
 
+/* Deliberately overrides the vendor's own focus ring, and the mechanism is worth stating because
+   it is not the one a reader would assume.
+
+   `remarque-tokens/core`, imported at the top of this file, declares its own `:focus-visible` with
+   `outline: 2px solid var(--color-focus-ring)`. Both selectors are a single pseudo-class, so the
+   specificity is identical and neither wins on merit — this rule applies only because it is later
+   in the same cascade. Moving the `@import` below it, or the vendor tightening its selector, hands
+   focus styling for the entire application back to the package, and the visible difference is a
+   colour nobody would necessarily notice.
+
+   Nothing asserts which of the two wins. Pinning the resolved colour needs the token read in the
+   same theme context the ring is painted in, which is not what a naive reading of
+   documentElement gives — tracked rather than bodged. */
 :focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
