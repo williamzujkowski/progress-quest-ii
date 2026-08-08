@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { MAX_TEXT_CODE_POINTS } from '../../engine/text';
 import { SOCIAL_PERSONAS } from '../../data/socialCatalog';
 import { RandomGenerator } from '../../engine/prng';
 import { createNewCharacter } from '../../engine/sim';
@@ -291,13 +292,27 @@ describe('the market scene reports a sale accurately', () => {
   const sold = (quantity: number, gold: number) =>
     source(90, { type: 'inventory_sold', gold }, snapshot({ marketSale: { name: 'Trap Ticket Shag', quantity, gold } }));
 
-  it('says "1 unit" for a single item and "units" for more', () => {
+  it('names the thing it sold, rather than counting anonymous units', () => {
+    // `marketSale` carried the name all along and the scene threw it away, so the busiest line in
+    // the game said "1 unit became 1 gold" — true, uninformative, and wasting the funniest string
+    // available. A sale is the last time that item is ever mentioned.
     const one = projectSocialBatch([sold(1, 1)]).map(({ text }) => text).join(' | ');
-    expect(one).toContain('1 unit became');
-    expect(one).not.toContain('1 units');
+    expect(one).toContain('Trap Ticket Shag became 1 gold');
+    expect(one).not.toContain('unit');
 
+    // A stack still says how many, because "became 12 gold" alone loses the size of the sale.
     const many = projectSocialBatch([sold(4, 12)]).map(({ text }) => text).join(' | ');
-    expect(many).toContain('4 units became');
+    expect(many).toContain('4 × Trap Ticket Shag became 12 gold');
+  });
+
+  it('bounds a name an imported save could make arbitrarily long', () => {
+    // This text reaches the DOM and is spoken by the screen-reader path.
+    const long = source(91, { type: 'inventory_sold', gold: 5 }, snapshot({
+      marketSale: { name: 'X'.repeat(400), quantity: 1, gold: 5 },
+    }));
+    for (const { text } of projectSocialBatch([long])) {
+      expect(Array.from(text).length).toBeLessThanOrEqual(MAX_TEXT_CODE_POINTS);
+    }
   });
 
   it('says nothing at all about a sale of nothing', () => {

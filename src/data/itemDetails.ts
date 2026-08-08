@@ -1,6 +1,6 @@
 import { ARMORS, BORING_ITEMS, DEFENSE_ATTRIB, DEFENSE_BAD, ITEM_ATTRIB, ITEM_OFS, MONSTERS, OFFENSE_ATTRIB, OFFENSE_BAD, SHIELDS, SPECIALS, WEAPONS } from './traits';
 import { analyzeItemMechanics } from '../engine/itemMechanics';
-import { formatGameNumber, stableIndex } from '../engine/text';
+import { boundedLabel, formatGameNumber, stableIndex } from '../engine/text';
 import { substrateStage } from './worldContext';
 import type { EquipSlot } from '../engine/types';
 
@@ -11,11 +11,6 @@ export interface ItemDetails {
 
 const choose = (options: readonly string[], key: string): string => options[stableIndex(key, options.length)] ?? key;
 const signedGameNumber = (value: number): string => `${value >= 0 ? '+' : ''}${formatGameNumber(value)}`;
-
-const boundedLabel = (name: string, fallback: string, limit = 60): string => {
-  const characters = Array.from(name);
-  return characters.length > limit ? `${characters.slice(0, limit - 1).join('')}…` : name || fallback;
-};
 
 /**
  * Provenance vocabulary, in three eras.
