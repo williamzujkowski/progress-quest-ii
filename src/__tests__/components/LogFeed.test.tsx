@@ -147,6 +147,36 @@ describe('Activity Log accessibility', () => {
     expect(status.textContent).toBe('Event 51');
   });
 
+  it('stays silent while a backlog drains and announces only the digest that closes it', () => {
+    // A closed tab banks up to 11.6 days and the clock spends it at 50 ms a tick, so a six-hour
+    // absence pushed roughly sixty new newest-entries in three seconds. aria-live queues rather
+    // than replaces and a page cannot cancel a queued polite utterance, so the user got about two
+    // minutes of already-happened events during which nothing else could be heard.
+    const initialLog = [{ id: 0, message: 'Before the absence' }];
+    useGameStore.setState({ isPaused: true, log: initialLog, nextActivityId: 1, pendingElapsedMs: 0 });
+    render(<LogFeed />);
+    const status = screen.getByRole('status', { name: 'Latest activity' });
+
+    act(() => useGameStore.setState({ pendingElapsedMs: 21_600_000 }));
+    for (let tick = 1; tick <= 60; tick += 1) {
+      act(() => useGameStore.setState({
+        log: [{ id: tick, message: `Replayed event ${tick}` }, ...initialLog],
+        nextActivityId: tick + 1,
+      }));
+      expect(status.textContent).toBe('');
+    }
+
+    // The drain finishes and the digest lands as the newest entry. That is the one thing worth
+    // saying, and it used to be read out after the sixty lines it summarises.
+    act(() => useGameStore.setState({
+      pendingElapsedMs: 0,
+      log: [{ id: 61, message: 'Backlog processed. The absence produced 12 levels, 165 quests, 1 act, none of it witnessed.' }, ...initialLog],
+      nextActivityId: 62,
+    }));
+
+    expect(status.textContent).toBe('Backlog processed. The absence produced 12 levels, 165 quests, 1 act, none of it witnessed.');
+  });
+
   it('keeps canonical announcements and a scrolled-back Activity position while Chatter is selected', () => {
     const initialLog = Array.from({ length: 10 }, (_, index) => ({ id: 9 - index, message: `Event ${10 - index}` }));
     useGameStore.setState({ isPaused: true, log: initialLog, nextActivityId: 10 });
