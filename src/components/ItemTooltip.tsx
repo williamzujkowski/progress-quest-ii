@@ -33,6 +33,24 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
   // Selected narrowly rather than taken from the whole character, because an act changes once
   // every several hours and a tooltip should not re-render on every tick to learn that.
   const act = useGameStore((state) => state.character.Plot.act);
+  /**
+   * Named by its slot, for equipment only.
+   *
+   * The visible label is the item name, and an unfilled slot shows an em dash — so nine of the
+   * eleven equipment triggers on a new character had the accessible name "—", and a keyboard user
+   * heard "dash, button" eleven times with nothing distinguishing Helm from Gauntlets. The slot
+   * name was present as `sr-only` text in an adjacent `<span>`, which reaches browse mode but is
+   * not part of the button's name, so it is absent from focus announcements and from a
+   * buttons/forms list entirely.
+   *
+   * Contains the visible label whenever there is one, so speech input still matches what is on
+   * screen (WCAG 2.5.3). An em dash is not a label anybody would speak, so the empty case says so
+   * in words instead.
+   */
+  const accessibleName = props.kind === 'equipment'
+    ? `${props.slot}: ${props.name || 'empty'}`
+    : undefined;
+
   const details = props.kind === 'equipment'
     ? describeEquipment(props.name, props.slot, act)
     : props.kind === 'spell'
@@ -133,6 +151,7 @@ export const ItemTooltip: React.FC<TooltipProps> = (props) => {
       aria-controls={open ? tooltipId : undefined}
       aria-describedby={open ? tooltipId : undefined}
       aria-expanded={open}
+      aria-label={accessibleName}
       title={details.description}
       onPointerEnter={showFromHover}
       onPointerLeave={hideFromHover}

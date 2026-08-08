@@ -34,3 +34,38 @@ describe('item tooltip reads the act it is describing', () => {
     expect(describedAt(30)).toBe(describedAt(30));
   });
 });
+
+describe('equipment triggers name their slot', () => {
+  it('gives every slot a distinct accessible name, filled or empty', () => {
+    render(
+      <>
+        <ItemTooltip kind="equipment" name="Stick" slot="Weapon">Stick</ItemTooltip>
+        <ItemTooltip kind="equipment" name="" slot="Helm">—</ItemTooltip>
+        <ItemTooltip kind="equipment" name="" slot="Gauntlets">—</ItemTooltip>
+      </>,
+    );
+
+    // The defect: both empty slots used to be named "—" and were indistinguishable on focus.
+    expect(screen.getByRole('button', { name: 'Helm: empty' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Gauntlets: empty' })).toBeTruthy();
+    expect(screen.queryAllByRole('button', { name: '—' })).toHaveLength(0);
+
+    // A filled slot still contains its visible label, so speech input matches the screen.
+    const weapon = screen.getByRole('button', { name: 'Weapon: Stick' });
+    expect(weapon.textContent).toBe('Stick');
+  });
+
+  it('leaves inventory and spell triggers named by their visible label', () => {
+    // Only equipment has a slot to disambiguate. Naming the others would add words a reader has to
+    // hear on every one of eighty inventory rows.
+    render(
+      <>
+        <ItemTooltip kind="inventory" name="Loot item" quantity={2} />
+        <ItemTooltip kind="spell" name="Procedural Disappointment" level={3} />
+      </>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Loot item' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Procedural Disappointment' })).toBeTruthy();
+  });
+});
